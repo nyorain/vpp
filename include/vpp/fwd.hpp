@@ -3,7 +3,9 @@
 namespace vpp
 {
 
-class Context;
+class Device;
+class Instance;
+class Resource;
 class Surface;
 class SwapChain;
 

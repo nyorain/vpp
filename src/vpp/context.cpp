@@ -6,7 +6,7 @@
 namespace vpp
 {
 
-//
+/*
 namespace
 {
 
@@ -84,6 +84,8 @@ void Context::initPhysicalDevice()
     std::vector<VkPhysicalDevice> phdevs{};
     VPP_CALL(vk::enumeratePhysicalDevices(vkInstance(), phdevs));
     physicalDevice_ = choosePhysicalDevice(phdevs);
+
+	vk::getPhysicalDeviceMemoryProperties(physicalDevice_, &memoryProperties_);
 }
 
 void Context::initDevice()
@@ -164,6 +166,20 @@ void Context::waitDevice() const
     VPP_CALL(vk::deviceWaitIdle(vkDevice()));
 }
 
+int Context::memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags properties) const
+{
+	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount(); ++i)
+	{
+		if(typeBits & (1 << i)) //ith bit set to 1
+		{
+			if((memoryProperties().memoryTypes()[i].propertyFlags() & properties) == properties)
+				return 1;
+		}
+	}
+
+	return -1;
+}
+
 PFN_vkVoidFunction Context::deviceProcAddr(const std::string& str) const
 {
     if(device_) return deviceProc(vkDevice(), str);
@@ -175,5 +191,6 @@ PFN_vkVoidFunction Context::instanceProcAddr(const std::string& str) const
     if(instance_) return instanceProc(vkInstance(), str);
     return nullptr;
 }
+*/
 
 }

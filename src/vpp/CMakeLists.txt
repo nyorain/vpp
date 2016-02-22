@@ -5,6 +5,7 @@ add_library(vpp SHARED
     procAddr.cpp
 	renderer.cpp
 	shader.cpp
+	graphicsPipeline.cpp
     backend/win32.cpp)
 
 target_link_libraries(vpp "$ENV{VK_SDK_PATH}/Source/lib/vulkan-1.dll")

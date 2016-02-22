@@ -6,16 +6,24 @@
 namespace vpp
 {
 
-Renderer::Renderer(const SwapChain& swapChain) : swapChain_(&swapChain)
+Renderer::Renderer(const SwapChain& swapChain)
 {
-	initCommandPool();
-	initRenderPass();
-	initRenderers();
+	create(swapChain);
 }
 
 Renderer::~Renderer()
 {
 	destroy();
+}
+
+void Renderer::create(const SwapChain& swapChain)
+{
+	Resource::create(swapChain.device());
+	swapChain_ = &swapChain;
+
+	initCommandPool();
+	initRenderPass();
+	initRenderers();
 }
 
 void Renderer::destroy()
@@ -66,14 +74,12 @@ void Renderer::reset(const SwapChain& swapChain, bool complete)
 		destroyRenderPass();
 		initRenderPass();
 	}
+	
 	initRenderers();
 }
 
 void Renderer::initCommandPool()
 {
-	auto queues = swapChain().surface().supportedGraphicalQueueFamilies(vkPhysicalDevice());
-	if(queues.empty()) throw std::runtime_error("Renderer: no supported queue");
-
 	//commandPool
 	vk::CommandPoolCreateInfo cmdPoolInfo;
 	cmdPoolInfo.queueFamilyIndex(0);
@@ -160,12 +166,12 @@ void Renderer::initRenderers()
 	}
 }
 
-void Renderer::buildCommandBuffer(const FrameRenderer& renderer)
+void Renderer::buildCommandBuffer(const FrameRenderer& renderer) const
 {
 	vk::CommandBufferBeginInfo cmdBufInfo;
 
 	vk::ClearValue clearValues[1];
-	clearValues[0].vkHandle().color = {{0.55f, 0.025f, 0.025f, 1.0f}};
+	clearValues[0].vkHandle().color = {{0.f, 0.f, 0.2f, 1.f}};
 
 	//WHY
 	auto width = swapChain().extent().width();
@@ -215,7 +221,7 @@ void Renderer::buildCommandBuffer(const FrameRenderer& renderer)
 	VPP_CALL(vk::endCommandBuffer(renderer.commandBuffer));
 }
 
-void Renderer::buildRenderer(vk::CommandBuffer buffer)
+void Renderer::buildRenderer(vk::CommandBuffer buffer) const
 {
 }
 
@@ -237,11 +243,7 @@ void Renderer::render(vk::Queue queue)
     swapChain().present(queue, currentBuffer);
 
     vk::destroySemaphore(vkDevice(), presentComplete, nullptr);
-    VPP_CALL(vk::queueWaitIdle(queue));
+	VPP_CALL(vk::queueWaitIdle(queue));
 }
-
-vk::Instance Renderer::vkInstance() const { return swapChain().vkInstance(); }
-vk::PhysicalDevice Renderer::vkPhysicalDevice() const { return swapChain().vkPhysicalDevice(); }
-vk::Device Renderer::vkDevice() const { return swapChain().vkDevice(); }
 
 }

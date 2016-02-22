@@ -4,11 +4,39 @@
 #include <vpp/context.hpp>
 #include <vpp/swapChain.hpp>
 #include <vpp/renderer.hpp>
+#include <vpp/graphicsPipeline.hpp>
 
 #include <windows.h>
 
 #include <string>
 #include <iostream>
+#include <memory>
+#include <chrono>
+
+//renderer
+class MyRenderer : public vpp::Renderer
+{
+protected:
+	std::unique_ptr<vpp::GraphicsPipeline> pipeline_;
+
+	virtual void buildRenderer(vk::CommandBuffer cmdBuffer) const override
+	{
+		pipeline_->renderCommands(cmdBuffer);
+	};
+
+public:
+	MyRenderer(const vpp::SwapChain& swapChainp)
+	{
+		swapChain_ = &swapChainp;
+
+		initCommandPool();
+		initRenderPass();
+
+		pipeline_.reset(new vpp::GraphicsPipeline(swapChain().context(), vkRenderPass()));
+
+		initRenderers();
+	}
+};
 
 //
 struct App
@@ -111,6 +139,11 @@ void render(App& app)
 //
 void mainLoop(App& app)
 {
+	using clock = std::chrono::high_resolution_clock;
+
+	auto point = clock::now();
+	auto frames = 0u;
+
     while(1)
     {
         MSG msg;
@@ -126,6 +159,14 @@ void mainLoop(App& app)
         }
 
         render(app);
+
+		++frames;
+		if(clock::now() - point > std::chrono::seconds(1))
+		{
+			std::cout << frames << " fps\n";
+			point = clock::now();
+			frames = 0u;
+		}
     }
 }
 
@@ -142,7 +183,7 @@ int main()
 	    vpp::Context context;
 	    vpp::Win32Surface surface(context.vkInstance(), app.hinstance, app.window);
 	    vpp::SwapChain swapChain(context, surface, {app.width, app.height});
-		vpp::Renderer renderer(swapChain);
+		MyRenderer renderer(swapChain);
 
 	    app.context = &context;
 	    app.surface = &surface;

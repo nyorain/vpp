@@ -2,12 +2,13 @@
 
 #include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
+#include <vpp/resource.hpp>
 
 namespace vpp
 {
 
 ///Capable of rendering on a SwapChain.
-class Renderer
+class Renderer : public Resource
 {
 protected:
 	struct FrameRenderer
@@ -25,8 +26,9 @@ protected:
 	vk::CommandPool commandPool_;
 
 protected:
-	virtual void buildCommandBuffer(const FrameRenderer& renderer);
-	virtual void buildRenderer(vk::CommandBuffer buffer);
+	Renderer() = default;
+
+	void create(const SwapChain& swapChain);
 
 	void initCommandPool();
 	void initRenderPass();
@@ -37,16 +39,15 @@ protected:
 	void destroyRenderPass();
 	void destroyCommandPool();
 
+	virtual void buildCommandBuffer(const FrameRenderer& renderer) const;
+	virtual void buildRenderer(vk::CommandBuffer buffer) const;
+
 public:
 	Renderer(const SwapChain& swapChain);
-	~Renderer();
+	virtual ~Renderer();
 
 	void render(vk::Queue queue);
 	void reset(const SwapChain& swapChain, bool complete = 0);
-
-	vk::Instance vkInstance() const;
-	vk::PhysicalDevice vkPhysicalDevice() const;
-	vk::Device vkDevice() const;
 
 	vk::CommandPool vkCommandPool() const { return commandPool_; }
 	vk::RenderPass vkRenderPass() const { return renderPass_; }

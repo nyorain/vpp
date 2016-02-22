@@ -25,7 +25,6 @@ protected:
     Surface(vk::Instance instance);
 
     void init(vk::Instance instance);
-    void loadProcs();
     void destroy();
 
 public:

@@ -16,12 +16,18 @@ public:
 	std::vector<std::string> deviceExtensions {};
 
 public:
-	inline Platform();
+	inline Platform(bool use = 1);
 };
 
 //inline, will be created in using source
-Platform::Platform()
+Platform::Platform(bool use)
 {
+	if(!use)
+	{
+		wsi = 0;
+		return;
+	}
+
 	#if defined(VK_USE_PLATFORM_WIN32_KHR)
 		instanceExtensions = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME};
 

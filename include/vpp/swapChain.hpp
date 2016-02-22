@@ -2,6 +2,7 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/vk.hpp>
+#include <vpp/resource.hpp>
 
 #include <vector>
 #include <string>
@@ -11,7 +12,7 @@ namespace vpp
 {
 
 ///Represents Vulkan swap chain and associated images/frameBuffers.
-class SwapChain
+class SwapChain : public Resource
 {
 public:
     struct Buffer
@@ -21,28 +22,20 @@ public:
     };
 
 protected:
-    PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
-    PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
-    PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
-    PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
-    PFN_vkQueuePresentKHR fpQueuePresentKHR;
-
     vk::SwapchainKHR swapChain_ {};
     vk::Format format_;
     vk::ColorSpaceKHR colorSpace_;
 	vk::Extent2D extent_;
 
-	const Context* context_ = nullptr;
-	const Surface* surface_ = nullptr;
+	vk::SurfaceKHR surface_ {};
 	std::vector<Buffer> buffers_;
 
 protected:
 	SwapChain() = default;
 
-    void create(const Context& context, const Surface& surface, const vk::Extent2D& extent);
+    void create(const Device& context, vk::SurfaceKHR surface, const vk::Extent2D& extent);
 
 	void init();
-    void loadProcs();
     void queryFormats();
     Buffer createBuffer(VkImage image) const;
     VkSwapchainCreateInfoKHR swapChainCreateInfo();
@@ -52,20 +45,15 @@ protected:
 	void destroySwapchain();
 
 public:
-    SwapChain(const Context& context, const Surface& surface, const vk::Extent2D& extent);
+    SwapChain(const Device& device, const Surface& surface, const vk::Extent2D& extent = {});
+	SwapChain(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& extent = {});
     ~SwapChain();
 
 	void resize(const vk::Extent2D& extent);
 
-	const Surface& surface() const { return *surface_; }
-	const Context& context() const { return *context_; }
-
-    vk::Instance vkInstance() const;
-    vk::PhysicalDevice vkPhysicalDevice() const;
-    vk::Device vkDevice() const;
-
     vk::SwapchainKHR vkSwapChain() const { return swapChain_; }
-	vk::SurfaceKHR vkSurface() const;
+	vk::SurfaceKHR vkSurface() const { return surface_; }
+
 	vk::Format format() const { return format_; }
 	vk::ColorSpaceKHR colorSpace() const { return colorSpace_; }
 	const vk::Extent2D& extent() const { return extent_; }
