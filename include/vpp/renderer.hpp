@@ -7,6 +7,12 @@
 namespace vpp
 {
 
+///RenderSettings
+class RenderSettings : public Resource
+{
+
+};
+
 ///Capable of rendering on a SwapChain.
 class Renderer : public Resource
 {

@@ -13,6 +13,15 @@ loadShader(vk::Device dev, const std::string& file, vk::ShaderStageFlagBits stag
 
 class ShaderProgram : public Resource
 {
+public:
+	struct StageCreateInfo
+	{
+		std::string file;
+		vk::ShaderStageFlagBits stage;
+		const vk::SpecializationInfo* {nullptr};
+		std::string entry {"main"};
+	};
+
 protected:
 	std::vector<vk::PipelineShaderStageCreateInfo> stages_;
 
@@ -23,12 +32,14 @@ protected:
 	void destroy();
 
 public:
-	ShaderProgram(const Device& device);
+	ShaderProgram(const Device& device, const std::vector<);
 	~ShaderProgram();
 
-	void addStage(vk::PipelineShaderStageCreateInfo createInfo);
-	void addStage(const std::string& file, vk::ShaderStageFlagBits stage,
-		const vk::SpecializationInfo* = nullptr, const std::string& name = "main");
+	void addStage(const vk::PipelineShaderStageCreateInfo& createInfo);
+	void addStage(const StageCreateInfo& crrateInfo);
+
+	void addStages(const std::vector<vk::PipelineShaderStageCreateInfo>& createInfo);
+	void addStages(const std::vector<StageCreateInfo>& crrateInfo);
 
 	const std::vector<vk::PipelineShaderStageCreateInfo>& stages() const { return stages_; }
 };

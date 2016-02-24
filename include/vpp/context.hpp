@@ -10,4 +10,15 @@
 namespace vpp
 {
 
+class Context : public NonCopyable
+{
+protected:
+	Instance instance_;
+	Device device_;
+	SwapChain swapChain_;
+
+public:
+	const Surface& surface() const = 0;
+};
+
 }

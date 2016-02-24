@@ -6,8 +6,15 @@
 namespace vpp
 {
 
+class NonCopyable
+{
+	NonCopyable(const NonCopyable&) = delete;
+	NonCopyable& operator=(const NonCopyable&) = delete;
+};
+
+
 ///Resource
-class Resource
+class Resource : public NonCopyable
 {
 protected:
 	const Device* device_{nullptr};

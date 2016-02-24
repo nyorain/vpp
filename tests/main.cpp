@@ -13,31 +13,6 @@
 #include <memory>
 #include <chrono>
 
-//renderer
-class MyRenderer : public vpp::Renderer
-{
-protected:
-	std::unique_ptr<vpp::GraphicsPipeline> pipeline_;
-
-	virtual void buildRenderer(vk::CommandBuffer cmdBuffer) const override
-	{
-		pipeline_->renderCommands(cmdBuffer);
-	};
-
-public:
-	MyRenderer(const vpp::SwapChain& swapChainp)
-	{
-		swapChain_ = &swapChainp;
-
-		initCommandPool();
-		initRenderPass();
-
-		pipeline_.reset(new vpp::GraphicsPipeline(swapChain().context(), vkRenderPass()));
-
-		initRenderers();
-	}
-};
-
 //
 struct App
 {
@@ -56,6 +31,87 @@ struct App
 };
 
 App* gApp;
+
+//renderer
+class MyRenderer : public vpp::Renderer
+{
+protected:
+	std::unique_ptr<vpp::GraphicsPipeline> pipeline_;
+
+	vpp::VertexLayout vertexLayout_;
+	vpp::DescriptorSetLayout descriptorSetLayout_;
+
+	vpp::VertexBuffer vertexBuffer_;
+	vpp::DescriptorSet descriptorSet_;
+
+	virtual void buildRenderer(vk::CommandBuffer cmdBuffer) const override
+	{
+		pipeline_->renderCommands(cmdBuffer, vertexBuffer_, descriptorSet_);
+	};
+
+public:
+	MyRenderer(const vpp::SwapChain& swapChainp)
+	{
+		swapChain_ = &swapChainp;
+
+		initCommandPool();
+		initRenderPass();
+
+		vertexLayout_ = {{vk::Format::R32G32B32Sfloat, vk::Format::R32G32B32Sfloat}};
+		descriptorSetLayout_ = {};
+
+		//needed
+		vk::PipelineColorBlendAttachmentState blendAttachmentState[1];
+		blendAttachmentState[0].blendEnable(false);
+		blendAttachmentState[0].colorWriteMask(
+			vk::ColorComponentFlagBits::R |
+			vk::ColorComponentFlagBits::G |
+			vk::ColorComponentFlagBits::B |
+			vk::ColorComponentFlagBits::A
+		);
+
+		//info
+		vpp::GraphicsPipeline::CreateInfo info;
+
+		//vpp
+		info.descriptorSetLayout = descriptorSetLayout_;
+		info.vertexBufferLayout = vertexLayout_;
+		info.dynamicStates = {vk::DynamicState::Viewport, vk::DynamicState::Scissor};
+		info.renderPass = vkRenderPass();
+
+		//vk
+		info.inputAssemblyState.topology(vk::PrimitiveTopology::TriangleList);
+
+		info.rasterizationState.polygonMode(vk::PolygonMode::Fill);
+		info.rasterizationState.cullMode(vk::CullModeFlagBits::None);
+		info.rasterizationState.frontFace(vk::FrontFace::CounterClockwise);
+
+		info.colorBlendState.attachmentCount(1);
+		info.colorBlendState.pAttachments(blendAttachmentState);
+
+		info.viewportState.viewportCount(1);
+		info.viewportState.scissorCount(1);
+
+		info.multisampleState.pSampleMask(nullptr);
+		info.multisampleState.rasterizationSamples(vk::SampleCountFlagBits::e1);
+
+		pipeline_.reset(new vpp::GraphicsPipeline(device(), info));
+
+		initRenderers();
+
+		//vertex buffer
+		vertexBuffer_ = vpp::VertexBuffer(device(), vertexLayout_);
+		vertexBuffer_.fill({
+			//position			//color
+			1.0f,  0.6f, 0.0f, 	1.0f, 0.0f, 0.0f,
+			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, -1.0f, 0.0f, 	0.0f, 0.0f, 1.0f
+		});
+
+		//descriptorSet
+		//...
+	}
+};
 
 //
 LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
