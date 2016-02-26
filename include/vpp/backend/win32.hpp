@@ -5,6 +5,8 @@
 #include <vpp/surface.hpp>
 #include <vpp/vk.hpp>
 
+#include <windows.h>
+
 namespace vpp
 {
 
@@ -14,7 +16,7 @@ protected:
     void initSurface(void* hinstance, void* hwnd);
 
 public:
-    Win32Surface(VkInstance instance, void* hinstance, void* hwnd);
+    Win32Surface(vk::Instance instance, void* hinstance, void* hwnd);
     virtual ~Win32Surface();
 };
 

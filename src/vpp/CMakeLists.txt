@@ -1,11 +1,22 @@
-add_library(vpp SHARED
+set(vpp-sources
     context.cpp
     surface.cpp
     swapChain.cpp
     procAddr.cpp
 	renderer.cpp
+	memory.cpp
+	allocator.cpp
 	shader.cpp
-	graphicsPipeline.cpp
-    backend/win32.cpp)
+	graphicsPipeline.cpp)
 
+
+if(WIN32)
+	set(vpp-sources ${vpp-sources} backend/win32.cpp)
+endif(WIN32)
+
+if(UNIX)
+	set(vpp-sources ${vpp-sources} backend/xcb.cpp backend/wayland.cpp)
+endif(WIN32)
+
+add_library(vpp SHARED ${vpp-sources})
 target_link_libraries(vpp "$ENV{VK_SDK_PATH}/Source/lib/vulkan-1.dll")

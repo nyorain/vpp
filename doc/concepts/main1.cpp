@@ -11,17 +11,22 @@ std::vector<float> vertices =
 
 int main()
 {
+	vpp::ContextSettings settings = { /* ... */ };
+	
 	auto window = initWindow();
-	auto context = vpp::Win32Context(hinstance, window);
+	auto context = vpp::Win32Context(settings, hinstance, window);
 
 	vpp::VertexBufferLayout vbLayout({vpp::VertexBufferLayout::Point3fColor3f});
 	vpp::DescriptorSetLayout dsLayout(context.device(), {vk::DescriptorType::UniformBuffer});
 
 	vpp::GraphicsPipeline::CreateInfo createInfo;
 	createInfo.renderPass = context.swapChain().vkRenderPass();
-	createInfo.shaderProgram = vpp::ShaderProgram({{vk::ShaderStageFlags::Vertex, "vert.sprv"}, vk::ShaderStageFlags::Fragment, "frag.sprv"});
 	createInfo.vertexBufferLayouts = vblayout;
 	createInfo.descriptorSetLayouts = dsLayout;
+	createInfo.shaderProgram = vpp::ShaderProgram({
+			{vk::ShaderStageFlags::Vertex, "vert.sprv"}, 
+			{vk::ShaderStageFlags::Fragment, "frag.sprv"}
+		});
 
 	vpp::GraphicsPipeline pipeline(context.device(), createInfo);
 

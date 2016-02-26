@@ -1,6 +1,5 @@
 #include <vpp/backend/win32.hpp>
 #include <vpp/call.hpp>
-#include <windows.h>
 
 namespace vpp
 {
@@ -17,12 +16,11 @@ Win32Surface::~Win32Surface()
 
 void Win32Surface::initSurface(void* hinstance, void* hwnd)
 {
-    VkWin32SurfaceCreateInfoKHR info {};
-    info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    info.hinstance = static_cast<HINSTANCE>(hinstance);
-    info.hwnd = static_cast<HWND>(hwnd);
+	vk::Win32SurfaceCreateInfoKHR info;
+    info.hinstance(static_cast<HINSTANCE>(hinstance));
+    info.hwnd(static_cast<HWND>(hwnd));
 
-    VPP_CALL(vkCreateWin32SurfaceKHR(vkInstance(), &info, nullptr, &surface_));
+	vk::createWin32SurfaceKHR(vkInstance(), &info, nullptr, &surface_);
 }
 
 }

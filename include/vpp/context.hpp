@@ -2,6 +2,10 @@
 
 #include <vpp/vk.hpp>
 #include <vpp/platform.hpp>
+#include <vpp/fwd.hpp>
+#include <vpp/device.hpp>
+#include <vpp/instance.hpp>
+#include <vpp/swapChain.hpp>
 
 #include <vector>
 #include <string>
@@ -10,7 +14,7 @@
 namespace vpp
 {
 
-class Context : public NonCopyable
+class Context
 {
 protected:
 	Instance instance_;
@@ -18,7 +22,7 @@ protected:
 	SwapChain swapChain_;
 
 public:
-	const Surface& surface() const = 0;
+	virtual const Surface& surface() const = 0;
 };
 
 }

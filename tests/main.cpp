@@ -13,6 +13,46 @@
 #include <memory>
 #include <chrono>
 
+static const std::vector<float> vertex_buffer_data[] = 
+{
+      -1.0f,-1.0f,-1.0f, // triangle 1 : begin
+      -1.0f,-1.0f, 1.0f,
+      -1.0f, 1.0f, 1.0f, // triangle 1 : end
+      1.0f, 1.0f,-1.0f, // triangle 2 : begin
+      -1.0f,-1.0f,-1.0f,
+      -1.0f, 1.0f,-1.0f, // triangle 2 : end
+    1.0f,-1.0f, 1.0f,
+     -1.0f,-1.0f,-1.0f,
+     1.0f,-1.0f,-1.0f,
+     1.0f, 1.0f,-1.0f,
+     1.0f,-1.0f,-1.0f,
+     -1.0f,-1.0f,-1.0f,
+     -1.0f,-1.0f,-1.0f,
+     -1.0f, 1.0f, 1.0f,
+     -1.0f, 1.0f,-1.0f,
+     1.0f,-1.0f, 1.0f,
+     -1.0f,-1.0f, 1.0f,
+     -1.0f,-1.0f,-1.0f,
+     -1.0f, 1.0f, 1.0f,
+     -1.0f,-1.0f, 1.0f,
+     1.0f,-1.0f, 1.0f,
+     1.0f, 1.0f, 1.0f,
+     1.0f,-1.0f,-1.0f,
+     1.0f, 1.0f,-1.0f,
+     1.0f,-1.0f,-1.0f,
+     1.0f, 1.0f, 1.0f,
+     1.0f,-1.0f, 1.0f,
+     1.0f, 1.0f, 1.0f,
+     1.0f, 1.0f,-1.0f,
+     -1.0f, 1.0f,-1.0f,
+     1.0f, 1.0f, 1.0f,
+     -1.0f, 1.0f,-1.0f,
+     -1.0f, 1.0f, 1.0f,
+     1.0f, 1.0f, 1.0f,
+     -1.0f, 1.0f, 1.0f,
+     1.0f,-1.0f, 1.0f
+ };
+
 //
 struct App
 {
@@ -44,9 +84,10 @@ protected:
 	vpp::VertexBuffer vertexBuffer_;
 	vpp::DescriptorSet descriptorSet_;
 
+protected:
 	virtual void buildRenderer(vk::CommandBuffer cmdBuffer) const override
 	{
-		pipeline_->renderCommands(cmdBuffer, vertexBuffer_, descriptorSet_);
+		pipeline_->renderCommands(cmdBuffer, {vertexBuffer_}, {});
 	};
 
 public:
@@ -57,7 +98,7 @@ public:
 		initCommandPool();
 		initRenderPass();
 
-		vertexLayout_ = {{vk::Format::R32G32B32Sfloat, vk::Format::R32G32B32Sfloat}};
+		vertexLayout_ = {{vk::Format::R32G32B32Sfloat}};
 		descriptorSetLayout_ = {};
 
 		//needed
@@ -100,13 +141,16 @@ public:
 		initRenderers();
 
 		//vertex buffer
-		vertexBuffer_ = vpp::VertexBuffer(device(), vertexLayout_);
+		vpp::MemoryAllocator allocator;
+		vertexBuffer_ = vpp::VertexBuffer(allocator, vertex_buffer_data);
+		/*
 		vertexBuffer_.fill({
 			//position			//color
 			1.0f,  0.6f, 0.0f, 	1.0f, 0.0f, 0.0f,
 			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 			0.0f, -1.0f, 0.0f, 	0.0f, 0.0f, 1.0f
 		});
+		*/
 
 		//descriptorSet
 		//...

@@ -4,14 +4,11 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 
+#include <memory>
+#include <vector>
+
 namespace vpp
 {
-
-///RenderSettings
-class RenderSettings : public Resource
-{
-
-};
 
 ///Capable of rendering on a SwapChain.
 class Renderer : public Resource
