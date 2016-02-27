@@ -3,6 +3,7 @@
 #include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
+#include <vpp/image.hpp>
 
 #include <memory>
 #include <vector>
@@ -21,8 +22,16 @@ protected:
 		vk::CommandBuffer commandBuffer;
 	};
 
+	struct DepthStencil
+	{
+		Image image;
+		vk::ImageView imageView;
+		vk::Format format;
+	};
+
 protected:
 	const SwapChain* swapChain_;
+	DepthStencil depth_;
 
 	std::vector<FrameRenderer> frameRenderers_;
 	vk::RenderPass renderPass_;
@@ -35,6 +44,7 @@ protected:
 
 	void initCommandPool();
 	void initRenderPass();
+	void initDepthStencil();
 	void initRenderers();
 
 	void destroy();

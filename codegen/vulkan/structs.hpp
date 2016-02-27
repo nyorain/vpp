@@ -205,7 +205,9 @@ namespace vk
   {
   public:
     const char* extensionName() const { return reinterpret_cast<const char*>( m_extensionProperties.extensionName ); }
+    ExtensionProperties& extensionName(std::array<char,VK_MAX_EXTENSION_NAME_SIZE> extensionName){ memcpy(&m_extensionProperties.extensionName, extensionName.data(), VK_MAX_EXTENSION_NAME_SIZE * sizeof(char)); return *this; }
     const uint32_t& specVersion() const { return m_extensionProperties.specVersion; }
+    ExtensionProperties& specVersion(uint32_t specVersion){ m_extensionProperties.specVersion = specVersion; return *this; }
     operator VkExtensionProperties&() { return m_extensionProperties; }
     operator const VkExtensionProperties&() const { return m_extensionProperties; }
     VkExtensionProperties& vkHandle() { return m_extensionProperties; }
@@ -219,9 +221,13 @@ namespace vk
   {
   public:
     const char* layerName() const { return reinterpret_cast<const char*>( m_layerProperties.layerName ); }
+    LayerProperties& layerName(std::array<char,VK_MAX_EXTENSION_NAME_SIZE> layerName){ memcpy(&m_layerProperties.layerName, layerName.data(), VK_MAX_EXTENSION_NAME_SIZE * sizeof(char)); return *this; }
     const uint32_t& specVersion() const { return m_layerProperties.specVersion; }
+    LayerProperties& specVersion(uint32_t specVersion){ m_layerProperties.specVersion = specVersion; return *this; }
     const uint32_t& implementationVersion() const { return m_layerProperties.implementationVersion; }
+    LayerProperties& implementationVersion(uint32_t implementationVersion){ m_layerProperties.implementationVersion = implementationVersion; return *this; }
     const char* description() const { return reinterpret_cast<const char*>( m_layerProperties.description ); }
+    LayerProperties& description(std::array<char,VK_MAX_DESCRIPTION_SIZE> description){ memcpy(&m_layerProperties.description, description.data(), VK_MAX_DESCRIPTION_SIZE * sizeof(char)); return *this; }
     operator VkLayerProperties&() { return m_layerProperties; }
     operator const VkLayerProperties&() const { return m_layerProperties; }
     VkLayerProperties& vkHandle() { return m_layerProperties; }
@@ -263,8 +269,11 @@ namespace vk
   {
   public:
     const DeviceSize& size() const { return m_memoryRequirements.size; }
+    MemoryRequirements& size(DeviceSize size){ m_memoryRequirements.size = size; return *this; }
     const DeviceSize& alignment() const { return m_memoryRequirements.alignment; }
+    MemoryRequirements& alignment(DeviceSize alignment){ m_memoryRequirements.alignment = alignment; return *this; }
     const uint32_t& memoryTypeBits() const { return m_memoryRequirements.memoryTypeBits; }
+    MemoryRequirements& memoryTypeBits(uint32_t memoryTypeBits){ m_memoryRequirements.memoryTypeBits = memoryTypeBits; return *this; }
     operator VkMemoryRequirements&() { return m_memoryRequirements; }
     operator const VkMemoryRequirements&() const { return m_memoryRequirements; }
     VkMemoryRequirements& vkHandle() { return m_memoryRequirements; }
@@ -586,10 +595,15 @@ namespace vk
   {
   public:
     const Bool32& residencyStandard2DBlockShape() const { return m_physicalDeviceSparseProperties.residencyStandard2DBlockShape; }
+    PhysicalDeviceSparseProperties& residencyStandard2DBlockShape(Bool32 residencyStandard2DBlockShape){ m_physicalDeviceSparseProperties.residencyStandard2DBlockShape = residencyStandard2DBlockShape; return *this; }
     const Bool32& residencyStandard2DMultisampleBlockShape() const { return m_physicalDeviceSparseProperties.residencyStandard2DMultisampleBlockShape; }
+    PhysicalDeviceSparseProperties& residencyStandard2DMultisampleBlockShape(Bool32 residencyStandard2DMultisampleBlockShape){ m_physicalDeviceSparseProperties.residencyStandard2DMultisampleBlockShape = residencyStandard2DMultisampleBlockShape; return *this; }
     const Bool32& residencyStandard3DBlockShape() const { return m_physicalDeviceSparseProperties.residencyStandard3DBlockShape; }
+    PhysicalDeviceSparseProperties& residencyStandard3DBlockShape(Bool32 residencyStandard3DBlockShape){ m_physicalDeviceSparseProperties.residencyStandard3DBlockShape = residencyStandard3DBlockShape; return *this; }
     const Bool32& residencyAlignedMipSize() const { return m_physicalDeviceSparseProperties.residencyAlignedMipSize; }
+    PhysicalDeviceSparseProperties& residencyAlignedMipSize(Bool32 residencyAlignedMipSize){ m_physicalDeviceSparseProperties.residencyAlignedMipSize = residencyAlignedMipSize; return *this; }
     const Bool32& residencyNonResidentStrict() const { return m_physicalDeviceSparseProperties.residencyNonResidentStrict; }
+    PhysicalDeviceSparseProperties& residencyNonResidentStrict(Bool32 residencyNonResidentStrict){ m_physicalDeviceSparseProperties.residencyNonResidentStrict = residencyNonResidentStrict; return *this; }
     operator VkPhysicalDeviceSparseProperties&() { return m_physicalDeviceSparseProperties; }
     operator const VkPhysicalDeviceSparseProperties&() const { return m_physicalDeviceSparseProperties; }
     VkPhysicalDeviceSparseProperties& vkHandle() { return m_physicalDeviceSparseProperties; }
@@ -1700,9 +1714,13 @@ namespace vk
   {
   public:
     const QueueFlags& queueFlags() const { return reinterpret_cast<const QueueFlags&>( m_queueFamilyProperties.queueFlags ); }
+    QueueFamilyProperties& queueFlags(QueueFlags queueFlags){ m_queueFamilyProperties.queueFlags = static_cast<VkQueueFlags>( queueFlags ); return *this; }
     const uint32_t& queueCount() const { return m_queueFamilyProperties.queueCount; }
+    QueueFamilyProperties& queueCount(uint32_t queueCount){ m_queueFamilyProperties.queueCount = queueCount; return *this; }
     const uint32_t& timestampValidBits() const { return m_queueFamilyProperties.timestampValidBits; }
+    QueueFamilyProperties& timestampValidBits(uint32_t timestampValidBits){ m_queueFamilyProperties.timestampValidBits = timestampValidBits; return *this; }
     const Extent3D& minImageTransferGranularity() const { return reinterpret_cast<const Extent3D&>( m_queueFamilyProperties.minImageTransferGranularity ); }
+    QueueFamilyProperties& minImageTransferGranularity(Extent3D minImageTransferGranularity){ m_queueFamilyProperties.minImageTransferGranularity = static_cast<VkExtent3D>( minImageTransferGranularity ); return *this; }
     operator VkQueueFamilyProperties&() { return m_queueFamilyProperties; }
     operator const VkQueueFamilyProperties&() const { return m_queueFamilyProperties; }
     VkQueueFamilyProperties& vkHandle() { return m_queueFamilyProperties; }
@@ -1716,7 +1734,9 @@ namespace vk
   {
   public:
     const MemoryPropertyFlags& propertyFlags() const { return reinterpret_cast<const MemoryPropertyFlags&>( m_memoryType.propertyFlags ); }
+    MemoryType& propertyFlags(MemoryPropertyFlags propertyFlags){ m_memoryType.propertyFlags = static_cast<VkMemoryPropertyFlags>( propertyFlags ); return *this; }
     const uint32_t& heapIndex() const { return m_memoryType.heapIndex; }
+    MemoryType& heapIndex(uint32_t heapIndex){ m_memoryType.heapIndex = heapIndex; return *this; }
     operator VkMemoryType&() { return m_memoryType; }
     operator const VkMemoryType&() const { return m_memoryType; }
     VkMemoryType& vkHandle() { return m_memoryType; }
@@ -1730,7 +1750,9 @@ namespace vk
   {
   public:
     const DeviceSize& size() const { return m_memoryHeap.size; }
+    MemoryHeap& size(DeviceSize size){ m_memoryHeap.size = size; return *this; }
     const MemoryHeapFlags& flags() const { return reinterpret_cast<const MemoryHeapFlags&>( m_memoryHeap.flags ); }
+    MemoryHeap& flags(MemoryHeapFlags flags){ m_memoryHeap.flags = static_cast<VkMemoryHeapFlags>( flags ); return *this; }
     operator VkMemoryHeap&() { return m_memoryHeap; }
     operator const VkMemoryHeap&() const { return m_memoryHeap; }
     VkMemoryHeap& vkHandle() { return m_memoryHeap; }
@@ -1744,9 +1766,13 @@ namespace vk
   {
   public:
     const uint32_t& memoryTypeCount() const { return m_physicalDeviceMemoryProperties.memoryTypeCount; }
+    PhysicalDeviceMemoryProperties& memoryTypeCount(uint32_t memoryTypeCount){ m_physicalDeviceMemoryProperties.memoryTypeCount = memoryTypeCount; return *this; }
     const MemoryType* memoryTypes() const { return reinterpret_cast<const MemoryType*>( m_physicalDeviceMemoryProperties.memoryTypes ); }
+    PhysicalDeviceMemoryProperties& memoryTypes(std::array<MemoryType,VK_MAX_MEMORY_TYPES> memoryTypes){ memcpy(&m_physicalDeviceMemoryProperties.memoryTypes, memoryTypes.data(), VK_MAX_MEMORY_TYPES * sizeof(MemoryType)); return *this; }
     const uint32_t& memoryHeapCount() const { return m_physicalDeviceMemoryProperties.memoryHeapCount; }
+    PhysicalDeviceMemoryProperties& memoryHeapCount(uint32_t memoryHeapCount){ m_physicalDeviceMemoryProperties.memoryHeapCount = memoryHeapCount; return *this; }
     const MemoryHeap* memoryHeaps() const { return reinterpret_cast<const MemoryHeap*>( m_physicalDeviceMemoryProperties.memoryHeaps ); }
+    PhysicalDeviceMemoryProperties& memoryHeaps(std::array<MemoryHeap,VK_MAX_MEMORY_HEAPS> memoryHeaps){ memcpy(&m_physicalDeviceMemoryProperties.memoryHeaps, memoryHeaps.data(), VK_MAX_MEMORY_HEAPS * sizeof(MemoryHeap)); return *this; }
     operator VkPhysicalDeviceMemoryProperties&() { return m_physicalDeviceMemoryProperties; }
     operator const VkPhysicalDeviceMemoryProperties&() const { return m_physicalDeviceMemoryProperties; }
     VkPhysicalDeviceMemoryProperties& vkHandle() { return m_physicalDeviceMemoryProperties; }
@@ -2112,8 +2138,11 @@ namespace vk
   {
   public:
     const FormatFeatureFlags& linearTilingFeatures() const { return reinterpret_cast<const FormatFeatureFlags&>( m_formatProperties.linearTilingFeatures ); }
+    FormatProperties& linearTilingFeatures(FormatFeatureFlags linearTilingFeatures){ m_formatProperties.linearTilingFeatures = static_cast<VkFormatFeatureFlags>( linearTilingFeatures ); return *this; }
     const FormatFeatureFlags& optimalTilingFeatures() const { return reinterpret_cast<const FormatFeatureFlags&>( m_formatProperties.optimalTilingFeatures ); }
+    FormatProperties& optimalTilingFeatures(FormatFeatureFlags optimalTilingFeatures){ m_formatProperties.optimalTilingFeatures = static_cast<VkFormatFeatureFlags>( optimalTilingFeatures ); return *this; }
     const FormatFeatureFlags& bufferFeatures() const { return reinterpret_cast<const FormatFeatureFlags&>( m_formatProperties.bufferFeatures ); }
+    FormatProperties& bufferFeatures(FormatFeatureFlags bufferFeatures){ m_formatProperties.bufferFeatures = static_cast<VkFormatFeatureFlags>( bufferFeatures ); return *this; }
     operator VkFormatProperties&() { return m_formatProperties; }
     operator const VkFormatProperties&() const { return m_formatProperties; }
     VkFormatProperties& vkHandle() { return m_formatProperties; }
@@ -2490,8 +2519,11 @@ namespace vk
   {
   public:
     const ImageAspectFlags& aspectMask() const { return reinterpret_cast<const ImageAspectFlags&>( m_sparseImageFormatProperties.aspectMask ); }
+    SparseImageFormatProperties& aspectMask(ImageAspectFlags aspectMask){ m_sparseImageFormatProperties.aspectMask = static_cast<VkImageAspectFlags>( aspectMask ); return *this; }
     const Extent3D& imageGranularity() const { return reinterpret_cast<const Extent3D&>( m_sparseImageFormatProperties.imageGranularity ); }
+    SparseImageFormatProperties& imageGranularity(Extent3D imageGranularity){ m_sparseImageFormatProperties.imageGranularity = static_cast<VkExtent3D>( imageGranularity ); return *this; }
     const SparseImageFormatFlags& flags() const { return reinterpret_cast<const SparseImageFormatFlags&>( m_sparseImageFormatProperties.flags ); }
+    SparseImageFormatProperties& flags(SparseImageFormatFlags flags){ m_sparseImageFormatProperties.flags = static_cast<VkSparseImageFormatFlags>( flags ); return *this; }
     operator VkSparseImageFormatProperties&() { return m_sparseImageFormatProperties; }
     operator const VkSparseImageFormatProperties&() const { return m_sparseImageFormatProperties; }
     VkSparseImageFormatProperties& vkHandle() { return m_sparseImageFormatProperties; }
@@ -2505,10 +2537,15 @@ namespace vk
   {
   public:
     const SparseImageFormatProperties& formatProperties() const { return reinterpret_cast<const SparseImageFormatProperties&>( m_sparseImageMemoryRequirements.formatProperties ); }
+    SparseImageMemoryRequirements& formatProperties(SparseImageFormatProperties formatProperties){ m_sparseImageMemoryRequirements.formatProperties = static_cast<VkSparseImageFormatProperties>( formatProperties ); return *this; }
     const uint32_t& imageMipTailFirstLod() const { return m_sparseImageMemoryRequirements.imageMipTailFirstLod; }
+    SparseImageMemoryRequirements& imageMipTailFirstLod(uint32_t imageMipTailFirstLod){ m_sparseImageMemoryRequirements.imageMipTailFirstLod = imageMipTailFirstLod; return *this; }
     const DeviceSize& imageMipTailSize() const { return m_sparseImageMemoryRequirements.imageMipTailSize; }
+    SparseImageMemoryRequirements& imageMipTailSize(DeviceSize imageMipTailSize){ m_sparseImageMemoryRequirements.imageMipTailSize = imageMipTailSize; return *this; }
     const DeviceSize& imageMipTailOffset() const { return m_sparseImageMemoryRequirements.imageMipTailOffset; }
+    SparseImageMemoryRequirements& imageMipTailOffset(DeviceSize imageMipTailOffset){ m_sparseImageMemoryRequirements.imageMipTailOffset = imageMipTailOffset; return *this; }
     const DeviceSize& imageMipTailStride() const { return m_sparseImageMemoryRequirements.imageMipTailStride; }
+    SparseImageMemoryRequirements& imageMipTailStride(DeviceSize imageMipTailStride){ m_sparseImageMemoryRequirements.imageMipTailStride = imageMipTailStride; return *this; }
     operator VkSparseImageMemoryRequirements&() { return m_sparseImageMemoryRequirements; }
     operator const VkSparseImageMemoryRequirements&() const { return m_sparseImageMemoryRequirements; }
     VkSparseImageMemoryRequirements& vkHandle() { return m_sparseImageMemoryRequirements; }
@@ -2748,10 +2785,15 @@ namespace vk
   {
   public:
     const Extent3D& maxExtent() const { return reinterpret_cast<const Extent3D&>( m_imageFormatProperties.maxExtent ); }
+    ImageFormatProperties& maxExtent(Extent3D maxExtent){ m_imageFormatProperties.maxExtent = static_cast<VkExtent3D>( maxExtent ); return *this; }
     const uint32_t& maxMipLevels() const { return m_imageFormatProperties.maxMipLevels; }
+    ImageFormatProperties& maxMipLevels(uint32_t maxMipLevels){ m_imageFormatProperties.maxMipLevels = maxMipLevels; return *this; }
     const uint32_t& maxArrayLayers() const { return m_imageFormatProperties.maxArrayLayers; }
+    ImageFormatProperties& maxArrayLayers(uint32_t maxArrayLayers){ m_imageFormatProperties.maxArrayLayers = maxArrayLayers; return *this; }
     const SampleCountFlags& sampleCounts() const { return reinterpret_cast<const SampleCountFlags&>( m_imageFormatProperties.sampleCounts ); }
+    ImageFormatProperties& sampleCounts(SampleCountFlags sampleCounts){ m_imageFormatProperties.sampleCounts = static_cast<VkSampleCountFlags>( sampleCounts ); return *this; }
     const DeviceSize& maxResourceSize() const { return m_imageFormatProperties.maxResourceSize; }
+    ImageFormatProperties& maxResourceSize(DeviceSize maxResourceSize){ m_imageFormatProperties.maxResourceSize = maxResourceSize; return *this; }
     operator VkImageFormatProperties&() { return m_imageFormatProperties; }
     operator const VkImageFormatProperties&() const { return m_imageFormatProperties; }
     VkImageFormatProperties& vkHandle() { return m_imageFormatProperties; }
@@ -2902,111 +2944,217 @@ namespace vk
   {
   public:
     const uint32_t& maxImageDimension1D() const { return m_physicalDeviceLimits.maxImageDimension1D; }
+    PhysicalDeviceLimits& maxImageDimension1D(uint32_t maxImageDimension1D){ m_physicalDeviceLimits.maxImageDimension1D = maxImageDimension1D; return *this; }
     const uint32_t& maxImageDimension2D() const { return m_physicalDeviceLimits.maxImageDimension2D; }
+    PhysicalDeviceLimits& maxImageDimension2D(uint32_t maxImageDimension2D){ m_physicalDeviceLimits.maxImageDimension2D = maxImageDimension2D; return *this; }
     const uint32_t& maxImageDimension3D() const { return m_physicalDeviceLimits.maxImageDimension3D; }
+    PhysicalDeviceLimits& maxImageDimension3D(uint32_t maxImageDimension3D){ m_physicalDeviceLimits.maxImageDimension3D = maxImageDimension3D; return *this; }
     const uint32_t& maxImageDimensionCube() const { return m_physicalDeviceLimits.maxImageDimensionCube; }
+    PhysicalDeviceLimits& maxImageDimensionCube(uint32_t maxImageDimensionCube){ m_physicalDeviceLimits.maxImageDimensionCube = maxImageDimensionCube; return *this; }
     const uint32_t& maxImageArrayLayers() const { return m_physicalDeviceLimits.maxImageArrayLayers; }
+    PhysicalDeviceLimits& maxImageArrayLayers(uint32_t maxImageArrayLayers){ m_physicalDeviceLimits.maxImageArrayLayers = maxImageArrayLayers; return *this; }
     const uint32_t& maxTexelBufferElements() const { return m_physicalDeviceLimits.maxTexelBufferElements; }
+    PhysicalDeviceLimits& maxTexelBufferElements(uint32_t maxTexelBufferElements){ m_physicalDeviceLimits.maxTexelBufferElements = maxTexelBufferElements; return *this; }
     const uint32_t& maxUniformBufferRange() const { return m_physicalDeviceLimits.maxUniformBufferRange; }
+    PhysicalDeviceLimits& maxUniformBufferRange(uint32_t maxUniformBufferRange){ m_physicalDeviceLimits.maxUniformBufferRange = maxUniformBufferRange; return *this; }
     const uint32_t& maxStorageBufferRange() const { return m_physicalDeviceLimits.maxStorageBufferRange; }
+    PhysicalDeviceLimits& maxStorageBufferRange(uint32_t maxStorageBufferRange){ m_physicalDeviceLimits.maxStorageBufferRange = maxStorageBufferRange; return *this; }
     const uint32_t& maxPushConstantsSize() const { return m_physicalDeviceLimits.maxPushConstantsSize; }
+    PhysicalDeviceLimits& maxPushConstantsSize(uint32_t maxPushConstantsSize){ m_physicalDeviceLimits.maxPushConstantsSize = maxPushConstantsSize; return *this; }
     const uint32_t& maxMemoryAllocationCount() const { return m_physicalDeviceLimits.maxMemoryAllocationCount; }
+    PhysicalDeviceLimits& maxMemoryAllocationCount(uint32_t maxMemoryAllocationCount){ m_physicalDeviceLimits.maxMemoryAllocationCount = maxMemoryAllocationCount; return *this; }
     const uint32_t& maxSamplerAllocationCount() const { return m_physicalDeviceLimits.maxSamplerAllocationCount; }
+    PhysicalDeviceLimits& maxSamplerAllocationCount(uint32_t maxSamplerAllocationCount){ m_physicalDeviceLimits.maxSamplerAllocationCount = maxSamplerAllocationCount; return *this; }
     const DeviceSize& bufferImageGranularity() const { return m_physicalDeviceLimits.bufferImageGranularity; }
+    PhysicalDeviceLimits& bufferImageGranularity(DeviceSize bufferImageGranularity){ m_physicalDeviceLimits.bufferImageGranularity = bufferImageGranularity; return *this; }
     const DeviceSize& sparseAddressSpaceSize() const { return m_physicalDeviceLimits.sparseAddressSpaceSize; }
+    PhysicalDeviceLimits& sparseAddressSpaceSize(DeviceSize sparseAddressSpaceSize){ m_physicalDeviceLimits.sparseAddressSpaceSize = sparseAddressSpaceSize; return *this; }
     const uint32_t& maxBoundDescriptorSets() const { return m_physicalDeviceLimits.maxBoundDescriptorSets; }
+    PhysicalDeviceLimits& maxBoundDescriptorSets(uint32_t maxBoundDescriptorSets){ m_physicalDeviceLimits.maxBoundDescriptorSets = maxBoundDescriptorSets; return *this; }
     const uint32_t& maxPerStageDescriptorSamplers() const { return m_physicalDeviceLimits.maxPerStageDescriptorSamplers; }
+    PhysicalDeviceLimits& maxPerStageDescriptorSamplers(uint32_t maxPerStageDescriptorSamplers){ m_physicalDeviceLimits.maxPerStageDescriptorSamplers = maxPerStageDescriptorSamplers; return *this; }
     const uint32_t& maxPerStageDescriptorUniformBuffers() const { return m_physicalDeviceLimits.maxPerStageDescriptorUniformBuffers; }
+    PhysicalDeviceLimits& maxPerStageDescriptorUniformBuffers(uint32_t maxPerStageDescriptorUniformBuffers){ m_physicalDeviceLimits.maxPerStageDescriptorUniformBuffers = maxPerStageDescriptorUniformBuffers; return *this; }
     const uint32_t& maxPerStageDescriptorStorageBuffers() const { return m_physicalDeviceLimits.maxPerStageDescriptorStorageBuffers; }
+    PhysicalDeviceLimits& maxPerStageDescriptorStorageBuffers(uint32_t maxPerStageDescriptorStorageBuffers){ m_physicalDeviceLimits.maxPerStageDescriptorStorageBuffers = maxPerStageDescriptorStorageBuffers; return *this; }
     const uint32_t& maxPerStageDescriptorSampledImages() const { return m_physicalDeviceLimits.maxPerStageDescriptorSampledImages; }
+    PhysicalDeviceLimits& maxPerStageDescriptorSampledImages(uint32_t maxPerStageDescriptorSampledImages){ m_physicalDeviceLimits.maxPerStageDescriptorSampledImages = maxPerStageDescriptorSampledImages; return *this; }
     const uint32_t& maxPerStageDescriptorStorageImages() const { return m_physicalDeviceLimits.maxPerStageDescriptorStorageImages; }
+    PhysicalDeviceLimits& maxPerStageDescriptorStorageImages(uint32_t maxPerStageDescriptorStorageImages){ m_physicalDeviceLimits.maxPerStageDescriptorStorageImages = maxPerStageDescriptorStorageImages; return *this; }
     const uint32_t& maxPerStageDescriptorInputAttachments() const { return m_physicalDeviceLimits.maxPerStageDescriptorInputAttachments; }
+    PhysicalDeviceLimits& maxPerStageDescriptorInputAttachments(uint32_t maxPerStageDescriptorInputAttachments){ m_physicalDeviceLimits.maxPerStageDescriptorInputAttachments = maxPerStageDescriptorInputAttachments; return *this; }
     const uint32_t& maxPerStageResources() const { return m_physicalDeviceLimits.maxPerStageResources; }
+    PhysicalDeviceLimits& maxPerStageResources(uint32_t maxPerStageResources){ m_physicalDeviceLimits.maxPerStageResources = maxPerStageResources; return *this; }
     const uint32_t& maxDescriptorSetSamplers() const { return m_physicalDeviceLimits.maxDescriptorSetSamplers; }
+    PhysicalDeviceLimits& maxDescriptorSetSamplers(uint32_t maxDescriptorSetSamplers){ m_physicalDeviceLimits.maxDescriptorSetSamplers = maxDescriptorSetSamplers; return *this; }
     const uint32_t& maxDescriptorSetUniformBuffers() const { return m_physicalDeviceLimits.maxDescriptorSetUniformBuffers; }
+    PhysicalDeviceLimits& maxDescriptorSetUniformBuffers(uint32_t maxDescriptorSetUniformBuffers){ m_physicalDeviceLimits.maxDescriptorSetUniformBuffers = maxDescriptorSetUniformBuffers; return *this; }
     const uint32_t& maxDescriptorSetUniformBuffersDynamic() const { return m_physicalDeviceLimits.maxDescriptorSetUniformBuffersDynamic; }
+    PhysicalDeviceLimits& maxDescriptorSetUniformBuffersDynamic(uint32_t maxDescriptorSetUniformBuffersDynamic){ m_physicalDeviceLimits.maxDescriptorSetUniformBuffersDynamic = maxDescriptorSetUniformBuffersDynamic; return *this; }
     const uint32_t& maxDescriptorSetStorageBuffers() const { return m_physicalDeviceLimits.maxDescriptorSetStorageBuffers; }
+    PhysicalDeviceLimits& maxDescriptorSetStorageBuffers(uint32_t maxDescriptorSetStorageBuffers){ m_physicalDeviceLimits.maxDescriptorSetStorageBuffers = maxDescriptorSetStorageBuffers; return *this; }
     const uint32_t& maxDescriptorSetStorageBuffersDynamic() const { return m_physicalDeviceLimits.maxDescriptorSetStorageBuffersDynamic; }
+    PhysicalDeviceLimits& maxDescriptorSetStorageBuffersDynamic(uint32_t maxDescriptorSetStorageBuffersDynamic){ m_physicalDeviceLimits.maxDescriptorSetStorageBuffersDynamic = maxDescriptorSetStorageBuffersDynamic; return *this; }
     const uint32_t& maxDescriptorSetSampledImages() const { return m_physicalDeviceLimits.maxDescriptorSetSampledImages; }
+    PhysicalDeviceLimits& maxDescriptorSetSampledImages(uint32_t maxDescriptorSetSampledImages){ m_physicalDeviceLimits.maxDescriptorSetSampledImages = maxDescriptorSetSampledImages; return *this; }
     const uint32_t& maxDescriptorSetStorageImages() const { return m_physicalDeviceLimits.maxDescriptorSetStorageImages; }
+    PhysicalDeviceLimits& maxDescriptorSetStorageImages(uint32_t maxDescriptorSetStorageImages){ m_physicalDeviceLimits.maxDescriptorSetStorageImages = maxDescriptorSetStorageImages; return *this; }
     const uint32_t& maxDescriptorSetInputAttachments() const { return m_physicalDeviceLimits.maxDescriptorSetInputAttachments; }
+    PhysicalDeviceLimits& maxDescriptorSetInputAttachments(uint32_t maxDescriptorSetInputAttachments){ m_physicalDeviceLimits.maxDescriptorSetInputAttachments = maxDescriptorSetInputAttachments; return *this; }
     const uint32_t& maxVertexInputAttributes() const { return m_physicalDeviceLimits.maxVertexInputAttributes; }
+    PhysicalDeviceLimits& maxVertexInputAttributes(uint32_t maxVertexInputAttributes){ m_physicalDeviceLimits.maxVertexInputAttributes = maxVertexInputAttributes; return *this; }
     const uint32_t& maxVertexInputBindings() const { return m_physicalDeviceLimits.maxVertexInputBindings; }
+    PhysicalDeviceLimits& maxVertexInputBindings(uint32_t maxVertexInputBindings){ m_physicalDeviceLimits.maxVertexInputBindings = maxVertexInputBindings; return *this; }
     const uint32_t& maxVertexInputAttributeOffset() const { return m_physicalDeviceLimits.maxVertexInputAttributeOffset; }
+    PhysicalDeviceLimits& maxVertexInputAttributeOffset(uint32_t maxVertexInputAttributeOffset){ m_physicalDeviceLimits.maxVertexInputAttributeOffset = maxVertexInputAttributeOffset; return *this; }
     const uint32_t& maxVertexInputBindingStride() const { return m_physicalDeviceLimits.maxVertexInputBindingStride; }
+    PhysicalDeviceLimits& maxVertexInputBindingStride(uint32_t maxVertexInputBindingStride){ m_physicalDeviceLimits.maxVertexInputBindingStride = maxVertexInputBindingStride; return *this; }
     const uint32_t& maxVertexOutputComponents() const { return m_physicalDeviceLimits.maxVertexOutputComponents; }
+    PhysicalDeviceLimits& maxVertexOutputComponents(uint32_t maxVertexOutputComponents){ m_physicalDeviceLimits.maxVertexOutputComponents = maxVertexOutputComponents; return *this; }
     const uint32_t& maxTessellationGenerationLevel() const { return m_physicalDeviceLimits.maxTessellationGenerationLevel; }
+    PhysicalDeviceLimits& maxTessellationGenerationLevel(uint32_t maxTessellationGenerationLevel){ m_physicalDeviceLimits.maxTessellationGenerationLevel = maxTessellationGenerationLevel; return *this; }
     const uint32_t& maxTessellationPatchSize() const { return m_physicalDeviceLimits.maxTessellationPatchSize; }
+    PhysicalDeviceLimits& maxTessellationPatchSize(uint32_t maxTessellationPatchSize){ m_physicalDeviceLimits.maxTessellationPatchSize = maxTessellationPatchSize; return *this; }
     const uint32_t& maxTessellationControlPerVertexInputComponents() const { return m_physicalDeviceLimits.maxTessellationControlPerVertexInputComponents; }
+    PhysicalDeviceLimits& maxTessellationControlPerVertexInputComponents(uint32_t maxTessellationControlPerVertexInputComponents){ m_physicalDeviceLimits.maxTessellationControlPerVertexInputComponents = maxTessellationControlPerVertexInputComponents; return *this; }
     const uint32_t& maxTessellationControlPerVertexOutputComponents() const { return m_physicalDeviceLimits.maxTessellationControlPerVertexOutputComponents; }
+    PhysicalDeviceLimits& maxTessellationControlPerVertexOutputComponents(uint32_t maxTessellationControlPerVertexOutputComponents){ m_physicalDeviceLimits.maxTessellationControlPerVertexOutputComponents = maxTessellationControlPerVertexOutputComponents; return *this; }
     const uint32_t& maxTessellationControlPerPatchOutputComponents() const { return m_physicalDeviceLimits.maxTessellationControlPerPatchOutputComponents; }
+    PhysicalDeviceLimits& maxTessellationControlPerPatchOutputComponents(uint32_t maxTessellationControlPerPatchOutputComponents){ m_physicalDeviceLimits.maxTessellationControlPerPatchOutputComponents = maxTessellationControlPerPatchOutputComponents; return *this; }
     const uint32_t& maxTessellationControlTotalOutputComponents() const { return m_physicalDeviceLimits.maxTessellationControlTotalOutputComponents; }
+    PhysicalDeviceLimits& maxTessellationControlTotalOutputComponents(uint32_t maxTessellationControlTotalOutputComponents){ m_physicalDeviceLimits.maxTessellationControlTotalOutputComponents = maxTessellationControlTotalOutputComponents; return *this; }
     const uint32_t& maxTessellationEvaluationInputComponents() const { return m_physicalDeviceLimits.maxTessellationEvaluationInputComponents; }
+    PhysicalDeviceLimits& maxTessellationEvaluationInputComponents(uint32_t maxTessellationEvaluationInputComponents){ m_physicalDeviceLimits.maxTessellationEvaluationInputComponents = maxTessellationEvaluationInputComponents; return *this; }
     const uint32_t& maxTessellationEvaluationOutputComponents() const { return m_physicalDeviceLimits.maxTessellationEvaluationOutputComponents; }
+    PhysicalDeviceLimits& maxTessellationEvaluationOutputComponents(uint32_t maxTessellationEvaluationOutputComponents){ m_physicalDeviceLimits.maxTessellationEvaluationOutputComponents = maxTessellationEvaluationOutputComponents; return *this; }
     const uint32_t& maxGeometryShaderInvocations() const { return m_physicalDeviceLimits.maxGeometryShaderInvocations; }
+    PhysicalDeviceLimits& maxGeometryShaderInvocations(uint32_t maxGeometryShaderInvocations){ m_physicalDeviceLimits.maxGeometryShaderInvocations = maxGeometryShaderInvocations; return *this; }
     const uint32_t& maxGeometryInputComponents() const { return m_physicalDeviceLimits.maxGeometryInputComponents; }
+    PhysicalDeviceLimits& maxGeometryInputComponents(uint32_t maxGeometryInputComponents){ m_physicalDeviceLimits.maxGeometryInputComponents = maxGeometryInputComponents; return *this; }
     const uint32_t& maxGeometryOutputComponents() const { return m_physicalDeviceLimits.maxGeometryOutputComponents; }
+    PhysicalDeviceLimits& maxGeometryOutputComponents(uint32_t maxGeometryOutputComponents){ m_physicalDeviceLimits.maxGeometryOutputComponents = maxGeometryOutputComponents; return *this; }
     const uint32_t& maxGeometryOutputVertices() const { return m_physicalDeviceLimits.maxGeometryOutputVertices; }
+    PhysicalDeviceLimits& maxGeometryOutputVertices(uint32_t maxGeometryOutputVertices){ m_physicalDeviceLimits.maxGeometryOutputVertices = maxGeometryOutputVertices; return *this; }
     const uint32_t& maxGeometryTotalOutputComponents() const { return m_physicalDeviceLimits.maxGeometryTotalOutputComponents; }
+    PhysicalDeviceLimits& maxGeometryTotalOutputComponents(uint32_t maxGeometryTotalOutputComponents){ m_physicalDeviceLimits.maxGeometryTotalOutputComponents = maxGeometryTotalOutputComponents; return *this; }
     const uint32_t& maxFragmentInputComponents() const { return m_physicalDeviceLimits.maxFragmentInputComponents; }
+    PhysicalDeviceLimits& maxFragmentInputComponents(uint32_t maxFragmentInputComponents){ m_physicalDeviceLimits.maxFragmentInputComponents = maxFragmentInputComponents; return *this; }
     const uint32_t& maxFragmentOutputAttachments() const { return m_physicalDeviceLimits.maxFragmentOutputAttachments; }
+    PhysicalDeviceLimits& maxFragmentOutputAttachments(uint32_t maxFragmentOutputAttachments){ m_physicalDeviceLimits.maxFragmentOutputAttachments = maxFragmentOutputAttachments; return *this; }
     const uint32_t& maxFragmentDualSrcAttachments() const { return m_physicalDeviceLimits.maxFragmentDualSrcAttachments; }
+    PhysicalDeviceLimits& maxFragmentDualSrcAttachments(uint32_t maxFragmentDualSrcAttachments){ m_physicalDeviceLimits.maxFragmentDualSrcAttachments = maxFragmentDualSrcAttachments; return *this; }
     const uint32_t& maxFragmentCombinedOutputResources() const { return m_physicalDeviceLimits.maxFragmentCombinedOutputResources; }
+    PhysicalDeviceLimits& maxFragmentCombinedOutputResources(uint32_t maxFragmentCombinedOutputResources){ m_physicalDeviceLimits.maxFragmentCombinedOutputResources = maxFragmentCombinedOutputResources; return *this; }
     const uint32_t& maxComputeSharedMemorySize() const { return m_physicalDeviceLimits.maxComputeSharedMemorySize; }
+    PhysicalDeviceLimits& maxComputeSharedMemorySize(uint32_t maxComputeSharedMemorySize){ m_physicalDeviceLimits.maxComputeSharedMemorySize = maxComputeSharedMemorySize; return *this; }
     const uint32_t* maxComputeWorkGroupCount() const { return reinterpret_cast<const uint32_t*>( m_physicalDeviceLimits.maxComputeWorkGroupCount ); }
+    PhysicalDeviceLimits& maxComputeWorkGroupCount(std::array<uint32_t,3> maxComputeWorkGroupCount){ memcpy(&m_physicalDeviceLimits.maxComputeWorkGroupCount, maxComputeWorkGroupCount.data(), 3 * sizeof(uint32_t)); return *this; }
     const uint32_t& maxComputeWorkGroupInvocations() const { return m_physicalDeviceLimits.maxComputeWorkGroupInvocations; }
+    PhysicalDeviceLimits& maxComputeWorkGroupInvocations(uint32_t maxComputeWorkGroupInvocations){ m_physicalDeviceLimits.maxComputeWorkGroupInvocations = maxComputeWorkGroupInvocations; return *this; }
     const uint32_t* maxComputeWorkGroupSize() const { return reinterpret_cast<const uint32_t*>( m_physicalDeviceLimits.maxComputeWorkGroupSize ); }
+    PhysicalDeviceLimits& maxComputeWorkGroupSize(std::array<uint32_t,3> maxComputeWorkGroupSize){ memcpy(&m_physicalDeviceLimits.maxComputeWorkGroupSize, maxComputeWorkGroupSize.data(), 3 * sizeof(uint32_t)); return *this; }
     const uint32_t& subPixelPrecisionBits() const { return m_physicalDeviceLimits.subPixelPrecisionBits; }
+    PhysicalDeviceLimits& subPixelPrecisionBits(uint32_t subPixelPrecisionBits){ m_physicalDeviceLimits.subPixelPrecisionBits = subPixelPrecisionBits; return *this; }
     const uint32_t& subTexelPrecisionBits() const { return m_physicalDeviceLimits.subTexelPrecisionBits; }
+    PhysicalDeviceLimits& subTexelPrecisionBits(uint32_t subTexelPrecisionBits){ m_physicalDeviceLimits.subTexelPrecisionBits = subTexelPrecisionBits; return *this; }
     const uint32_t& mipmapPrecisionBits() const { return m_physicalDeviceLimits.mipmapPrecisionBits; }
+    PhysicalDeviceLimits& mipmapPrecisionBits(uint32_t mipmapPrecisionBits){ m_physicalDeviceLimits.mipmapPrecisionBits = mipmapPrecisionBits; return *this; }
     const uint32_t& maxDrawIndexedIndexValue() const { return m_physicalDeviceLimits.maxDrawIndexedIndexValue; }
+    PhysicalDeviceLimits& maxDrawIndexedIndexValue(uint32_t maxDrawIndexedIndexValue){ m_physicalDeviceLimits.maxDrawIndexedIndexValue = maxDrawIndexedIndexValue; return *this; }
     const uint32_t& maxDrawIndirectCount() const { return m_physicalDeviceLimits.maxDrawIndirectCount; }
+    PhysicalDeviceLimits& maxDrawIndirectCount(uint32_t maxDrawIndirectCount){ m_physicalDeviceLimits.maxDrawIndirectCount = maxDrawIndirectCount; return *this; }
     const float& maxSamplerLodBias() const { return m_physicalDeviceLimits.maxSamplerLodBias; }
+    PhysicalDeviceLimits& maxSamplerLodBias(float maxSamplerLodBias){ m_physicalDeviceLimits.maxSamplerLodBias = maxSamplerLodBias; return *this; }
     const float& maxSamplerAnisotropy() const { return m_physicalDeviceLimits.maxSamplerAnisotropy; }
+    PhysicalDeviceLimits& maxSamplerAnisotropy(float maxSamplerAnisotropy){ m_physicalDeviceLimits.maxSamplerAnisotropy = maxSamplerAnisotropy; return *this; }
     const uint32_t& maxViewports() const { return m_physicalDeviceLimits.maxViewports; }
+    PhysicalDeviceLimits& maxViewports(uint32_t maxViewports){ m_physicalDeviceLimits.maxViewports = maxViewports; return *this; }
     const uint32_t* maxViewportDimensions() const { return reinterpret_cast<const uint32_t*>( m_physicalDeviceLimits.maxViewportDimensions ); }
+    PhysicalDeviceLimits& maxViewportDimensions(std::array<uint32_t,2> maxViewportDimensions){ memcpy(&m_physicalDeviceLimits.maxViewportDimensions, maxViewportDimensions.data(), 2 * sizeof(uint32_t)); return *this; }
     const float* viewportBoundsRange() const { return reinterpret_cast<const float*>( m_physicalDeviceLimits.viewportBoundsRange ); }
+    PhysicalDeviceLimits& viewportBoundsRange(std::array<float,2> viewportBoundsRange){ memcpy(&m_physicalDeviceLimits.viewportBoundsRange, viewportBoundsRange.data(), 2 * sizeof(float)); return *this; }
     const uint32_t& viewportSubPixelBits() const { return m_physicalDeviceLimits.viewportSubPixelBits; }
+    PhysicalDeviceLimits& viewportSubPixelBits(uint32_t viewportSubPixelBits){ m_physicalDeviceLimits.viewportSubPixelBits = viewportSubPixelBits; return *this; }
     const size_t& minMemoryMapAlignment() const { return m_physicalDeviceLimits.minMemoryMapAlignment; }
+    PhysicalDeviceLimits& minMemoryMapAlignment(size_t minMemoryMapAlignment){ m_physicalDeviceLimits.minMemoryMapAlignment = minMemoryMapAlignment; return *this; }
     const DeviceSize& minTexelBufferOffsetAlignment() const { return m_physicalDeviceLimits.minTexelBufferOffsetAlignment; }
+    PhysicalDeviceLimits& minTexelBufferOffsetAlignment(DeviceSize minTexelBufferOffsetAlignment){ m_physicalDeviceLimits.minTexelBufferOffsetAlignment = minTexelBufferOffsetAlignment; return *this; }
     const DeviceSize& minUniformBufferOffsetAlignment() const { return m_physicalDeviceLimits.minUniformBufferOffsetAlignment; }
+    PhysicalDeviceLimits& minUniformBufferOffsetAlignment(DeviceSize minUniformBufferOffsetAlignment){ m_physicalDeviceLimits.minUniformBufferOffsetAlignment = minUniformBufferOffsetAlignment; return *this; }
     const DeviceSize& minStorageBufferOffsetAlignment() const { return m_physicalDeviceLimits.minStorageBufferOffsetAlignment; }
+    PhysicalDeviceLimits& minStorageBufferOffsetAlignment(DeviceSize minStorageBufferOffsetAlignment){ m_physicalDeviceLimits.minStorageBufferOffsetAlignment = minStorageBufferOffsetAlignment; return *this; }
     const int32_t& minTexelOffset() const { return m_physicalDeviceLimits.minTexelOffset; }
+    PhysicalDeviceLimits& minTexelOffset(int32_t minTexelOffset){ m_physicalDeviceLimits.minTexelOffset = minTexelOffset; return *this; }
     const uint32_t& maxTexelOffset() const { return m_physicalDeviceLimits.maxTexelOffset; }
+    PhysicalDeviceLimits& maxTexelOffset(uint32_t maxTexelOffset){ m_physicalDeviceLimits.maxTexelOffset = maxTexelOffset; return *this; }
     const int32_t& minTexelGatherOffset() const { return m_physicalDeviceLimits.minTexelGatherOffset; }
+    PhysicalDeviceLimits& minTexelGatherOffset(int32_t minTexelGatherOffset){ m_physicalDeviceLimits.minTexelGatherOffset = minTexelGatherOffset; return *this; }
     const uint32_t& maxTexelGatherOffset() const { return m_physicalDeviceLimits.maxTexelGatherOffset; }
+    PhysicalDeviceLimits& maxTexelGatherOffset(uint32_t maxTexelGatherOffset){ m_physicalDeviceLimits.maxTexelGatherOffset = maxTexelGatherOffset; return *this; }
     const float& minInterpolationOffset() const { return m_physicalDeviceLimits.minInterpolationOffset; }
+    PhysicalDeviceLimits& minInterpolationOffset(float minInterpolationOffset){ m_physicalDeviceLimits.minInterpolationOffset = minInterpolationOffset; return *this; }
     const float& maxInterpolationOffset() const { return m_physicalDeviceLimits.maxInterpolationOffset; }
+    PhysicalDeviceLimits& maxInterpolationOffset(float maxInterpolationOffset){ m_physicalDeviceLimits.maxInterpolationOffset = maxInterpolationOffset; return *this; }
     const uint32_t& subPixelInterpolationOffsetBits() const { return m_physicalDeviceLimits.subPixelInterpolationOffsetBits; }
+    PhysicalDeviceLimits& subPixelInterpolationOffsetBits(uint32_t subPixelInterpolationOffsetBits){ m_physicalDeviceLimits.subPixelInterpolationOffsetBits = subPixelInterpolationOffsetBits; return *this; }
     const uint32_t& maxFramebufferWidth() const { return m_physicalDeviceLimits.maxFramebufferWidth; }
+    PhysicalDeviceLimits& maxFramebufferWidth(uint32_t maxFramebufferWidth){ m_physicalDeviceLimits.maxFramebufferWidth = maxFramebufferWidth; return *this; }
     const uint32_t& maxFramebufferHeight() const { return m_physicalDeviceLimits.maxFramebufferHeight; }
+    PhysicalDeviceLimits& maxFramebufferHeight(uint32_t maxFramebufferHeight){ m_physicalDeviceLimits.maxFramebufferHeight = maxFramebufferHeight; return *this; }
     const uint32_t& maxFramebufferLayers() const { return m_physicalDeviceLimits.maxFramebufferLayers; }
+    PhysicalDeviceLimits& maxFramebufferLayers(uint32_t maxFramebufferLayers){ m_physicalDeviceLimits.maxFramebufferLayers = maxFramebufferLayers; return *this; }
     const SampleCountFlags& framebufferColorSampleCounts() const { return reinterpret_cast<const SampleCountFlags&>( m_physicalDeviceLimits.framebufferColorSampleCounts ); }
+    PhysicalDeviceLimits& framebufferColorSampleCounts(SampleCountFlags framebufferColorSampleCounts){ m_physicalDeviceLimits.framebufferColorSampleCounts = static_cast<VkSampleCountFlags>( framebufferColorSampleCounts ); return *this; }
     const SampleCountFlags& framebufferDepthSampleCounts() const { return reinterpret_cast<const SampleCountFlags&>( m_physicalDeviceLimits.framebufferDepthSampleCounts ); }
+    PhysicalDeviceLimits& framebufferDepthSampleCounts(SampleCountFlags framebufferDepthSampleCounts){ m_physicalDeviceLimits.framebufferDepthSampleCounts = static_cast<VkSampleCountFlags>( framebufferDepthSampleCounts ); return *this; }
     const SampleCountFlags& framebufferStencilSampleCounts() const { return reinterpret_cast<const SampleCountFlags&>( m_physicalDeviceLimits.framebufferStencilSampleCounts ); }
+    PhysicalDeviceLimits& framebufferStencilSampleCounts(SampleCountFlags framebufferStencilSampleCounts){ m_physicalDeviceLimits.framebufferStencilSampleCounts = static_cast<VkSampleCountFlags>( framebufferStencilSampleCounts ); return *this; }
     const SampleCountFlags& framebufferNoAttachmentsSampleCounts() const { return reinterpret_cast<const SampleCountFlags&>( m_physicalDeviceLimits.framebufferNoAttachmentsSampleCounts ); }
+    PhysicalDeviceLimits& framebufferNoAttachmentsSampleCounts(SampleCountFlags framebufferNoAttachmentsSampleCounts){ m_physicalDeviceLimits.framebufferNoAttachmentsSampleCounts = static_cast<VkSampleCountFlags>( framebufferNoAttachmentsSampleCounts ); return *this; }
     const uint32_t& maxColorAttachments() const { return m_physicalDeviceLimits.maxColorAttachments; }
+    PhysicalDeviceLimits& maxColorAttachments(uint32_t maxColorAttachments){ m_physicalDeviceLimits.maxColorAttachments = maxColorAttachments; return *this; }
     const SampleCountFlags& sampledImageColorSampleCounts() const { return reinterpret_cast<const SampleCountFlags&>( m_physicalDeviceLimits.sampledImageColorSampleCounts ); }
+    PhysicalDeviceLimits& sampledImageColorSampleCounts(SampleCountFlags sampledImageColorSampleCounts){ m_physicalDeviceLimits.sampledImageColorSampleCounts = static_cast<VkSampleCountFlags>( sampledImageColorSampleCounts ); return *this; }
     const SampleCountFlags& sampledImageIntegerSampleCounts() const { return reinterpret_cast<const SampleCountFlags&>( m_physicalDeviceLimits.sampledImageIntegerSampleCounts ); }
+    PhysicalDeviceLimits& sampledImageIntegerSampleCounts(SampleCountFlags sampledImageIntegerSampleCounts){ m_physicalDeviceLimits.sampledImageIntegerSampleCounts = static_cast<VkSampleCountFlags>( sampledImageIntegerSampleCounts ); return *this; }
     const SampleCountFlags& sampledImageDepthSampleCounts() const { return reinterpret_cast<const SampleCountFlags&>( m_physicalDeviceLimits.sampledImageDepthSampleCounts ); }
+    PhysicalDeviceLimits& sampledImageDepthSampleCounts(SampleCountFlags sampledImageDepthSampleCounts){ m_physicalDeviceLimits.sampledImageDepthSampleCounts = static_cast<VkSampleCountFlags>( sampledImageDepthSampleCounts ); return *this; }
     const SampleCountFlags& sampledImageStencilSampleCounts() const { return reinterpret_cast<const SampleCountFlags&>( m_physicalDeviceLimits.sampledImageStencilSampleCounts ); }
+    PhysicalDeviceLimits& sampledImageStencilSampleCounts(SampleCountFlags sampledImageStencilSampleCounts){ m_physicalDeviceLimits.sampledImageStencilSampleCounts = static_cast<VkSampleCountFlags>( sampledImageStencilSampleCounts ); return *this; }
     const SampleCountFlags& storageImageSampleCounts() const { return reinterpret_cast<const SampleCountFlags&>( m_physicalDeviceLimits.storageImageSampleCounts ); }
+    PhysicalDeviceLimits& storageImageSampleCounts(SampleCountFlags storageImageSampleCounts){ m_physicalDeviceLimits.storageImageSampleCounts = static_cast<VkSampleCountFlags>( storageImageSampleCounts ); return *this; }
     const uint32_t& maxSampleMaskWords() const { return m_physicalDeviceLimits.maxSampleMaskWords; }
+    PhysicalDeviceLimits& maxSampleMaskWords(uint32_t maxSampleMaskWords){ m_physicalDeviceLimits.maxSampleMaskWords = maxSampleMaskWords; return *this; }
     const Bool32& timestampComputeAndGraphics() const { return m_physicalDeviceLimits.timestampComputeAndGraphics; }
+    PhysicalDeviceLimits& timestampComputeAndGraphics(Bool32 timestampComputeAndGraphics){ m_physicalDeviceLimits.timestampComputeAndGraphics = timestampComputeAndGraphics; return *this; }
     const float& timestampPeriod() const { return m_physicalDeviceLimits.timestampPeriod; }
+    PhysicalDeviceLimits& timestampPeriod(float timestampPeriod){ m_physicalDeviceLimits.timestampPeriod = timestampPeriod; return *this; }
     const uint32_t& maxClipDistances() const { return m_physicalDeviceLimits.maxClipDistances; }
+    PhysicalDeviceLimits& maxClipDistances(uint32_t maxClipDistances){ m_physicalDeviceLimits.maxClipDistances = maxClipDistances; return *this; }
     const uint32_t& maxCullDistances() const { return m_physicalDeviceLimits.maxCullDistances; }
+    PhysicalDeviceLimits& maxCullDistances(uint32_t maxCullDistances){ m_physicalDeviceLimits.maxCullDistances = maxCullDistances; return *this; }
     const uint32_t& maxCombinedClipAndCullDistances() const { return m_physicalDeviceLimits.maxCombinedClipAndCullDistances; }
+    PhysicalDeviceLimits& maxCombinedClipAndCullDistances(uint32_t maxCombinedClipAndCullDistances){ m_physicalDeviceLimits.maxCombinedClipAndCullDistances = maxCombinedClipAndCullDistances; return *this; }
     const uint32_t& discreteQueuePriorities() const { return m_physicalDeviceLimits.discreteQueuePriorities; }
+    PhysicalDeviceLimits& discreteQueuePriorities(uint32_t discreteQueuePriorities){ m_physicalDeviceLimits.discreteQueuePriorities = discreteQueuePriorities; return *this; }
     const float* pointSizeRange() const { return reinterpret_cast<const float*>( m_physicalDeviceLimits.pointSizeRange ); }
+    PhysicalDeviceLimits& pointSizeRange(std::array<float,2> pointSizeRange){ memcpy(&m_physicalDeviceLimits.pointSizeRange, pointSizeRange.data(), 2 * sizeof(float)); return *this; }
     const float* lineWidthRange() const { return reinterpret_cast<const float*>( m_physicalDeviceLimits.lineWidthRange ); }
+    PhysicalDeviceLimits& lineWidthRange(std::array<float,2> lineWidthRange){ memcpy(&m_physicalDeviceLimits.lineWidthRange, lineWidthRange.data(), 2 * sizeof(float)); return *this; }
     const float& pointSizeGranularity() const { return m_physicalDeviceLimits.pointSizeGranularity; }
+    PhysicalDeviceLimits& pointSizeGranularity(float pointSizeGranularity){ m_physicalDeviceLimits.pointSizeGranularity = pointSizeGranularity; return *this; }
     const float& lineWidthGranularity() const { return m_physicalDeviceLimits.lineWidthGranularity; }
+    PhysicalDeviceLimits& lineWidthGranularity(float lineWidthGranularity){ m_physicalDeviceLimits.lineWidthGranularity = lineWidthGranularity; return *this; }
     const Bool32& strictLines() const { return m_physicalDeviceLimits.strictLines; }
+    PhysicalDeviceLimits& strictLines(Bool32 strictLines){ m_physicalDeviceLimits.strictLines = strictLines; return *this; }
     const Bool32& standardSampleLocations() const { return m_physicalDeviceLimits.standardSampleLocations; }
+    PhysicalDeviceLimits& standardSampleLocations(Bool32 standardSampleLocations){ m_physicalDeviceLimits.standardSampleLocations = standardSampleLocations; return *this; }
     const DeviceSize& optimalBufferCopyOffsetAlignment() const { return m_physicalDeviceLimits.optimalBufferCopyOffsetAlignment; }
+    PhysicalDeviceLimits& optimalBufferCopyOffsetAlignment(DeviceSize optimalBufferCopyOffsetAlignment){ m_physicalDeviceLimits.optimalBufferCopyOffsetAlignment = optimalBufferCopyOffsetAlignment; return *this; }
     const DeviceSize& optimalBufferCopyRowPitchAlignment() const { return m_physicalDeviceLimits.optimalBufferCopyRowPitchAlignment; }
+    PhysicalDeviceLimits& optimalBufferCopyRowPitchAlignment(DeviceSize optimalBufferCopyRowPitchAlignment){ m_physicalDeviceLimits.optimalBufferCopyRowPitchAlignment = optimalBufferCopyRowPitchAlignment; return *this; }
     const DeviceSize& nonCoherentAtomSize() const { return m_physicalDeviceLimits.nonCoherentAtomSize; }
+    PhysicalDeviceLimits& nonCoherentAtomSize(DeviceSize nonCoherentAtomSize){ m_physicalDeviceLimits.nonCoherentAtomSize = nonCoherentAtomSize; return *this; }
     operator VkPhysicalDeviceLimits&() { return m_physicalDeviceLimits; }
     operator const VkPhysicalDeviceLimits&() const { return m_physicalDeviceLimits; }
     VkPhysicalDeviceLimits& vkHandle() { return m_physicalDeviceLimits; }
@@ -3020,14 +3168,23 @@ namespace vk
   {
   public:
     const uint32_t& apiVersion() const { return m_physicalDeviceProperties.apiVersion; }
+    PhysicalDeviceProperties& apiVersion(uint32_t apiVersion){ m_physicalDeviceProperties.apiVersion = apiVersion; return *this; }
     const uint32_t& driverVersion() const { return m_physicalDeviceProperties.driverVersion; }
+    PhysicalDeviceProperties& driverVersion(uint32_t driverVersion){ m_physicalDeviceProperties.driverVersion = driverVersion; return *this; }
     const uint32_t& vendorID() const { return m_physicalDeviceProperties.vendorID; }
+    PhysicalDeviceProperties& vendorID(uint32_t vendorID){ m_physicalDeviceProperties.vendorID = vendorID; return *this; }
     const uint32_t& deviceID() const { return m_physicalDeviceProperties.deviceID; }
+    PhysicalDeviceProperties& deviceID(uint32_t deviceID){ m_physicalDeviceProperties.deviceID = deviceID; return *this; }
     const PhysicalDeviceType& deviceType() const { return reinterpret_cast<const PhysicalDeviceType&>( m_physicalDeviceProperties.deviceType ); }
+    PhysicalDeviceProperties& deviceType(PhysicalDeviceType deviceType){ m_physicalDeviceProperties.deviceType = static_cast<VkPhysicalDeviceType>( deviceType ); return *this; }
     const char* deviceName() const { return reinterpret_cast<const char*>( m_physicalDeviceProperties.deviceName ); }
+    PhysicalDeviceProperties& deviceName(std::array<char,VK_MAX_PHYSICAL_DEVICE_NAME_SIZE> deviceName){ memcpy(&m_physicalDeviceProperties.deviceName, deviceName.data(), VK_MAX_PHYSICAL_DEVICE_NAME_SIZE * sizeof(char)); return *this; }
     const uint8_t* pipelineCacheUUID() const { return reinterpret_cast<const uint8_t*>( m_physicalDeviceProperties.pipelineCacheUUID ); }
+    PhysicalDeviceProperties& pipelineCacheUUID(std::array<uint8_t,VK_UUID_SIZE> pipelineCacheUUID){ memcpy(&m_physicalDeviceProperties.pipelineCacheUUID, pipelineCacheUUID.data(), VK_UUID_SIZE * sizeof(uint8_t)); return *this; }
     const PhysicalDeviceLimits& limits() const { return reinterpret_cast<const PhysicalDeviceLimits&>( m_physicalDeviceProperties.limits ); }
+    PhysicalDeviceProperties& limits(PhysicalDeviceLimits limits){ m_physicalDeviceProperties.limits = static_cast<VkPhysicalDeviceLimits>( limits ); return *this; }
     const PhysicalDeviceSparseProperties& sparseProperties() const { return reinterpret_cast<const PhysicalDeviceSparseProperties&>( m_physicalDeviceProperties.sparseProperties ); }
+    PhysicalDeviceProperties& sparseProperties(PhysicalDeviceSparseProperties sparseProperties){ m_physicalDeviceProperties.sparseProperties = static_cast<VkPhysicalDeviceSparseProperties>( sparseProperties ); return *this; }
     operator VkPhysicalDeviceProperties&() { return m_physicalDeviceProperties; }
     operator const VkPhysicalDeviceProperties&() const { return m_physicalDeviceProperties; }
     VkPhysicalDeviceProperties& vkHandle() { return m_physicalDeviceProperties; }

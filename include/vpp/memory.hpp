@@ -20,9 +20,8 @@ class DeviceMemory : public Resource
 public:
 	struct Allocation
 	{
-		std::size_t offset;
-		std::size_t size;
-		int type = 0;
+		std::size_t offset {0};
+		std::size_t size {0};
 	};
 
 	class Entry : public NonCopyable
@@ -31,11 +30,16 @@ public:
 		DeviceMemoryPtr memory_ {nullptr};
 		Allocation allocation_ {};
 
+	protected:
+		void free();
+
 	public:
+		Entry() = default;
 		Entry(DeviceMemoryPtr memory, const Allocation& alloc);
+		~Entry();
+
 		Entry(Entry&& other);
 		Entry& operator=(Entry&& other);
-		~Entry();
 
 		DeviceMemory& memory() const { return *memory_; };
 		std::size_t offset() const { return allocation_.offset; };
@@ -56,8 +60,8 @@ public:
 	DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryPropertyFlags flgs);
 	~DeviceMemory();
 
-	Allocation alloc(std::size_t size, std::size_t aligment, int type = 0);
-	Allocation allocSpecified(std::size_t offset, std::size_t size, int type = 0);
+	Allocation alloc(std::size_t size, std::size_t aligment);
+	Allocation allocSpecified(std::size_t offset, std::size_t size);
 	void free(const Allocation& alloc);
 
 	std::size_t biggestBlock() const; //the biggest (continuously) allocatable block.
@@ -77,13 +81,16 @@ protected:
 		vk::Buffer requestor;
 		vk::MemoryRequirements requirements;
 		DeviceMemory::Entry* entry {nullptr};
+		std::size_t offset {0}; //internal use in alloc
 	};
 
 	struct ImageRequirement
 	{
 		vk::Image requestor;
 		vk::MemoryRequirements requirements;
+		vk::ImageTiling tiling;
 		DeviceMemory::Entry* entry {nullptr};
+		std::size_t offset {0}; //internal use in alloc
 	};
 
 protected:
@@ -91,29 +98,34 @@ protected:
 	std::map<unsigned int, std::vector<ImageRequirement>> imageRequirements_;
 
 public:
-	DeviceMemoryAllocator(const Device& dev);
+	DeviceMemoryAllocator(const Device& dev, bool );
 	~DeviceMemoryAllocator();
 
 	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
 		DeviceMemory::Entry& entry);
-	void request(vk::Image requestor,  const vk::MemoryRequirements& reqs,
+	void request(vk::Image requestor,  const vk::MemoryRequirements& reqs, vk::ImageTiling tiling,
 		DeviceMemory::Entry& entry);
 
 	void allocate();
 };
 
 ///MemoryMap
-class MemoryMap : public Resource
+class MemoryMap : public NonCopyable
 {
 protected:
-	const DeviceMemory* memory_;
+	const DeviceMemory* memory_ {nullptr};
 	std::size_t offset_ {0};
 	const std::size_t size_ {0};
 	void* const ptr_ {nullptr};
 
 public:
 	MemoryMap(const DeviceMemory& memory, std::size_t offset, std::size_t size);
+	MemoryMap(const DeviceMemory& memory, const DeviceMemory::Allocation& alloc);
+	MemoryMap(const DeviceMemory::Entry& entry);
 	~MemoryMap();
+
+	MemoryMap(MemoryMap&& other);
+	MemoryMap& operator=(MemoryMap&& other);
 
 	vk::DeviceMemory vkMemory() const { return memory_->vkDeviceMemory(); }
 

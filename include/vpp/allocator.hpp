@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <cstdint>
 
 namespace vpp
 {
@@ -12,7 +13,6 @@ public:
 	using Size = std::size_t;
 	using Value = std::uint8_t;
 	using Pointer = void*;
-	using Buffer = std::vector<std::uint8_t>;
 
 protected:
 	struct Allocation

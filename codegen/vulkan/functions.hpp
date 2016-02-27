@@ -38,12 +38,13 @@
 #include "types.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
+#include "call.hpp"
 
 namespace vk
 {
   inline Result createInstance( const InstanceCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, Instance* pInstance )
   {
-    return static_cast<Result>( vkCreateInstance( reinterpret_cast<const VkInstanceCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pInstance ) );
+    return static_cast<Result>( VPP_CALL(vkCreateInstance( reinterpret_cast<const VkInstanceCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pInstance )) );
   }
 
   inline Result createInstance( const InstanceCreateInfo& createInfo, const AllocationCallbacks& allocator, Instance& instance )
@@ -63,7 +64,7 @@ namespace vk
 
   inline Result enumeratePhysicalDevices( Instance instance, uint32_t* pPhysicalDeviceCount, PhysicalDevice* pPhysicalDevices )
   {
-    return static_cast<Result>( vkEnumeratePhysicalDevices( instance, pPhysicalDeviceCount, pPhysicalDevices ) );
+    return static_cast<Result>( VPP_CALL(vkEnumeratePhysicalDevices( instance, pPhysicalDeviceCount, pPhysicalDevices )) );
   }
 
   inline Result enumeratePhysicalDevices( Instance instance, std::vector<PhysicalDevice> & physicalDevices )
@@ -154,7 +155,7 @@ namespace vk
 
   inline Result getPhysicalDeviceImageFormatProperties( PhysicalDevice physicalDevice, Format format, ImageType type, ImageTiling tiling, ImageUsageFlags usage, ImageCreateFlags flags, ImageFormatProperties* pImageFormatProperties )
   {
-    return static_cast<Result>( vkGetPhysicalDeviceImageFormatProperties( physicalDevice, static_cast<VkFormat>( format ), static_cast<VkImageType>( type ), static_cast<VkImageTiling>( tiling ), static_cast<VkImageUsageFlags>( usage ), static_cast<VkImageCreateFlags>( flags ), reinterpret_cast<VkImageFormatProperties*>( pImageFormatProperties ) ) );
+    return static_cast<Result>( VPP_CALL(vkGetPhysicalDeviceImageFormatProperties( physicalDevice, static_cast<VkFormat>( format ), static_cast<VkImageType>( type ), static_cast<VkImageTiling>( tiling ), static_cast<VkImageUsageFlags>( usage ), static_cast<VkImageCreateFlags>( flags ), reinterpret_cast<VkImageFormatProperties*>( pImageFormatProperties ) )) );
   }
 
   inline Result getPhysicalDeviceImageFormatProperties( PhysicalDevice physicalDevice, Format format, ImageType type, ImageTiling tiling, ImageUsageFlags usage, ImageCreateFlags flags, ImageFormatProperties& imageFormatProperties )
@@ -164,7 +165,7 @@ namespace vk
 
   inline Result createDevice( PhysicalDevice physicalDevice, const DeviceCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, Device* pDevice )
   {
-    return static_cast<Result>( vkCreateDevice( physicalDevice, reinterpret_cast<const VkDeviceCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pDevice ) );
+    return static_cast<Result>( VPP_CALL(vkCreateDevice( physicalDevice, reinterpret_cast<const VkDeviceCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pDevice )) );
   }
 
   inline Result createDevice( PhysicalDevice physicalDevice, const DeviceCreateInfo& createInfo, const AllocationCallbacks& allocator, Device& device )
@@ -184,7 +185,7 @@ namespace vk
 
   inline Result enumerateInstanceLayerProperties( uint32_t* pPropertyCount, LayerProperties* pProperties )
   {
-    return static_cast<Result>( vkEnumerateInstanceLayerProperties( pPropertyCount, reinterpret_cast<VkLayerProperties*>( pProperties ) ) );
+    return static_cast<Result>( VPP_CALL(vkEnumerateInstanceLayerProperties( pPropertyCount, reinterpret_cast<VkLayerProperties*>( pProperties ) )) );
   }
 
   inline Result enumerateInstanceLayerProperties( std::vector<LayerProperties> & properties )
@@ -201,7 +202,7 @@ namespace vk
 
   inline Result enumerateInstanceExtensionProperties( const char* pLayerName, uint32_t* pPropertyCount, ExtensionProperties* pProperties )
   {
-    return static_cast<Result>( vkEnumerateInstanceExtensionProperties( pLayerName, pPropertyCount, reinterpret_cast<VkExtensionProperties*>( pProperties ) ) );
+    return static_cast<Result>( VPP_CALL(vkEnumerateInstanceExtensionProperties( pLayerName, pPropertyCount, reinterpret_cast<VkExtensionProperties*>( pProperties ) )) );
   }
 
   inline Result enumerateInstanceExtensionProperties( std::string const&  layerName, std::vector<ExtensionProperties> & properties )
@@ -218,7 +219,7 @@ namespace vk
 
   inline Result enumerateDeviceLayerProperties( PhysicalDevice physicalDevice, uint32_t* pPropertyCount, LayerProperties* pProperties )
   {
-    return static_cast<Result>( vkEnumerateDeviceLayerProperties( physicalDevice, pPropertyCount, reinterpret_cast<VkLayerProperties*>( pProperties ) ) );
+    return static_cast<Result>( VPP_CALL(vkEnumerateDeviceLayerProperties( physicalDevice, pPropertyCount, reinterpret_cast<VkLayerProperties*>( pProperties ) )) );
   }
 
   inline Result enumerateDeviceLayerProperties( PhysicalDevice physicalDevice, std::vector<LayerProperties> & properties )
@@ -235,7 +236,7 @@ namespace vk
 
   inline Result enumerateDeviceExtensionProperties( PhysicalDevice physicalDevice, const char* pLayerName, uint32_t* pPropertyCount, ExtensionProperties* pProperties )
   {
-    return static_cast<Result>( vkEnumerateDeviceExtensionProperties( physicalDevice, pLayerName, pPropertyCount, reinterpret_cast<VkExtensionProperties*>( pProperties ) ) );
+    return static_cast<Result>( VPP_CALL(vkEnumerateDeviceExtensionProperties( physicalDevice, pLayerName, pPropertyCount, reinterpret_cast<VkExtensionProperties*>( pProperties ) )) );
   }
 
   inline Result enumerateDeviceExtensionProperties( PhysicalDevice physicalDevice, std::string const&  layerName, std::vector<ExtensionProperties> & properties )
@@ -262,7 +263,7 @@ namespace vk
 
   inline Result queueSubmit( Queue queue, uint32_t submitCount, const SubmitInfo* pSubmits, Fence fence )
   {
-    return static_cast<Result>( vkQueueSubmit( queue, submitCount, reinterpret_cast<const VkSubmitInfo*>( pSubmits ), fence ) );
+    return static_cast<Result>( VPP_CALL(vkQueueSubmit( queue, submitCount, reinterpret_cast<const VkSubmitInfo*>( pSubmits ), fence )) );
   }
 
   inline Result queueSubmit( Queue queue, std::vector<SubmitInfo> const& submits, Fence fence )
@@ -272,17 +273,17 @@ namespace vk
 
   inline Result queueWaitIdle( Queue queue )
   {
-    return static_cast<Result>( vkQueueWaitIdle( queue ) );
+    return static_cast<Result>( VPP_CALL(vkQueueWaitIdle( queue )) );
   }
 
   inline Result deviceWaitIdle( Device device )
   {
-    return static_cast<Result>( vkDeviceWaitIdle( device ) );
+    return static_cast<Result>( VPP_CALL(vkDeviceWaitIdle( device )) );
   }
 
   inline Result allocateMemory( Device device, const MemoryAllocateInfo* pAllocateInfo, const AllocationCallbacks* pAllocator, DeviceMemory* pMemory )
   {
-    return static_cast<Result>( vkAllocateMemory( device, reinterpret_cast<const VkMemoryAllocateInfo*>( pAllocateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pMemory ) );
+    return static_cast<Result>( VPP_CALL(vkAllocateMemory( device, reinterpret_cast<const VkMemoryAllocateInfo*>( pAllocateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pMemory )) );
   }
 
   inline Result allocateMemory( Device device, const MemoryAllocateInfo& allocateInfo, const AllocationCallbacks& allocator, DeviceMemory& memory )
@@ -302,7 +303,7 @@ namespace vk
 
   inline Result mapMemory( Device device, DeviceMemory memory, DeviceSize offset, DeviceSize size, MemoryMapFlags flags, void** ppData )
   {
-    return static_cast<Result>( vkMapMemory( device, memory, offset, size, static_cast<VkMemoryMapFlags>( flags ), ppData ) );
+    return static_cast<Result>( VPP_CALL(vkMapMemory( device, memory, offset, size, static_cast<VkMemoryMapFlags>( flags ), ppData )) );
   }
 
   inline void unmapMemory( Device device, DeviceMemory memory )
@@ -312,7 +313,7 @@ namespace vk
 
   inline Result flushMappedMemoryRanges( Device device, uint32_t memoryRangeCount, const MappedMemoryRange* pMemoryRanges )
   {
-    return static_cast<Result>( vkFlushMappedMemoryRanges( device, memoryRangeCount, reinterpret_cast<const VkMappedMemoryRange*>( pMemoryRanges ) ) );
+    return static_cast<Result>( VPP_CALL(vkFlushMappedMemoryRanges( device, memoryRangeCount, reinterpret_cast<const VkMappedMemoryRange*>( pMemoryRanges ) )) );
   }
 
   inline Result flushMappedMemoryRanges( Device device, std::vector<MappedMemoryRange> const& memoryRanges )
@@ -322,7 +323,7 @@ namespace vk
 
   inline Result invalidateMappedMemoryRanges( Device device, uint32_t memoryRangeCount, const MappedMemoryRange* pMemoryRanges )
   {
-    return static_cast<Result>( vkInvalidateMappedMemoryRanges( device, memoryRangeCount, reinterpret_cast<const VkMappedMemoryRange*>( pMemoryRanges ) ) );
+    return static_cast<Result>( VPP_CALL(vkInvalidateMappedMemoryRanges( device, memoryRangeCount, reinterpret_cast<const VkMappedMemoryRange*>( pMemoryRanges ) )) );
   }
 
   inline Result invalidateMappedMemoryRanges( Device device, std::vector<MappedMemoryRange> const& memoryRanges )
@@ -352,7 +353,7 @@ namespace vk
 
   inline Result bindBufferMemory( Device device, Buffer buffer, DeviceMemory memory, DeviceSize memoryOffset )
   {
-    return static_cast<Result>( vkBindBufferMemory( device, buffer, memory, memoryOffset ) );
+    return static_cast<Result>( VPP_CALL(vkBindBufferMemory( device, buffer, memory, memoryOffset )) );
   }
 
   inline void getImageMemoryRequirements( Device device, Image image, MemoryRequirements* pMemoryRequirements )
@@ -367,7 +368,7 @@ namespace vk
 
   inline Result bindImageMemory( Device device, Image image, DeviceMemory memory, DeviceSize memoryOffset )
   {
-    return static_cast<Result>( vkBindImageMemory( device, image, memory, memoryOffset ) );
+    return static_cast<Result>( VPP_CALL(vkBindImageMemory( device, image, memory, memoryOffset )) );
   }
 
   inline void getImageSparseMemoryRequirements( Device device, Image image, uint32_t* pSparseMemoryRequirementCount, SparseImageMemoryRequirements* pSparseMemoryRequirements )
@@ -400,7 +401,7 @@ namespace vk
 
   inline Result queueBindSparse( Queue queue, uint32_t bindInfoCount, const BindSparseInfo* pBindInfo, Fence fence )
   {
-    return static_cast<Result>( vkQueueBindSparse( queue, bindInfoCount, reinterpret_cast<const VkBindSparseInfo*>( pBindInfo ), fence ) );
+    return static_cast<Result>( VPP_CALL(vkQueueBindSparse( queue, bindInfoCount, reinterpret_cast<const VkBindSparseInfo*>( pBindInfo ), fence )) );
   }
 
   inline Result queueBindSparse( Queue queue, std::vector<BindSparseInfo> const& bindInfo, Fence fence )
@@ -410,7 +411,7 @@ namespace vk
 
   inline Result createFence( Device device, const FenceCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, Fence* pFence )
   {
-    return static_cast<Result>( vkCreateFence( device, reinterpret_cast<const VkFenceCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pFence ) );
+    return static_cast<Result>( VPP_CALL(vkCreateFence( device, reinterpret_cast<const VkFenceCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pFence )) );
   }
 
   inline Result createFence( Device device, const FenceCreateInfo& createInfo, const AllocationCallbacks& allocator, Fence& fence )
@@ -430,7 +431,7 @@ namespace vk
 
   inline Result resetFences( Device device, uint32_t fenceCount, const Fence* pFences )
   {
-    return static_cast<Result>( vkResetFences( device, fenceCount, pFences ) );
+    return static_cast<Result>( VPP_CALL(vkResetFences( device, fenceCount, pFences )) );
   }
 
   inline Result resetFences( Device device, std::vector<Fence> const& fences )
@@ -440,12 +441,12 @@ namespace vk
 
   inline Result getFenceStatus( Device device, Fence fence )
   {
-    return static_cast<Result>( vkGetFenceStatus( device, fence ) );
+    return static_cast<Result>( VPP_CALL(vkGetFenceStatus( device, fence )) );
   }
 
   inline Result waitForFences( Device device, uint32_t fenceCount, const Fence* pFences, Bool32 waitAll, uint64_t timeout )
   {
-    return static_cast<Result>( vkWaitForFences( device, fenceCount, pFences, waitAll, timeout ) );
+    return static_cast<Result>( VPP_CALL(vkWaitForFences( device, fenceCount, pFences, waitAll, timeout )) );
   }
 
   inline Result waitForFences( Device device, std::vector<Fence> const& fences, Bool32 waitAll, uint64_t timeout )
@@ -455,7 +456,7 @@ namespace vk
 
   inline Result createSemaphore( Device device, const SemaphoreCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, Semaphore* pSemaphore )
   {
-    return static_cast<Result>( vkCreateSemaphore( device, reinterpret_cast<const VkSemaphoreCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSemaphore ) );
+    return static_cast<Result>( VPP_CALL(vkCreateSemaphore( device, reinterpret_cast<const VkSemaphoreCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSemaphore )) );
   }
 
   inline Result createSemaphore( Device device, const SemaphoreCreateInfo& createInfo, const AllocationCallbacks& allocator, Semaphore& semaphore )
@@ -475,7 +476,7 @@ namespace vk
 
   inline Result createEvent( Device device, const EventCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, Event* pEvent )
   {
-    return static_cast<Result>( vkCreateEvent( device, reinterpret_cast<const VkEventCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pEvent ) );
+    return static_cast<Result>( VPP_CALL(vkCreateEvent( device, reinterpret_cast<const VkEventCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pEvent )) );
   }
 
   inline Result createEvent( Device device, const EventCreateInfo& createInfo, const AllocationCallbacks& allocator, Event& event )
@@ -495,22 +496,22 @@ namespace vk
 
   inline Result getEventStatus( Device device, Event event )
   {
-    return static_cast<Result>( vkGetEventStatus( device, event ) );
+    return static_cast<Result>( VPP_CALL(vkGetEventStatus( device, event )) );
   }
 
   inline Result setEvent( Device device, Event event )
   {
-    return static_cast<Result>( vkSetEvent( device, event ) );
+    return static_cast<Result>( VPP_CALL(vkSetEvent( device, event )) );
   }
 
   inline Result resetEvent( Device device, Event event )
   {
-    return static_cast<Result>( vkResetEvent( device, event ) );
+    return static_cast<Result>( VPP_CALL(vkResetEvent( device, event )) );
   }
 
   inline Result createQueryPool( Device device, const QueryPoolCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, QueryPool* pQueryPool )
   {
-    return static_cast<Result>( vkCreateQueryPool( device, reinterpret_cast<const VkQueryPoolCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pQueryPool ) );
+    return static_cast<Result>( VPP_CALL(vkCreateQueryPool( device, reinterpret_cast<const VkQueryPoolCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pQueryPool )) );
   }
 
   inline Result createQueryPool( Device device, const QueryPoolCreateInfo& createInfo, const AllocationCallbacks& allocator, QueryPool& queryPool )
@@ -530,7 +531,7 @@ namespace vk
 
   inline Result getQueryPoolResults( Device device, QueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void* pData, DeviceSize stride, QueryResultFlags flags )
   {
-    return static_cast<Result>( vkGetQueryPoolResults( device, queryPool, firstQuery, queryCount, dataSize, pData, stride, static_cast<VkQueryResultFlags>( flags ) ) );
+    return static_cast<Result>( VPP_CALL(vkGetQueryPoolResults( device, queryPool, firstQuery, queryCount, dataSize, pData, stride, static_cast<VkQueryResultFlags>( flags ) )) );
   }
 
   inline Result getQueryPoolResults( Device device, QueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, std::vector<uint8_t> & data, DeviceSize stride, QueryResultFlags flags )
@@ -540,7 +541,7 @@ namespace vk
 
   inline Result createBuffer( Device device, const BufferCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, Buffer* pBuffer )
   {
-    return static_cast<Result>( vkCreateBuffer( device, reinterpret_cast<const VkBufferCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pBuffer ) );
+    return static_cast<Result>( VPP_CALL(vkCreateBuffer( device, reinterpret_cast<const VkBufferCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pBuffer )) );
   }
 
   inline Result createBuffer( Device device, const BufferCreateInfo& createInfo, const AllocationCallbacks& allocator, Buffer& buffer )
@@ -560,7 +561,7 @@ namespace vk
 
   inline Result createBufferView( Device device, const BufferViewCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, BufferView* pView )
   {
-    return static_cast<Result>( vkCreateBufferView( device, reinterpret_cast<const VkBufferViewCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pView ) );
+    return static_cast<Result>( VPP_CALL(vkCreateBufferView( device, reinterpret_cast<const VkBufferViewCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pView )) );
   }
 
   inline Result createBufferView( Device device, const BufferViewCreateInfo& createInfo, const AllocationCallbacks& allocator, BufferView& view )
@@ -580,7 +581,7 @@ namespace vk
 
   inline Result createImage( Device device, const ImageCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, Image* pImage )
   {
-    return static_cast<Result>( vkCreateImage( device, reinterpret_cast<const VkImageCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pImage ) );
+    return static_cast<Result>( VPP_CALL(vkCreateImage( device, reinterpret_cast<const VkImageCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pImage )) );
   }
 
   inline Result createImage( Device device, const ImageCreateInfo& createInfo, const AllocationCallbacks& allocator, Image& image )
@@ -610,7 +611,7 @@ namespace vk
 
   inline Result createImageView( Device device, const ImageViewCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, ImageView* pView )
   {
-    return static_cast<Result>( vkCreateImageView( device, reinterpret_cast<const VkImageViewCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pView ) );
+    return static_cast<Result>( VPP_CALL(vkCreateImageView( device, reinterpret_cast<const VkImageViewCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pView )) );
   }
 
   inline Result createImageView( Device device, const ImageViewCreateInfo& createInfo, const AllocationCallbacks& allocator, ImageView& view )
@@ -630,7 +631,7 @@ namespace vk
 
   inline Result createShaderModule( Device device, const ShaderModuleCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, ShaderModule* pShaderModule )
   {
-    return static_cast<Result>( vkCreateShaderModule( device, reinterpret_cast<const VkShaderModuleCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pShaderModule ) );
+    return static_cast<Result>( VPP_CALL(vkCreateShaderModule( device, reinterpret_cast<const VkShaderModuleCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pShaderModule )) );
   }
 
   inline Result createShaderModule( Device device, const ShaderModuleCreateInfo& createInfo, const AllocationCallbacks& allocator, ShaderModule& shaderModule )
@@ -650,7 +651,7 @@ namespace vk
 
   inline Result createPipelineCache( Device device, const PipelineCacheCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, PipelineCache* pPipelineCache )
   {
-    return static_cast<Result>( vkCreatePipelineCache( device, reinterpret_cast<const VkPipelineCacheCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pPipelineCache ) );
+    return static_cast<Result>( VPP_CALL(vkCreatePipelineCache( device, reinterpret_cast<const VkPipelineCacheCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pPipelineCache )) );
   }
 
   inline Result createPipelineCache( Device device, const PipelineCacheCreateInfo& createInfo, const AllocationCallbacks& allocator, PipelineCache& pipelineCache )
@@ -670,7 +671,7 @@ namespace vk
 
   inline Result getPipelineCacheData( Device device, PipelineCache pipelineCache, size_t* pDataSize, void* pData )
   {
-    return static_cast<Result>( vkGetPipelineCacheData( device, pipelineCache, pDataSize, pData ) );
+    return static_cast<Result>( VPP_CALL(vkGetPipelineCacheData( device, pipelineCache, pDataSize, pData )) );
   }
 
   inline Result getPipelineCacheData( Device device, PipelineCache pipelineCache, std::vector<uint8_t> & data )
@@ -687,7 +688,7 @@ namespace vk
 
   inline Result mergePipelineCaches( Device device, PipelineCache dstCache, uint32_t srcCacheCount, const PipelineCache* pSrcCaches )
   {
-    return static_cast<Result>( vkMergePipelineCaches( device, dstCache, srcCacheCount, pSrcCaches ) );
+    return static_cast<Result>( VPP_CALL(vkMergePipelineCaches( device, dstCache, srcCacheCount, pSrcCaches )) );
   }
 
   inline Result mergePipelineCaches( Device device, PipelineCache dstCache, std::vector<PipelineCache> const& srcCaches )
@@ -697,7 +698,7 @@ namespace vk
 
   inline Result createGraphicsPipelines( Device device, PipelineCache pipelineCache, uint32_t createInfoCount, const GraphicsPipelineCreateInfo* pCreateInfos, const AllocationCallbacks* pAllocator, Pipeline* pPipelines )
   {
-    return static_cast<Result>( vkCreateGraphicsPipelines( device, pipelineCache, createInfoCount, reinterpret_cast<const VkGraphicsPipelineCreateInfo*>( pCreateInfos ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pPipelines ) );
+    return static_cast<Result>( VPP_CALL(vkCreateGraphicsPipelines( device, pipelineCache, createInfoCount, reinterpret_cast<const VkGraphicsPipelineCreateInfo*>( pCreateInfos ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pPipelines )) );
   }
 
   inline Result createGraphicsPipelines( Device device, PipelineCache pipelineCache, std::vector<GraphicsPipelineCreateInfo> const& createInfos, const AllocationCallbacks& allocator, std::vector<Pipeline> & pipelines )
@@ -708,7 +709,7 @@ namespace vk
 
   inline Result createComputePipelines( Device device, PipelineCache pipelineCache, uint32_t createInfoCount, const ComputePipelineCreateInfo* pCreateInfos, const AllocationCallbacks* pAllocator, Pipeline* pPipelines )
   {
-    return static_cast<Result>( vkCreateComputePipelines( device, pipelineCache, createInfoCount, reinterpret_cast<const VkComputePipelineCreateInfo*>( pCreateInfos ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pPipelines ) );
+    return static_cast<Result>( VPP_CALL(vkCreateComputePipelines( device, pipelineCache, createInfoCount, reinterpret_cast<const VkComputePipelineCreateInfo*>( pCreateInfos ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pPipelines )) );
   }
 
   inline Result createComputePipelines( Device device, PipelineCache pipelineCache, std::vector<ComputePipelineCreateInfo> const& createInfos, const AllocationCallbacks& allocator, std::vector<Pipeline> & pipelines )
@@ -729,7 +730,7 @@ namespace vk
 
   inline Result createPipelineLayout( Device device, const PipelineLayoutCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, PipelineLayout* pPipelineLayout )
   {
-    return static_cast<Result>( vkCreatePipelineLayout( device, reinterpret_cast<const VkPipelineLayoutCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pPipelineLayout ) );
+    return static_cast<Result>( VPP_CALL(vkCreatePipelineLayout( device, reinterpret_cast<const VkPipelineLayoutCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pPipelineLayout )) );
   }
 
   inline Result createPipelineLayout( Device device, const PipelineLayoutCreateInfo& createInfo, const AllocationCallbacks& allocator, PipelineLayout& pipelineLayout )
@@ -749,7 +750,7 @@ namespace vk
 
   inline Result createSampler( Device device, const SamplerCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, Sampler* pSampler )
   {
-    return static_cast<Result>( vkCreateSampler( device, reinterpret_cast<const VkSamplerCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSampler ) );
+    return static_cast<Result>( VPP_CALL(vkCreateSampler( device, reinterpret_cast<const VkSamplerCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSampler )) );
   }
 
   inline Result createSampler( Device device, const SamplerCreateInfo& createInfo, const AllocationCallbacks& allocator, Sampler& sampler )
@@ -769,7 +770,7 @@ namespace vk
 
   inline Result createDescriptorSetLayout( Device device, const DescriptorSetLayoutCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, DescriptorSetLayout* pSetLayout )
   {
-    return static_cast<Result>( vkCreateDescriptorSetLayout( device, reinterpret_cast<const VkDescriptorSetLayoutCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSetLayout ) );
+    return static_cast<Result>( VPP_CALL(vkCreateDescriptorSetLayout( device, reinterpret_cast<const VkDescriptorSetLayoutCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSetLayout )) );
   }
 
   inline Result createDescriptorSetLayout( Device device, const DescriptorSetLayoutCreateInfo& createInfo, const AllocationCallbacks& allocator, DescriptorSetLayout& setLayout )
@@ -789,7 +790,7 @@ namespace vk
 
   inline Result createDescriptorPool( Device device, const DescriptorPoolCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, DescriptorPool* pDescriptorPool )
   {
-    return static_cast<Result>( vkCreateDescriptorPool( device, reinterpret_cast<const VkDescriptorPoolCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pDescriptorPool ) );
+    return static_cast<Result>( VPP_CALL(vkCreateDescriptorPool( device, reinterpret_cast<const VkDescriptorPoolCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pDescriptorPool )) );
   }
 
   inline Result createDescriptorPool( Device device, const DescriptorPoolCreateInfo& createInfo, const AllocationCallbacks& allocator, DescriptorPool& descriptorPool )
@@ -809,12 +810,12 @@ namespace vk
 
   inline Result resetDescriptorPool( Device device, DescriptorPool descriptorPool, DescriptorPoolResetFlags flags )
   {
-    return static_cast<Result>( vkResetDescriptorPool( device, descriptorPool, static_cast<VkDescriptorPoolResetFlags>( flags ) ) );
+    return static_cast<Result>( VPP_CALL(vkResetDescriptorPool( device, descriptorPool, static_cast<VkDescriptorPoolResetFlags>( flags ) )) );
   }
 
   inline Result allocateDescriptorSets( Device device, const DescriptorSetAllocateInfo* pAllocateInfo, DescriptorSet* pDescriptorSets )
   {
-    return static_cast<Result>( vkAllocateDescriptorSets( device, reinterpret_cast<const VkDescriptorSetAllocateInfo*>( pAllocateInfo ), pDescriptorSets ) );
+    return static_cast<Result>( VPP_CALL(vkAllocateDescriptorSets( device, reinterpret_cast<const VkDescriptorSetAllocateInfo*>( pAllocateInfo ), pDescriptorSets )) );
   }
 
   inline Result allocateDescriptorSets( Device device, const DescriptorSetAllocateInfo& allocateInfo, std::vector<DescriptorSet> & descriptorSets )
@@ -824,7 +825,7 @@ namespace vk
 
   inline Result freeDescriptorSets( Device device, DescriptorPool descriptorPool, uint32_t descriptorSetCount, const DescriptorSet* pDescriptorSets )
   {
-    return static_cast<Result>( vkFreeDescriptorSets( device, descriptorPool, descriptorSetCount, pDescriptorSets ) );
+    return static_cast<Result>( VPP_CALL(vkFreeDescriptorSets( device, descriptorPool, descriptorSetCount, pDescriptorSets )) );
   }
 
   inline Result freeDescriptorSets( Device device, DescriptorPool descriptorPool, std::vector<DescriptorSet> const& descriptorSets )
@@ -844,7 +845,7 @@ namespace vk
 
   inline Result createFramebuffer( Device device, const FramebufferCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, Framebuffer* pFramebuffer )
   {
-    return static_cast<Result>( vkCreateFramebuffer( device, reinterpret_cast<const VkFramebufferCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pFramebuffer ) );
+    return static_cast<Result>( VPP_CALL(vkCreateFramebuffer( device, reinterpret_cast<const VkFramebufferCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pFramebuffer )) );
   }
 
   inline Result createFramebuffer( Device device, const FramebufferCreateInfo& createInfo, const AllocationCallbacks& allocator, Framebuffer& framebuffer )
@@ -864,7 +865,7 @@ namespace vk
 
   inline Result createRenderPass( Device device, const RenderPassCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, RenderPass* pRenderPass )
   {
-    return static_cast<Result>( vkCreateRenderPass( device, reinterpret_cast<const VkRenderPassCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pRenderPass ) );
+    return static_cast<Result>( VPP_CALL(vkCreateRenderPass( device, reinterpret_cast<const VkRenderPassCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pRenderPass )) );
   }
 
   inline Result createRenderPass( Device device, const RenderPassCreateInfo& createInfo, const AllocationCallbacks& allocator, RenderPass& renderPass )
@@ -894,7 +895,7 @@ namespace vk
 
   inline Result createCommandPool( Device device, const CommandPoolCreateInfo* pCreateInfo, const AllocationCallbacks* pAllocator, CommandPool* pCommandPool )
   {
-    return static_cast<Result>( vkCreateCommandPool( device, reinterpret_cast<const VkCommandPoolCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pCommandPool ) );
+    return static_cast<Result>( VPP_CALL(vkCreateCommandPool( device, reinterpret_cast<const VkCommandPoolCreateInfo*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pCommandPool )) );
   }
 
   inline Result createCommandPool( Device device, const CommandPoolCreateInfo& createInfo, const AllocationCallbacks& allocator, CommandPool& commandPool )
@@ -914,12 +915,12 @@ namespace vk
 
   inline Result resetCommandPool( Device device, CommandPool commandPool, CommandPoolResetFlags flags )
   {
-    return static_cast<Result>( vkResetCommandPool( device, commandPool, static_cast<VkCommandPoolResetFlags>( flags ) ) );
+    return static_cast<Result>( VPP_CALL(vkResetCommandPool( device, commandPool, static_cast<VkCommandPoolResetFlags>( flags ) )) );
   }
 
   inline Result allocateCommandBuffers( Device device, const CommandBufferAllocateInfo* pAllocateInfo, CommandBuffer* pCommandBuffers )
   {
-    return static_cast<Result>( vkAllocateCommandBuffers( device, reinterpret_cast<const VkCommandBufferAllocateInfo*>( pAllocateInfo ), pCommandBuffers ) );
+    return static_cast<Result>( VPP_CALL(vkAllocateCommandBuffers( device, reinterpret_cast<const VkCommandBufferAllocateInfo*>( pAllocateInfo ), pCommandBuffers )) );
   }
 
   inline Result allocateCommandBuffers( Device device, const CommandBufferAllocateInfo& allocateInfo, std::vector<CommandBuffer> & commandBuffers )
@@ -939,7 +940,7 @@ namespace vk
 
   inline Result beginCommandBuffer( CommandBuffer commandBuffer, const CommandBufferBeginInfo* pBeginInfo )
   {
-    return static_cast<Result>( vkBeginCommandBuffer( commandBuffer, reinterpret_cast<const VkCommandBufferBeginInfo*>( pBeginInfo ) ) );
+    return static_cast<Result>( VPP_CALL(vkBeginCommandBuffer( commandBuffer, reinterpret_cast<const VkCommandBufferBeginInfo*>( pBeginInfo ) )) );
   }
 
   inline Result beginCommandBuffer( CommandBuffer commandBuffer, const CommandBufferBeginInfo& beginInfo )
@@ -949,12 +950,12 @@ namespace vk
 
   inline Result endCommandBuffer( CommandBuffer commandBuffer )
   {
-    return static_cast<Result>( vkEndCommandBuffer( commandBuffer ) );
+    return static_cast<Result>( VPP_CALL(vkEndCommandBuffer( commandBuffer )) );
   }
 
   inline Result resetCommandBuffer( CommandBuffer commandBuffer, CommandBufferResetFlags flags )
   {
-    return static_cast<Result>( vkResetCommandBuffer( commandBuffer, static_cast<VkCommandBufferResetFlags>( flags ) ) );
+    return static_cast<Result>( VPP_CALL(vkResetCommandBuffer( commandBuffer, static_cast<VkCommandBufferResetFlags>( flags ) )) );
   }
 
   inline void cmdBindPipeline( CommandBuffer commandBuffer, PipelineBindPoint pipelineBindPoint, Pipeline pipeline )
@@ -1285,7 +1286,7 @@ namespace vk
 
   inline Result getPhysicalDeviceSurfaceSupportKHR( PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, SurfaceKHR surface, Bool32* pSupported )
   {
-    return static_cast<Result>( vkGetPhysicalDeviceSurfaceSupportKHR( physicalDevice, queueFamilyIndex, surface, pSupported ) );
+    return static_cast<Result>( VPP_CALL(vkGetPhysicalDeviceSurfaceSupportKHR( physicalDevice, queueFamilyIndex, surface, pSupported )) );
   }
 
   inline Result getPhysicalDeviceSurfaceSupportKHR( PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, SurfaceKHR surface, Bool32& supported )
@@ -1295,7 +1296,7 @@ namespace vk
 
   inline Result getPhysicalDeviceSurfaceCapabilitiesKHR( PhysicalDevice physicalDevice, SurfaceKHR surface, SurfaceCapabilitiesKHR* pSurfaceCapabilities )
   {
-    return static_cast<Result>( vkGetPhysicalDeviceSurfaceCapabilitiesKHR( physicalDevice, surface, reinterpret_cast<VkSurfaceCapabilitiesKHR*>( pSurfaceCapabilities ) ) );
+    return static_cast<Result>( VPP_CALL(vkGetPhysicalDeviceSurfaceCapabilitiesKHR( physicalDevice, surface, reinterpret_cast<VkSurfaceCapabilitiesKHR*>( pSurfaceCapabilities ) )) );
   }
 
   inline Result getPhysicalDeviceSurfaceCapabilitiesKHR( PhysicalDevice physicalDevice, SurfaceKHR surface, SurfaceCapabilitiesKHR& surfaceCapabilities )
@@ -1305,7 +1306,7 @@ namespace vk
 
   inline Result getPhysicalDeviceSurfaceFormatsKHR( PhysicalDevice physicalDevice, SurfaceKHR surface, uint32_t* pSurfaceFormatCount, SurfaceFormatKHR* pSurfaceFormats )
   {
-    return static_cast<Result>( vkGetPhysicalDeviceSurfaceFormatsKHR( physicalDevice, surface, pSurfaceFormatCount, reinterpret_cast<VkSurfaceFormatKHR*>( pSurfaceFormats ) ) );
+    return static_cast<Result>( VPP_CALL(vkGetPhysicalDeviceSurfaceFormatsKHR( physicalDevice, surface, pSurfaceFormatCount, reinterpret_cast<VkSurfaceFormatKHR*>( pSurfaceFormats ) )) );
   }
 
   inline Result getPhysicalDeviceSurfaceFormatsKHR( PhysicalDevice physicalDevice, SurfaceKHR surface, std::vector<SurfaceFormatKHR> & surfaceFormats )
@@ -1322,7 +1323,7 @@ namespace vk
 
   inline Result getPhysicalDeviceSurfacePresentModesKHR( PhysicalDevice physicalDevice, SurfaceKHR surface, uint32_t* pPresentModeCount, PresentModeKHR* pPresentModes )
   {
-    return static_cast<Result>( vkGetPhysicalDeviceSurfacePresentModesKHR( physicalDevice, surface, pPresentModeCount, reinterpret_cast<VkPresentModeKHR*>( pPresentModes ) ) );
+    return static_cast<Result>( VPP_CALL(vkGetPhysicalDeviceSurfacePresentModesKHR( physicalDevice, surface, pPresentModeCount, reinterpret_cast<VkPresentModeKHR*>( pPresentModes ) )) );
   }
 
   inline Result getPhysicalDeviceSurfacePresentModesKHR( PhysicalDevice physicalDevice, SurfaceKHR surface, std::vector<PresentModeKHR> & presentModes )
@@ -1339,7 +1340,7 @@ namespace vk
 
   inline Result createSwapchainKHR( Device device, const SwapchainCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SwapchainKHR* pSwapchain )
   {
-    return static_cast<Result>( vkCreateSwapchainKHR( device, reinterpret_cast<const VkSwapchainCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSwapchain ) );
+    return static_cast<Result>( VPP_CALL(vkCreateSwapchainKHR( device, reinterpret_cast<const VkSwapchainCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSwapchain )) );
   }
 
   inline Result createSwapchainKHR( Device device, const SwapchainCreateInfoKHR& createInfo, const AllocationCallbacks& allocator, SwapchainKHR& swapchain )
@@ -1359,7 +1360,7 @@ namespace vk
 
   inline Result getSwapchainImagesKHR( Device device, SwapchainKHR swapchain, uint32_t* pSwapchainImageCount, Image* pSwapchainImages )
   {
-    return static_cast<Result>( vkGetSwapchainImagesKHR( device, swapchain, pSwapchainImageCount, pSwapchainImages ) );
+    return static_cast<Result>( VPP_CALL(vkGetSwapchainImagesKHR( device, swapchain, pSwapchainImageCount, pSwapchainImages )) );
   }
 
   inline Result getSwapchainImagesKHR( Device device, SwapchainKHR swapchain, std::vector<Image> & swapchainImages )
@@ -1376,7 +1377,7 @@ namespace vk
 
   inline Result acquireNextImageKHR( Device device, SwapchainKHR swapchain, uint64_t timeout, Semaphore semaphore, Fence fence, uint32_t* pImageIndex )
   {
-    return static_cast<Result>( vkAcquireNextImageKHR( device, swapchain, timeout, semaphore, fence, pImageIndex ) );
+    return static_cast<Result>( VPP_CALL(vkAcquireNextImageKHR( device, swapchain, timeout, semaphore, fence, pImageIndex )) );
   }
 
   inline Result acquireNextImageKHR( Device device, SwapchainKHR swapchain, uint64_t timeout, Semaphore semaphore, Fence fence, uint32_t& imageIndex )
@@ -1386,7 +1387,7 @@ namespace vk
 
   inline Result queuePresentKHR( Queue queue, const PresentInfoKHR* pPresentInfo )
   {
-    return static_cast<Result>( vkQueuePresentKHR( queue, reinterpret_cast<const VkPresentInfoKHR*>( pPresentInfo ) ) );
+    return static_cast<Result>( VPP_CALL(vkQueuePresentKHR( queue, reinterpret_cast<const VkPresentInfoKHR*>( pPresentInfo ) )) );
   }
 
   inline Result queuePresentKHR( Queue queue, const PresentInfoKHR& presentInfo )
@@ -1396,7 +1397,7 @@ namespace vk
 
   inline Result getPhysicalDeviceDisplayPropertiesKHR( PhysicalDevice physicalDevice, uint32_t* pPropertyCount, DisplayPropertiesKHR* pProperties )
   {
-    return static_cast<Result>( vkGetPhysicalDeviceDisplayPropertiesKHR( physicalDevice, pPropertyCount, reinterpret_cast<VkDisplayPropertiesKHR*>( pProperties ) ) );
+    return static_cast<Result>( VPP_CALL(vkGetPhysicalDeviceDisplayPropertiesKHR( physicalDevice, pPropertyCount, reinterpret_cast<VkDisplayPropertiesKHR*>( pProperties ) )) );
   }
 
   inline Result getPhysicalDeviceDisplayPropertiesKHR( PhysicalDevice physicalDevice, std::vector<DisplayPropertiesKHR> & properties )
@@ -1413,7 +1414,7 @@ namespace vk
 
   inline Result getPhysicalDeviceDisplayPlanePropertiesKHR( PhysicalDevice physicalDevice, uint32_t* pPropertyCount, DisplayPlanePropertiesKHR* pProperties )
   {
-    return static_cast<Result>( vkGetPhysicalDeviceDisplayPlanePropertiesKHR( physicalDevice, pPropertyCount, reinterpret_cast<VkDisplayPlanePropertiesKHR*>( pProperties ) ) );
+    return static_cast<Result>( VPP_CALL(vkGetPhysicalDeviceDisplayPlanePropertiesKHR( physicalDevice, pPropertyCount, reinterpret_cast<VkDisplayPlanePropertiesKHR*>( pProperties ) )) );
   }
 
   inline Result getPhysicalDeviceDisplayPlanePropertiesKHR( PhysicalDevice physicalDevice, std::vector<DisplayPlanePropertiesKHR> & properties )
@@ -1430,7 +1431,7 @@ namespace vk
 
   inline Result getDisplayPlaneSupportedDisplaysKHR( PhysicalDevice physicalDevice, uint32_t planeIndex, uint32_t* pDisplayCount, DisplayKHR* pDisplays )
   {
-    return static_cast<Result>( vkGetDisplayPlaneSupportedDisplaysKHR( physicalDevice, planeIndex, pDisplayCount, pDisplays ) );
+    return static_cast<Result>( VPP_CALL(vkGetDisplayPlaneSupportedDisplaysKHR( physicalDevice, planeIndex, pDisplayCount, pDisplays )) );
   }
 
   inline Result getDisplayPlaneSupportedDisplaysKHR( PhysicalDevice physicalDevice, uint32_t planeIndex, std::vector<DisplayKHR> & displays )
@@ -1447,7 +1448,7 @@ namespace vk
 
   inline Result getDisplayModePropertiesKHR( PhysicalDevice physicalDevice, DisplayKHR display, uint32_t* pPropertyCount, DisplayModePropertiesKHR* pProperties )
   {
-    return static_cast<Result>( vkGetDisplayModePropertiesKHR( physicalDevice, display, pPropertyCount, reinterpret_cast<VkDisplayModePropertiesKHR*>( pProperties ) ) );
+    return static_cast<Result>( VPP_CALL(vkGetDisplayModePropertiesKHR( physicalDevice, display, pPropertyCount, reinterpret_cast<VkDisplayModePropertiesKHR*>( pProperties ) )) );
   }
 
   inline Result getDisplayModePropertiesKHR( PhysicalDevice physicalDevice, DisplayKHR display, std::vector<DisplayModePropertiesKHR> & properties )
@@ -1464,7 +1465,7 @@ namespace vk
 
   inline Result createDisplayModeKHR( PhysicalDevice physicalDevice, DisplayKHR display, const DisplayModeCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, DisplayModeKHR* pMode )
   {
-    return static_cast<Result>( vkCreateDisplayModeKHR( physicalDevice, display, reinterpret_cast<const VkDisplayModeCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pMode ) );
+    return static_cast<Result>( VPP_CALL(vkCreateDisplayModeKHR( physicalDevice, display, reinterpret_cast<const VkDisplayModeCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pMode )) );
   }
 
   inline Result createDisplayModeKHR( PhysicalDevice physicalDevice, DisplayKHR display, const DisplayModeCreateInfoKHR& createInfo, const AllocationCallbacks& allocator, DisplayModeKHR& mode )
@@ -1474,7 +1475,7 @@ namespace vk
 
   inline Result getDisplayPlaneCapabilitiesKHR( PhysicalDevice physicalDevice, DisplayModeKHR mode, uint32_t planeIndex, DisplayPlaneCapabilitiesKHR* pCapabilities )
   {
-    return static_cast<Result>( vkGetDisplayPlaneCapabilitiesKHR( physicalDevice, mode, planeIndex, reinterpret_cast<VkDisplayPlaneCapabilitiesKHR*>( pCapabilities ) ) );
+    return static_cast<Result>( VPP_CALL(vkGetDisplayPlaneCapabilitiesKHR( physicalDevice, mode, planeIndex, reinterpret_cast<VkDisplayPlaneCapabilitiesKHR*>( pCapabilities ) )) );
   }
 
   inline Result getDisplayPlaneCapabilitiesKHR( PhysicalDevice physicalDevice, DisplayModeKHR mode, uint32_t planeIndex, DisplayPlaneCapabilitiesKHR& capabilities )
@@ -1484,7 +1485,7 @@ namespace vk
 
   inline Result createDisplayPlaneSurfaceKHR( Instance instance, const DisplaySurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface )
   {
-    return static_cast<Result>( vkCreateDisplayPlaneSurfaceKHR( instance, reinterpret_cast<const VkDisplaySurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface ) );
+    return static_cast<Result>( VPP_CALL(vkCreateDisplayPlaneSurfaceKHR( instance, reinterpret_cast<const VkDisplaySurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface )) );
   }
 
   inline Result createDisplayPlaneSurfaceKHR( Instance instance, const DisplaySurfaceCreateInfoKHR& createInfo, const AllocationCallbacks& allocator, SurfaceKHR& surface )
@@ -1494,7 +1495,7 @@ namespace vk
 
   inline Result createSharedSwapchainsKHR( Device device, uint32_t swapchainCount, const SwapchainCreateInfoKHR* pCreateInfos, const AllocationCallbacks* pAllocator, SwapchainKHR* pSwapchains )
   {
-    return static_cast<Result>( vkCreateSharedSwapchainsKHR( device, swapchainCount, reinterpret_cast<const VkSwapchainCreateInfoKHR*>( pCreateInfos ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSwapchains ) );
+    return static_cast<Result>( VPP_CALL(vkCreateSharedSwapchainsKHR( device, swapchainCount, reinterpret_cast<const VkSwapchainCreateInfoKHR*>( pCreateInfos ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSwapchains )) );
   }
 
   inline Result createSharedSwapchainsKHR( Device device, std::vector<SwapchainCreateInfoKHR> const& createInfos, const AllocationCallbacks& allocator, std::vector<SwapchainKHR> & swapchains )
@@ -1507,7 +1508,7 @@ namespace vk
 
   inline Result createXlibSurfaceKHR( Instance instance, const XlibSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface )
   {
-    return static_cast<Result>( vkCreateXlibSurfaceKHR( instance, reinterpret_cast<const VkXlibSurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface ) );
+    return static_cast<Result>( VPP_CALL(vkCreateXlibSurfaceKHR( instance, reinterpret_cast<const VkXlibSurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface )) );
   }
 
   inline Result createXlibSurfaceKHR( Instance instance, const XlibSurfaceCreateInfoKHR& createInfo, const AllocationCallbacks& allocator, SurfaceKHR& surface )
@@ -1535,7 +1536,7 @@ namespace vk
 
   inline Result createXcbSurfaceKHR( Instance instance, const XcbSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface )
   {
-    return static_cast<Result>( vkCreateXcbSurfaceKHR( instance, reinterpret_cast<const VkXcbSurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface ) );
+    return static_cast<Result>( VPP_CALL(vkCreateXcbSurfaceKHR( instance, reinterpret_cast<const VkXcbSurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface )) );
   }
 
   inline Result createXcbSurfaceKHR( Instance instance, const XcbSurfaceCreateInfoKHR& createInfo, const AllocationCallbacks& allocator, SurfaceKHR& surface )
@@ -1563,7 +1564,7 @@ namespace vk
 
   inline Result createWaylandSurfaceKHR( Instance instance, const WaylandSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface )
   {
-    return static_cast<Result>( vkCreateWaylandSurfaceKHR( instance, reinterpret_cast<const VkWaylandSurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface ) );
+    return static_cast<Result>( VPP_CALL(vkCreateWaylandSurfaceKHR( instance, reinterpret_cast<const VkWaylandSurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface )) );
   }
 
   inline Result createWaylandSurfaceKHR( Instance instance, const WaylandSurfaceCreateInfoKHR& createInfo, const AllocationCallbacks& allocator, SurfaceKHR& surface )
@@ -1591,7 +1592,7 @@ namespace vk
 
   inline Result createMirSurfaceKHR( Instance instance, const MirSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface )
   {
-    return static_cast<Result>( vkCreateMirSurfaceKHR( instance, reinterpret_cast<const VkMirSurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface ) );
+    return static_cast<Result>( VPP_CALL(vkCreateMirSurfaceKHR( instance, reinterpret_cast<const VkMirSurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface )) );
   }
 
   inline Result createMirSurfaceKHR( Instance instance, const MirSurfaceCreateInfoKHR& createInfo, const AllocationCallbacks& allocator, SurfaceKHR& surface )
@@ -1619,7 +1620,7 @@ namespace vk
 
   inline Result createAndroidSurfaceKHR( Instance instance, const AndroidSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface )
   {
-    return static_cast<Result>( vkCreateAndroidSurfaceKHR( instance, reinterpret_cast<const VkAndroidSurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface ) );
+    return static_cast<Result>( VPP_CALL(vkCreateAndroidSurfaceKHR( instance, reinterpret_cast<const VkAndroidSurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface )) );
   }
 
   inline Result createAndroidSurfaceKHR( Instance instance, const AndroidSurfaceCreateInfoKHR& createInfo, const AllocationCallbacks& allocator, SurfaceKHR& surface )
@@ -1633,7 +1634,7 @@ namespace vk
 
   inline Result createWin32SurfaceKHR( Instance instance, const Win32SurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface )
   {
-    return static_cast<Result>( vkCreateWin32SurfaceKHR( instance, reinterpret_cast<const VkWin32SurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface ) );
+    return static_cast<Result>( VPP_CALL(vkCreateWin32SurfaceKHR( instance, reinterpret_cast<const VkWin32SurfaceCreateInfoKHR*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pSurface )) );
   }
 
   inline Result createWin32SurfaceKHR( Instance instance, const Win32SurfaceCreateInfoKHR& createInfo, const AllocationCallbacks& allocator, SurfaceKHR& surface )
@@ -1654,7 +1655,7 @@ namespace vk
 
   inline Result createDebugReportCallbackEXT( Instance instance, const DebugReportCallbackCreateInfoEXT* pCreateInfo, const AllocationCallbacks* pAllocator, DebugReportCallbackEXT* pCallback )
   {
-    return static_cast<Result>( vkCreateDebugReportCallbackEXT( instance, reinterpret_cast<const VkDebugReportCallbackCreateInfoEXT*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pCallback ) );
+    return static_cast<Result>( VPP_CALL(vkCreateDebugReportCallbackEXT( instance, reinterpret_cast<const VkDebugReportCallbackCreateInfoEXT*>( pCreateInfo ), reinterpret_cast<const VkAllocationCallbacks*>( pAllocator ), pCallback )) );
   }
 
   inline Result createDebugReportCallbackEXT( Instance instance, const DebugReportCallbackCreateInfoEXT& createInfo, const AllocationCallbacks& allocator, DebugReportCallbackEXT& callback )

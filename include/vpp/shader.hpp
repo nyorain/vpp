@@ -32,11 +32,11 @@ protected:
 	void destroy();
 
 public:
-	ShaderProgram(const Device& device, const std::vector<);
+	ShaderProgram(const Device& device, const std::vector<StageCreateInfo>& infos = {});
 	~ShaderProgram();
 
 	void addStage(const vk::PipelineShaderStageCreateInfo& createInfo);
-	void addStage(const StageCreateInfo& crrateInfo);
+	void addStage(const StageCreateInfo& createInfo);
 
 	void addStages(const std::vector<vk::PipelineShaderStageCreateInfo>& createInfo);
 	void addStages(const std::vector<StageCreateInfo>& crrateInfo);

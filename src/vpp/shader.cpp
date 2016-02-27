@@ -8,6 +8,7 @@
 namespace vpp
 {
 
+//utility
 namespace
 {
 
@@ -58,5 +59,32 @@ vk::ShaderModule loadShader(vk::Device device, const std::string& filename,
 	return module;
 }
 
+//shader class
+ShaderProgram::ShaderProgram(const Device& device, const std::vector<StageCreateInfo>& infos)
+{
+
+}
+ShaderProgram::~ShaderProgram()
+{
+
+}
+
+void ShaderProgram::addStage(const vk::PipelineShaderStageCreateInfo& createInfo)
+{
+
+}
+void ShaderProgram::addStage(const StageCreateInfo& createInfo)
+{
+
+}
+
+void ShaderProgram::addStages(const std::vector<vk::PipelineShaderStageCreateInfo>& createInfo)
+{
+
+}
+void ShaderProgram::addStages(const std::vector<StageCreateInfo>& crrateInfo)
+{
+	
+}
 
 }

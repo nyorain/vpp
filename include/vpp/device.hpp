@@ -45,7 +45,8 @@ public:
 	const vk::PhysicalDeviceMemoryProperties& memoryProperties() const { return memoryProperties_; }
 	const vk::PhysicalDeviceProperties& properties() const { return physicalDeviceProperties_; }
 
-	int memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags properties) const;
+	int memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const;
+	std::uint32_t memoryTypeBits(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const;
 };
 
 }

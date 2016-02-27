@@ -299,24 +299,34 @@ void GraphicsPipeline::create(const Device& device, const CreateInfo& createInfo
 
 void GraphicsPipeline::destroy()
 {
+	if(pipeline_) vk::destroyPipeline(vkDevice(), pipeline_, nullptr);
+	if(pipelineLayout_) vk::destroyPipelineLayout(vkDevice(), pipeline_, nullptr);
 
+	pipeline_ = {};
+	pipelineLayout_ = {};
 }
 
-void GraphicsPipeline::renderCommands(vk::CommandBuffer cmdBuffer) const
+void GraphicsPipeline::renderCommands(vk::CommandBuffer cmdBuffer,
+	const std::vector<VertexBuffer>& vertices, const std::vector<DescriptorSet>& descriptors) const
 {
-	vk::DeviceSize offsets[1] = { 0 };
-
-/*
-	vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics, pilelineLayout_,
-		0, 1, &descriptorSet_, 0, nullptr);
-*/
+	if(!descriptors.empty())
+	{
+		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics, pilelineLayout_,
+			0, descriptors.size(), descriptors.data(), 0, nullptr);
+	}
 
 	vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::Graphics, pipeline_);
-	vk::cmdBindVertexBuffers(cmdBuffer, bindID, 1, &vertexBuffer_, offsets);
+
+	if(!vertices.empty())
+	{
+		vk::DeviceSize offsets[1] {0};
+		vk::cmdBindVertexBuffers(cmdBuffer, bindID, vertices.size(), vertices.data(), offsets);
+	}
 
 	vk::cmdDraw(cmdBuffer, 3, 1, 0, 0);
 };
 
+/*
 void GraphicsPipeline::initBuffer()
 {
 	struct Vertex
@@ -482,5 +492,7 @@ void GraphicsPipeline::initDescriptorSet()
 {
 
 }
+
+*/
 
 }

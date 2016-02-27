@@ -3,6 +3,8 @@
 #include <vpp/swapChain.hpp>
 #include <vpp/surface.hpp>
 
+#include <stdexcept>
+
 namespace vpp
 {
 
@@ -22,6 +24,7 @@ void Renderer::create(const SwapChain& swapChain)
 	swapChain_ = &swapChain;
 
 	initCommandPool();
+	initDepthStencil();
 	initRenderPass();
 	initRenderers();
 }
@@ -74,7 +77,7 @@ void Renderer::reset(const SwapChain& swapChain, bool complete)
 		destroyRenderPass();
 		initRenderPass();
 	}
-	
+
 	initRenderers();
 }
 
@@ -90,7 +93,9 @@ void Renderer::initCommandPool()
 
 void Renderer::initRenderPass()
 {
-	vk::AttachmentDescription attachments[1] {};
+	vk::AttachmentDescription attachments[2] {};
+
+	//color from swapchain
 	attachments[0].format(swapChain().format());
 	attachments[0].samples(vk::SampleCountFlagBits::e1);
 	attachments[0].loadOp(vk::AttachmentLoadOp::Clear);
@@ -104,6 +109,21 @@ void Renderer::initRenderPass()
 	colorReference.attachment(0);
 	colorReference.layout(vk::ImageLayout::ColorAttachmentOptimal);
 
+	//depth from own depth stencil
+	attachments[1].format(depthStencil_.format());
+	attachments[0].samples(vk::SampleCountFlagBits::e1);
+	attachments[0].loadOp(vk::AttachmentLoadOp::Clear);
+	attachments[0].storeOp(vk::AttachmentStoreOp::Store);
+	attachments[0].stencilLoadOp(vk::AttachmentLoadOp::DontCare);
+	attachments[0].stencilStoreOp(vk::AttachmentStoreOp::DontCare);
+	attachments[0].initialLayout(vk::ImageLayout::ColorAttachmentOptimal);
+	attachments[0].finalLayout(vk::ImageLayout::ColorAttachmentOptimal);
+
+	vk::AttachmentReference depthReference;
+	depthReference.attachment(1);
+	depthReference.layout(vk::ImageLayout::ColorAttachmentOptimal);
+
+	//only subpass
 	vk::SubpassDescription subpass;
 	subpass.pipelineBindPoint(vk::PipelineBindPoint::Graphics);
 	subpass.flags(vk::SubpassDescriptionFlags());
@@ -112,12 +132,12 @@ void Renderer::initRenderPass()
 	subpass.colorAttachmentCount(1);
 	subpass.pColorAttachments(&colorReference);
 	subpass.pResolveAttachments(nullptr);
-	subpass.pDepthStencilAttachment(nullptr);
+	subpass.pDepthStencilAttachment(depthReference);
 	subpass.preserveAttachmentCount(0);
 	subpass.pPreserveAttachments(nullptr);
 
 	vk::RenderPassCreateInfo renderPassInfo;
-	renderPassInfo.attachmentCount(1);
+	renderPassInfo.attachmentCount(2);
 	renderPassInfo.pAttachments(attachments);
 	renderPassInfo.subpassCount(1);
 	renderPassInfo.pSubpasses(&subpass);
@@ -141,11 +161,14 @@ void Renderer::initRenderers()
 	VPP_CALL(vk::allocateCommandBuffers(vkDevice(), allocInfo, cmdBuffers));
 
 	//frameBuffer
-	vk::ImageView attachments[1] {};
+	vk::ImageView attachments[2] {};
+
+	//depth - every framebuffer uses the same image
+	attachments[1] = depthStencil_.imageView;
 
 	vk::FramebufferCreateInfo createInfo;
 	createInfo.renderPass(vkRenderPass());
-	createInfo.attachmentCount(1);
+	createInfo.attachmentCount(2);
 	createInfo.pAttachments(attachments);
 	createInfo.width(swapChain().extent().width());
 	createInfo.height(swapChain().extent().height());
@@ -153,6 +176,7 @@ void Renderer::initRenderers()
 
 	for(std::size_t i(0); i < frameRenderers_.size(); ++i)
 	{
+		//color - different for every framebuffer (swapcahin)
         attachments[0] = swapChain().buffers()[i].imageView;
 
 		vk::Framebuffer frameBuffer;
@@ -164,6 +188,67 @@ void Renderer::initRenderers()
 
 		buildCommandBuffer(frameRenderers_[i]);
 	}
+}
+
+void Renderer::initDepthStencil()
+{
+	//query depth format
+	std::vector<vk::Format> formats =
+	{
+		vk::Format::D32SfloatS8Uint,
+		vk::Format::D32Sfloat,
+		vk::Format::D24UnormS8Uint,
+		vk::Format::D16UnormS8Uint,
+		vk::Format::D16Unorm
+	};
+
+	bool found = 0;
+	for (auto& format : formats)
+	{
+		vk::FormatProperties formatProps;
+		vk::getPhysicalDeviceFormatProperties(vkPhysicalDevice(), format, &formatProps);
+		if(formatProps.optimalTilingFeatures() & vk::FormatFeatureFlagBits::DepthStencilAttachment)
+		{
+			depthStencil_.format = format;
+			found = 1;
+			break;
+		}
+	}
+
+	if(!found)
+	{
+		throw std::runtime_error("vpp::Renderer: found no valid depth stencil format\n");
+	}
+
+	//image
+	vk::ImageCreateInfo info;
+	info.imageType(vk::ImageType::e2D);
+	info.format(depthStencil_.format);
+	info.extent({swapChain().extent().width(), swapChain().extent().height(), 1});
+	info.mipLevels(1);
+	info.arrayLayers(1);
+	info.samples(vk::SampleCount::e1);
+	info.tiling(vk::ImageTiling::Optimal);
+	info.usage(vk::ImageUsage::DepthStencilAttachment | vk::ImageUsage::TransferSrc);
+	info.flags({});
+
+	depthStencil_.image = Image(device(), info, vk::MemoryPropertyFlagBits::DeviceLocal);
+
+	//view
+	auto aspects = vk::ImageAspectFlagBits::Depth | vk::ImageAspectFlagBits::Stencil;
+
+	vk::ImageViewCreateInfo viewInfo = {};
+	viewInfo.viewType(vk::ImageViewType::e2D);
+	viewInfo.format(depthStencil_.format);
+	viewInfo.flags({});
+	viewInfo.subresourceRange() = {};
+	viewInfo.subresourceRange().aspectMask(aspects);
+	viewInfo.subresourceRange().baseMipLevel(0);
+	viewInfo.subresourceRange().levelCount(1);
+	viewInfo.subresourceRange().baseArrayLayer(0);
+	viewInfo.subresourceRange().layerCount(1);
+
+	vk::createImageView(vkDevice(), &viewInfo, nullptr, &depthStencil_.imageView);
 }
 
 void Renderer::buildCommandBuffer(const FrameRenderer& renderer) const
@@ -223,6 +308,7 @@ void Renderer::buildCommandBuffer(const FrameRenderer& renderer) const
 
 void Renderer::buildRenderer(vk::CommandBuffer buffer) const
 {
+	//empty - has to be overriden
 }
 
 void Renderer::render(vk::Queue queue)

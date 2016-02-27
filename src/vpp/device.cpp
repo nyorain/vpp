@@ -58,18 +58,34 @@ vk::Queue Device::queue(std::uint32_t family, std::uint32_t id) const
 	return 0;
 }
 
-int Context::memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags properties) const
+int Context::memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const
 {
 	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount(); ++i)
 	{
 		if(typeBits & (1 << i)) //ith bit set to 1
 		{
-			if((memoryProperties().memoryTypes()[i].propertyFlags() & properties) == properties)
-				return 1;
+			if((memoryProperties().memoryTypes()[i].propertyFlags() & mflags) == mflags)
+				return i;
 		}
 	}
 
 	return -1;
+}
+
+std::uint32_t Context::memoryTypeBits(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const
+{
+	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount(); ++i)
+	{
+		if(typeBits & (1 << i)) //ith bit set to 1
+		{
+			if((memoryProperties().memoryTypes()[i].propertyFlags() & mflags) != mflags)
+			{
+				typeBits &= ~(1 << i); //unset ith bit
+			}
+		}
+	}
+
+	return typeBits;
 }
 
 }

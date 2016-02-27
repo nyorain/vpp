@@ -8,6 +8,7 @@ class Instance;
 class Resource;
 class Surface;
 class SwapChain;
+class ShaderProgram;
 class DeviceMemory;
 class DeviceMemoryAllocator;
 class Buffer;

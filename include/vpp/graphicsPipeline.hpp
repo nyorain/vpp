@@ -16,7 +16,7 @@ struct DescriptorBinding
 	vk::ShaderStageFlags stages;
 };
 
-struct VertexBufferLayout
+class VertexBufferLayout
 {
 public:
 	static VertexBufferLayout Pos4fColor4f;
@@ -35,38 +35,6 @@ public:
 public:
 	unsigned int binding {0};
 	std::vector<vk::Format> attributes;
-};
-
-class Buffer : public Resource
-{
-protected:
-	vk::Buffer buffer_ {};
-	Memory::Entry memoryEntry_;
-
-public:
-	Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags);
-	Buffer(MemoryAllocator& allctr, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags);
-	~Buffer();
-
-	const Memory::Entry& memoryEntry() const { return memoryEntry_; }
-	vk::Buffer vkBuffer() const { return buffer_; }
-	MemoryMap memoryMap() const;
-};
-
-class Image : public Resource
-{
-protected:
-	vk::Image image_ {};
-	Memory::Entry memoryEntry_;
-
-public:
-	Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags);
-	Image(MemoryAllocator& allctr, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags);
-	~Image();
-
-	const Memory::Entry& memoryEntry() const { return memoryEntry_; }
-	vk::Image vkImage() const { return image; }
-	MemoryMap memoryMap() const;
 };
 
 class DescriptorSetLayout : public Resource
@@ -104,14 +72,13 @@ public:
 	struct StatesCreateInfo
 	{
 	public:
-		vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState;
-		vk::PipelineTessellationStateCreateInfo tessellationState;
-		vk::PipelineViewportStateCreateInfo viewportState;
-		vk::PipelineRasterizationStateCreateInfo rasterizationState;
-		vk::PipelineMultisampleStateCreateInfo multisampleState;
-		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-		vk::PipelineColorBlendStateCreateInfo colorBlendState;
-		std::vector<vk::DynamicState> dynamicStates;
+		vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
+		vk::PipelineTessellationStateCreateInfo tessellation;
+		vk::PipelineViewportStateCreateInfo viewport;
+		vk::PipelineRasterizationStateCreateInfo rasterization;
+		vk::PipelineMultisampleStateCreateInfo multisample;
+		vk::PipelineDepthStencilStateCreateInfo depthStencil;
+		vk::PipelineColorBlendStateCreateInfo colorBlend;
 
 	public:
 		StatesCreateInfo(const std::vector<vk::DynamicState>& dynamic = {});
@@ -121,6 +88,8 @@ public:
 	{
 		std::vector<DescriptorSetLayout> descriptorSetLayouts;
 		std::vector<VertexBufferLayout> vertexBufferLayouts;
+		std::vector<vk::DynamicState> dynamicStates;
+
 		vk::RenderPass renderPass;
 		ShaderProgram shader;
 

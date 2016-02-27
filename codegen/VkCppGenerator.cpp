@@ -1510,6 +1510,9 @@ void writeTypeCommandStandard(std::ofstream & ofs, DependencyData const& depende
 	assert(islower(callName[0]));
 	callName[0] = toupper(callName[0]);
 
+	if (commandData.returnType == "Result")
+		ofs << "VPP_CALL(";
+
 	ofs << "vk" << callName << "( ";
 	for (size_t i = 0; i < commandData.arguments.size(); i++) {
 		if (0 < i)
@@ -1519,10 +1522,12 @@ void writeTypeCommandStandard(std::ofstream & ofs, DependencyData const& depende
 		writeMemberData(ofs, commandData.arguments[i], vkTypes);
 	}
 	ofs << " )";
+	if (commandData.returnType == "Result")
+		ofs << ")";
+
 	if (castReturn)
-	{
 		ofs << " )";
-	}
+
 	ofs << ";" << std::endl
 	<< "  }" << std::endl
 	<< std::endl;
@@ -1699,12 +1704,12 @@ void writeEnumToString(std::ofstream & ofs, DependencyData const& dependencyData
 	}
 	*/
 
-	ofs << "  static const char * getString(" << name << " value)" << std::endl
+	ofs << "  static const char * enumString(" << name << " value)" << std::endl
 	<< "  {" << std::endl
 	<< "    switch (value)" << std::endl
 	<< "    {" << std::endl;
 	for (auto itMember = enumData.members.begin(); itMember != enumData.members.end(); ++itMember) {
-		ofs << "    case " << dependencyData.name << "::" << itMember->name << ": return \"" << itMember->name.substr(1) << "\";" << std::endl;
+		ofs << "    case " << dependencyData.name << "::" << itMember->name << ": return \"" << itMember->name << "\";" << std::endl;
 	}
 	ofs << "    default: return \"unknown\";" << std::endl
 	<< "    }" << std::endl
@@ -1716,13 +1721,13 @@ void writeFlagsTostring(std::ofstream & ofs, DependencyData const& dependencyDat
 {
 
 	std::string enumPrefix = "vk::" + *dependencyData.dependencies.begin() + "::";
-	ofs << "  static std::string getString(" << dependencyData.name << " value)" << std::endl
+	ofs << "  static std::string enumString(" << dependencyData.name << " value)" << std::endl
 	<< "  {" << std::endl
 	<< "    if (!value) return std::string();" << std::endl
 	<< "    std::string result;" << std::endl;
 
 	for (auto itMember = enumData.members.begin(); itMember != enumData.members.end(); ++itMember) {
-		ofs << "    if (value & " << enumPrefix + itMember->name << ") result += \"" << itMember->name.substr(1) << " | \";" << std::endl;
+		ofs << "    if (value & " << enumPrefix + itMember->name << ") result += \"" << itMember->name << " | \";" << std::endl;
 	}
 	ofs << "    return result.substr(0, result.size() - (result.size() > 3 ? 3 : 0));" << std::endl
 	<< "  }" << std::endl;
@@ -1798,10 +1803,10 @@ void writeTypeStruct( std::ofstream & ofs, DependencyData const& dependencyData,
 	// create the getters and setters
 	for (size_t i = 0; i < it->second.members.size(); i++) {
 		writeStructGetter( ofs, it->second.members[i], memberName, vkTypes );
-		if (!it->second.returnedOnly)
-		{
+		//if (!it->second.returnedOnly)
+		//{
 			writeStructSetter( ofs, dependencyData.name, it->second.members[i], memberName, vkTypes );
-		}
+		//}
 	}
 
 	// the cast-operator to the wrapped struct, and the struct itself as a private member variable
@@ -1997,6 +2002,7 @@ int main( int argc, char * *argv )
 	ofsFuncs << "#include \"types.hpp\"" << std::endl;
 	ofsFuncs << "#include \"enums.hpp\"" << std::endl;
 	ofsFuncs << "#include \"structs.hpp\"" << std::endl;
+	ofsFuncs << "#include \"call.hpp\"" << std::endl;
 	ofsFuncs << std::endl;
 
 	ofsStrings << ofs.str();
