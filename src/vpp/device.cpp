@@ -1,5 +1,4 @@
 #include <vpp/device.hpp>
-#include <vpp/call.hpp>
 
 namespace vpp
 {
@@ -8,19 +7,19 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 	: instance_(ini), physicalDevice_(phdev)
 {
 	//physicalDevice properties
-	vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice(), &properties_);
+	vk::getPhysicalDeviceProperties(vkPhysicalDevice(), &physicalDeviceProperties_);
 
 	//physicalDevice memoryProperties
 	vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice(), &memoryProperties_);
 
 	//createDevice
-	VPP_CALL(vk::createDevice(vkPhysicalDevice(), &info, nullptr, &device_));
+	vk::createDevice(vkPhysicalDevice(), &info, nullptr, &device_);
 
 	//retrieve/store requested queues
 	auto qproperties = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
 	std::map<std::uint32_t, unsigned int> familyIds;
 	queues_.reserve(info.queueCreateInfoCount());
-	vk::queue queue;
+	vk::Queue queue;
 
 	for(std::size_t i(0); i < info.queueCreateInfoCount(); ++i)
 	{
@@ -39,7 +38,7 @@ Device::~Device()
 
 void Device::waitIdle() const
 {
-    VPP_CALL(vk::deviceWaitIdle(vkDevice()));
+    vk::deviceWaitIdle(vkDevice());
 }
 
 vk::Queue Device::queue(std::uint32_t family) const
@@ -58,11 +57,11 @@ vk::Queue Device::queue(std::uint32_t family, std::uint32_t id) const
 	return 0;
 }
 
-int Context::memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const
+int Device::memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const
 {
 	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount(); ++i)
 	{
-		if(typeBits & (1 << i)) //ith bit set to 1
+		if(typeBits & (1 << i)) //ith bit set to 1?
 		{
 			if((memoryProperties().memoryTypes()[i].propertyFlags() & mflags) == mflags)
 				return i;
@@ -72,16 +71,14 @@ int Context::memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) 
 	return -1;
 }
 
-std::uint32_t Context::memoryTypeBits(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const
+std::uint32_t Device::memoryTypeBits(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const
 {
 	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount(); ++i)
 	{
-		if(typeBits & (1 << i)) //ith bit set to 1
+		if(typeBits & (1 << i)) //ith bit set to 1?
 		{
 			if((memoryProperties().memoryTypes()[i].propertyFlags() & mflags) != mflags)
-			{
 				typeBits &= ~(1 << i); //unset ith bit
-			}
 		}
 	}
 

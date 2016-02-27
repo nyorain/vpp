@@ -1,6 +1,5 @@
 #include <vpp/swapChain.hpp>
 #include <vpp/procAddr.hpp>
-#include <vpp/call.hpp>
 #include <vpp/surface.hpp>
 #include <vpp/vulkan/vulkan.hpp>
 
@@ -56,6 +55,7 @@ void SwapChain::init()
 {
 	VPP_LOAD_DEVICE_PROC(vkDevice(), CreateSwapchainKHR);
 	VPP_LOAD_DEVICE_PROC(vkDevice(), GetSwapchainImagesKHR);
+	VPP_LOAD_DEVICE_PROC(vkDevice(), DestroySwapchainKHR);
 
 	destroyBuffers(); //swapChain will be destroyed later, used for oldSwapchain
 
@@ -63,7 +63,7 @@ void SwapChain::init()
 	auto oldSwapchain = vkSwapChain();
 
     auto createInfo = swapChainCreateInfo();
-    VPP_CALL(fpCreateSwapchainKHR(vkDevice(), &createInfo, nullptr, &swapChain_));
+    fpCreateSwapchainKHR(vkDevice(), &createInfo, nullptr, &swapChain_);
 
 	if(oldSwapchain)
 	{
@@ -73,10 +73,10 @@ void SwapChain::init()
 
     //create buffers
     std::uint32_t count;
-    VPP_CALL(fpGetSwapchainImagesKHR(vkDevice(), vkSwapChain(), &count, nullptr));
+    fpGetSwapchainImagesKHR(vkDevice(), vkSwapChain(), &count, nullptr);
 
     std::vector<VkImage> imgs(count);
-    VPP_CALL(fpGetSwapchainImagesKHR(vkDevice(), vkSwapChain(), &count, imgs.data()));
+    fpGetSwapchainImagesKHR(vkDevice(), vkSwapChain(), &count, imgs.data());
 
     buffers_.reserve(count);
     for(auto& img : imgs) buffers_.push_back(createBuffer(img));
@@ -94,7 +94,7 @@ void SwapChain::queryFormats()
 
 	//get formats
     uint32_t count;
-    VPP_CALL(fpGetPhysicalDeviceSurfaceFormatsKHR(phdev, vkSurface(), &count, nullptr));
+    fpGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(), vkSurface(), &count, nullptr);
 
 	if(!count)
 	{
@@ -102,11 +102,11 @@ void SwapChain::queryFormats()
 	}
 
     std::vector<vk::SurfaceFormatKHR> formats(count);
-    VPP_CALL(fpGetPhysicalDeviceSurfaceFormatsKHR(phdev, vkSurface(), &count,
-		reinterpret_cast<VkSurfaceFormatKHR*>(ret.data())));
+    fpGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(), vkSurface(), &count,
+		reinterpret_cast<VkSurfaceFormatKHR*>(formats.data()));
 
 	//choose best one
-    else if(formats.size() == 1 && formats[0].format() == vk::Format::Undefined)
+    if(formats.size() == 1 && formats[0].format() == vk::Format::Undefined)
 	{
 		format_ = vk::Format::B8G8R8A8Unorm; //no preferred format from surface
 	}
@@ -140,7 +140,7 @@ SwapChain::Buffer SwapChain::createBuffer(VkImage img) const
 	info.image(img);
 
     VkImageView view;
-    VPP_CALL(vk::createImageView(vkDevice(), &info, nullptr, &view));
+    vk::createImageView(vkDevice(), &info, nullptr, &view);
 
     return {img, view};
 }
@@ -152,11 +152,11 @@ VkSwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
 
 	//presentModes
     uint32_t count;
-    VPP_CALL(fpGetPhysicalDeviceSurfacePresentModesKHR(phdev, vkSurface(), &count, nullptr));
+    fpGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(), vkSurface(), &count, nullptr);
 
     std::vector<vk::PresentModeKHR> presentModes(count);
-    VPP_CALL(fpGetPhysicalDeviceSurfacePresentModesKHR(phdev, vkSurface(), &count,
-		reinterpret_cast<VkPresentModeKHR*>(ret.data())));
+    fpGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(), vkSurface(), &count,
+		reinterpret_cast<VkPresentModeKHR*>(presentModes.data()));
 
     vk::PresentModeKHR presentMode = vk::PresentModeKHR::FifoKHR;
     for(auto& mode : presentModes)
@@ -174,7 +174,7 @@ VkSwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
 
 	//capabilities
 	vk::SurfaceCapabilitiesKHR surfCaps;
-	VPP_CALL(fpGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev, vkSurface(), &surfCaps.vkHandle()));
+	fpGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(), vkSurface(), &surfCaps.vkHandle());
 
     //extents
     if(surfCaps.currentExtent().width() > 1)
@@ -215,7 +215,7 @@ unsigned int SwapChain::acquireNextImage(vk::Semaphore presentComplete) const
 	VPP_LOAD_DEVICE_PROC(vkDevice(), AcquireNextImageKHR);
 
     std::uint32_t ret;
-    VPP_CALL(fpAcquireNextImageKHR(vkDevice(), vkSwapChain(), UINT64_MAX, presentComplete, 0, &ret));
+    fpAcquireNextImageKHR(vkDevice(), vkSwapChain(), UINT64_MAX, presentComplete, 0, &ret);
     return ret;
 }
 
@@ -228,7 +228,7 @@ void SwapChain::present(vk::Queue queue, std::uint32_t currentBuffer) const
     presentInfo.pSwapchains(&swapChain_);
     presentInfo.pImageIndices(&currentBuffer);
 
-    VPP_CALL(fpQueuePresentKHR(queue, &presentInfo.vkHandle()));
+    fpQueuePresentKHR(queue, &presentInfo.vkHandle());
 }
 
 }

@@ -1,5 +1,5 @@
 #include <vpp/instance.hpp>
-#include <vpp/call.hpp>
+#include <iostream>
 
 namespace vpp
 {
@@ -16,6 +16,14 @@ Instance::Instance(const CreateInfo& createInfo)
 	appInfo.engineVersion(createInfo.engineVersion);
 	appInfo.apiVersion(createInfo.apiVersion);
 
+/*
+	vk::ApplicationInfo appInfo;
+	appInfo.pApplicationName("unknown");
+	appInfo.applicationVersion(0);
+	appInfo.pEngineName("vpp");
+	appInfo.engineVersion(0);
+	appInfo.apiVersion(VK_MAKE_VERSION(1, 0, 2));
+*/
 	vk::InstanceCreateInfo instanceInfo;
 	instanceInfo.pApplicationInfo(&appInfo);
 	instanceInfo.enabledLayerCount(createInfo.layers.size());
@@ -38,8 +46,12 @@ Instance::~Instance()
 
 std::vector<vk::PhysicalDevice> Instance::enumeratePhysicalDevices() const
 {
-	std::vector<VkPhysicalDevice> phdevs{};
-    VPP_CALL(vk::enumeratePhysicalDevices(vkInstance(), phdevs));
+	auto size = 0u;
+	vk::enumeratePhysicalDevices(vkInstance(), &size, nullptr);
+
+	std::vector<vk::PhysicalDevice> phdevs(size);
+    vk::enumeratePhysicalDevices(vkInstance(), &size, phdevs.data());
+
     return phdevs;
 }
 

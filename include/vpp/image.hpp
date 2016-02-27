@@ -14,12 +14,18 @@ protected:
 	vk::Image image_ {};
 	DeviceMemory::Entry memoryEntry_ {};
 
+protected:
+	void destroy();
+
 public:
 	Image() = default;
 	Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
 	Image(DeviceMemoryAllocator& allctr, const vk::ImageCreateInfo& info,
 		vk::MemoryPropertyFlags mflags = {});
 	~Image();
+
+	Image(Image&& other);
+	Image& operator=(Image&& other);
 
 	const DeviceMemory::Entry& memoryEntry() const { return memoryEntry_; }
 	vk::Image vkImage() const { return image_; }

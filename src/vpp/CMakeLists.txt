@@ -8,6 +8,8 @@ set(vpp-sources
 	memory.cpp
 	allocator.cpp
 	shader.cpp
+	device.cpp
+	instance.cpp
 	buffer.cpp
 	image.cpp
 	graphicsPipeline.cpp)

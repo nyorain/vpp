@@ -1,4 +1,5 @@
 #include <vpp/buffer.hpp>
+#include <utility>
 
 namespace vpp
 {
@@ -11,13 +12,20 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPr
 	vk::getBufferMemoryRequirements(vkDevice(), buffer_, &reqs);
 
 	auto type = device().memoryType(reqs.memoryTypeBits(), mflags);
+	if(type == -1)
+	{
+		throw std::runtime_error("vpp::Image: no matching deviceMemoryType");
+	}
+
 	auto memory = std::make_shared<DeviceMemory>(dev, type, reqs.size());
 
-	auto alloc = memory.alloc(reqs.allocationSize(), reqs.alignment());
-	memoryEntry_ = DeviceMemory::Entry(std::move(memory), alloc);
+	auto alloc = memory->alloc(reqs.size(), reqs.alignment());
+	memoryEntry_ = DeviceMemory::Entry(memory, alloc);
+
+	vk::bindBufferMemory(vkDevice(), buffer_, memory->vkDeviceMemory(), alloc.offset);
 }
 
-Buffer::Buffer(DeviceMemoryAllocator& allctr, const vk::ImageCreateInfo& info,
+Buffer::Buffer(DeviceMemoryAllocator& allctr, const vk::BufferCreateInfo& info,
 	vk::MemoryPropertyFlags mflags) : Resource(allctr.device())
 {
 	vk::MemoryRequirements reqs;
@@ -25,12 +33,39 @@ Buffer::Buffer(DeviceMemoryAllocator& allctr, const vk::ImageCreateInfo& info,
 	vk::getBufferMemoryRequirements(vkDevice(), buffer_, &reqs);
 
 	reqs.memoryTypeBits(device().memoryTypeBits(reqs.memoryTypeBits(), mflags));
-	allctr.request(buffer_, rqes, memoryEntry_);
+	allctr.request(buffer_, reqs, memoryEntry_);
+}
+
+Buffer::Buffer(Buffer&& other)
+{
+	Resource::create(other.device());
+
+	std::swap(memoryEntry_, other.memoryEntry_);
+	std::swap(buffer_, other.buffer_);
+}
+
+Buffer& Buffer::operator=(Buffer&& other)
+{
+	destroy();
+	Resource::create(other.device());
+
+	std::swap(memoryEntry_, other.memoryEntry_);
+	std::swap(buffer_, other.buffer_);
+
+	return *this;
 }
 
 Buffer::~Buffer()
 {
-	if(vkBuffer()) vk::destroyBuffer(vkDevice(), vkImage(), nullptr);
+	destroy();
+}
+
+void Buffer::destroy()
+{
+	if(vkBuffer()) vk::destroyBuffer(vkDevice(), vkBuffer(), nullptr);
+
+	memoryEntry_ = {};
+	buffer_ = {};
 }
 
 MemoryMap Buffer::memoryMap() const

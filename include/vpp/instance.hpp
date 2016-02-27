@@ -17,7 +17,7 @@ public:
 	{
 		std::vector<const char*> extensions {};
 		std::vector<const char*> layers {};
-		std::string appName {""};
+		std::string appName {"unknown"};
 		unsigned int appVersion {0};
 		std::string engineName {"vpp"};
 		unsigned int engineVersion {0};

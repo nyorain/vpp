@@ -1,5 +1,4 @@
 #include <vpp/renderer.hpp>
-#include <vpp/call.hpp>
 #include <vpp/swapChain.hpp>
 #include <vpp/surface.hpp>
 
@@ -88,7 +87,7 @@ void Renderer::initCommandPool()
 	cmdPoolInfo.queueFamilyIndex(0);
 	cmdPoolInfo.flags(vk::CommandPoolCreateFlagBits::ResetCommandBuffer);
 
-	VPP_CALL(vk::createCommandPool(vkDevice(), &cmdPoolInfo, nullptr, &commandPool_));
+	vk::createCommandPool(vkDevice(), &cmdPoolInfo, nullptr, &commandPool_);
 }
 
 void Renderer::initRenderPass()
@@ -110,18 +109,18 @@ void Renderer::initRenderPass()
 	colorReference.layout(vk::ImageLayout::ColorAttachmentOptimal);
 
 	//depth from own depth stencil
-	attachments[1].format(depthStencil_.format());
-	attachments[0].samples(vk::SampleCountFlagBits::e1);
-	attachments[0].loadOp(vk::AttachmentLoadOp::Clear);
-	attachments[0].storeOp(vk::AttachmentStoreOp::Store);
-	attachments[0].stencilLoadOp(vk::AttachmentLoadOp::DontCare);
-	attachments[0].stencilStoreOp(vk::AttachmentStoreOp::DontCare);
-	attachments[0].initialLayout(vk::ImageLayout::ColorAttachmentOptimal);
-	attachments[0].finalLayout(vk::ImageLayout::ColorAttachmentOptimal);
+	attachments[1].format(depthStencil_.format);
+	attachments[1].samples(vk::SampleCountFlagBits::e1);
+	attachments[1].loadOp(vk::AttachmentLoadOp::Clear);
+	attachments[1].storeOp(vk::AttachmentStoreOp::Store);
+	attachments[1].stencilLoadOp(vk::AttachmentLoadOp::DontCare);
+	attachments[1].stencilStoreOp(vk::AttachmentStoreOp::DontCare);
+	attachments[1].initialLayout(vk::ImageLayout::DepthStencilAttachmentOptimal);
+	attachments[1].finalLayout(vk::ImageLayout::DepthStencilAttachmentOptimal);
 
 	vk::AttachmentReference depthReference;
 	depthReference.attachment(1);
-	depthReference.layout(vk::ImageLayout::ColorAttachmentOptimal);
+	depthReference.layout(vk::ImageLayout::DepthStencilAttachmentOptimal);
 
 	//only subpass
 	vk::SubpassDescription subpass;
@@ -132,19 +131,19 @@ void Renderer::initRenderPass()
 	subpass.colorAttachmentCount(1);
 	subpass.pColorAttachments(&colorReference);
 	subpass.pResolveAttachments(nullptr);
-	subpass.pDepthStencilAttachment(depthReference);
+	subpass.pDepthStencilAttachment(&depthReference); //XXX
 	subpass.preserveAttachmentCount(0);
 	subpass.pPreserveAttachments(nullptr);
 
 	vk::RenderPassCreateInfo renderPassInfo;
-	renderPassInfo.attachmentCount(2);
+	renderPassInfo.attachmentCount(2); //XXX
 	renderPassInfo.pAttachments(attachments);
 	renderPassInfo.subpassCount(1);
 	renderPassInfo.pSubpasses(&subpass);
 	renderPassInfo.dependencyCount(0);
 	renderPassInfo.pDependencies(nullptr);
 
-	VPP_CALL(vk::createRenderPass(vkDevice(), &renderPassInfo, nullptr, &renderPass_));
+	vk::createRenderPass(vkDevice(), &renderPassInfo, nullptr, &renderPass_);
 }
 
 void Renderer::initRenderers()
@@ -158,7 +157,7 @@ void Renderer::initRenderers()
 	allocInfo.commandBufferCount(frameRenderers_.size());
 
 	std::vector<vk::CommandBuffer> cmdBuffers(frameRenderers_.size());
-	VPP_CALL(vk::allocateCommandBuffers(vkDevice(), allocInfo, cmdBuffers));
+	vk::allocateCommandBuffers(vkDevice(), allocInfo, cmdBuffers);
 
 	//frameBuffer
 	vk::ImageView attachments[2] {};
@@ -168,7 +167,7 @@ void Renderer::initRenderers()
 
 	vk::FramebufferCreateInfo createInfo;
 	createInfo.renderPass(vkRenderPass());
-	createInfo.attachmentCount(2);
+	createInfo.attachmentCount(2); //XXX
 	createInfo.pAttachments(attachments);
 	createInfo.width(swapChain().extent().width());
 	createInfo.height(swapChain().extent().height());
@@ -180,7 +179,7 @@ void Renderer::initRenderers()
         attachments[0] = swapChain().buffers()[i].imageView;
 
 		vk::Framebuffer frameBuffer;
-        VPP_CALL(vk::createFramebuffer(vkDevice(), &createInfo, nullptr, &frameBuffer));
+        vk::createFramebuffer(vkDevice(), &createInfo, nullptr, &frameBuffer);
 
 		frameRenderers_[i].commandBuffer = cmdBuffers[i];
 		frameRenderers_[i].frameBuffer = frameBuffer;
@@ -227,50 +226,53 @@ void Renderer::initDepthStencil()
 	info.extent({swapChain().extent().width(), swapChain().extent().height(), 1});
 	info.mipLevels(1);
 	info.arrayLayers(1);
-	info.samples(vk::SampleCount::e1);
+	info.samples(vk::SampleCountFlagBits::e1);
 	info.tiling(vk::ImageTiling::Optimal);
-	info.usage(vk::ImageUsage::DepthStencilAttachment | vk::ImageUsage::TransferSrc);
+	info.usage(vk::ImageUsageFlagBits::DepthStencilAttachment | vk::ImageUsageFlagBits::TransferSrc);
 	info.flags({});
 
-	depthStencil_.image = Image(device(), info, vk::MemoryPropertyFlagBits::DeviceLocal);
+	depthStencil_.image.reset(new Image(device(), info, vk::MemoryPropertyFlagBits::DeviceLocal));
 
 	//view
 	auto aspects = vk::ImageAspectFlagBits::Depth | vk::ImageAspectFlagBits::Stencil;
 
+	vk::ImageSubresourceRange subrange;
+	subrange.aspectMask(aspects);
+	subrange.baseMipLevel(0);
+	subrange.levelCount(1);
+	subrange.baseArrayLayer(0);
+	subrange.layerCount(1);
+
 	vk::ImageViewCreateInfo viewInfo = {};
 	viewInfo.viewType(vk::ImageViewType::e2D);
 	viewInfo.format(depthStencil_.format);
+	viewInfo.image(depthStencil_.image->vkImage());
 	viewInfo.flags({});
-	viewInfo.subresourceRange() = {};
-	viewInfo.subresourceRange().aspectMask(aspects);
-	viewInfo.subresourceRange().baseMipLevel(0);
-	viewInfo.subresourceRange().levelCount(1);
-	viewInfo.subresourceRange().baseArrayLayer(0);
-	viewInfo.subresourceRange().layerCount(1);
+	viewInfo.subresourceRange(subrange);
 
 	vk::createImageView(vkDevice(), &viewInfo, nullptr, &depthStencil_.imageView);
 }
 
 void Renderer::buildCommandBuffer(const FrameRenderer& renderer) const
 {
-	vk::CommandBufferBeginInfo cmdBufInfo;
+	vk::ClearValue clearValues[2];
+	clearValues[0].color(std::array<float, 4>{{0.3f, 0.f, 0.2f, 1.f}});
+	clearValues[1].depthStencil({1.f, 0});
 
-	vk::ClearValue clearValues[1];
-	clearValues[0].vkHandle().color = {{0.f, 0.f, 0.2f, 1.f}};
-
-	//WHY
 	auto width = swapChain().extent().width();
 	auto height = swapChain().extent().height();
 
+	vk::CommandBufferBeginInfo cmdBufInfo;
+
 	vk::RenderPassBeginInfo beginInfo;
 	beginInfo.renderPass(vkRenderPass());
-	beginInfo.renderArea({{0, 0}, {width + 1, height + 1}});
-	beginInfo.clearValueCount(1);
+	beginInfo.renderArea({{0, 0}, {width - 1, height - 1}}); //why +1 needed to show sth?
+	beginInfo.clearValueCount(2); //XXX
 	beginInfo.pClearValues(clearValues);
 	beginInfo.framebuffer(renderer.frameBuffer);
 
-	VPP_CALL(vk::beginCommandBuffer(renderer.commandBuffer, cmdBufInfo));
-	vk::cmdBeginRenderPass(renderer.commandBuffer, beginInfo, vk::SubpassContents::Inline);
+	vk::beginCommandBuffer(renderer.commandBuffer, cmdBufInfo);
+	vk::cmdBeginRenderPass(renderer.commandBuffer, &beginInfo, vk::SubpassContents::Inline);
 
 	//Update dynamic viewport state
 	vk::Viewport viewport;
@@ -303,7 +305,7 @@ void Renderer::buildCommandBuffer(const FrameRenderer& renderer) const
 		vk::PipelineStageFlagBits::TopOfPipe, vk::DependencyFlags(), 0,
 		nullptr, 0, nullptr, 0, nullptr);
 
-	VPP_CALL(vk::endCommandBuffer(renderer.commandBuffer));
+	vk::endCommandBuffer(renderer.commandBuffer);
 }
 
 void Renderer::buildRenderer(vk::CommandBuffer buffer) const
@@ -315,7 +317,7 @@ void Renderer::render(vk::Queue queue)
 {
 	vk::Semaphore presentComplete;
     vk::SemaphoreCreateInfo semaphoreCI;
-	VPP_CALL(vk::createSemaphore(vkDevice(), &semaphoreCI, nullptr, &presentComplete));
+	vk::createSemaphore(vkDevice(), &semaphoreCI, nullptr, &presentComplete);
 
     auto currentBuffer = swapChain().acquireNextImage(presentComplete);
 
@@ -325,11 +327,11 @@ void Renderer::render(vk::Queue queue)
 	submitInfo.commandBufferCount(1);
 	submitInfo.pCommandBuffers(&frameRenderers_[currentBuffer].commandBuffer);
 
-	VPP_CALL(vk::queueSubmit(queue, 1, &submitInfo, 0));
+	vk::queueSubmit(queue, 1, &submitInfo, 0);
     swapChain().present(queue, currentBuffer);
 
     vk::destroySemaphore(vkDevice(), presentComplete, nullptr);
-	VPP_CALL(vk::queueWaitIdle(queue));
+	vk::queueWaitIdle(queue);
 }
 
 }

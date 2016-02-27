@@ -8,6 +8,7 @@
 #include <map>
 
 #include "strings.hpp"
+#include "enums.hpp"
 
 namespace vk
 {
@@ -36,8 +37,9 @@ inline bool checkResultThrow(vk::Result result, const char* function)
 		return 1;
 
 	auto msg = resultErrorMsg(result);
+	auto ecode = static_cast<unsigned int>(result);
 	const std::string err =
-        "Vulkan Error Code " + std::to_string(result) + ", " + msg + "\nin function " + function;
+        "Vulkan Error Code " + std::to_string(ecode) + ", " + msg + "\nin function " + function;
 
     std::cerr << err << std::endl;
 	throw VulkanError(result, err);
@@ -46,12 +48,13 @@ inline bool checkResultThrow(vk::Result result, const char* function)
 //warn
 inline bool checkResultWarn(vk::Result result, const char* function)
 {
-	if(result == VK_SUCCESS)
+	if(result == vk::Result::Success)
 		return 1;
 
 	auto msg = resultErrorMsg(result);
+	auto ecode = static_cast<unsigned int>(result);
 	const std::string err =
-        "Vulkan Error Code " + std::to_string(result) + ", " + msg + "\nin function " + function;
+        "Vulkan Error Code " + std::to_string(ecode) + ", " + msg + "\nin function " + function;
 
     std::cerr << err << std::endl;
 

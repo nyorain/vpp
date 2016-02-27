@@ -10,17 +10,17 @@ DeviceMemory::Entry::Entry(DeviceMemoryPtr memory, const Allocation& alloc)
 {
 }
 
-DeviceMemory::DeviceMemory(DeviceMemory&& other)
+DeviceMemory::Entry::Entry(Entry&& other)
 {
 	std::swap(memory_, other.memory_);
-	std::swap(allocation_, other.aclloation_);
+	std::swap(allocation_, other.allocation_);
 }
 
-DeviceMemory& DeviceMemory::operator=(DeviceMemory&& other)
+DeviceMemory::Entry& DeviceMemory::Entry::operator=(Entry&& other)
 {
-	free();
+	this->free();
 	std::swap(memory_, other.memory_);
-	std::swap(allocation_, other.aclloation_);
+	std::swap(allocation_, other.allocation_);
 
 	return *this;
 }
@@ -30,14 +30,14 @@ DeviceMemory::Entry::~Entry()
 	free();
 }
 
-DeviceMemory::Entry::free()
+void DeviceMemory::Entry::free()
 {
 	if(memory_ && allocation_.size > 0)
 	{
 		memory_->free(allocation_);
 	}
 
-	memory_.reset(nullptr);
+	memory_.reset();
 	allocation_ = {0, 0};
 }
 
@@ -45,22 +45,22 @@ DeviceMemory::Entry::free()
 DeviceMemory::DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info)
 	: Resource(dev)
 {
-	auto heapIndex = dev.memoryProperties().memoryTypes()[typeIndex_];
-	flags_ = dev.memoryProperties().memoryHeaps()[heapIndex].flags();
-
 	typeIndex_ = info.memoryTypeIndex();
 	size_ = info.allocationSize();
+
+	//auto heapIndex = dev.memoryProperties().memoryTypes()[typeIndex_].heapIndex();
+	flags_ = dev.memoryProperties().memoryTypes()[typeIndex_].propertyFlags();
 
 	vk::allocateMemory(vkDevice(), &info, nullptr, &memory_);
 }
 DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, std::uint32_t typeIndex)
 	: Resource(dev)
 {
-	auto heapIndex = dev.memoryProperties().memoryTypes()[typeIndex];
-	flags_ = dev.memoryProperties().memoryHeaps()[heapIndex].flags();
-
 	typeIndex_ = typeIndex;
 	size_ = size;
+
+	//auto heapIndex = dev.memoryProperties().memoryTypes()[typeIndex].heapIndex();
+	flags_ = dev.memoryProperties().memoryTypes()[typeIndex_].propertyFlags();
 
 	vk::MemoryAllocateInfo info;
 	info.allocationSize(size_);
@@ -91,14 +91,14 @@ DeviceMemory::~DeviceMemory()
 	if(vkDeviceMemory()) vk::freeMemory(vkDevice(), memory_, nullptr);
 }
 
-DeviceMemory::Allocation DeviceMemory::alloc(std::size_t size, std::size_t aligment)
+DeviceMemory::Allocation DeviceMemory::alloc(std::size_t size, std::size_t alignment)
 {
 	static const Allocation start = {0, 0};
 
 	const Allocation* old = &start;
 	for(auto& alloc : allocations_)
 	{
-		auto alignedOffset = ((old->offset + aligment) & ~aligment);
+		auto alignedOffset = ((old->offset + alignment) & ~alignment);
 		if((alloc.offset - alignedOffset) > size)
 			return allocSpecified(alignedOffset, size);
 	}
@@ -108,7 +108,7 @@ DeviceMemory::Allocation DeviceMemory::alloc(std::size_t size, std::size_t aligm
 
 DeviceMemory::Allocation DeviceMemory::allocSpecified(std::size_t offset, std::size_t size)
 {
-	allocations_.push_back(offset, size);
+	allocations_.push_back({offset, size});
 	return allocations_.back();
 }
 
@@ -186,7 +186,7 @@ void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequire
 	{
 		if(reqs.memoryTypeBits() & (1 << type.first))
 		{
-			type.second.push_back({requestor, reqs, &entry});
+			type.second.push_back({requestor, reqs, tiling, &entry});
 			return;
 		}
 	}
@@ -223,11 +223,11 @@ void DeviceMemoryAllocator::allocate()
 		{
 			for(auto& req : itbuf->second)
 			{
-				auto align = req.requirements.aligment();
+				auto align = req.requirements.alignment();
 				auto alignedOffset = ((sizeMap[i] + align) & ~align);
 				req.offset = alignedOffset;
 
-				sizeMap[i] = alignedOffset + req.requirements.allocationSize();
+				sizeMap[i] = alignedOffset + req.requirements.size();
 				lastAlloc[i] = AllocType::buffer;
 			}
 		}
@@ -250,11 +250,11 @@ void DeviceMemoryAllocator::allocate()
 					lastAlloc[i] = allocType;
 				}
 
-				auto align = req.requirements.aligment();
+				auto align = req.requirements.alignment();
 				auto alignedOffset = ((sizeMap[i] + align) & ~align);
 				req.offset = alignedOffset;
 
-				sizeMap[i] = alignedOffset + req.requirements.allocationSize();
+				sizeMap[i] = alignedOffset + req.requirements.size();
 			}
 		}
 	}
@@ -267,7 +267,7 @@ void DeviceMemoryAllocator::allocate()
 		//buffers
 		for(auto& buf : bufferRequirements_[entry.first])
 		{
-			auto alloc = memory->allocSpecified(buf.offset, buf.size);
+			auto alloc = memory->allocSpecified(buf.offset, buf.requirements.size());
 			if(!buf.entry)
 			{
 				std::cerr << "vpp::DeviceMemoryAllocator: no buffer requirement entry\n";
@@ -277,23 +277,23 @@ void DeviceMemoryAllocator::allocate()
 				*buf.entry = DeviceMemory::Entry(memory, alloc);
 			}
 
-			vk::bindBufferMemory(vkDevice(), buf.buffer, memory->vkDeviceMemory(), buf.offset);
+			vk::bindBufferMemory(vkDevice(), buf.requestor, memory->vkDeviceMemory(), buf.offset);
 		}
 
 		//images
 		for(auto& img : imageRequirements_[entry.first])
 		{
-			auto alloc = memory->allocSpecified(buf.offset, buf.size);
-			if(!buf.entry)
+			auto alloc = memory->allocSpecified(img.offset, img.requirements.size());
+			if(!img.entry)
 			{
-				std::cerr << "vpp::DeviceMemoryAllocator: no buffer requirement entry\n";
+				std::cerr << "vpp::DeviceMemoryAllocator: no image requirement entry\n";
 			}
 			else
 			{
-				*buf.entry = DeviceMemory::Entry(memory, alloc);
+				*img.entry = DeviceMemory::Entry(memory, alloc);
 			}
 
-			vk::bindImageMemory(vkDevice(), buf.buffer, memory->vkDeviceMemory(), img.offset);
+			vk::bindImageMemory(vkDevice(), img.requestor, memory->vkDeviceMemory(), img.offset);
 		}
 	}
 }
@@ -302,7 +302,7 @@ void DeviceMemoryAllocator::allocate()
 MemoryMap::MemoryMap(const DeviceMemory& memory, std::size_t offset, std::size_t size)
 	: memory_(&memory), offset_(offset), size_(size)
 {
-	vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {}, &ptr_);
+	vk::mapMemory(memory.vkDevice(), vkMemory(), offset, size, {}, &ptr_);
 }
 
 MemoryMap::MemoryMap(const DeviceMemory& memory, const DeviceMemory::Allocation& alloc)
@@ -356,7 +356,7 @@ void MemoryMap::invalidateRanges() const
 
 void MemoryMap::unmap()
 {
-	if(memory() && ptr() && size())
+	if(memory_ && vkMemory() && ptr() && size())
 	{
 		vk::unmapMemory(memory().vkDevice(), vkMemory());
 	}

@@ -15,7 +15,7 @@ class Buffer;
 class Image;
 class Framebuffer;
 class GraphicsPipeline;
-class VertexBuffer;
+class Buffer;
 class DescriptorSet;
 class VertexBufferLayout;
 class DescriptorSetLayout;

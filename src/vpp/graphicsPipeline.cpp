@@ -1,7 +1,7 @@
 #include <vpp/graphicsPipeline.hpp>
 #include <vpp/context.hpp>
-#include <vpp/call.hpp>
 #include <vpp/shader.hpp>
+#include <vpp/buffer.hpp>
 
 namespace vpp
 {
@@ -203,12 +203,48 @@ unsigned int formatSize(vk::Format format)
 	}
 }
 
-unsigned int bindID = 0;
-
-GraphicsPipeline::GraphicsPipeline(const Device& device, vk::RenderPass renderPass)
+//descriptorSetLayout
+DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
+	const std::vector<DescriptorBinding>& bindings)
 {
-	create(device, renderPass);
 
+}
+DescriptorSetLayout::~DescriptorSetLayout()
+{
+
+}
+
+//DescriptorSet
+DescriptorSet::DescriptorSet(const Device& dev, const DescriptorSetLayout& layout,
+	vk::DescriptorPool pool)
+{
+
+}
+DescriptorSet::~DescriptorSet()
+{
+
+}
+
+void DescriptorSet::writeImages(std::size_t binding,
+	const std::vector<vk::DescriptorImageInfo>& updates) const
+{
+
+}
+void DescriptorSet::writeBuffers(std::size_t binding,
+	const std::vector<vk::DescriptorBufferInfo>& updates) const
+{
+
+}
+void DescriptorSet::writeBufferViews(std::size_t binding,
+	const std::vector<vk::BufferView>& updates) const
+{
+
+}
+
+//pipeline
+GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& createInfo)
+{
+	create(device, createInfo);
 }
 
 GraphicsPipeline::~GraphicsPipeline()
@@ -227,7 +263,7 @@ void GraphicsPipeline::create(const Device& device, const CreateInfo& createInfo
 	//Binding description
 	std::size_t attributeCount = 0;
 	for(auto& layout : createInfo.vertexBufferLayouts)
-		attributeCount += layout.attributes.size();
+		attributeCount += layout->attributes.size();
 
 	std::vector<vk::VertexInputBindingDescription> bindingDescriptions;
 	bindingDescriptions.reserve(createInfo.vertexBufferLayouts.size());
@@ -239,18 +275,18 @@ void GraphicsPipeline::create(const Device& device, const CreateInfo& createInfo
 	{
 		std::size_t location = 0;
 		std::size_t offset = 0;
-		for(auto& attribute : layout.attributes)
+		for(auto& attribute : layout->attributes)
 		{
 			attributeDescriptions.emplace_back();
 			attributeDescriptions.back().location(location++);
-			attributeDescriptions.back().binding(layout.binding);
+			attributeDescriptions.back().binding(layout->binding);
 			attributeDescriptions.back().format(attribute);
 			attributeDescriptions.back().offset(offset);
 			offset += formatSize(attribute);
 		}
 
-		bindingDescriptions.push_back();
-		bindingDescriptions.back().binding(layout.binding);
+		bindingDescriptions.emplace_back();
+		bindingDescriptions.back().binding(layout->binding);
 		bindingDescriptions.back().stride(offset);
 		bindingDescriptions.back().inputRate(vk::VertexInputRate::Vertex);
 	}
@@ -265,7 +301,7 @@ void GraphicsPipeline::create(const Device& device, const CreateInfo& createInfo
 	descriptorSetLayouts.reserve(createInfo.descriptorSetLayouts.size());
 
 	for(auto& layout : createInfo.descriptorSetLayouts)
-		descriptorSetLayouts.push_back(layout.vkDescriptorSetLayout());
+		descriptorSetLayouts.push_back(layout->vkDescriptorSetLayout());
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
 	pipelineLayoutInfo.setLayoutCount(descriptorSetLayouts.size());
@@ -275,24 +311,25 @@ void GraphicsPipeline::create(const Device& device, const CreateInfo& createInfo
 
 	//dynamic state
 	vk::PipelineDynamicStateCreateInfo dynamicState;
-	dynamicState.pDynamicStates(createInfo.dynamicState.data());
-	dynamicState.dynamicStateCount(createInfo.dynamicState.size());
+	dynamicState.pDynamicStates(createInfo.dynamicStates.data());
+	dynamicState.dynamicStateCount(createInfo.dynamicStates.size());
 
 	//create it
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
 
-	pipelineInfo.layout(pipelineLayout);
+	pipelineInfo.layout(pipelineLayout_);
 	pipelineInfo.pVertexInputState(&vertexInfo);
 	pipelineInfo.pDynamicState(&dynamicState);
 	pipelineInfo.renderPass(createInfo.renderPass);
-	pipelineInfo.stageCount(createInfo.shaderProgram.stages().size());
-	pipelineInfo.pStages(createInfo.shaderProgram.stages().data());s
-	pipelineInfo.pInputAssemblyState(&createInfo.inputAssemblyState);
-	pipelineInfo.pRasterizationState(&createInfo.rasterizationState);
-	pipelineInfo.pColorBlendState(&createInfo.colorBlendState);
-	pipelineInfo.pMultisampleState(&createInfo.multisampleState);
-	pipelineInfo.pViewportState(&createInfo.viewportState);
-	pipelineInfo.pDepthStencilState(&createInfo.depthStencilState);
+	pipelineInfo.stageCount(createInfo.shader.stages().size());
+	pipelineInfo.pStages(createInfo.shader.stages().data());
+	pipelineInfo.pInputAssemblyState(&createInfo.states.inputAssembly);
+	pipelineInfo.pRasterizationState(&createInfo.states.rasterization);
+	pipelineInfo.pColorBlendState(&createInfo.states.colorBlend);
+	pipelineInfo.pMultisampleState(&createInfo.states.multisample);
+	pipelineInfo.pViewportState(&createInfo.states.viewport);
+	pipelineInfo.pDepthStencilState(&createInfo.states.depthStencil);
+	pipelineInfo.pTessellationState(nullptr);
 
 	vk::createGraphicsPipelines(vkDevice(), 0, 1, &pipelineInfo, nullptr, &pipeline_);
 }
@@ -300,19 +337,23 @@ void GraphicsPipeline::create(const Device& device, const CreateInfo& createInfo
 void GraphicsPipeline::destroy()
 {
 	if(pipeline_) vk::destroyPipeline(vkDevice(), pipeline_, nullptr);
-	if(pipelineLayout_) vk::destroyPipelineLayout(vkDevice(), pipeline_, nullptr);
+	if(pipelineLayout_) vk::destroyPipelineLayout(vkDevice(), pipelineLayout_, nullptr);
 
 	pipeline_ = {};
 	pipelineLayout_ = {};
 }
 
-void GraphicsPipeline::renderCommands(vk::CommandBuffer cmdBuffer,
-	const std::vector<VertexBuffer>& vertices, const std::vector<DescriptorSet>& descriptors) const
+void GraphicsPipeline::drawCommands(vk::CommandBuffer cmdBuffer,
+	const std::vector<Buffer*>& vertices, const std::vector<DescriptorSet*>& descriptors) const
 {
 	if(!descriptors.empty())
 	{
-		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics, pilelineLayout_,
-			0, descriptors.size(), descriptors.data(), 0, nullptr);
+		std::vector<vk::DescriptorSet> descs;
+		descs.reserve(descriptors.size());
+		for(auto& des : descriptors) descs.push_back(des->vkDescriptorSet());
+
+		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics, pipelineLayout_,
+			0, descs.size(), descs.data(), 0, nullptr);
 	}
 
 	vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::Graphics, pipeline_);
@@ -320,7 +361,12 @@ void GraphicsPipeline::renderCommands(vk::CommandBuffer cmdBuffer,
 	if(!vertices.empty())
 	{
 		vk::DeviceSize offsets[1] {0};
-		vk::cmdBindVertexBuffers(cmdBuffer, bindID, vertices.size(), vertices.data(), offsets);
+
+		std::vector<vk::Buffer> buffers;
+		buffers.reserve(vertices.size());
+		for(auto& vert : vertices) buffers.push_back(vert->vkBuffer());
+
+		vk::cmdBindVertexBuffers(cmdBuffer, 0, buffers.size(), buffers.data(), offsets);
 	}
 
 	vk::cmdDraw(cmdBuffer, 3, 1, 0, 0);

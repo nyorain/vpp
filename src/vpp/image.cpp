@@ -1,4 +1,5 @@
 #include <vpp/image.hpp>
+#include <utility>
 
 namespace vpp
 {
@@ -11,10 +12,17 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPrope
 	vk::getImageMemoryRequirements(vkDevice(), image_, &reqs);
 
 	auto type = device().memoryType(reqs.memoryTypeBits(), mflags);
-	auto memory = std::make_shared<DeviceMemory>(dev, type, reqs.size());
+	if(type == -1)
+	{
+		throw std::runtime_error("vpp::Image: no matching deviceMemoryType");
+	}
 
-	auto alloc = memory.alloc(reqs.allocationSize(), reqs.alignment());
-	memoryEntry_ = DeviceMemory::Entry(std::move(memory), alloc);
+	auto memory = std::make_shared<DeviceMemory>(dev, reqs.size(), type);
+
+	auto alloc = memory->alloc(reqs.size(), reqs.alignment());
+	memoryEntry_ = DeviceMemory::Entry(memory, alloc);
+
+	vk::bindImageMemory(vkDevice(), image_, memory->vkDeviceMemory(), alloc.offset);
 }
 
 Image::Image(DeviceMemoryAllocator& allctr, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags)
@@ -25,12 +33,39 @@ Image::Image(DeviceMemoryAllocator& allctr, const vk::ImageCreateInfo& info, vk:
 	vk::getImageMemoryRequirements(vkDevice(), image_, &reqs);
 
 	reqs.memoryTypeBits(device().memoryTypeBits(reqs.memoryTypeBits(), mflags));
-	allctr.request(image_, rqes, info.tiling(), memoryEntry_);
+	allctr.request(image_, reqs, info.tiling(), memoryEntry_);
+}
+
+Image::Image(Image&& other)
+{
+	Resource::create(other.device());
+
+	std::swap(memoryEntry_, other.memoryEntry_);
+	std::swap(image_, other.image_);
+}
+
+Image& Image::operator=(Image&& other)
+{
+	destroy();
+	Resource::create(other.device());
+
+	std::swap(memoryEntry_, other.memoryEntry_);
+	std::swap(image_, other.image_);
+
+	return *this;
 }
 
 Image::~Image()
 {
+	destroy();
+}
+
+void Image::destroy()
+{
 	if(vkImage()) vk::destroyImage(vkDevice(), vkImage(), nullptr);
+
+	memoryEntry_ = {};
+	image_ = {};
 }
 
 MemoryMap Image::memoryMap() const

@@ -1,6 +1,7 @@
 #include <vpp/allocator.hpp>
 #include <memory>
 #include <algorithm>
+#include <iostream>
 
 namespace vpp
 {
@@ -10,16 +11,16 @@ void Allocator::Buffer::recalcBiggest(const Allocation* freed)
 {
 	if(freed && freed->position == biggest.end() + 1)
 	{
-		biggest.size += freed.size;
+		biggest.size += freed->size;
 	}
-	else if(freed && freed.end() == biggest->position - 1)
+	else if(freed && freed->end() == biggest.position - 1)
 	{
-		biggest.position = freed.position;
-		biggest.size += freed.size;
+		biggest.position = freed->position;
+		biggest.size += freed->size;
 	}
 	else
 	{
-		void* oldEnd = nullptr;
+		Pointer oldEnd = nullptr;
 		for(auto& alloc : allocs)
 		{
 			if(oldEnd != nullptr)
@@ -40,15 +41,12 @@ void Allocator::Buffer::recalcBiggest(const Allocation* freed)
 Allocator::Allocator(Size pbufferSize, Size pallocsSize, Size pallocsIncrease)
 	: bufferSize(pbufferSize), allocsSize(pallocsSize), allocsIncrease(pallocsIncrease)
 {
-	buffers_.resize(1);
-
-	buffers_[0].buffer.resize(bufferSize);
-	buffers_[0].allocs.resize(startAllocs);
+	addBuffer();
 }
 
 Allocator::~Allocator()
 {
-	if(numberAllocations() > 0) std::cerr << "vpp::~Allocator: allocations left".
+	if(numberAllocations() > 0) std::cerr << "vpp::~Allocator: allocations left\n.";
 }
 
 void Allocator::addBuffer()
@@ -57,10 +55,10 @@ void Allocator::addBuffer()
 
 	buffers_.back().buffer.resize(bufferSize);
 	buffers_.back().allocs.resize(allocsSize);
-	buffers_.back().biggest = bufferSize;
+	buffers_.back().biggest = {buffers_.back().buffer.data(), bufferSize};
 }
 
-Allocation& Allocator::nextAllocation(Buffer& buf)
+Allocator::Allocation& Allocator::nextAllocation(Buffer& buf)
 {
 	for(auto& alloc : buf.allocs)
 	{
@@ -75,12 +73,16 @@ void* Allocator::alloc(Size size, Size alignment)
 {
 	for(auto& buf : buffers_)
 	{
-		auto ptr = std::align(alignment, size, buf.biggest.position, buf.biggest.size);
+		void* pos = buf.biggest.position;
+		pos = std::align(alignment, size, pos, buf.biggest.size);
+		auto ptr = static_cast<Pointer>(pos);
+
 		if(ptr)
 		{
-			auto al = nextAllocation(buf);
+			auto& al = nextAllocation(buf);
 			al.position = ptr;
 			al.size = size;
+			al.alignment = alignment;
 
 			buf.recalcBiggest();
 			std::sort(buf.allocs.begin(), buf.allocs.end(),
@@ -90,22 +92,27 @@ void* Allocator::alloc(Size size, Size alignment)
 		}
 	}
 
+	if(size > bufferSize)
+	{
+		bufferSize = size * 2;
+	}
+
 	addBuffer();
-	return alloc(size, alignment); //try again!
+	return this->alloc(size, alignment); //try again!
 }
 
 void Allocator::free(void* buffer)
 {
 	for(auto& buf : buffers_)
 	{
-		auto it = std::find(buf.allocs.cbegin(), buf.allocs.cend(),
+		auto it = std::find_if(buf.allocs.cbegin(), buf.allocs.cend(),
 			[=](const Allocation& alloc) { return alloc.position == buffer; });
 
-		if(it != buf.end())
+		if(it != buf.allocs.end())
 		{
 			auto a = *it;
 			buf.allocs.erase(it);
-			buf.recalcBiggest(a);
+			buf.recalcBiggest(&a);
 			return;
 		}
 	}
@@ -117,14 +124,17 @@ void* Allocator::realloc(void* buffer, Size size)
 {
 	for(auto& buf : buffers_)
 	{
-		auto it = std::find(buf.allocs.cbegin(), buf.allocs.cend(),
+		auto it = std::find_if(buf.allocs.begin(), buf.allocs.end(),
 			[=](const Allocation& alloc) { return alloc.position == buffer; });
 
-		if(it != buf.end())
+		if(it != buf.allocs.end())
 		{
-			if(((it + 1)->position - it->position) > size)
+			auto nextPos = buf.buffer.data() + buf.buffer.size();
+			if((it + 1) != buf.allocs.end()) nextPos = (it + 1)->position;
+
+			if((nextPos - it->position) > size)
 			{
-				bool recalc = (buf.biggest.position == it.end() + 1);
+				bool recalc = (buf.biggest.position == it->end() + 1);
 				it->size = size;
 				if(recalc) buf.recalcBiggest();
 				return buffer;
@@ -133,21 +143,22 @@ void* Allocator::realloc(void* buffer, Size size)
 			{
 				auto a = *it;
 				buf.allocs.erase(it);
-				buf.recalcBiggest(a);
-				return;
+				buf.recalcBiggest(&a);
+				return alloc(a.size, a.alignment);
 			}
 		}
 	}
 
 	std::cerr << "vpp::Allocator::realloc: could not find " << buffer << "\n";
+	return nullptr;
 }
 
 std::size_t Allocator::size() const
 {
 	std::size_t ret = 0;
-	for(auto& buf : buffers)
+	for(auto& buf : buffers_)
 	{
-		ret += buf.size();
+		ret += buf.buffer.size();
 	}
 
 	return ret;
@@ -156,7 +167,7 @@ std::size_t Allocator::size() const
 std::size_t Allocator::allocated() const
 {
 	std::size_t ret = 0;
-	for(auto& buf : buffers)
+	for(auto& buf : buffers_)
 	{
 		for(auto& alloc : buf.allocs)
 		{
@@ -170,17 +181,17 @@ std::size_t Allocator::allocated() const
 std::size_t Allocator::biggestBlock() const
 {
 	std::size_t ret = 0;
-	for(auto& buf : buffers)
+	for(auto& buf : buffers_)
 	{
-		if(buf.biggestBlock > ret)
-			ret = buf.biggest;
+		if(buf.biggest.size > ret)
+			ret = buf.biggest.size;
 	}
 }
 
 std::size_t Allocator::numberAllocations() const
 {
 	std::size_t ret = 0;
-	for(auto& buf : buffers)
+	for(auto& buf : buffers_)
 	{
 		for(auto& alloc : buf.allocs)
 		{

@@ -24,14 +24,14 @@ protected:
 
 	struct DepthStencil
 	{
-		Image image;
+		std::unique_ptr<Image> image {nullptr};
 		vk::ImageView imageView;
 		vk::Format format;
 	};
 
 protected:
 	const SwapChain* swapChain_;
-	DepthStencil depth_;
+	DepthStencil depthStencil_;
 
 	std::vector<FrameRenderer> frameRenderers_;
 	vk::RenderPass renderPass_;

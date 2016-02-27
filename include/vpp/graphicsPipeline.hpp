@@ -4,6 +4,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/memory.hpp>
+#include <vpp/shader.hpp>
 
 #include <memory>
 
@@ -33,8 +34,8 @@ public:
 	static VertexBufferLayout Pos2f;
 
 public:
-	unsigned int binding {0};
 	std::vector<vk::Format> attributes;
+	unsigned int binding {0};
 };
 
 class DescriptorSetLayout : public Resource
@@ -54,12 +55,15 @@ public:
 class DescriptorSet : public Resource
 {
 protected:
-	DescriptorSetLayout& layout_;
+	const DescriptorSetLayout* layout_;
 	vk::DescriptorSet descriptorSet_ {};
 
 public:
 	DescriptorSet(const Device& dev, const DescriptorSetLayout& layout, vk::DescriptorPool pool);
 	~DescriptorSet();
+
+	vk::DescriptorSet vkDescriptorSet() const { return descriptorSet_; }
+	const DescriptorSetLayout& layout() const { return *layout_; }
 
 	void writeImages(std::size_t binding, const std::vector<vk::DescriptorImageInfo>& updates) const;
 	void writeBuffers(std::size_t binding, const std::vector<vk::DescriptorBufferInfo>& updates) const;
@@ -81,13 +85,13 @@ public:
 		vk::PipelineColorBlendStateCreateInfo colorBlend;
 
 	public:
-		StatesCreateInfo(const std::vector<vk::DynamicState>& dynamic = {});
+		//StatesCreateInfo(const std::vector<vk::DynamicState>& dynamic = {});
 	};
 
 	struct CreateInfo
 	{
-		std::vector<DescriptorSetLayout> descriptorSetLayouts;
-		std::vector<VertexBufferLayout> vertexBufferLayouts;
+		std::vector<DescriptorSetLayout*> descriptorSetLayouts;
+		std::vector<VertexBufferLayout*> vertexBufferLayouts;
 		std::vector<vk::DynamicState> dynamicStates;
 
 		vk::RenderPass renderPass;
@@ -108,11 +112,13 @@ protected:
 	void destroy();
 
 public:
-	GraphicsPipeline(const Device& context, const CreateInfo& createInfo);
+	GraphicsPipeline(const Device& device, const CreateInfo& createInfo);
 	~GraphicsPipeline();
 
-	void drawCommands(vk::CommandBuffer cmdBuffer, const std::vector<VertexBuffer>& vertices,
-		const std::vector<DescriptorSet>& descriptors) const;
+	vk::Pipeline vkPipeline() const { return pipeline_; }
+
+	void drawCommands(vk::CommandBuffer cmdBuffer, const std::vector<Buffer*>& vertices,
+		const std::vector<DescriptorSet*>& descriptors) const;
 };
 
 }

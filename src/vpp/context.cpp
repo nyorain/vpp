@@ -1,6 +1,5 @@
 #include <vpp/context.hpp>
 #include <vpp/vulkan/vulkan.hpp>
-#include <vpp/call.hpp>
 #include <vpp/procAddr.hpp>
 
 namespace vpp

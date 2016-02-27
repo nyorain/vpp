@@ -1,5 +1,4 @@
 #include <vpp/backend/win32.hpp>
-#include <vpp/call.hpp>
 
 namespace vpp
 {

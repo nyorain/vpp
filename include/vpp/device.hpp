@@ -14,7 +14,7 @@ public:
 	{
 		vk::Queue queue;
 		vk::QueueFamilyProperties properties;
-		unsigned int queueFamily;
+		unsigned int family;
 		unsigned int id;
 	};
 

@@ -98,7 +98,7 @@ protected:
 	std::map<unsigned int, std::vector<ImageRequirement>> imageRequirements_;
 
 public:
-	DeviceMemoryAllocator(const Device& dev, bool );
+	DeviceMemoryAllocator(const Device& dev);
 	~DeviceMemoryAllocator();
 
 	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
@@ -115,8 +115,8 @@ class MemoryMap : public NonCopyable
 protected:
 	const DeviceMemory* memory_ {nullptr};
 	std::size_t offset_ {0};
-	const std::size_t size_ {0};
-	void* const ptr_ {nullptr};
+	std::size_t size_ {0};
+	void* ptr_ {nullptr};
 
 public:
 	MemoryMap(const DeviceMemory& memory, std::size_t offset, std::size_t size);

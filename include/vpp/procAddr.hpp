@@ -66,7 +66,7 @@ inline PFN_vkVoidFunction deviceProc(VkDevice device, const std::string& name)
 
 //store them in a fp<> var
 #define VPP_LOAD_INSTANCE_PROC(inst, name) \
-        fp##name = reinterpret_cast<PFN_vk##name>(::vpp::instanceProc(inst, "vk"#name));
+        auto fp##name = reinterpret_cast<PFN_vk##name>(::vpp::instanceProc(inst, "vk"#name));
 
 #define VPP_LOAD_DEVICE_PROC(device, name) \
-        fp##name = reinterpret_cast<PFN_vk##name>(::vpp::deviceProc(device, "vk"#name));
+        auto fp##name = reinterpret_cast<PFN_vk##name>(::vpp::deviceProc(device, "vk"#name));
