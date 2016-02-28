@@ -8,6 +8,7 @@
 #include <vpp/shader.hpp>
 #include <vpp/buffer.hpp>
 #include <vpp/memory.hpp>
+#include <vpp/debug.hpp>
 #include <vpp/graphicsPipeline.hpp>
 
 #include <nytl/transform.hpp>
@@ -24,41 +25,30 @@
 static const std::vector<float> gVertices =
 {
       -0.5f,-0.5f,-0.5f,    0.f, 1.f, 0.8f,
-      -0.5f,-0.5f, 0.5f,    .2f, .3f, 0.5f,
-      -0.5f, 0.5f, 0.5f,    .8f, .8f, 0.0f,
-      0.5f, 0.5f,-0.5f,     .0f, 0.2f, 1.0f,
-      -0.5f,-0.5f,-0.5f,   0.f, 1.f, 0.8f,
-      -0.5f, 0.5f,-0.5f,   .0f, 0.2f, 1.0f,
-      0.5f,-0.5f, 0.5f,   .2f, .3f, 0.5f,
-     -0.5f,-0.5f,-0.5f,  0.f, 1.f, 0.8f,
-     0.5f,-0.5f,-0.5f,   1.f, 0.f, 0.2f,
-     0.5f, 0.5f,-0.5f,  .0f, 0.2f, 1.0f,
-     0.5f,-0.5f,-0.5f,   1.f, 0.f, 0.2f,
-     -0.5f,-0.5f,-0.5f,   0.f, 1.f, 0.8f,
-     -0.5f,-0.5f,-0.5f,   0.f, 1.f, 0.8f,
-     -0.5f, 0.5f, 0.5f,  .8f, .8f, 0.0f,
-     -0.5f, 0.5f,-0.5f,   .0f, 0.2f, 1.0f,
-     0.5f,-0.5f, 0.5f,   .2f, .3f, 0.5f,
-     -0.5f,-0.5f, 0.5f,  .2f, .3f, 0.5f,
-     -0.5f,-0.5f,-0.5f,   0.f, 1.f, 0.8f,
-     -0.5f, 0.5f, 0.5f,   .8f, .8f, 0.0f,
-     -0.5f,-0.5f, 0.5f,   .2f, .3f, 0.5f,
-     0.5f,-0.5f, 0.5f,   .2f, .3f, 0.5f,
-     0.5f, 0.5f, 0.5f,   1.f, 0.f, 0.2f,
-     0.5f,-0.5f,-0.5f,   1.f, 0.f, 0.2f,
-     0.5f, 0.5f,-0.5f,   .0f, 0.2f, 1.0f,
-     0.5f,-0.5f,-0.5f,   1.f, 0.f, 0.2f,
-     0.5f, 0.5f, 0.5f,   1.f, 0.f, 0.2f,
-     0.5f,-0.5f, 0.5f,   .2f, .3f, 0.5f,
-     0.5f, 0.5f, 0.5f,   1.f, 0.f, 0.2f,
-     0.5f, 0.5f,-0.5f,   .0f, 0.2f, 1.0f,
-     -0.5f, 0.5f,-0.5f,   .0f, 0.2f, 1.0f,
-     0.5f, 0.5f, 0.5f,   1.f, 0.f, 0.2f,
-     -0.5f, 0.5f,-0.5f,  .0f, 0.2f, 1.0f,
-     -0.5f, 0.5f, 0.5f,   .8f, .8f, 0.0f,
-     0.5f, 0.5f, 0.5f,   1.f, 0.f, 0.2f,
-     -0.5f, 0.5f, 0.5f,  .8f, .8f, 0.0f,
-     0.5f,-0.5f, 0.5f,  .2f, .3f, 0.5f,
+      -0.5f, 0.5f,-0.5f,    .2f, .3f, 0.5f,
+       0.5f, 0.5f, -0.5f,   .8f, .8f, 0.0f,
+	   0.5f, -0.5f,-0.5f,   .8f, .8f, 0.0f,
+
+	  -0.5f,-0.5f, 0.5f,    .8f, .8f, 0.0f,
+      -0.5f, 0.5f, 0.5f,    .0f, 0.2f, 1.0f,
+	   0.5f, 0.5f, 0.5f,	1.f, 0.2f, 0.f,
+	   0.5f,-0.5f, 0.5f,	1.f, 0.2f, 0.f,
+ };
+
+ static const std::vector<std::uint32_t> gIndices =
+ {
+	 0, 1, 3, //top
+	 1, 2, 3,
+	 4, 7, 5, //bottom
+	 5, 7, 6,
+	 0, 4, 1, //front
+	 4, 5, 1,
+	 3, 2, 7, //back
+	 7, 2, 6,
+	 0, 3, 7, //left
+	 0, 7, 4,
+	 1, 5, 6, //right
+	 1, 6, 2
  };
 
 /*
@@ -100,6 +90,7 @@ protected:
 	std::unique_ptr<vpp::GraphicsPipeline> pipeline_;
 	std::unique_ptr<vpp::Buffer> vertexBuffer_;
 	std::unique_ptr<vpp::Buffer> descriptorBuffer_;
+	std::unique_ptr<vpp::Buffer> indexBuffer_;
 	std::unique_ptr<vpp::DescriptorSet> descriptorSet_;
 	std::unique_ptr<vpp::DescriptorSetLayout> descriptorSetLayout_;
 
@@ -115,27 +106,40 @@ protected:
 		//pipeline_->drawCommands(cmdBuffer, {vertexBuffer_.get()}, {});
 
 		VkDeviceSize offsets[1] = { 0 };
-		auto buf = vertexBuffer_->vkBuffer();
 
-		//auto buf = vertexBuffer_;
+		auto buf = vertexBuffer_->vkBuffer();
 		auto vkDesc = descriptorSet_->vkDescriptorSet();
 
 		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics,
 			pipeline_->vkPipelineLayout(), 0, 1, &vkDesc, 0, nullptr);
+
 		vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::Graphics, pipeline_->vkPipeline());
+
 		vk::cmdBindVertexBuffers(cmdBuffer, 0, 1, &buf, offsets);
-		vk::cmdDraw(cmdBuffer, 36, 1, 0, 0);
+		vk::cmdBindIndexBuffer(cmdBuffer, indexBuffer_->vkBuffer(), 0, vk::IndexType::Uint32);
+
+		vk::cmdDrawIndexed(cmdBuffer, gIndices.size(), 1, 0, 0, 1);
 
 		//pipeline_->renderCommands(cmdBuffer);
 	};
 
-	void initBuffer()
+	void initVertexBuffer()
 	{
 		vk::BufferCreateInfo bufInfo;
 		bufInfo.size(sizeof(float) * gVertices.size());
 		bufInfo.usage(vk::BufferUsageFlagBits::VertexBuffer);
 
 		 vertexBuffer_.reset(new vpp::Buffer(*allocator_, bufInfo,
+			vk::MemoryPropertyFlagBits::HostVisible));
+	}
+
+	void initIndexBuffer()
+	{
+		vk::BufferCreateInfo bufInfo;
+		bufInfo.size(sizeof(std::uint32_t) * gIndices.size());
+		bufInfo.usage(vk::BufferUsageFlagBits::IndexBuffer);
+
+		 indexBuffer_.reset(new vpp::Buffer(*allocator_, bufInfo,
 			vk::MemoryPropertyFlagBits::HostVisible));
 	}
 
@@ -176,21 +180,21 @@ protected:
 	void fillVertexBuffer()
 	{
 		auto map = vertexBuffer_->memoryMap();
-		if(map.ptr())
-		{
-			std::memcpy(map.ptr(), gVertices.data(), sizeof(float) * gVertices.size());
-		}
-		else
-		{
-			throw std::runtime_error("unable to map");
-		}
+		std::memcpy(map.ptr(), gVertices.data(), sizeof(float) * gVertices.size());
+	}
+
+	void fillIndexBuffer()
+	{
+		auto map = indexBuffer_->memoryMap();
+		std::memcpy(map.ptr(), gIndices.data(), sizeof(std::uint32_t) * gIndices.size());
 	}
 
 	void fillDescriptorBuffer()
 	{
 		const auto& mat = transform_.transformMatrix();
 		auto map = descriptorBuffer_->memoryMap();
-		if(map.ptr())
+
+		if(map.ptr()) //check not needed fill throw on failure
 		{
 			for(int i(0); i < 4; ++i)
 			{
@@ -212,7 +216,9 @@ public:
 
 		allocator_.reset(new vpp::DeviceMemoryAllocator(device()));
 
-		initBuffer();
+		initVertexBuffer();
+		initIndexBuffer();
+
 		initDescriptorPool();
 		initDescriptorSets();
 
@@ -251,8 +257,8 @@ public:
 		//
 		info.states.inputAssembly.topology(vk::PrimitiveTopology::TriangleList);
 
-		info.states.rasterization.polygonMode(vk::PolygonMode::Line);
-		info.states.rasterization.cullMode(vk::CullModeFlagBits::None);
+		info.states.rasterization.polygonMode(vk::PolygonMode::Fill);
+		info.states.rasterization.cullMode(vk::CullModeFlagBits::Back);
 		info.states.rasterization.frontFace(vk::FrontFace::CounterClockwise);
 		info.states.rasterization.depthClampEnable(true);
 		info.states.rasterization.rasterizerDiscardEnable(false);
@@ -286,6 +292,7 @@ public:
 		allocator_.reset(); //destroy it -> allocates
 
 		fillVertexBuffer();
+		fillIndexBuffer();
 		fillDescriptorBuffer();
 
 		descriptorSet_->writeBuffers(0,
@@ -422,69 +429,6 @@ void mainLoop(App& app)
 }
 
 //
-PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
-PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
-PFN_vkDebugReportMessageEXT dbgBreakCallback;
-
-VkDebugReportCallbackEXT msgCallback;
-
-VkBool32 messageCallback(
-	VkDebugReportFlagsEXT flags,
-	VkDebugReportObjectTypeEXT objType,
-	uint64_t srcObject,
-	size_t location,
-	int32_t msgCode,
-	const char* pLayerPrefix,
-	const char* pMsg,
-	void* pUserData)
-{
-	char *message = (char *)malloc(strlen(pMsg) + 100);
-
-	assert(message);
-
-	if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
-	{
-		std::cout << "ERROR: " << "[" << pLayerPrefix << "] Code " << msgCode << " : " << pMsg << "\n";
-	}
-	else
-		if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
-		{
-			// Uncomment to see warnings
-			//std::cout << "WARNING: " << "[" << pLayerPrefix << "] Code " << msgCode << " : " << pMsg << "\n";
-		}
-		else
-		{
-			return false;
-		}
-
-	fflush(stdout);
-
-	free(message);
-	return false;
-}
-
-void setupDebugging(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportCallbackEXT callBack)
-{
-	CreateDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
-	DestroyDebugReportCallback = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
-	dbgBreakCallback = (PFN_vkDebugReportMessageEXT)vkGetInstanceProcAddr(instance, "vkDebugReportMessageEXT");
-
-	VkDebugReportCallbackCreateInfoEXT dbgCreateInfo;
-	dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
-	dbgCreateInfo.pNext = NULL;
-	dbgCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)messageCallback;
-	dbgCreateInfo.pUserData = NULL;
-	dbgCreateInfo.flags = flags;
-	VkDebugReportCallbackEXT debugReportCallback;
-	VkResult err = CreateDebugReportCallback(
-		instance,
-		&dbgCreateInfo,
-		NULL,
-		&debugReportCallback);
-	assert(!err);
-}
-
-//
 int main()
 {
 	{
@@ -517,7 +461,8 @@ int main()
 		iniInfo.layers = validationLayerNames;
 	    vpp::Instance instance(iniInfo);
 
-		setupDebugging(instance.vkInstance(), VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT, NULL);
+		vpp::DebugCallback debugger(instance.vkInstance(), vk::DebugReportFlagBitsEXT::ErrorEXT |
+			vk::DebugReportFlagBitsEXT::WarningEXT|vk::DebugReportFlagBitsEXT::PerformanceWarningEXT);
 
 	    vpp::Win32Surface surface(instance.vkInstance(), app.hinstance, app.window);
 

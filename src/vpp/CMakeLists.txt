@@ -12,6 +12,7 @@ set(vpp-sources
 	instance.cpp
 	buffer.cpp
 	image.cpp
+	debug.cpp
 	graphicsPipeline.cpp)
 
 

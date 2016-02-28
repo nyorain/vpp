@@ -1,18 +1,38 @@
 #pragma once
 
 #include <vpp/vk.hpp>
+#include <vpp/fwd.hpp>
 
 namespace vpp
 {
 
-class Debugger : public Resource
+class DebugCallback
 {
+public:
+	struct CallbackInfo
+	{
+		vk::DebugReportFlagsEXT flags;
+		vk::DebugReportObjectTypeEXT objectType;
+		std::uint64_t srcObject;
+		std::size_t location;
+		std::int32_t messageCode;
+		const char* layer;
+		const char* message;
+	};
+
 protected:
-	std::vector<vk::DebugReportCallbackEXT> debugCallback_ {};
+	vk::Instance instance_ {};
+	vk::DebugReportCallbackEXT debugCallback_ {};
 
 public:
-	Debugger(vk::Instance instance);
-	~Debugger();
+	DebugCallback(Instance instance, vk::DebugReportFlagsEXT flags);
+	DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags);
+	~DebugCallback();
+
+	vk::Instance vkInstance() const { return instance_; }
+	vk::DebugReportCallbackEXT vkCallback() const { return debugCallback_; }
+
+	virtual bool call(const CallbackInfo& info);
 };
 
 };
