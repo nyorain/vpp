@@ -205,24 +205,55 @@ unsigned int formatSize(vk::Format format)
 
 //descriptorSetLayout
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
-	const std::vector<DescriptorBinding>& bindings)
+	const std::vector<DescriptorBinding>& bindings) : Resource(dev)
 {
+	std::vector<vk::DescriptorSetLayoutBinding> vkbindings;
+	vkbindings.reserve(bindings.size());
 
+	for(auto& binding : bindings)
+	{
+		vkbindings.emplace_back();
+		vkbindings.back().descriptorType(binding.type);
+		vkbindings.back().stageFlags(binding.stages);
+		vkbindings.back().descriptorCount(binding.count);
+		vkbindings.back().pImmutableSamplers(nullptr);
+		//vkbindings.back().binding(vkbindings.size() - 1);
+	}
+
+	vk::DescriptorSetLayoutCreateInfo descriptorLayout;
+	descriptorLayout.bindingCount(vkbindings.size());
+	descriptorLayout.pBindings(vkbindings.data());
+
+	vk::createDescriptorSetLayout(vkDevice(), &descriptorLayout, nullptr, &layout_);
+	bindings_ = bindings;
 }
 DescriptorSetLayout::~DescriptorSetLayout()
 {
+	if(vkDescriptorSetLayout())
+	{
+		vk::destroyDescriptorSetLayout(vkDevice(), layout_, nullptr);
+	}
 
+	layout_ = {};
+	bindings_.clear();
 }
 
 //DescriptorSet
-DescriptorSet::DescriptorSet(const Device& dev, const DescriptorSetLayout& layout,
-	vk::DescriptorPool pool)
+DescriptorSet::DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPool pool)
+	: Resource(layout.device()), layout_(&layout)
 {
+	auto vklayout = layout.vkDescriptorSetLayout();
 
+	vk::DescriptorSetAllocateInfo allocInfo;
+	allocInfo.descriptorPool(pool);
+	allocInfo.descriptorSetCount(1);
+	allocInfo.pSetLayouts(&vklayout);
+
+	vk::allocateDescriptorSets(vkDevice(), &allocInfo, &descriptorSet_);
 }
 DescriptorSet::~DescriptorSet()
 {
-
+	//what to do here? check for free descriptorSet?
 }
 
 void DescriptorSet::writeImages(std::size_t binding,
@@ -233,7 +264,14 @@ void DescriptorSet::writeImages(std::size_t binding,
 void DescriptorSet::writeBuffers(std::size_t binding,
 	const std::vector<vk::DescriptorBufferInfo>& updates) const
 {
+	vk::WriteDescriptorSet writeDescriptorSet;
+	writeDescriptorSet.dstSet(descriptorSet_);
+	writeDescriptorSet.descriptorCount(updates.size());
+	writeDescriptorSet.descriptorType(vk::DescriptorType::UniformBuffer);
+	writeDescriptorSet.pBufferInfo(updates.data());
+	writeDescriptorSet.dstBinding(binding);
 
+	vk::updateDescriptorSets(vkDevice(), 1, &writeDescriptorSet, 0, nullptr);
 }
 void DescriptorSet::writeBufferViews(std::size_t binding,
 	const std::vector<vk::BufferView>& updates) const
@@ -251,6 +289,8 @@ GraphicsPipeline::~GraphicsPipeline()
 {
 	destroy();
 }
+
+static unsigned int bindID = 0;
 
 void GraphicsPipeline::create(const Device& device, const CreateInfo& createInfo)
 {
@@ -275,6 +315,7 @@ void GraphicsPipeline::create(const Device& device, const CreateInfo& createInfo
 	{
 		std::size_t location = 0;
 		std::size_t offset = 0;
+
 		for(auto& attribute : layout->attributes)
 		{
 			attributeDescriptions.emplace_back();
@@ -282,7 +323,7 @@ void GraphicsPipeline::create(const Device& device, const CreateInfo& createInfo
 			attributeDescriptions.back().binding(layout->binding);
 			attributeDescriptions.back().format(attribute);
 			attributeDescriptions.back().offset(offset);
-			offset += formatSize(attribute);
+			offset += formatSize(attribute) / 8;
 		}
 
 		bindingDescriptions.emplace_back();
@@ -371,174 +412,5 @@ void GraphicsPipeline::drawCommands(vk::CommandBuffer cmdBuffer,
 
 	vk::cmdDraw(cmdBuffer, 3, 1, 0, 0);
 };
-
-/*
-void GraphicsPipeline::initBuffer()
-{
-	struct Vertex
-	{
-		float position[3];
-		float color[3];
-	};
-
-	std::vector<Vertex> vertices = {
-		{{1.0f,  0.6f, 0.0f}, { 1.0f, 0.0f, 0.0f}},
-		{{-1.0f,  1.0f, 0.0f}, { 0.0f, 1.0f, 0.0f}},
-		{{0.0f, -1.0f, 0.0f}, { 0.0f, 0.0f, 1.0f}}
-	};
-
-	vk::MemoryAllocateInfo memAlloc;
-	vk::MemoryRequirements memReqs;
-	void *data;
-
-	//Generate vertex buffer
-	//Setup
-	vk::BufferCreateInfo bufInfo;
-	bufInfo.size(sizeof(Vertex) * vertices.size());
-	bufInfo.usage(vk::BufferUsageFlagBits::VertexBuffer);
-
-	//Copy vertex data to VRAM
-	VPP_CALL(vk::createBuffer(vkDevice(), &bufInfo, nullptr, &vertexBuffer_));
-	vk::getBufferMemoryRequirements(vkDevice(), vertexBuffer_, &memReqs);
-
-	memAlloc.allocationSize(memReqs.size());
-	memAlloc.memoryTypeIndex(device().memoryType(memReqs.memoryTypeBits(),
-		vk::MemoryPropertyFlagBits::HostVisible));
-
-	//allocate and fill buffer memory
-	VPP_CALL(vk::allocateMemory(vkDevice(), &memAlloc, nullptr, &memory_));
-	VPP_CALL(vk::mapMemory(vkDevice(), memory_, 0, memAlloc.allocationSize(), {}, &data));
-
-	std::memcpy(data, vertices.data(), sizeof(Vertex) * vertices.size());
-	vk::unmapMemory(vkDevice(), memory_);
-
-	VPP_CALL(vkBindBufferMemory(vkDevice(), vertexBuffer_, memory_, 0));
-
-	//Binding description
-	bindingDescriptions_.resize(1);
-	bindingDescriptions_[0].binding(bindID);
-	bindingDescriptions_[0].stride(sizeof(Vertex));
-	bindingDescriptions_[0].inputRate(vk::VertexInputRate::Vertex);
-
-	//Attribute descriptions
-	//Describes memory layout and shader attribute locations
-	attributeDescriptions_.resize(2);
-
-	//Location 0 : Position
-	attributeDescriptions_[0].binding(bindID);
-	attributeDescriptions_[0].location(0);
-	attributeDescriptions_[0].format(vk::Format::R32G32B32Sfloat);
-	attributeDescriptions_[0].offset(0);
-
-	//Location 1 : Color
-	attributeDescriptions_[1].binding(bindID);
-	attributeDescriptions_[1].location(1);
-	attributeDescriptions_[1].format(vk::Format::R32G32B32Sfloat);
-	attributeDescriptions_[1].offset(sizeof(float) * 3); //position offset
-
-	// Assign to vertex buffer
-	pipelineVertexInfo_.vertexBindingDescriptionCount(bindingDescriptions_.size());
-	pipelineVertexInfo_.pVertexBindingDescriptions(bindingDescriptions_.data());
-	pipelineVertexInfo_.vertexAttributeDescriptionCount(attributeDescriptions_.size());
-	pipelineVertexInfo_.pVertexAttributeDescriptions(attributeDescriptions_.data());
-}
-
-void GraphicsPipeline::initPipelineLayout()
-{
-	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
-	pipelineLayoutInfo.setLayoutCount(0);
-	pipelineLayoutInfo.pSetLayouts(nullptr);
-
-	VPP_CALL(vk::createPipelineLayout(vkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout_));
-}
-
-std::vector<vk::PipelineShaderStageCreateInfo> GraphicsPipeline::shaderStages()
-{
-	std::vector<vk::PipelineShaderStageCreateInfo> stages(2);
-
-	stages[0].module(loadShader(vkDevice(), "./vert.spv", vk::ShaderStageFlagBits::Vertex));
-	stages[0].stage(vk::ShaderStageFlagBits::Vertex);
-	stages[0].pName(u8"main");
-
-	stages[1].module(loadShader(vkDevice(), "./frag.spv", vk::ShaderStageFlagBits::Fragment));
-	stages[1].stage(vk::ShaderStageFlagBits::Fragment);
-	stages[1].pName(u8"main");
-
-	return stages;
-}
-
-void GraphicsPipeline::initPipeline()
-{
-	//draw type
-	vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState;
-	inputAssemblyState.topology(vk::PrimitiveTopology::TriangleList);
-
-	//Rasterization state
-	vk::PipelineRasterizationStateCreateInfo rasterizationState;
-	rasterizationState.polygonMode(vk::PolygonMode::Fill);
-	rasterizationState.cullMode(vk::CullModeFlagBits::None);
-	rasterizationState.frontFace(vk::FrontFace::CounterClockwise);
-	rasterizationState.depthClampEnable(false);
-	rasterizationState.rasterizerDiscardEnable(false);
-	rasterizationState.depthBiasEnable(false);
-
-	//Color blend state
-	vk::PipelineColorBlendAttachmentState blendAttachmentState[1];
-	blendAttachmentState[0].blendEnable(false);
-	blendAttachmentState[0].colorWriteMask(
-		vk::ColorComponentFlagBits::R |
-		vk::ColorComponentFlagBits::G |
-		vk::ColorComponentFlagBits::B |
-		vk::ColorComponentFlagBits::A
-	);
-
-	vk::PipelineColorBlendStateCreateInfo colorBlendState;
-	colorBlendState.attachmentCount(1);
-	colorBlendState.pAttachments(blendAttachmentState);
-
-	// Viewport state
-	vk::PipelineViewportStateCreateInfo viewportState;
-	viewportState.viewportCount(1);
-	viewportState.scissorCount(1);
-
-	//Enable dynamic states for viewport and scissor
-	std::vector<vk::DynamicState> dynamicStateEnables;
-	dynamicStateEnables.reserve(2);
-
-	dynamicStateEnables.push_back(vk::DynamicState::Viewport);
-	dynamicStateEnables.push_back(vk::DynamicState::Scissor);
-
-	vk::PipelineDynamicStateCreateInfo dynamicState = {};
-	dynamicState.pDynamicStates(dynamicStateEnables.data());
-	dynamicState.dynamicStateCount(dynamicStateEnables.size());
-
-	//depth,stencil not used atm
-	vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-
-	//Multisampling, not used atm
-	vk::PipelineMultisampleStateCreateInfo multisampleState;
-	multisampleState.pSampleMask(nullptr);
-	multisampleState.rasterizationSamples(vk::SampleCountFlagBits::e1);
-
-	//shader stages
-	auto stages = shaderStages();
-
-	//assign info
-
-
-
-}
-
-void GraphicsPipeline::initDescriptorPool()
-{
-
-}
-
-void GraphicsPipeline::initDescriptorSet()
-{
-
-}
-
-*/
 
 }

@@ -296,6 +296,10 @@ void DeviceMemoryAllocator::allocate()
 			vk::bindImageMemory(vkDevice(), img.requestor, memory->vkDeviceMemory(), img.offset);
 		}
 	}
+
+	//clear
+	imageRequirements_.clear();
+	bufferRequirements_.clear();
 }
 
 //MemoryMap

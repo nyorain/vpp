@@ -32,6 +32,7 @@ void Renderer::destroy()
 {
 	destroyRenderers();
 	destroyRenderPass();
+	destroyDepthStencil();
 	destroyCommandPool();
 }
 
@@ -62,6 +63,14 @@ void Renderer::destroyRenderPass()
 void Renderer::destroyCommandPool()
 {
 	if(vkCommandPool()) vk::destroyCommandPool(vkDevice(), vkCommandPool(), nullptr);
+}
+
+void Renderer::destroyDepthStencil()
+{
+	if(depthStencil_.imageView) vk::destroyImageView(vkDevice(), depthStencil_.imageView, nullptr);
+
+	depthStencil_.imageView = {};
+	depthStencil_.image.reset();
 }
 
 void Renderer::reset(const SwapChain& swapChain, bool complete)
@@ -278,8 +287,8 @@ void Renderer::buildCommandBuffer(const FrameRenderer& renderer) const
 	vk::Viewport viewport;
 	viewport.width(width);
 	viewport.height(height);
-	viewport.minDepth(0.0f);
-	viewport.maxDepth(1.0f);
+	viewport.minDepth(0.f);
+	viewport.maxDepth(1.f);
 	vk::cmdSetViewport(renderer.commandBuffer, 0, 1, &viewport);
 
 	//Update dynamic scissor state

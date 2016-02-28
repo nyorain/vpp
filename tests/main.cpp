@@ -10,60 +10,66 @@
 #include <vpp/memory.hpp>
 #include <vpp/graphicsPipeline.hpp>
 
+#include <nytl/transform.hpp>
+
 #include <windows.h>
 
 #include <string>
 #include <iostream>
 #include <memory>
 #include <chrono>
+#include <cmath>
 
-/*
+
 static const std::vector<float> gVertices =
 {
-      -1.0f,-1.0f,-1.0f,     1.0f, 0.0f, 0.f,
-      -1.0f,-1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-      -1.0f, 1.0f, 1.0f,     1.0f, 0.0f, 0.f,
-      1.0f, 1.0f,-1.0f,     1.0f, 0.0f, 0.f,
-      -1.0f,-1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-      -1.0f, 1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-      1.0f,-1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f,-1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     1.0f,-1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     1.0f, 1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     1.0f,-1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f,-1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f,-1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f, 1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     1.0f,-1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f,-1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f,-1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f,-1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     1.0f,-1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     1.0f,-1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     1.0f, 1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     1.0f,-1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     1.0f,-1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     1.0f, 1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f, 1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f, 1.0f,-1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     -1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 0.f,
-     1.0f,-1.0f, 1.0f,    1.0f, 0.0f, 0.f
+      -0.5f,-0.5f,-0.5f,    0.f, 1.f, 0.8f,
+      -0.5f,-0.5f, 0.5f,    .2f, .3f, 0.5f,
+      -0.5f, 0.5f, 0.5f,    .8f, .8f, 0.0f,
+      0.5f, 0.5f,-0.5f,     .0f, 0.2f, 1.0f,
+      -0.5f,-0.5f,-0.5f,   0.f, 1.f, 0.8f,
+      -0.5f, 0.5f,-0.5f,   .0f, 0.2f, 1.0f,
+      0.5f,-0.5f, 0.5f,   .2f, .3f, 0.5f,
+     -0.5f,-0.5f,-0.5f,  0.f, 1.f, 0.8f,
+     0.5f,-0.5f,-0.5f,   1.f, 0.f, 0.2f,
+     0.5f, 0.5f,-0.5f,  .0f, 0.2f, 1.0f,
+     0.5f,-0.5f,-0.5f,   1.f, 0.f, 0.2f,
+     -0.5f,-0.5f,-0.5f,   0.f, 1.f, 0.8f,
+     -0.5f,-0.5f,-0.5f,   0.f, 1.f, 0.8f,
+     -0.5f, 0.5f, 0.5f,  .8f, .8f, 0.0f,
+     -0.5f, 0.5f,-0.5f,   .0f, 0.2f, 1.0f,
+     0.5f,-0.5f, 0.5f,   .2f, .3f, 0.5f,
+     -0.5f,-0.5f, 0.5f,  .2f, .3f, 0.5f,
+     -0.5f,-0.5f,-0.5f,   0.f, 1.f, 0.8f,
+     -0.5f, 0.5f, 0.5f,   .8f, .8f, 0.0f,
+     -0.5f,-0.5f, 0.5f,   .2f, .3f, 0.5f,
+     0.5f,-0.5f, 0.5f,   .2f, .3f, 0.5f,
+     0.5f, 0.5f, 0.5f,   1.f, 0.f, 0.2f,
+     0.5f,-0.5f,-0.5f,   1.f, 0.f, 0.2f,
+     0.5f, 0.5f,-0.5f,   .0f, 0.2f, 1.0f,
+     0.5f,-0.5f,-0.5f,   1.f, 0.f, 0.2f,
+     0.5f, 0.5f, 0.5f,   1.f, 0.f, 0.2f,
+     0.5f,-0.5f, 0.5f,   .2f, .3f, 0.5f,
+     0.5f, 0.5f, 0.5f,   1.f, 0.f, 0.2f,
+     0.5f, 0.5f,-0.5f,   .0f, 0.2f, 1.0f,
+     -0.5f, 0.5f,-0.5f,   .0f, 0.2f, 1.0f,
+     0.5f, 0.5f, 0.5f,   1.f, 0.f, 0.2f,
+     -0.5f, 0.5f,-0.5f,  .0f, 0.2f, 1.0f,
+     -0.5f, 0.5f, 0.5f,   .8f, .8f, 0.0f,
+     0.5f, 0.5f, 0.5f,   1.f, 0.f, 0.2f,
+     -0.5f, 0.5f, 0.5f,  .8f, .8f, 0.0f,
+     0.5f,-0.5f, 0.5f,  .2f, .3f, 0.5f,
  };
- */
 
+/*
  static const std::vector<float> gVertices = {
 	  1.0f,  1.0f, 0.0f , 	1.0f, 0.0f, 0.0f,
 	  -1.0f,  1.0f, 0.0f,	 0.0f, 1.0f, 0.0f ,
 	  0.0f, -1.0f, 0.0f ,	 0.0f, 0.0f, 1.0f
  };
+ */
+
+ class MyRenderer;
 
 //
 struct App
@@ -72,13 +78,13 @@ struct App
     HWND window = nullptr;
 
     unsigned int width = 800;
-    unsigned int height = 500;
+    unsigned int height = 800;
 
     vpp::SwapChain* swapChain = nullptr;
     vpp::Instance* instance = nullptr;
 	vpp::Device* device = nullptr;
     vpp::Surface* surface = nullptr;
-	vpp::Renderer* renderer = nullptr;
+	MyRenderer* renderer = nullptr;
 
 	vk::Queue queue {};
 };
@@ -89,28 +95,114 @@ App* gApp;
 class MyRenderer : public vpp::Renderer
 {
 protected:
+	std::unique_ptr<vpp::DeviceMemoryAllocator> allocator_;
+
 	std::unique_ptr<vpp::GraphicsPipeline> pipeline_;
-	//std::unique_ptr<vpp::Buffer> vertexBuffer_;
-	vk::Buffer vertexBuffer_;
+	std::unique_ptr<vpp::Buffer> vertexBuffer_;
+	std::unique_ptr<vpp::Buffer> descriptorBuffer_;
 	std::unique_ptr<vpp::DescriptorSet> descriptorSet_;
 	std::unique_ptr<vpp::DescriptorSetLayout> descriptorSetLayout_;
 
 	vpp::VertexBufferLayout vertexBufferLayout_;
+	vk::DescriptorPool descriptorPool_;
+
+	nytl::Transform3 transform_;
 
 protected:
 	virtual void buildRenderer(vk::CommandBuffer cmdBuffer) const override
 	{
-		std::cout << "drawCmd\n";
+		//std::cout << "drawCmd\n";
 		//pipeline_->drawCommands(cmdBuffer, {vertexBuffer_.get()}, {});
 
 		VkDeviceSize offsets[1] = { 0 };
+		auto buf = vertexBuffer_->vkBuffer();
 
-		//auto buf = vertexBuffer_->vkBuffer();
-		auto buf = vertexBuffer_;
+		//auto buf = vertexBuffer_;
+		auto vkDesc = descriptorSet_->vkDescriptorSet();
+
+		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics,
+			pipeline_->vkPipelineLayout(), 0, 1, &vkDesc, 0, nullptr);
 		vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::Graphics, pipeline_->vkPipeline());
 		vk::cmdBindVertexBuffers(cmdBuffer, 0, 1, &buf, offsets);
-		vk::cmdDraw(cmdBuffer, 3, 1, 0, 0);
+		vk::cmdDraw(cmdBuffer, 36, 1, 0, 0);
+
+		//pipeline_->renderCommands(cmdBuffer);
 	};
+
+	void initBuffer()
+	{
+		vk::BufferCreateInfo bufInfo;
+		bufInfo.size(sizeof(float) * gVertices.size());
+		bufInfo.usage(vk::BufferUsageFlagBits::VertexBuffer);
+
+		 vertexBuffer_.reset(new vpp::Buffer(*allocator_, bufInfo,
+			vk::MemoryPropertyFlagBits::HostVisible));
+	}
+
+	void initDescriptorPool()
+	{
+		vk::DescriptorPoolSize typeCounts[1] {};
+		typeCounts[0].type(vk::DescriptorType::UniformBuffer);
+		typeCounts[0].descriptorCount(1);
+
+		vk::DescriptorPoolCreateInfo descriptorPoolInfo;
+		descriptorPoolInfo.poolSizeCount(1);
+		descriptorPoolInfo.pPoolSizes(typeCounts);
+		descriptorPoolInfo.maxSets(1);
+
+		vk::createDescriptorPool(vkDevice(), &descriptorPoolInfo, nullptr, &descriptorPool_);
+	}
+
+	void initDescriptorSets()
+	{
+		//descriptorBuffer
+		vk::BufferCreateInfo bufInfo;
+		bufInfo.size(sizeof(float) * 16);
+		bufInfo.usage(vk::BufferUsageFlagBits::VertexBuffer);
+
+		 descriptorBuffer_.reset(new vpp::Buffer(*allocator_, bufInfo,
+			vk::MemoryPropertyFlagBits::HostVisible));
+
+		//descriptor layout
+		std::vector<vpp::DescriptorBinding> bindings =
+		{
+			{vk::DescriptorType::UniformBuffer, vk::ShaderStageFlagBits::Vertex}
+		};
+
+		descriptorSetLayout_.reset(new vpp::DescriptorSetLayout(device(), bindings));
+		descriptorSet_.reset(new vpp::DescriptorSet(*descriptorSetLayout_, descriptorPool_));
+	}
+
+	void fillVertexBuffer()
+	{
+		auto map = vertexBuffer_->memoryMap();
+		if(map.ptr())
+		{
+			std::memcpy(map.ptr(), gVertices.data(), sizeof(float) * gVertices.size());
+		}
+		else
+		{
+			throw std::runtime_error("unable to map");
+		}
+	}
+
+	void fillDescriptorBuffer()
+	{
+		const auto& mat = transform_.transformMatrix();
+		auto map = descriptorBuffer_->memoryMap();
+		if(map.ptr())
+		{
+			for(int i(0); i < 4; ++i)
+			{
+				nytl::Vec4f vec = mat.col(i);
+				std::memcpy(map.ptr() + (4 * sizeof(float) * i), vec.data(), sizeof(float) * 4);
+			}
+		}
+		else
+		{
+			throw std::runtime_error("unable to map");
+		}
+	}
 
 public:
 	MyRenderer(const vpp::SwapChain& swapChainp)
@@ -118,74 +210,25 @@ public:
 		Resource::create(swapChainp.device());
 		swapChain_ = &swapChainp;
 
-		//vertex buffer
-/*
-		vk::BufferCreateInfo bufInfo;
-		bufInfo.size(sizeof(float) * gVertices.size());
-		bufInfo.usage(vk::BufferUsageFlagBits::VertexBuffer);
+		allocator_.reset(new vpp::DeviceMemoryAllocator(device()));
 
-
-		vpp::DeviceMemoryAllocator allocator(device());
-		vertexBuffer_.reset(new vpp::Buffer(allocator, bufInfo,
-			vk::MemoryPropertyFlagBits::HostVisible | vk::MemoryPropertyFlagBits::HostCoherent));
-
-
-		{
-			auto map = vertexBuffer_->memoryMap();
-			if(map.ptr())
-			{
-				std::cout << "ptr: " << map.ptr() << "\n";
-				std::memcpy(map.ptr(), gVertices.data(), sizeof(float) * gVertices.size());
-			}
-			else
-			{
-				throw std::runtime_error("unable to map");
-			}
-		}
-	*/
-
-	vk::MemoryAllocateInfo memAlloc;
-	vk::MemoryRequirements memReqs;
-	void *data;
-
-	//Generate vertex buffer
-	vk::DeviceMemory memory_;
-
-	vk::BufferCreateInfo bufInfo;
-	bufInfo.size(sizeof(float) * gVertices.size());
-	bufInfo.usage(vk::BufferUsageFlagBits::VertexBuffer);
-
-	//Copy vertex data to VRAM
-	vk::createBuffer(vkDevice(), &bufInfo, nullptr, &vertexBuffer_);
-	vk::getBufferMemoryRequirements(vkDevice(), vertexBuffer_, &memReqs);
-
-	memAlloc.allocationSize(memReqs.size());
-	memAlloc.memoryTypeIndex(device().memoryType(memReqs.memoryTypeBits(),
-		vk::MemoryPropertyFlagBits::HostVisible));
-
-	//allocate and fill buffer memory
-	vk::allocateMemory(vkDevice(), &memAlloc, nullptr, &memory_);
-	vk::mapMemory(vkDevice(), memory_, 0, memAlloc.allocationSize(), {}, &data);
-
-	std::memcpy(data, gVertices.data(), sizeof(float) * 6 * gVertices.size());
-	vkUnmapMemory(vkDevice(), memory_);
-
-	vkBindBufferMemory(vkDevice(), vertexBuffer_, memory_, 0);
+		initBuffer();
+		initDescriptorPool();
+		initDescriptorSets();
 
 		//stuff
 		initCommandPool();
 		initDepthStencil();
 		initRenderPass();
 
+		//vertex layout
 		vertexBufferLayout_ = {{vk::Format::R32G32B32Sfloat, vk::Format::R32G32B32Sfloat}, 0};
-		//descriptorSetLayout_.reset(new vpp::DescriptorSetLayout(...));
 
 		//info
 		vpp::GraphicsPipeline::CreateInfo info;
 
 		//vpp
-		//info.descriptorSetLayouts = {descriptorSetLayout_};
-		info.descriptorSetLayouts = {};
+		info.descriptorSetLayouts = {descriptorSetLayout_.get()};
 		info.vertexBufferLayouts = {&vertexBufferLayout_};
 		info.dynamicStates = {vk::DynamicState::Viewport, vk::DynamicState::Scissor};
 		info.renderPass = vkRenderPass();
@@ -193,7 +236,6 @@ public:
 		info.shader.create(device());
 		info.shader.addStage({"vert.spv", vk::ShaderStageFlagBits::Vertex});
 		info.shader.addStage({"frag.spv", vk::ShaderStageFlagBits::Fragment});
-
 
 		//vk
 		//
@@ -209,12 +251,13 @@ public:
 		//
 		info.states.inputAssembly.topology(vk::PrimitiveTopology::TriangleList);
 
-		info.states.rasterization.polygonMode(vk::PolygonMode::Fill);
+		info.states.rasterization.polygonMode(vk::PolygonMode::Line);
 		info.states.rasterization.cullMode(vk::CullModeFlagBits::None);
 		info.states.rasterization.frontFace(vk::FrontFace::CounterClockwise);
-		info.states.rasterization.depthClampEnable(false);
+		info.states.rasterization.depthClampEnable(true);
 		info.states.rasterization.rasterizerDiscardEnable(false);
 		info.states.rasterization.depthBiasEnable(false);
+		info.states.rasterization.lineWidth(3.f);
 
 		info.states.colorBlend.attachmentCount(1);
 		info.states.colorBlend.pAttachments(blendAttachmentState);
@@ -240,9 +283,27 @@ public:
 
 		pipeline_.reset(new vpp::GraphicsPipeline(device(), info));
 
+		allocator_.reset(); //destroy it -> allocates
+
+		fillVertexBuffer();
+		fillDescriptorBuffer();
+
+		descriptorSet_->writeBuffers(0,
+			{{descriptorBuffer_->vkBuffer(), 0, sizeof(float) * 16}});
 
 		//builds renderers with overriden buildCommandBuffer function
 		initRenderers();
+	}
+
+	void updateRotation()
+	{
+		static float angle = 0;
+		angle += 0.0001;
+
+		transform_.resetTransform();
+		nytl::rotate(transform_.transformMatrix(), {1, 0.4, 1.5}, angle);
+		//std::cout << transform_.transformMatrix() << "\n";
+		fillDescriptorBuffer();
 	}
 };
 
@@ -321,6 +382,7 @@ void initWindow(App& app)
 //
 void render(App& app)
 {
+	app.renderer->updateRotation();
 	app.renderer->render(app.queue);
 }
 
@@ -487,7 +549,9 @@ int main()
 			throw std::runtime_error("unable to get present & graphical queue");
 		}
 
-		std::vector<const char*> devExtensions {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+		std::vector<const char*> devExtensions {
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+		};
 
 		float priorities[1] = {0.0};
 		std::vector<vk::DeviceQueueCreateInfo> queueInfos(1);

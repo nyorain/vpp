@@ -11,6 +11,16 @@
 namespace vpp
 {
 
+/*
+class FrameBufferAttachment : public Resource
+{
+protected:
+	vk::Format format_;
+	Image image_ {};
+	vk::ImageView imageView_ {};
+};
+*/
+
 ///Capable of rendering on a SwapChain.
 class Renderer : public Resource
 {
@@ -25,7 +35,7 @@ protected:
 	struct DepthStencil
 	{
 		std::unique_ptr<Image> image {nullptr};
-		vk::ImageView imageView;
+		vk::ImageView imageView {};
 		vk::Format format;
 	};
 
@@ -51,6 +61,7 @@ protected:
 	void destroyRenderers();
 	void destroyRenderPass();
 	void destroyCommandPool();
+	void destroyDepthStencil();
 
 	virtual void buildCommandBuffer(const FrameRenderer& renderer) const;
 	virtual void buildRenderer(vk::CommandBuffer buffer) const;

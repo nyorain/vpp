@@ -54,7 +54,7 @@ vk::ShaderModule loadShader(vk::Device device, const std::string& filename,
 	moduleCreateInfo.codeSize(code.size());
 	moduleCreateInfo.pCode(reinterpret_cast<std::uint32_t*>(code.data()));
 
-	vk::createShaderModule(device, &moduleCreateInfo, NULL, &module);
+	vk::createShaderModule(device, &moduleCreateInfo, nullptr, &module);
 	return module;
 }
 
@@ -76,7 +76,12 @@ void ShaderProgram::create(const Device& device)
 
 void ShaderProgram::destroy()
 {
-	//todo
+	for(auto& stage : stages_)
+	{
+		if(stage.module()) vk::destroyShaderModule(vkDevice(), stage.module(), nullptr);
+	}
+
+	stages_.clear();
 }
 
 void ShaderProgram::addStage(const vk::PipelineShaderStageCreateInfo& createInfo)

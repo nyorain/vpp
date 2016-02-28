@@ -14,7 +14,8 @@ namespace vpp
 struct DescriptorBinding
 {
 	vk::DescriptorType type;
-	vk::ShaderStageFlags stages;
+	vk::ShaderStageFlags stages {vk::ShaderStageFlagBits::All};
+	unsigned int count {1};
 };
 
 class VertexBufferLayout
@@ -59,7 +60,7 @@ protected:
 	vk::DescriptorSet descriptorSet_ {};
 
 public:
-	DescriptorSet(const Device& dev, const DescriptorSetLayout& layout, vk::DescriptorPool pool);
+	DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPool pool);
 	~DescriptorSet();
 
 	vk::DescriptorSet vkDescriptorSet() const { return descriptorSet_; }
@@ -116,6 +117,7 @@ public:
 	~GraphicsPipeline();
 
 	vk::Pipeline vkPipeline() const { return pipeline_; }
+	vk::PipelineLayout vkPipelineLayout() const { return pipelineLayout_; }
 
 	void drawCommands(vk::CommandBuffer cmdBuffer, const std::vector<Buffer*>& vertices,
 		const std::vector<DescriptorSet*>& descriptors) const;
