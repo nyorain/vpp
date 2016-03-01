@@ -1364,7 +1364,7 @@ bool hasPointerArguments(CommandData const& commandData)
 {
 	for (size_t i = 0; i < commandData.arguments.size(); i++) {
 		size_t pos = commandData.arguments[i].type.find('*');
-		if ((pos != std::string::npos) && (commandData.arguments[i].type.find('*', pos + 1) == std::string::npos))
+		if ((pos != std::string::npos) && (commandData.arguments[i].type.find('*', pos + 1) == std::string::npos) && (commandData.arguments[i].name[0] == 'p') && (isupper(commandData.arguments[i].name[1])))
 		{
 			return true;
 		}

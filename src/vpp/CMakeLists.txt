@@ -13,7 +13,9 @@ set(vpp-sources
 	buffer.cpp
 	image.cpp
 	debug.cpp
-	graphicsPipeline.cpp)
+	pipeline.cpp
+	graphicsPipeline.cpp
+	computePipeline.cpp)
 
 
 if(WIN32)
@@ -25,4 +27,9 @@ if(UNIX)
 endif(UNIX)
 
 add_library(vpp SHARED ${vpp-sources})
-target_link_libraries(vpp "$ENV{VK_SDK_PATH}/Source/lib/vulkan-1.dll")
+
+if(WIN32)
+	target_link_libraries(vpp "$ENV{VK_SDK_PATH}/Source/lib/vulkan-1.dll")
+elseif(UNIX)
+	target_link_libraries(vpp "vulkan")
+endif(WIN32)

@@ -5,6 +5,7 @@
 #include <vpp/resource.hpp>
 #include <vpp/memory.hpp>
 #include <vpp/shader.hpp>
+#include <vpp/pipeline.hpp>
 
 #include <memory>
 
@@ -71,7 +72,7 @@ public:
 	void writeBufferViews(std::size_t binding, const std::vector<vk::BufferView>& updates) const;
 };
 
-class GraphicsPipeline : public Resource
+class GraphicsPipeline : public Pipeline
 {
 public:
 	struct StatesCreateInfo
@@ -103,10 +104,6 @@ public:
 	};
 
 protected:
-	vk::PipelineLayout pipelineLayout_ {};
-	vk::Pipeline pipeline_ {};
-
-protected:
 	GraphicsPipeline() = default;
 
 	void create(const Device& context, const CreateInfo& createInfo);
@@ -115,12 +112,6 @@ protected:
 public:
 	GraphicsPipeline(const Device& device, const CreateInfo& createInfo);
 	~GraphicsPipeline();
-
-	vk::Pipeline vkPipeline() const { return pipeline_; }
-	vk::PipelineLayout vkPipelineLayout() const { return pipelineLayout_; }
-
-	void drawCommands(vk::CommandBuffer cmdBuffer, const std::vector<Buffer*>& vertices,
-		const std::vector<DescriptorSet*>& descriptors) const;
 };
 
 }

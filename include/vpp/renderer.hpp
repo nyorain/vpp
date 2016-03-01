@@ -19,6 +19,15 @@ protected:
 	Image image_ {};
 	vk::ImageView imageView_ {};
 };
+
+class FrameBuffer : public Resource
+{
+};
+
+class RenderPass : public Resource
+{
+};
+
 */
 
 ///Capable of rendering on a SwapChain.

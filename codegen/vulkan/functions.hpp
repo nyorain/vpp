@@ -1525,11 +1525,6 @@ namespace vk
     return vkGetPhysicalDeviceXlibPresentationSupportKHR( physicalDevice, queueFamilyIndex, dpy, visualID );
   }
 
-  inline Bool32 getPhysicalDeviceXlibPresentationSupportKHR( PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, Display* dpy, VisualID visualID )
-  {
-    return getPhysicalDeviceXlibPresentationSupportKHR( physicalDevice, queueFamilyIndex, dpy, visualID );
-  }
-
 #endif /* VK_USE_PLATFORM_XLIB_KHR */
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
@@ -1551,11 +1546,6 @@ namespace vk
   inline Bool32 getPhysicalDeviceXcbPresentationSupportKHR( PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, xcb_connection_t* connection, xcb_visualid_t visual_id )
   {
     return vkGetPhysicalDeviceXcbPresentationSupportKHR( physicalDevice, queueFamilyIndex, connection, visual_id );
-  }
-
-  inline Bool32 getPhysicalDeviceXcbPresentationSupportKHR( PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, xcb_connection_t* connection, xcb_visualid_t visual_id )
-  {
-    return getPhysicalDeviceXcbPresentationSupportKHR( physicalDevice, queueFamilyIndex, connection, visual_id );
   }
 
 #endif /* VK_USE_PLATFORM_XCB_KHR */
@@ -1581,11 +1571,6 @@ namespace vk
     return vkGetPhysicalDeviceWaylandPresentationSupportKHR( physicalDevice, queueFamilyIndex, display );
   }
 
-  inline Bool32 getPhysicalDeviceWaylandPresentationSupportKHR( PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, struct wl_display* display )
-  {
-    return getPhysicalDeviceWaylandPresentationSupportKHR( physicalDevice, queueFamilyIndex, display );
-  }
-
 #endif /* VK_USE_PLATFORM_WAYLAND_KHR */
 
 #ifdef VK_USE_PLATFORM_MIR_KHR
@@ -1607,11 +1592,6 @@ namespace vk
   inline Bool32 getPhysicalDeviceMirPresentationSupportKHR( PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, MirConnection* connection )
   {
     return vkGetPhysicalDeviceMirPresentationSupportKHR( physicalDevice, queueFamilyIndex, connection );
-  }
-
-  inline Bool32 getPhysicalDeviceMirPresentationSupportKHR( PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, MirConnection* connection )
-  {
-    return getPhysicalDeviceMirPresentationSupportKHR( physicalDevice, queueFamilyIndex, connection );
   }
 
 #endif /* VK_USE_PLATFORM_MIR_KHR */

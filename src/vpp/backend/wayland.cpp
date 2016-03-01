@@ -1,5 +1,4 @@
 #include <vpp/backend/wayland.hpp>
-#include <vpp/call.hpp>
 
 namespace vpp
 {
