@@ -4,6 +4,12 @@
 #include <vpp/buffer.hpp>
 #include <vpp/resource.hpp>
 
+namespace vpp
+{
+
+class Mesh;
+
+/*
 class Light
 {
 public:
@@ -29,10 +35,11 @@ protected:
 	nytl::Vec4f diffuseColor_;
 	nytl::Vec4f
 };
+*/
 
 class Mesh
 {
-protected:
+public:
 	vpp::Buffer vertexBuffer_;
 	vpp::Buffer indexBuffer_;
 	std::size_t indexCount_;
@@ -51,7 +58,7 @@ public:
 		position,
 		color,
 		normal,
-		textureCoord,
+		textureCoords,
 		binormal,
 		tangent
 	};
@@ -61,8 +68,10 @@ protected:
 	std::unique_ptr<Impl> impl_;
 
 public:
-	MeshLoader(Device& device);
+	MeshLoader(const Device& device);
 	~MeshLoader();
 
 	std::vector<Mesh> load(const std::string& file, const std::vector<VertexData>& vertexData);
 };
+
+}

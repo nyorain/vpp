@@ -141,9 +141,9 @@ unsigned int formatSize(vk::Format format)
     case Format::D32Sfloat: return 32;
 	case Format::S8Uint: return 8;
 	case Format::D16UnormS8Uint: return 24;
-    case Format::D24UnormS8Uint: return 48;
+	case Format::D24UnormS8Uint: return 32;
+	case Format::D32SfloatS8Uint: return 48;
 	/*
-    case Format::D32SfloatS8Uint: return "32SfloatS8Uint";
     case Format::Bc1RgbUnormBlock: return "c1RgbUnormBlock";
     case Format::Bc1RgbSrgbBlock: return "c1RgbSrgbBlock";
     case Format::Bc1RgbaUnormBlock: return "c1RgbaUnormBlock";
@@ -217,7 +217,7 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 		vkbindings.back().stageFlags(binding.stages);
 		vkbindings.back().descriptorCount(binding.count);
 		vkbindings.back().pImmutableSamplers(nullptr);
-		//vkbindings.back().binding(vkbindings.size() - 1);
+		vkbindings.back().binding(vkbindings.size() - 1);
 	}
 
 	vk::DescriptorSetLayoutCreateInfo descriptorLayout;
@@ -295,7 +295,7 @@ static unsigned int bindID = 0;
 void GraphicsPipeline::create(const Device& device, const CreateInfo& createInfo)
 {
 	destroy();
-	Resource::create(device);
+	Pipeline::create(device);
 
 	//vertexInfo
 	vk::PipelineVertexInputStateCreateInfo vertexInfo;
@@ -384,6 +384,7 @@ void GraphicsPipeline::destroy()
 	pipelineLayout_ = {};
 }
 
+/*
 void GraphicsPipeline::drawCommands(vk::CommandBuffer cmdBuffer,
 	const std::vector<Buffer*>& vertices, const std::vector<DescriptorSet*>& descriptors) const
 {
@@ -412,5 +413,6 @@ void GraphicsPipeline::drawCommands(vk::CommandBuffer cmdBuffer,
 
 	vk::cmdDraw(cmdBuffer, 3, 1, 0, 0);
 };
+*/
 
 }
