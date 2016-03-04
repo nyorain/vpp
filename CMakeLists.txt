@@ -13,6 +13,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(codegen)
-add_subdirectory(include)
+add_subdirectory(include/vpp)
 add_subdirectory(src/vpp)
 add_subdirectory(tests)

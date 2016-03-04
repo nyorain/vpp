@@ -13,7 +13,7 @@
 
 #include <nytl/transform.hpp>
 
-#include <windows.h>
+#include <windows.h> //srsly microsoft? "near" and "far" macros? WTF man hoooly shit
 
 #include <string>
 #include <iostream>
@@ -21,8 +21,19 @@
 #include <chrono>
 #include <cmath>
 
+template<std::size_t R, std::size_t C, typename P>
+nytl::Mat<C, R, P> transpose(const nytl::Mat<R, C, P>& mat)
+{
+	nytl::Mat<C, R, P> ret;
+	for(std::size_t i(0); i < R; ++i)
+		ret.col(i) = mat.row(i);
+
+	return ret;
+}
+
 
 static const std::vector<float> gVertices =
+/*
 {
       -0.5f,-0.5f,-0.5f,    0.f, 1.f, 0.8f,
       -0.5f, 0.5f,-0.5f,    .2f, .3f, 0.5f,
@@ -34,6 +45,50 @@ static const std::vector<float> gVertices =
 	   0.5f, 0.5f, 0.5f,	1.f, 0.2f, 0.f,
 	   0.5f,-0.5f, 0.5f,	1.f, 0.2f, 0.f,
  };
+ */
+ {
+	 -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+};
 
  static const std::vector<std::uint32_t> gIndices =
  {
@@ -67,8 +122,8 @@ struct App
     HINSTANCE hinstance = nullptr;
     HWND window = nullptr;
 
-    unsigned int width = 800;
-    unsigned int height = 800;
+    unsigned int width = 900;
+    unsigned int height = 900;
 
     vpp::SwapChain* swapChain = nullptr;
     vpp::Instance* instance = nullptr;
@@ -98,6 +153,8 @@ protected:
 	vk::DescriptorPool descriptorPool_;
 
 	nytl::Transform3 transform_;
+	nytl::Mat4f viewMatrix_;
+	nytl::Mat4f projectionMatrix_;
 
 protected:
 	virtual void buildRenderer(vk::CommandBuffer cmdBuffer) const override
@@ -116,9 +173,10 @@ protected:
 		vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::Graphics, pipeline_->vkPipeline());
 
 		vk::cmdBindVertexBuffers(cmdBuffer, 0, 1, &buf, offsets);
-		vk::cmdBindIndexBuffer(cmdBuffer, indexBuffer_->vkBuffer(), 0, vk::IndexType::Uint32);
+		//vk::cmdBindIndexBuffer(cmdBuffer, indexBuffer_->vkBuffer(), 0, vk::IndexType::Uint32);
+		//vk::cmdDrawIndexed(cmdBuffer, gIndices.size(), 1, 0, 0, 1);
 
-		vk::cmdDrawIndexed(cmdBuffer, gIndices.size(), 1, 0, 0, 1);
+		vk::cmdDraw(cmdBuffer, gVertices.size(), 1, 0, 0);
 
 		//pipeline_->renderCommands(cmdBuffer);
 	};
@@ -161,7 +219,7 @@ protected:
 	{
 		//descriptorBuffer
 		vk::BufferCreateInfo bufInfo;
-		bufInfo.size(sizeof(float) * 16);
+		bufInfo.size(sizeof(nytl::Mat4f) * 3);
 		bufInfo.usage(vk::BufferUsageFlagBits::VertexBuffer);
 
 		 descriptorBuffer_.reset(new vpp::Buffer(*allocator_, bufInfo,
@@ -191,16 +249,42 @@ protected:
 
 	void fillDescriptorBuffer()
 	{
-		const auto& mat = transform_.transformMatrix();
 		auto map = descriptorBuffer_->memoryMap();
 
 		if(map.ptr()) //check not needed fill throw on failure
 		{
+			/*
+			const auto& mat = transform_.transformMatrix();
+			auto offset = 0u;
+
 			for(int i(0); i < 4; ++i)
 			{
+				auto size = sizeof(float) * 4;
 				nytl::Vec4f vec = mat.col(i);
-				std::memcpy(map.ptr() + (4 * sizeof(float) * i), vec.data(), sizeof(float) * 4);
+				std::memcpy(map.ptr() + offset, vec.data(), size);
+				offset += size;
 			}
+			for(int i(0); i < 4; ++i)
+			{
+				auto size = sizeof(float) * 4;
+				nytl::Vec4f vec = viewMatrix_.row(i);
+				std::memcpy(map.ptr() + offset, vec.data(), size);
+				offset += size;
+			}
+			for(int i(0); i < 4; ++i)
+			{
+				auto size = sizeof(float) * 4;
+				nytl::Vec4f vec = projectionMatrix_.row(i);
+				std::memcpy(map.ptr() + offset, vec.data(), size);
+				offset += size;
+			}
+			*/
+
+			auto size = sizeof(nytl::Mat4f);
+			const auto& mat = transform_.transformMatrix();
+			std::memcpy(map.ptr(), transpose(mat).data(), size);
+			std::memcpy(map.ptr() + size, transpose(viewMatrix_).data(), size);
+			std::memcpy(map.ptr() + 2 * size, projectionMatrix_.data(), size);
 		}
 		else
 		{
@@ -213,6 +297,16 @@ public:
 	{
 		Resource::create(swapChainp.device());
 		swapChain_ = &swapChainp;
+
+		viewMatrix_ = nytl::identityMat<4>();
+		viewMatrix_[2][3] = -3.0;
+
+		projectionMatrix_ = nytl::perspective3(45.f, 900.f / 900.f, 0.1f, 100.f);
+		//projectionMatrix_ = nytl::identityMat<4>();
+
+		std::cout << viewMatrix_ << "\n";
+		std::cout << projectionMatrix_ << "\n";
+
 
 		allocator_.reset(new vpp::DeviceMemoryAllocator(device()));
 
@@ -258,7 +352,7 @@ public:
 		info.states.inputAssembly.topology(vk::PrimitiveTopology::TriangleList);
 
 		info.states.rasterization.polygonMode(vk::PolygonMode::Fill);
-		info.states.rasterization.cullMode(vk::CullModeFlagBits::Back);
+		info.states.rasterization.cullMode(vk::CullModeFlagBits::None);
 		info.states.rasterization.frontFace(vk::FrontFace::CounterClockwise);
 		info.states.rasterization.depthClampEnable(true);
 		info.states.rasterization.rasterizerDiscardEnable(false);
@@ -296,7 +390,7 @@ public:
 		fillDescriptorBuffer();
 
 		descriptorSet_->writeBuffers(0,
-			{{descriptorBuffer_->vkBuffer(), 0, sizeof(float) * 16}});
+			{{descriptorBuffer_->vkBuffer(), 0, sizeof(nytl::Mat4f) * 3}});
 
 		//builds renderers with overriden buildCommandBuffer function
 		initRenderers();
@@ -305,7 +399,7 @@ public:
 	void updateRotation()
 	{
 		static float angle = 0;
-		angle += 0.0001;
+		angle += 0.0002;
 
 		transform_.resetTransform();
 		nytl::rotate(transform_.transformMatrix(), {1, 0.4, 1.5}, angle);

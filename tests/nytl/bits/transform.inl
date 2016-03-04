@@ -185,6 +185,88 @@ SquareMat<D, P> rotateCopy(SquareMat<D, P> mat, const Vec<D, P>& rot)
 	return mat;
 }
 
+//perspcetive
+template<typename P>
+SquareMat<4, P> perspective3(P left, P right, P top, P bottom, P pnear, P far)
+{
+	auto ret = SquareMat<4, P>(0);
+
+	ret[0][0] = (P(2) * pnear) / (right - left);
+	ret[1][1] = (P(2) * pnear) / (top - bottom);
+
+	ret[2][0] = (right + left) / (right - left);
+	ret[2][1] = (top + bottom) / (top - bottom);
+	ret[2][2] = (-far - pnear) / (far - pnear);
+	ret[2][3] = -1;
+
+	ret[3][2] = (P(-2) * far * pnear) / (far - pnear);
+	return ret;
+}
+
+template<typename P>
+SquareMat<4, P> perspective3Symmetrical(P width, P height, P pnear, P pfar)
+{
+	return perspective3(-width / P(2), width / P(2), height / P(2), -height / P(2), pnear, pfar);
+}
+
+template<typename P>
+SquareMat<4, P> perspective3(P fov, P aspect, P pnear, P pfar)
+{
+	P const f = P(1) / std::tan(fov / P(2));
+
+	auto ret = Mat4<P>(0);
+	ret[0][0] = f / aspect;
+	ret[1][1] = f;
+
+	ret[2][2] = -(pfar + pnear) / (pfar - pnear);
+	ret[2][3] = -1;
+
+	ret[3][2] = -(P(2) * pfar * pnear) / (pfar - pnear);
+	return ret;
+}
+
+
+template<typename P>
+SquareMat<4, P> ortho3(P left, P right, P top, P bottom, P pnear, P far)
+{
+	auto ret = Mat4<P>(0);
+
+	ret[0][0] = P(2) / (right - left);
+	ret[1][1] = P(2) / (top - bottom);
+
+	ret[2][2] = P(-2) / (far - pnear);
+
+	ret[3][0] = - ((right + left) / (right - left));
+	ret[3][1] = - ((top + bottom) / (top - bottom));
+	ret[3][2] = - (far + pnear) / (far - pnear);
+	ret[3][3] = 1;
+	return ret;
+}
+
+template<typename P>
+SquareMat<4, P> ortho3(P width, P height, P pnear, P pfar)
+{
+	return ortho3(-width / P(2), width / P(2), height / P(2), -height / P(2), pnear, pfar);
+}
+
+template<typename P>
+SquareMat<4, P> lookAt(const Vec3<P>& eye, const Vec3<P>& center, const Vec3<P>& up)
+{
+	const auto f = normalize(center - eye);
+	const auto s = normalize(cross(f, up));
+	const auto u = cross(s, f);
+
+	auto ret = identityMat<4, P>();
+	ret.col(0) = s;
+	ret.col(1) = u;
+	ret.col(2) = -f;
+	ret[3][0] = -dot(s, eye);
+	ret[3][1] = -dot(u, eye);
+	ret[3][2] = dot(f, eye);
+
+	return ret;
+}
+
 #ifdef DOXYGEN
 }
 #endif
