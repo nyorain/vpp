@@ -36,6 +36,8 @@ public:
     VkPhysicalDevice vkPhysicalDevice() const { return physicalDevice_; }
     VkDevice vkDevice() const { return device_; }
 
+	///Signals the device that a device lost vulkan error ocurred and it should try to fix it.
+	void deviceLost();
     void waitIdle() const;
 
 	const std::vector<Queue>& queues() const { return queues_; }
@@ -45,7 +47,10 @@ public:
 	const vk::PhysicalDeviceMemoryProperties& memoryProperties() const { return memoryProperties_; }
 	const vk::PhysicalDeviceProperties& properties() const { return physicalDeviceProperties_; }
 
+	///Returns the first memoryType for the given memoryTypeBits and flags.
 	int memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const;
+
+	///Returns a bitmask of memoryTypes that match the given parameters.
 	std::uint32_t memoryTypeBits(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const;
 };
 

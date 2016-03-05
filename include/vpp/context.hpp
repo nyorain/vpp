@@ -23,6 +23,10 @@ protected:
 
 public:
 	virtual const Surface& surface() const = 0;
+
+	const Device& device() const { return device_; }
+	const Instance& instance() const { return instance_; }
+	const SwapChain& swapChain() const { return swapChain_; }
 };
 
 }
