@@ -33,3 +33,8 @@ if(WIN32)
 elseif(UNIX)
 	target_link_libraries(vpp "vulkan")
 endif(WIN32)
+
+install(TARGETS vpp
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib)

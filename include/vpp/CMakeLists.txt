@@ -1,3 +1,3 @@
 #install
 
-install(DIRECTORY . DESTINATION include)
+install(DIRECTORY . DESTINATION include/vpp)
