@@ -58,36 +58,6 @@ public:
 	vk::Framebuffer vkFrameBuffer() const { return frameBuffer_; }
 };
 
-class RenderPass : public Resource
-{
-public:
-	struct CreateInfo
-	{
-		std::vector<FrameBuffer::AttachmentInfo> attachments;
-	};
-
-public:
-	RenderPass(const Device& dev, const vk::RenderPassCreateInfo& info);
-};
-
-class RenderInstance : public Resource
-{
-protected:
-	vk::RenderPass renderPass_;
-	vk::CommandBuffer commandBuffer_;
-	const Framebuffer& framebuffer_;
-
-public:
-	RenderInstance();
-};
-
-
-class Renderer
-{
-public:
-	virtual void build(const RenderInstance& renderini) const = 0;
-}
-
 class FrameBufferRenderer : public Resource
 {
 protected:
@@ -102,6 +72,30 @@ protected:
 	virtual void build(const RenderInstance& renderini) = 0;
 };
 */
+class RendererBase
+{
+public:
+	virtual void build(const RenderInstance& renderini) const = 0;
+	virtual std::vector<RendererRequirements> requirements() const = 0;
+};
+
+
+class RenderInstance : public Resource
+{
+protected:
+	vk::RenderPass renderPass_;
+	vk::CommandBuffer commandBuffer_;
+	vK::FrameBuffer framebuffer_;
+
+	unsigned int currentSubpass_ {0};
+
+public:
+	RenderInstance(vk::CommandBuffer cmdbuffer, vk::RenderPass pass, vk::Framebuffer framebuffer);
+	~RenderInstance();
+
+	vk::CommandBuffer vkCommandBuffer() const { return commandBuffer_; }
+	//void nextSubpass();
+};
 
 ///Capable of rendering on a SwapChain.
 class Renderer : public Resource
@@ -171,6 +165,14 @@ struct RendererRequirements
 
 class SwapChainRenderer : public Resource
 {
+public:
+	struct Buffer
+	{
+		unsigned int id;
+		FrameBuffer frameBuffer;
+		vk::CommandBuffer commandBuffer;
+	};
+
 protected:
 	const Renderer* renderer_;
 	const SwapChain* swapChain_;
@@ -179,7 +181,19 @@ protected:
 	std::vector<FrameBuffer> framebuffers_;
 
 public:
-	SwapChainRenderer(const Renderer& renderer);
+	SwapChainRenderer(const Renderer& renderer, const SwapChain& swapChain);
+};
+
+class SurfaceRenderer : public Resource
+{
+protected:
+	const Surface* surface_;
+
+	SwapChain swapChain_;
+	SwapChainRenderer swapChainRenderer_;
+
+public:
+	SurfaceRenderer(const Renderer& renderer, const SwapChain& swapChain);
 };
 */
 

@@ -35,6 +35,7 @@ public:
 		std::vector<DescriptorSetLayout*> descriptorSetLayouts;
 		std::vector<VertexBufferLayout*> vertexBufferLayouts;
 		std::vector<vk::DynamicState> dynamicStates;
+		std::vector<vk::PushConstantRange> pushConstantRanges;
 
 		vk::RenderPass renderPass;
 		ShaderProgram shader;

@@ -6,8 +6,23 @@
 namespace vpp
 {
 
+///Can not be copied but moved.
+class NonCopyable
+{
+private:
+	NonCopyable(const NonCopyable&) = delete;
+	NonCopyable& operator=(const NonCopyable&) = delete;
+
+public:
+	NonCopyable() = default;
+	~NonCopyable() = default;
+
+	NonCopyable(NonCopyable&& other) noexcept = default;
+	NonCopyable& operator=(NonCopyable&& other) noexcept = default;
+};
+
 ///Device.
-class Device
+class Device : public NonCopyable
 {
 public:
 	struct Queue
@@ -29,8 +44,12 @@ protected:
 	vk::PhysicalDeviceProperties physicalDeviceProperties_ {};
 
 public:
+	Device() = default;
     Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info);
     virtual ~Device();
+
+	Device(Device&& other) noexcept;
+	Device& operator=(Device&& other) noexcept;
 
     VkInstance vkInstance() const { return instance_; }
     VkPhysicalDevice vkPhysicalDevice() const { return physicalDevice_; }

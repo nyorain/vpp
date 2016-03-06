@@ -36,6 +36,15 @@ Device::~Device()
 	if(vkDevice()) vk::destroyDevice(device_, nullptr);
 }
 
+Device::Device(Device&& other) noexcept
+{
+	
+}
+Device& Device::operator=(Device&& other) noexcept
+{
+	return *this;
+}
+
 void Device::waitIdle() const
 {
     vk::deviceWaitIdle(vkDevice());

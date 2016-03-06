@@ -25,6 +25,11 @@ public:
 //Context
 class Win32Context : public Context
 {
+protected:
+	Win32Surface surface_;
+
+public:
+	virtual const Surface& surface() const override { return surface_; }
 };
 
 }
