@@ -44,7 +44,7 @@ public:
 	};
 
 protected:
-	nytl::Vec2f size_;
+	vk::Extents2D size_;
 	std::vector<Attachement> attachments_;
 	vk::Framebuffer frameBuffer_;
 
@@ -76,16 +76,30 @@ protected:
 	vk::RenderPass renderPass_;
 	vk::CommandBuffer commandBuffer_;
 	const Framebuffer& framebuffer_;
+
+public:
+	RenderInstance();
 };
+
+
+class Renderer
+{
+public:
+	virtual void build(const RenderInstance& renderini) const = 0;
+}
 
 class FrameBufferRenderer : public Resource
 {
 protected:
-	FrameBuffer frameBuffer_;
 	vk::CommandBuffer commandBuffer_;
 
-public:
-	RenderInstance render();
+protected:
+	FrameBufferRenderer() = default;
+
+	void create(std::vector<vk::ClearValue>& clearValues = {});
+	void create(std::vector<vk::ClearValue>& clearValues, const vk::Extent2D& size);
+
+	virtual void build(const RenderInstance& renderini) = 0;
 };
 */
 
@@ -147,5 +161,26 @@ public:
 	const SwapChain& swapChain() const { return *swapChain_; }
 	const std::vector<FrameRenderer>& frameRenderers() const { return frameRenderers_; }
 };
+
+/*
+struct RendererRequirements
+{
+	std::vector<AttachmentInfo> attachmentsInfos;
+	std::vector<SubpassInfo> subpassInfos;
+};
+
+class SwapChainRenderer : public Resource
+{
+protected:
+	const Renderer* renderer_;
+	const SwapChain* swapChain_;
+
+	std::vector<FrameBufferAttachment> staticAttachments_;
+	std::vector<FrameBuffer> framebuffers_;
+
+public:
+	SwapChainRenderer(const Renderer& renderer);
+};
+*/
 
 }
