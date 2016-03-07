@@ -9,7 +9,7 @@ set(vpp-sources
 	allocator.cpp
 	shader.cpp
 	device.cpp
-	instance.cpp
+	framebuffer.cpp
 	buffer.cpp
 	image.cpp
 	debug.cpp

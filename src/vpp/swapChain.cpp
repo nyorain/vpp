@@ -14,7 +14,7 @@ SwapChain::SwapChain(const Device& device, const Surface& surface, const vk::Ext
 
 SwapChain::SwapChain(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& extent)
 {
-    create(device, surface, extent);
+    init(device, surface, extent);
 }
 
 SwapChain::~SwapChain()
@@ -22,15 +22,41 @@ SwapChain::~SwapChain()
 	destroy();
 }
 
-void SwapChain::create(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& extent)
+SwapChain::SwapChain(SwapChain&& other) noexcept
 {
-    Resource::create(device);
+	this->swap(other);
+}
+
+SwapChain& SwapChain::operator=(SwapChain&& other) noexcept
+{
+	SwapChain swapper(std::move(other));
+	this->swap(swapper);
+	return *this;
+}
+
+void SwapChain::swap(SwapChain& other) noexcept
+{
+	using std::swap;
+
+	swap(other.swapChain_, swapChain_);
+	swap(other.buffers_, buffers_);
+	swap(format_, other.format_);
+	swap(colorSpace_, other.colorSpace_);
+	swap(extent_, other.extent_);
+	swap(surface_, other.surface_);
+
+	swap(device_, other.device_);
+}
+
+void SwapChain::init(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& extent)
+{
+    Resource::init(device);
 
     surface_ = surface;
 	extent_ = extent;
 
 	queryFormats();
-	init();
+	initSwapChain();
 }
 
 void SwapChain::destroy()
@@ -47,11 +73,14 @@ void SwapChain::destroyBuffers()
 
 void SwapChain::destroySwapchain()
 {
+	if(!vkSwapChain()) return;
+
 	VPP_LOAD_DEVICE_PROC(vkDevice(), DestroySwapchainKHR);
-    if(vkSwapChain()) fpDestroySwapchainKHR(vkDevice(), vkSwapChain(), nullptr);
+    fpDestroySwapchainKHR(vkDevice(), vkSwapChain(), nullptr);
+	swapChain_ = {};
 }
 
-void SwapChain::init()
+void SwapChain::initSwapChain()
 {
 	VPP_LOAD_DEVICE_PROC(vkDevice(), CreateSwapchainKHR);
 	VPP_LOAD_DEVICE_PROC(vkDevice(), GetSwapchainImagesKHR);
@@ -85,7 +114,7 @@ void SwapChain::init()
 void SwapChain::resize(const vk::Extent2D& extent)
 {
 	extent_ = extent;
-	init();
+	initSwapChain();
 }
 
 void SwapChain::queryFormats()

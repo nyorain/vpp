@@ -15,7 +15,7 @@ namespace vpp
 class GraphicsPipeline : public Pipeline
 {
 public:
-	struct StatesCreateInfo
+	class StatesCreateInfo
 	{
 	public:
 		vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
@@ -27,7 +27,13 @@ public:
 		vk::PipelineColorBlendStateCreateInfo colorBlend;
 
 	public:
-		//StatesCreateInfo(const std::vector<vk::DynamicState>& dynamic = {});
+		std::vector<vk::PipelineColorBlendAttachmentState> blendAttachments_;
+		std::vector<vk::Viewport> viewports_;
+		std::vector<vk::Rect2D> scissors_;
+
+	public:
+		StatesCreateInfo() = default;
+		StatesCreateInfo(const vk::Viewport& viewport); //default initialized states
 	};
 
 	struct CreateInfo
@@ -44,15 +50,12 @@ public:
 		StatesCreateInfo states {};
 	};
 
-protected:
-	GraphicsPipeline() = default;
-
-	void create(const Device& context, const CreateInfo& createInfo);
-	void destroy();
-
 public:
+	GraphicsPipeline() = default;
 	GraphicsPipeline(const Device& device, const CreateInfo& createInfo);
-	~GraphicsPipeline();
+	~GraphicsPipeline() = default;
+
+	void init(const Device& context, const CreateInfo& createInfo);
 };
 
 }

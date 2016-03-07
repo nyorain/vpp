@@ -24,8 +24,10 @@ protected:
 
 public:
     Surface(VkInstance instance, VkSurfaceKHR surface);
+    virtual ~Surface();
 
-    virtual ~Surface() = default;
+	Surface(Surface&& other) noexcept;
+	Surface& operator=(Surface&& other) noexcept;
 
     vk::Instance vkInstance() const { return instance_; }
     vk::SurfaceKHR vkSurface() const { return surface_; }
@@ -36,6 +38,10 @@ public:
     vk::SurfaceCapabilitiesKHR capabilities(vk::PhysicalDevice phdev) const;
     std::vector<vk::SurfaceFormatKHR> formats(vk::PhysicalDevice phdev) const;
     std::vector<vk::PresentModeKHR> presentModes(vk::PhysicalDevice phdev) const;
+
+	void swap(Surface& other) noexcept;
 };
+
+inline void swap(Surface& a, Surface& b) noexcept { return a.swap(b); }
 
 }

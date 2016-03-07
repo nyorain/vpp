@@ -38,8 +38,8 @@ public:
 		Entry(DeviceMemoryPtr memory, const Allocation& alloc);
 		~Entry();
 
-		Entry(Entry&& other);
-		Entry& operator=(Entry&& other);
+		Entry(Entry&& other) noexcept;
+		Entry& operator=(Entry&& other) noexcept;
 
 		DeviceMemory& memory() const { return *memory_; };
 		std::size_t offset() const { return allocation_.offset; };

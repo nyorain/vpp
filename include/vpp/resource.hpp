@@ -14,7 +14,7 @@ protected:
 
 protected:
 	Resource() = default;
-	void create(const Device& device) { device_ = &device; };
+	void init(const Device& device) { device_ = &device; };
 
 public:
 	Resource(const Device& device) : device_(&device) {}
@@ -27,5 +27,11 @@ public:
 	VkDevice vkDevice() const { return device().vkDevice(); }
 };
 
+//swap template
+template<typename T>
+auto swap(T& a, T& b) -> decltype(a.swap(b))
+{
+	a.swap(b);
+}
 
 }

@@ -51,6 +51,8 @@ public:
 	Device(Device&& other) noexcept;
 	Device& operator=(Device&& other) noexcept;
 
+	void swap(Device& other) noexcept;
+
     VkInstance vkInstance() const { return instance_; }
     VkPhysicalDevice vkPhysicalDevice() const { return physicalDevice_; }
     VkDevice vkDevice() const { return device_; }
@@ -59,9 +61,10 @@ public:
 	void deviceLost();
     void waitIdle() const;
 
+	///Returns all available queues for the created device.
 	const std::vector<Queue>& queues() const { return queues_; }
-	vk::Queue queue(std::uint32_t family) const;
-	vk::Queue queue(std::uint32_t family, std::uint32_t id) const;
+	const Queue* queue(std::uint32_t family) const;
+	const Queue* queue(std::uint32_t family, std::uint32_t id) const;
 
 	const vk::PhysicalDeviceMemoryProperties& memoryProperties() const { return memoryProperties_; }
 	const vk::PhysicalDeviceProperties& properties() const { return physicalDeviceProperties_; }
@@ -72,5 +75,7 @@ public:
 	///Returns a bitmask of memoryTypes that match the given parameters.
 	std::uint32_t memoryTypeBits(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const;
 };
+
+inline swap(Device& a, Device& b) noexcept { a.swap(b); }
 
 }

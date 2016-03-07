@@ -9,7 +9,7 @@ namespace vpp
 
 Renderer::Renderer(const SwapChain& swapChain)
 {
-	create(swapChain);
+	init(swapChain);
 }
 
 Renderer::~Renderer()
@@ -17,9 +17,9 @@ Renderer::~Renderer()
 	destroy();
 }
 
-void Renderer::create(const SwapChain& swapChain)
+void Renderer::init(const SwapChain& swapChain)
 {
-	Resource::create(swapChain.device());
+	Resource::init(swapChain.device());
 	swapChain_ = &swapChain;
 
 	initCommandPool();

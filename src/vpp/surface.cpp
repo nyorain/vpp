@@ -14,6 +14,31 @@ Surface::Surface(vk::Instance instance, vk::SurfaceKHR surface) : Surface(instan
     surface_ = surface;
 }
 
+Surface::~Surface()
+{
+	destroy();
+}
+
+Surface::Surface(Surface&& other) noexcept
+{
+	this->swap(other);
+}
+
+Surface& Surface::operator=(Surface&& other) noexcept
+{
+	Surface swapper(std::move(other));
+	this->swap(swapper);
+	return *this;
+}
+
+void Surface::swap(Surface& other) noexcept
+{
+	using std::swap;
+
+	std::swap(instance_, other.instance_);
+	std::swap(surface_, other.surface_);
+}
+
 void Surface::init(vk::Instance instance)
 {
     instance_ = instance;
@@ -21,8 +46,8 @@ void Surface::init(vk::Instance instance)
 
 void Surface::destroy()
 {
-    if(vkSurface()) vk::destroySurfaceKHR(vkInstance(), vkSurface(), nullptr);
-    surface_ = 0;
+    if(vkInstance() && vkSurface()) vk::destroySurfaceKHR(vkInstance(), vkSurface(), nullptr);
+    surface_ = {};
 }
 
 bool Surface::queueFamilySupported(vk::PhysicalDevice phdev, std::uint32_t qFamiliyIndex) const

@@ -36,21 +36,15 @@ Image::Image(DeviceMemoryAllocator& allctr, const vk::ImageCreateInfo& info, vk:
 	allctr.request(image_, reqs, info.tiling(), memoryEntry_);
 }
 
-Image::Image(Image&& other)
+Image::Image(Image&& other) noexcept
 {
-	Resource::create(other.device());
-
-	std::swap(memoryEntry_, other.memoryEntry_);
-	std::swap(image_, other.image_);
+	this->swap(other);
 }
 
-Image& Image::operator=(Image&& other)
+Image& Image::operator=(Image&& other) noexcept
 {
-	destroy();
-	Resource::create(other.device());
-
-	std::swap(memoryEntry_, other.memoryEntry_);
-	std::swap(image_, other.image_);
+	Image swapper(std::move(other));
+	this->swap(swapper);
 
 	return *this;
 }
@@ -58,6 +52,15 @@ Image& Image::operator=(Image&& other)
 Image::~Image()
 {
 	destroy();
+}
+
+void Image::swap(Image& other) noexcept
+{
+	using std::swap;
+
+	swap(memoryEntry_, other.memoryEntry_);
+	swap(image_, other.image_);
+	swap(device_, other.device_);
 }
 
 void Image::destroy()

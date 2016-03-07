@@ -15,11 +15,12 @@ namespace vpp
 class Win32Surface : public Surface
 {
 protected:
-    void initSurface(void* hinstance, void* hwnd);
+    void initSurface(HINSTANCE hinstance, HWND hwnd);
 
 public:
-    Win32Surface(vk::Instance instance, void* hinstance, void* hwnd);
-    virtual ~Win32Surface();
+	Win32Surface() = default;
+	Win32Surface(vk::Instance instance, HWND hwnds);
+    Win32Surface(vk::Instance instance, HINSTANCE hinstance, HWND hwnd);
 };
 
 //Context
@@ -29,6 +30,10 @@ protected:
 	Win32Surface surface_;
 
 public:
+	Win32Context() = default;
+	Win32Context(const CreateInfo& info, HWND hwnds);
+	Win32Context(const CreateInfo& info, HINSTANCE hinstance, HWND hwnd);
+
 	virtual const Surface& surface() const override { return surface_; }
 };
 

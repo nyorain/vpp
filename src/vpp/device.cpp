@@ -38,11 +38,26 @@ Device::~Device()
 
 Device::Device(Device&& other) noexcept
 {
-	
+	this->swap(other);
 }
+
 Device& Device::operator=(Device&& other) noexcept
 {
+	Device swapper(std::move(other));
+	this->swap(swapper);
 	return *this;
+}
+
+void Device::swap(Device& other) noexcept
+{
+	using std::swap;
+
+	swap(device_, other.device_);
+	swap(physicalDevice_, other.physicalDevice_);
+	swap(instance_, other.instance_);
+	swap(queues_, other.queues_);
+	swap(physicalDeviceProperties_, other.physicalDeviceProperties_);
+	swap(memoryProperties_, other.memoryProperties_);
 }
 
 void Device::waitIdle() const
@@ -50,20 +65,20 @@ void Device::waitIdle() const
     vk::deviceWaitIdle(vkDevice());
 }
 
-vk::Queue Device::queue(std::uint32_t family) const
+const Device::Queue* Device::queue(std::uint32_t family) const
 {
 	for(auto& queue : queues())
-		if(queue.family == family) return queue.queue;
+		if(queue.family == family) return &queue;
 
-	return 0;
+	return nullptr;
 }
 
-vk::Queue Device::queue(std::uint32_t family, std::uint32_t id) const
+const Device::Queue* Device::queue(std::uint32_t family, std::uint32_t id) const
 {
 	for(auto& queue : queues())
-		if(queue.family == family && queue.id == id) return queue.queue;
+		if(queue.family == family && queue.id == id) return &queue;
 
-	return 0;
+	return nullptr;
 }
 
 int Device::memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const

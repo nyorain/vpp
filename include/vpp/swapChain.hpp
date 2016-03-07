@@ -31,11 +31,9 @@ protected:
 	std::vector<Buffer> buffers_;
 
 protected:
-	SwapChain() = default;
+    void init(const Device& context, vk::SurfaceKHR surface, const vk::Extent2D& extent);
 
-    void create(const Device& context, vk::SurfaceKHR surface, const vk::Extent2D& extent);
-
-	void init();
+	void initSwapChain();
     void queryFormats();
     Buffer createBuffer(VkImage image) const;
     VkSwapchainCreateInfoKHR swapChainCreateInfo();
@@ -45,9 +43,13 @@ protected:
 	void destroySwapchain();
 
 public:
+	SwapChain() = default;
     SwapChain(const Device& device, const Surface& surface, const vk::Extent2D& extent = {});
 	SwapChain(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& extent = {});
     ~SwapChain();
+
+	SwapChain(SwapChain&& other) noexcept;
+	SwapChain& operator=(SwapChain&& other) noexcept;
 
 	void resize(const vk::Extent2D& extent);
 
@@ -61,6 +63,10 @@ public:
 
     unsigned int acquireNextImage(vk::Semaphore presentComplete) const;
     void present(vk::Queue queue, unsigned int currentBuffer) const;
+
+	void swap(SwapChain& other) noexcept;
 };
+
+inline void swap(SwapChain& a, SwapChain& b) noexcept { a.swap(b); }
 
 }

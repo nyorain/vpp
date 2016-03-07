@@ -6,7 +6,8 @@
 namespace vpp
 {
 
-//Custom allocator class
+///Custom allocator class.
+///Could be used for custom vulkan allocations.
 class Allocator
 {
 public:

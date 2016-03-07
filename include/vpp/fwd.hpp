@@ -4,7 +4,6 @@ namespace vpp
 {
 
 class Device;
-class Instance;
 class Resource;
 class Surface;
 class SwapChain;
@@ -19,5 +18,7 @@ class Buffer;
 class DescriptorSet;
 class VertexBufferLayout;
 class DescriptorSetLayout;
+class Framebuffer;
+class Allocator;
 
 }

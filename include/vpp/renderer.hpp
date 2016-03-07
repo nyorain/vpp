@@ -13,50 +13,7 @@ namespace vpp
 
 /*
 //higher abstraction needed!
-class FrameBuffer : public Resource
-{
-public:
-	enum class AttachmentType
-	{
-		depth,
-		color,
-		input,
-		resolve,
-		preserve
-	};
 
-	struct Attachment
-	{
-		std::unique_ptr<Image> image {}; //optional, may be provides externally (swapchain e.g.)
-		vk::ImageView imageView {};
-		vk::Format format;
-	};
-
-	struct AttachmentInfo
-	{
-		AttachmentType type;
-		vk::Image image_ {}; //external image to use, if {} a new one will be created
-	};
-
-	struct CreateInfo
-	{
-		std::vector<AttachmentInfo> attachements;
-	};
-
-protected:
-	vk::Extents2D size_;
-	std::vector<Attachement> attachments_;
-	vk::Framebuffer frameBuffer_;
-
-public:
-	FrameBuffer(const Device& dev, vk::RenderPass renderpass, const CreateInfo& info);
-	FrameBuffer(const RenderPass& renderpass, const CreateInfo& info);
-	FrameBuffer(const RenderPass& renderpass);
-
-	const std::vector<Attachment>& attachments() const { return attachments_; }
-	const nytl::Vec2f size() const { return size_; }
-	vk::Framebuffer vkFrameBuffer() const { return frameBuffer_; }
-};
 
 class FrameBufferRenderer : public Resource
 {
@@ -72,14 +29,8 @@ protected:
 	virtual void build(const RenderInstance& renderini) = 0;
 };
 */
-class RendererBase
-{
-public:
-	virtual void build(const RenderInstance& renderini) const = 0;
-	virtual std::vector<RendererRequirements> requirements() const = 0;
-};
 
-
+/*
 class RenderInstance : public Resource
 {
 protected:
@@ -96,6 +47,14 @@ public:
 	vk::CommandBuffer vkCommandBuffer() const { return commandBuffer_; }
 	//void nextSubpass();
 };
+
+class RendererBase
+{
+public:
+	virtual void build(const RenderInstance& renderini) const = 0;
+	virtual std::vector<RendererRequirements> requirements() const = 0;
+};
+*/
 
 ///Capable of rendering on a SwapChain.
 class Renderer : public Resource
@@ -126,8 +85,7 @@ protected:
 protected:
 	Renderer() = default;
 
-	void create(const SwapChain& swapChain);
-
+	void init(const SwapChain& swapChain);
 	void initCommandPool();
 	void initRenderPass();
 	void initDepthStencil();

@@ -31,10 +31,10 @@ inline std::string resultErrorMsg(vk::Result result)
 }
 
 //throw
-inline bool checkResultThrow(vk::Result result, const char* function)
+inline vk::Result checkResultThrow(vk::Result result, const char* function)
 {
 	if(result == vk::Result::Success)
-		return 1;
+		return result;
 
 	auto msg = resultErrorMsg(result);
 	auto ecode = static_cast<unsigned int>(result);
@@ -46,19 +46,19 @@ inline bool checkResultThrow(vk::Result result, const char* function)
 }
 
 //warn
-inline bool checkResultWarn(vk::Result result, const char* function)
+inline vk::Result checkResultWarn(vk::Result result, const char* function)
 {
-	if(result == vk::Result::Success)
-		return 1;
+	if(result != vk::Result::Success)
+	{
+		auto msg = resultErrorMsg(result);
+		auto ecode = static_cast<unsigned int>(result);
+		const std::string err =
+			"Vulkan Error Code " + std::to_string(ecode) + ", " + msg + "\nin function " + function;
 
-	auto msg = resultErrorMsg(result);
-	auto ecode = static_cast<unsigned int>(result);
-	const std::string err =
-        "Vulkan Error Code " + std::to_string(ecode) + ", " + msg + "\nin function " + function;
+		std::cerr << err << std::endl;
+	}
 
-    std::cerr << err << std::endl;
-
-	return 0;
+	return result;
 }
 
 } //namespace call

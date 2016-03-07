@@ -6,6 +6,10 @@
 namespace vpp
 {
 
+///LeyerNames
+extern std::vector<const char*> validationLayerNames;
+
+///Vulkan DebugCallback.
 class DebugCallback
 {
 public:
@@ -25,7 +29,6 @@ protected:
 	vk::DebugReportCallbackEXT debugCallback_ {};
 
 public:
-	DebugCallback(Instance instance, vk::DebugReportFlagsEXT flags);
 	DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags);
 	~DebugCallback();
 

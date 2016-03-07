@@ -1,10 +1,23 @@
 #include <vpp/debug.hpp>
 #include <vpp/procAddr.hpp>
-#include <vpp/instance.hpp>
 #include <iostream>
 
 namespace vpp
 {
+
+//layer names
+std::vector<const char*> validationLayerNames =
+{
+	"VK_LAYER_LUNARG_threading",
+	"VK_LAYER_LUNARG_mem_tracker",
+	"VK_LAYER_LUNARG_object_tracker",
+	"VK_LAYER_LUNARG_draw_state",
+	"VK_LAYER_LUNARG_param_checker",
+	"VK_LAYER_LUNARG_swapchain",
+	"VK_LAYER_LUNARG_device_limits",
+	"VK_LAYER_LUNARG_image",
+	"VK_LAYER_GOOGLE_unique_objects",
+};
 
 //utility c free function callback
 namespace
@@ -25,11 +38,6 @@ VkBool32 defaultMessageCallback(VkDebugReportFlagsEXT flags, VkDebugReportObject
 }
 
 //DebugCallback
-DebugCallback::DebugCallback(Instance instance, vk::DebugReportFlagsEXT flags)
-	: DebugCallback(instance.vkInstance(), flags)
-{
-}
-
 DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags)
 	: instance_(instance)
 {

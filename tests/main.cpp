@@ -2,7 +2,6 @@
 
 #include <vpp/backend/win32.hpp>
 #include <vpp/device.hpp>
-#include <vpp/instance.hpp>
 #include <vpp/swapChain.hpp>
 #include <vpp/renderer.hpp>
 #include <vpp/shader.hpp>
@@ -125,10 +124,7 @@ struct App
     unsigned int width = 900;
     unsigned int height = 900;
 
-    vpp::SwapChain* swapChain = nullptr;
-    vpp::Instance* instance = nullptr;
-	vpp::Device* device = nullptr;
-    vpp::Surface* surface = nullptr;
+    vpp::Context* context = nullptr;
 	MyRenderer* renderer = nullptr;
 
 	vk::Queue queue {};
@@ -159,9 +155,6 @@ protected:
 protected:
 	virtual void buildRenderer(vk::CommandBuffer cmdBuffer) const override
 	{
-		//std::cout << "drawCmd\n";
-		//pipeline_->drawCommands(cmdBuffer, {vertexBuffer_.get()}, {});
-
 		VkDeviceSize offsets[1] = { 0 };
 
 		auto buf = vertexBuffer_->vkBuffer();
@@ -171,14 +164,8 @@ protected:
 			pipeline_->vkPipelineLayout(), 0, 1, &vkDesc, 0, nullptr);
 
 		vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::Graphics, pipeline_->vkPipeline());
-
 		vk::cmdBindVertexBuffers(cmdBuffer, 0, 1, &buf, offsets);
-		//vk::cmdBindIndexBuffer(cmdBuffer, indexBuffer_->vkBuffer(), 0, vk::IndexType::Uint32);
-		//vk::cmdDrawIndexed(cmdBuffer, gIndices.size(), 1, 0, 0, 1);
-
 		vk::cmdDraw(cmdBuffer, gVertices.size(), 1, 0, 0);
-
-		//pipeline_->renderCommands(cmdBuffer);
 	};
 
 	void initVertexBuffer()
@@ -251,51 +238,17 @@ protected:
 	{
 		auto map = descriptorBuffer_->memoryMap();
 
-		if(map.ptr()) //check not needed fill throw on failure
-		{
-			/*
-			const auto& mat = transform_.transformMatrix();
-			auto offset = 0u;
-
-			for(int i(0); i < 4; ++i)
-			{
-				auto size = sizeof(float) * 4;
-				nytl::Vec4f vec = mat.col(i);
-				std::memcpy(map.ptr() + offset, vec.data(), size);
-				offset += size;
-			}
-			for(int i(0); i < 4; ++i)
-			{
-				auto size = sizeof(float) * 4;
-				nytl::Vec4f vec = viewMatrix_.row(i);
-				std::memcpy(map.ptr() + offset, vec.data(), size);
-				offset += size;
-			}
-			for(int i(0); i < 4; ++i)
-			{
-				auto size = sizeof(float) * 4;
-				nytl::Vec4f vec = projectionMatrix_.row(i);
-				std::memcpy(map.ptr() + offset, vec.data(), size);
-				offset += size;
-			}
-			*/
-
-			auto size = sizeof(nytl::Mat4f);
-			const auto& mat = transform_.transformMatrix();
-			std::memcpy(map.ptr(), transpose(mat).data(), size);
-			std::memcpy(map.ptr() + size, transpose(viewMatrix_).data(), size);
-			std::memcpy(map.ptr() + 2 * size, projectionMatrix_.data(), size);
-		}
-		else
-		{
-			throw std::runtime_error("unable to map");
-		}
+		auto size = sizeof(nytl::Mat4f);
+		const auto& mat = transform_.transformMatrix();
+		std::memcpy(map.ptr(), transpose(mat).data(), size);
+		std::memcpy(map.ptr() + size, transpose(viewMatrix_).data(), size);
+		std::memcpy(map.ptr() + 2 * size, projectionMatrix_.data(), size);
 	}
 
 public:
 	MyRenderer(const vpp::SwapChain& swapChainp)
 	{
-		Resource::create(swapChainp.device());
+		Resource::init(swapChainp.device());
 		swapChain_ = &swapChainp;
 
 		viewMatrix_ = nytl::identityMat<4>();
@@ -333,53 +286,12 @@ public:
 		info.dynamicStates = {vk::DynamicState::Viewport, vk::DynamicState::Scissor};
 		info.renderPass = vkRenderPass();
 
-		info.shader.create(device());
+		info.shader.init(device());
 		info.shader.addStage({"vert.spv", vk::ShaderStageFlagBits::Vertex});
 		info.shader.addStage({"frag.spv", vk::ShaderStageFlagBits::Fragment});
 
-		//vk
-		//
-		vk::PipelineColorBlendAttachmentState blendAttachmentState[1] {};
-		blendAttachmentState[0].blendEnable(false);
-		blendAttachmentState[0].colorWriteMask(
-			vk::ColorComponentFlagBits::R |
-			vk::ColorComponentFlagBits::G |
-			vk::ColorComponentFlagBits::B |
-			vk::ColorComponentFlagBits::A
-		);
-
-		//
-		info.states.inputAssembly.topology(vk::PrimitiveTopology::TriangleList);
-
-		info.states.rasterization.polygonMode(vk::PolygonMode::Fill);
-		info.states.rasterization.cullMode(vk::CullModeFlagBits::None);
-		info.states.rasterization.frontFace(vk::FrontFace::CounterClockwise);
-		info.states.rasterization.depthClampEnable(true);
-		info.states.rasterization.rasterizerDiscardEnable(false);
-		info.states.rasterization.depthBiasEnable(false);
-		info.states.rasterization.lineWidth(3.f);
-
-		info.states.colorBlend.attachmentCount(1);
-		info.states.colorBlend.pAttachments(blendAttachmentState);
-
-		info.states.viewport.viewportCount(1);
-		info.states.viewport.scissorCount(1);
-
-		vk::StencilOpState stencil;
-		stencil.failOp(vk::StencilOp::Keep);
-		stencil.passOp(vk::StencilOp::Keep);
-		stencil.compareOp(vk::CompareOp::Always);
-
-		info.states.depthStencil.depthTestEnable(true);
-		info.states.depthStencil.depthWriteEnable(true);
-		info.states.depthStencil.depthCompareOp(vk::CompareOp::LessOrEqual);
-		info.states.depthStencil.depthBoundsTestEnable(false);
-		info.states.depthStencil.stencilTestEnable(false);
-		info.states.depthStencil.back(stencil);
-		info.states.depthStencil.front(stencil);
-
-		info.states.multisample.pSampleMask(nullptr);
-		info.states.multisample.rasterizationSamples(vk::SampleCountFlagBits::e1);
+		info.states = vpp::GraphicsPipeline::StatesCreateInfo{vk::Viewport{0, 0, 900, 900, 0.f, 1.f}};
+		info.states.rasterization.cullMode(vk::CullModeFlagBits::None); //triangles are not all cc order
 
 		pipeline_.reset(new vpp::GraphicsPipeline(device(), info));
 
@@ -428,11 +340,11 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 
 		case WM_SIZE:
 		{
-			if(gApp && gApp->swapChain && gApp->renderer)
+			if(gApp && gApp->context && gApp->renderer)
 			{
 				std::cout << "resizing to " << LOWORD(lparam) << "," << HIWORD(lparam) << "\n";
-				gApp->swapChain->resize({LOWORD(lparam), HIWORD(lparam)});
-				gApp->renderer->reset(*gApp->swapChain);
+				gApp->context->swapChain().resize({LOWORD(lparam), HIWORD(lparam)});
+				gApp->renderer->reset(gApp->context->swapChain());
 				gApp->renderer->render(gApp->queue);
 			}
 			break;
@@ -526,96 +438,18 @@ void mainLoop(App& app)
 int main()
 {
 	{
-		std::vector<const char*> validationLayerNames =
-		{
-			"VK_LAYER_LUNARG_threading",
-			"VK_LAYER_LUNARG_mem_tracker",
-			"VK_LAYER_LUNARG_object_tracker",
-			"VK_LAYER_LUNARG_draw_state",
-			"VK_LAYER_LUNARG_param_checker",
-			"VK_LAYER_LUNARG_swapchain",
-			"VK_LAYER_LUNARG_device_limits",
-			"VK_LAYER_LUNARG_image",
-			"VK_LAYER_GOOGLE_unique_objects",
-		};
-
 		App app;
 		gApp = &app;
 
 	    app.hinstance = GetModuleHandle(nullptr);
 	    initWindow(app);
 
-		vpp::Instance::CreateInfo iniInfo;
-		iniInfo.extensions =
-		{
-			VK_KHR_SURFACE_EXTENSION_NAME,
-			VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-			VK_EXT_DEBUG_REPORT_EXTENSION_NAME
-		};
-		iniInfo.layers = validationLayerNames;
-	    vpp::Instance instance(iniInfo);
+		vpp::Win32Context context({}, app.window);
+		MyRenderer renderer(context.swapChain());
 
-		vpp::DebugCallback debugger(instance.vkInstance(), vk::DebugReportFlagBitsEXT::ErrorEXT |
-			vk::DebugReportFlagBitsEXT::WarningEXT|vk::DebugReportFlagBitsEXT::PerformanceWarningEXT);
-
-	    vpp::Win32Surface surface(instance.vkInstance(), app.hinstance, app.window);
-
-		auto gpus = instance.enumeratePhysicalDevices();
-		std::cout << "found " << gpus.size() << " PhysicalDevices\n";
-
-		if(gpus.empty())
-		{
-			throw std::runtime_error("no gpu");
-		}
-
-		auto phdev = gpus[0];
-		auto queues = surface.supportedQueueFamilies(phdev);
-		auto queueProps = vk::getPhysicalDeviceQueueFamilyProperties(phdev);
-
-		std::uint32_t queueFamily = 99;
-
-		for(auto& queue : queues)
-		{
-			if(queueProps[queue].queueFlags() & vk::QueueFlagBits::Graphics)
-			{
-				queueFamily = queue;
-				break;
-			}
-		}
-
-		if(queueFamily == 99)
-		{
-			throw std::runtime_error("unable to get present & graphical queue");
-		}
-
-		std::vector<const char*> devExtensions {
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-		};
-
-		float priorities[1] = {0.0};
-		std::vector<vk::DeviceQueueCreateInfo> queueInfos(1);
-		queueInfos[0] = vk::DeviceQueueCreateInfo({}, queueFamily, 1, priorities);
-
-		vk::DeviceCreateInfo devInfo;
-		devInfo.enabledExtensionCount(devExtensions.size());
-		devInfo.ppEnabledExtensionNames(devExtensions.data());
-		devInfo.enabledLayerCount(validationLayerNames.size());
-		devInfo.ppEnabledLayerNames(validationLayerNames.data());
-		devInfo.queueCreateInfoCount(queueInfos.size());
-		devInfo.pQueueCreateInfos(queueInfos.data());
-
-		vpp::Device device(instance.vkInstance(), phdev, devInfo);
-
-	    vpp::SwapChain swapChain(device, surface, {app.width, app.height});
-		MyRenderer renderer(swapChain);
-		//vpp::Renderer renderer(swapChain);
-
-	    app.instance = &instance;
-		app.device = &device;
-	    app.surface = &surface;
-	    app.swapChain = &swapChain;
+	    app.context = &context;
 		app.renderer = &renderer;
-		app.queue = device.queue(queueFamily, 0);
+		app.queue = context.queue().queue;
 
 		std::cout << "setup complete.\n";
 

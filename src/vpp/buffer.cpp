@@ -36,28 +36,30 @@ Buffer::Buffer(DeviceMemoryAllocator& allctr, const vk::BufferCreateInfo& info,
 	allctr.request(buffer_, reqs, memoryEntry_);
 }
 
-Buffer::Buffer(Buffer&& other)
+Buffer::Buffer(Buffer&& other) noexcept
 {
-	Resource::create(other.device());
-
-	std::swap(memoryEntry_, other.memoryEntry_);
-	std::swap(buffer_, other.buffer_);
+	this->swap(other);
 }
 
-Buffer& Buffer::operator=(Buffer&& other)
+Buffer& Buffer::operator=(Buffer&& other) noexcept
 {
-	destroy();
-	Resource::create(other.device());
-
-	std::swap(memoryEntry_, other.memoryEntry_);
-	std::swap(buffer_, other.buffer_);
-
+	Buffer swapper(std::move(other));
+	this->swap(swapper);
 	return *this;
 }
 
 Buffer::~Buffer()
 {
 	destroy();
+}
+
+void Buffer::swap(Buffer& other) noexcept
+{
+	using std::swap;
+
+	swap(memoryEntry_, other.memoryEntry_);
+	swap(buffer_, other.buffer_);
+	swap(device_, other.device_);
 }
 
 void Buffer::destroy()

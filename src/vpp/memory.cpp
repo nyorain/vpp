@@ -10,13 +10,13 @@ DeviceMemory::Entry::Entry(DeviceMemoryPtr memory, const Allocation& alloc)
 {
 }
 
-DeviceMemory::Entry::Entry(Entry&& other)
+DeviceMemory::Entry::Entry(Entry&& other) noexcept
 {
 	std::swap(memory_, other.memory_);
 	std::swap(allocation_, other.allocation_);
 }
 
-DeviceMemory::Entry& DeviceMemory::Entry::operator=(Entry&& other)
+DeviceMemory::Entry& DeviceMemory::Entry::operator=(Entry&& other) noexcept
 {
 	this->free();
 	std::swap(memory_, other.memory_);

@@ -8,6 +8,7 @@
 namespace vpp
 {
 
+unsigned int formatSize(vk::Format format);
 
 struct DescriptorBinding
 {
@@ -37,6 +38,7 @@ public:
 	const std::vector<DescriptorBinding> bindings() const { return bindings_; }
 };
 
+///Represents a vulkan descriptor set.
 class DescriptorSet : public Resource
 {
 protected:
@@ -55,26 +57,20 @@ public:
 	void writeBufferViews(std::size_t binding, const std::vector<vk::BufferView>& updates) const;
 };
 
+///Pipeline base class.
 class Pipeline : public Resource
 {
-public:
-	enum class Type
-	{
-		graphic,
-		compute
-	};
-
 protected:
 	vk::PipelineLayout pipelineLayout_ {};
 	vk::Pipeline pipeline_ {};
 
-protected:
-	Pipeline() = default;
-	using Resource::create;
-
 public:
+	Pipeline() = default;
 	Pipeline(const Device& dev);
-	~Pipeline() = default;
+	~Pipeline();
+
+	using Resource::init;
+	void destroy();
 
 	vk::Pipeline vkPipeline() const { return pipeline_; }
 	vk::PipelineLayout vkPipelineLayout() const { return pipelineLayout_; }

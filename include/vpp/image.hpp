@@ -24,8 +24,10 @@ public:
 		vk::MemoryPropertyFlags mflags = {});
 	~Image();
 
-	Image(Image&& other);
-	Image& operator=(Image&& other);
+	Image(Image&& other) noexcept;
+	Image& operator=(Image&& other) noexcept;
+
+	void swap(Image& other) noexcept;
 
 	const DeviceMemory::Entry& memoryEntry() const { return memoryEntry_; }
 	vk::Image vkImage() const { return image_; }

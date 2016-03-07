@@ -23,8 +23,10 @@ public:
 		vk::MemoryPropertyFlags mflags = {});
 	~Buffer();
 
-	Buffer(Buffer&& other);
-	Buffer& operator=(Buffer&& other);
+	Buffer(Buffer&& other) noexcept;
+	Buffer& operator=(Buffer&& other) noexcept;
+
+	void swap(Buffer& other) noexcept;
 
 	const DeviceMemory::Entry& memoryEntry() const { return memoryEntry_; }
 	vk::Buffer vkBuffer() const { return buffer_; }
