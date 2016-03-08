@@ -139,4 +139,29 @@ public:
 	void unmap();
 };
 
+///Memory Resource initializer.
+template<typename T> class MemoryResourceInitializer
+{
+protected:
+	bool valid_ {1};
+	T resource_;
+
+public:
+	template<typename... Args>
+	MemoryResourceInializer(Args&&... args) : resource_()
+	{
+		resource_.initMemoryLess(std::forward<Args>(args)...);
+	};
+
+	template<typename... Args>
+	T init(Args&&... args)
+	{
+		if(!valid_) throw std::logic_error("Called MemoryResourceInitializer::init 2 times");
+
+		valid_ = 0;
+		resource_.initMemoryResource(std::forward<Args>(args)...);
+		return std::move(resource_);
+	}
+};
+
 }

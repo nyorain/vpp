@@ -135,7 +135,8 @@ struct App
     unsigned int height = 900;
 
     vpp::Context* context = nullptr;
-	MyRenderer* renderer = nullptr;
+	vpp::SwapChainRenderer* renderer = nullptr;
+	MyRenderer* myRenderer = nullptr;
 
 	vk::Queue queue {};
 };
@@ -143,7 +144,7 @@ struct App
 App* gApp;
 
 //renderer
-class MyRenderer : public vpp::Renderer
+class MyRenderer : public vpp::RendererBuilder, public vpp::Resource
 {
 protected:
 	std::unique_ptr<vpp::DeviceMemoryAllocator> allocator_;
@@ -167,30 +168,6 @@ protected:
 	nytl::Mat4f projectionMatrix_;
 
 protected:
-	virtual void buildRenderer(vk::CommandBuffer cmdBuffer) const override
-	{
-		VkDeviceSize offsets[1] = { 0 };
-
-		auto buf = vertexBuffer_->vkBuffer();
-		auto vkDesc = descriptorSet_->vkDescriptorSet();
-
-		auto planeBuf = planeVertexBuffer_->vkBuffer();
-		auto planeVkDesc = planeDescriptorSet_->vkDescriptorSet();
-
-		vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::Graphics, pipeline_->vkPipeline());
-
-		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics,
-			pipeline_->vkPipelineLayout(), 0, 1, &vkDesc, 0, nullptr);
-		vk::cmdBindVertexBuffers(cmdBuffer, 0, 1, &buf, offsets);
-		vk::cmdDraw(cmdBuffer, gVertices.size(), 1, 0, 0);
-
-		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics,
-			pipeline_->vkPipelineLayout(), 0, 1, &planeVkDesc, 0, nullptr);
-		vk::cmdBindVertexBuffers(cmdBuffer, 0, 1, &planeBuf, offsets);
-		vk::cmdDraw(cmdBuffer, gPlane.size(), 1, 0, 0);
-	};
-
-
 	void initVertexBuffer()
 	{
 		vk::BufferCreateInfo bufInfo;
@@ -299,11 +276,12 @@ protected:
 	}
 
 public:
-	MyRenderer(const vpp::SwapChain& swapChainp)
+	MyRenderer(vpp::Device& dev) : Resource(dev)
 	{
-		Resource::init(swapChainp.device());
-		swapChain_ = &swapChainp;
+	}
 
+	virtual void init(vk::RenderPass pass) override
+	{
 		viewMatrix_ = nytl::identityMat<4>();
 		viewMatrix_[2][3] = -3.0;
 
@@ -322,11 +300,6 @@ public:
 		initDescriptorPool();
 		initDescriptorSets();
 
-		//stuff
-		initCommandPool();
-		initDepthStencil();
-		initRenderPass();
-
 		//vertex layout
 		vertexBufferLayout_ = {{vk::Format::R32G32B32Sfloat, vk::Format::R32G32B32Sfloat}, 0};
 
@@ -337,7 +310,7 @@ public:
 		info.descriptorSetLayouts = {descriptorSetLayout_.get()};
 		info.vertexBufferLayouts = {&vertexBufferLayout_};
 		info.dynamicStates = {vk::DynamicState::Viewport, vk::DynamicState::Scissor};
-		info.renderPass = vkRenderPass();
+		info.renderPass = pass;
 
 		info.shader.init(device());
 		info.shader.addStage({"vert.spv", vk::ShaderStageFlagBits::Vertex});
@@ -359,9 +332,6 @@ public:
 
 		planeDescriptorSet_->writeBuffers(0,
 			{{planeDescriptorBuffer_->vkBuffer(), 0, sizeof(nytl::Mat4f) * 3}});
-
-		//builds renderers with overriden buildCommandBuffer function
-		initRenderers();
 	}
 
 	void updateRotation()
@@ -374,6 +344,39 @@ public:
 		//std::cout << transform_.transformMatrix() << "\n";
 		fillDescriptorBuffer();
 	}
+
+	virtual void build(const vpp::RenderInstance& instance) const override
+	{
+		auto cmdBuffer = instance.vkCommandBuffer();
+		VkDeviceSize offsets[1] = { 0 };
+
+		auto buf = vertexBuffer_->vkBuffer();
+		auto vkDesc = descriptorSet_->vkDescriptorSet();
+
+		auto planeBuf = planeVertexBuffer_->vkBuffer();
+		auto planeVkDesc = planeDescriptorSet_->vkDescriptorSet();
+
+		vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::Graphics, pipeline_->vkPipeline());
+
+		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics,
+			pipeline_->vkPipelineLayout(), 0, 1, &vkDesc, 0, nullptr);
+		vk::cmdBindVertexBuffers(cmdBuffer, 0, 1, &buf, offsets);
+		vk::cmdDraw(cmdBuffer, gVertices.size(), 1, 0, 0);
+
+		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics,
+			pipeline_->vkPipelineLayout(), 0, 1, &planeVkDesc, 0, nullptr);
+		vk::cmdBindVertexBuffers(cmdBuffer, 0, 1, &planeBuf, offsets);
+		vk::cmdDraw(cmdBuffer, gPlane.size(), 1, 0, 0);
+	};
+
+	virtual std::vector<vk::ClearValue> clearValues() const override
+	{
+		std::vector<vk::ClearValue> ret(2);
+		ret[0].color(std::array<float, 4>{{1.f, 1.f, 1.f, 1.f}});
+		ret[1].depthStencil({1.f, 0});
+		return ret;
+	}
+
 };
 
 //
@@ -451,7 +454,7 @@ void initWindow(App& app)
 //
 void render(App& app)
 {
-	app.renderer->updateRotation();
+	app.myRenderer->updateRotation();
 	app.renderer->render(app.queue);
 }
 
@@ -501,9 +504,12 @@ int main()
 	    initWindow(app);
 
 		vpp::Win32Context context({}, app.window);
-		MyRenderer renderer(context.swapChain());
+
+		MyRenderer myrenderer(context.device());
+		vpp::SwapChainRenderer renderer(context.swapChain(), myrenderer);
 
 	    app.context = &context;
+		app.myRenderer = &myrenderer;
 		app.renderer = &renderer;
 		app.queue = context.presentQueue().queue;
 

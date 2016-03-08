@@ -7,20 +7,111 @@
 namespace vpp
 {
 
-Renderer::Renderer(const SwapChain& swapChain)
+//Renderpass
+RenderPass::RenderPass(const Device& dev, const vk::RenderPassCreateInfo& info)
 {
-	init(swapChain);
+	init(dev, info);
 }
 
-Renderer::~Renderer()
+RenderPass::RenderPass(const Device& dev, vk::RenderPass pass, const vk::RenderPassCreateInfo& info)
+{
+	Resource::init(dev);
+	renderPass_ = pass;
+
+	initInfos(info);
+}
+
+RenderPass::~RenderPass()
 {
 	destroy();
 }
 
-void Renderer::init(const SwapChain& swapChain)
+RenderPass::RenderPass(RenderPass&& other) noexcept
+{
+	this->swap(other);
+}
+
+RenderPass& RenderPass::operator=(RenderPass&& other) noexcept
+{
+	destroy();
+	this->swap(other);
+	return *this;
+}
+
+void RenderPass::swap(RenderPass& other) noexcept
+{
+	using std::swap;
+
+	swap(renderPass_, other.renderPass_);
+	swap(attachments_, other.attachments_);
+	swap(subpasses_, other.subpasses_);
+	swap(dependencies_, other.dependencies_);
+	swap(device_, other.device_);
+}
+
+void RenderPass::init(const Device& dev, const vk::RenderPassCreateInfo& info)
+{
+	Resource::init(dev);
+	vk::createRenderPass(vkDevice(), &info, nullptr, &renderPass_);
+
+	initInfos(info);
+}
+
+void RenderPass::destroy()
+{
+	if(vkRenderPass()) vk::destroyRenderPass(vkDevice(), vkRenderPass(), nullptr);
+
+	renderPass_ = {};
+	attachments_.clear();
+	subpasses_.clear();
+	dependencies_.clear();
+
+	Resource::destroy();
+}
+
+void RenderPass::initInfos(const vk::RenderPassCreateInfo& info)
+{
+	attachments_.reserve(info.attachmentCount());
+	for(std::size_t i(0); i < info.attachmentCount(); ++i)
+		attachments_.push_back(info.pAttachments()[i]);
+
+	subpasses_.reserve(info.pSubpasses());
+	for(std::size_t i(0); i < info.subpassCount(); ++i)
+		subpasses_.push_back(info.pSubpasses()[i]);
+
+	dependencies_.reserve(info.pDependencies());
+	for(std::size_t i(0); i < info.dependencyCount(); ++i)
+		dependencies_.push_back(info.pDependencies()[i]);
+
+}
+
+//XXX: could make this RAII wrapper for render pass instances later on
+//RenderInstance
+RenderPassInstance::RenderPassInstance(vk::CommandBuffer cmdbuf, vk::RenderPass pass,
+	vk::Framebuffer fbuf) : commandBuffer_(cmdbuf), renderPass_(pass), framebuffer_(fbuf)
+{
+}
+
+RenderPassInstance::~RenderPassInstance()
+{
+}
+
+//SwapChainRenderer
+SwapChainRenderer::SwapChainRenderer(const SwapChain& swapChain, RendererBuilder& builder)
+{
+	init(swapChain, builder);
+}
+
+SwapChainRenderer::~SwapChainRenderer()
+{
+	destroy();
+}
+
+void SwapChainRenderer::init(const SwapChain& swapChain, RendererBuilder& builder)
 {
 	Resource::init(swapChain.device());
 	swapChain_ = &swapChain;
+	builder_ = &builder;
 
 	initCommandPool();
 	initDepthStencil();
@@ -28,22 +119,27 @@ void Renderer::init(const SwapChain& swapChain)
 	initRenderers();
 }
 
-void Renderer::destroy()
+void SwapChainRenderer::destroy()
 {
 	destroyRenderers();
 	destroyRenderPass();
 	destroyDepthStencil();
 	destroyCommandPool();
+
+	swapChain_ = nullptr;
+	builder_ = nullptr;
+
+	Resource::destroy();
 }
 
-void Renderer::destroyRenderers()
+void SwapChainRenderer::destroyRenderers()
 {
 	std::vector<vk::CommandBuffer> cmdBuffers;
 	cmdBuffers.reserve(frameRenderers_.size());
 
 	for(auto& renderer : frameRenderers_)
 	{
-		vk::destroyFramebuffer(vkDevice(), renderer.frameBuffer, nullptr);
+		vk::destroyFramebuffer(vkDevice(), renderer.framebuffer, nullptr);
 		cmdBuffers.push_back(renderer.commandBuffer);
 	}
 
@@ -55,17 +151,17 @@ void Renderer::destroyRenderers()
 	frameRenderers_.clear();
 }
 
-void Renderer::destroyRenderPass()
+void SwapChainRenderer::destroyRenderPass()
 {
 	if(vkRenderPass()) vk::destroyRenderPass(vkDevice(), vkRenderPass(), nullptr);
 }
 
-void Renderer::destroyCommandPool()
+void SwapChainRenderer::destroyCommandPool()
 {
 	if(vkCommandPool()) vk::destroyCommandPool(vkDevice(), vkCommandPool(), nullptr);
 }
 
-void Renderer::destroyDepthStencil()
+void SwapChainRenderer::destroyDepthStencil()
 {
 	if(depthStencil_.imageView) vk::destroyImageView(vkDevice(), depthStencil_.imageView, nullptr);
 
@@ -73,7 +169,7 @@ void Renderer::destroyDepthStencil()
 	depthStencil_.image.reset();
 }
 
-void Renderer::reset(const SwapChain& swapChain, bool complete)
+void SwapChainRenderer::reset(const SwapChain& swapChain, bool complete)
 {
 	swapChain_ = &swapChain;
 
@@ -89,7 +185,7 @@ void Renderer::reset(const SwapChain& swapChain, bool complete)
 	initRenderers();
 }
 
-void Renderer::initCommandPool()
+void SwapChainRenderer::initCommandPool()
 {
 	//commandPool
 	vk::CommandPoolCreateInfo cmdPoolInfo;
@@ -99,7 +195,7 @@ void Renderer::initCommandPool()
 	vk::createCommandPool(vkDevice(), &cmdPoolInfo, nullptr, &commandPool_);
 }
 
-void Renderer::initRenderPass()
+void SwapChainRenderer::initRenderPass()
 {
 	vk::AttachmentDescription attachments[2] {};
 
@@ -155,7 +251,7 @@ void Renderer::initRenderPass()
 	vk::createRenderPass(vkDevice(), &renderPassInfo, nullptr, &renderPass_);
 }
 
-void Renderer::initRenderers()
+void SwapChainRenderer::initRenderers()
 {
 	frameRenderers_.resize(swapChain().buffers().size());
 
@@ -168,7 +264,7 @@ void Renderer::initRenderers()
 	std::vector<vk::CommandBuffer> cmdBuffers(frameRenderers_.size());
 	vk::allocateCommandBuffers(vkDevice(), allocInfo, cmdBuffers);
 
-	//frameBuffer
+	//framebuffer
 	vk::ImageView attachments[2] {};
 
 	//depth - every framebuffer uses the same image
@@ -187,18 +283,18 @@ void Renderer::initRenderers()
 		//color - different for every framebuffer (swapcahin)
         attachments[0] = swapChain().buffers()[i].imageView;
 
-		vk::Framebuffer frameBuffer;
-        vk::createFramebuffer(vkDevice(), &createInfo, nullptr, &frameBuffer);
+		vk::Framebuffer framebuffer;
+        vk::createFramebuffer(vkDevice(), &createInfo, nullptr, &framebuffer);
 
 		frameRenderers_[i].commandBuffer = cmdBuffers[i];
-		frameRenderers_[i].frameBuffer = frameBuffer;
+		frameRenderers_[i].framebuffer = framebuffer;
 		frameRenderers_[i].id = i;
 
 		buildCommandBuffer(frameRenderers_[i]);
 	}
 }
 
-void Renderer::initDepthStencil()
+void SwapChainRenderer::initDepthStencil()
 {
 	//query depth format
 	std::vector<vk::Format> formats =
@@ -262,12 +358,9 @@ void Renderer::initDepthStencil()
 	vk::createImageView(vkDevice(), &viewInfo, nullptr, &depthStencil_.imageView);
 }
 
-void Renderer::buildCommandBuffer(const FrameRenderer& renderer) const
+void SwapChainRenderer::buildCommandBuffer(const FrameRenderer& renderer) const
 {
-	vk::ClearValue clearValues[2];
-	clearValues[0].color(std::array<float, 4>{{1.f, 1.f, 1.f, 1.f}});
-	clearValues[1].depthStencil({1.f, 0});
-
+	auto clearValues = builder_->clearValues();
 	auto width = swapChain().extent().width();
 	auto height = swapChain().extent().height();
 
@@ -276,9 +369,9 @@ void Renderer::buildCommandBuffer(const FrameRenderer& renderer) const
 	vk::RenderPassBeginInfo beginInfo;
 	beginInfo.renderPass(vkRenderPass());
 	beginInfo.renderArea({{0, 0}, {width - 1, height - 1}}); //why +1 needed to show sth?
-	beginInfo.clearValueCount(2); //XXX
-	beginInfo.pClearValues(clearValues);
-	beginInfo.framebuffer(renderer.frameBuffer);
+	beginInfo.clearValueCount(clearValues.size()); //XXX
+	beginInfo.pClearValues(clearValues.data());
+	beginInfo.framebuffer(renderer.framebuffer);
 
 	vk::beginCommandBuffer(renderer.commandBuffer, cmdBufInfo);
 	vk::cmdBeginRenderPass(renderer.commandBuffer, &beginInfo, vk::SubpassContents::Inline);
@@ -297,7 +390,7 @@ void Renderer::buildCommandBuffer(const FrameRenderer& renderer) const
 	scissor.offset({0, 0});
 	vk::cmdSetScissor(renderer.commandBuffer, 0, 1, &scissor);
 
-	buildRenderer(renderer.commandBuffer);
+	builder_->build({renderer.commandBuffer, vkRenderPass(), renderer.framebuffer});
 	vkCmdEndRenderPass(renderer.commandBuffer);
 
 	vk::ImageMemoryBarrier prePresentBarrier;
@@ -317,12 +410,7 @@ void Renderer::buildCommandBuffer(const FrameRenderer& renderer) const
 	vk::endCommandBuffer(renderer.commandBuffer);
 }
 
-void Renderer::buildRenderer(vk::CommandBuffer buffer) const
-{
-	//empty - has to be overriden
-}
-
-void Renderer::render(vk::Queue queue)
+void SwapChainRenderer::render(vk::Queue queue)
 {
 	vk::Semaphore presentComplete;
     vk::SemaphoreCreateInfo semaphoreCI;

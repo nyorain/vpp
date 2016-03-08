@@ -39,7 +39,7 @@ void Framebuffer::swap(Framebuffer& other) noexcept
 	swap(other.device_, device_);
 	swap(other.framebuffer_, framebuffer_);
 	swap(other.size_, size_);
-	swap(other.buffers_, buffers_);
+	swap(other.attachments_, attachments_);
 }
 
 void Framebuffer::init(const Device& dev, const CreateInfo& info)
@@ -51,7 +51,7 @@ void Framebuffer::init(const Device& dev, const CreateInfo& info)
 
 	{
 		DeviceMemoryAllocator allocator(device());
-		initBuffers(allocator, info);
+		initAttachments(allocator, info);
 	}
 
 	initFramebuffer(info);
@@ -63,62 +63,62 @@ void Framebuffer::init(DeviceMemoryAllocator& allocator, const CreateInfo& info)
 	Resource::init(allocator.device());
 
 	size_ = info.size;
-	initBuffers(allocator, info);
+	initAttachments(allocator, info);
 	initFramebuffer(info);
 }
 
 void Framebuffer::destroy()
 {
 	if(vkFramebuffer()) vk::destroyFramebuffer(vkDevice(), vkFramebuffer(), nullptr);
-	for(auto& buf : buffers_) vk::destroyImageView(vkDevice(), buf.imageView, nullptr);
+	for(auto& buf : attachments_) vk::destroyImageView(vkDevice(), buf.imageView, nullptr);
 
-	buffers_.clear();
+	attachments_.clear();
 	framebuffer_ = {};
 	size_.vkHandle() = {};
 
 	Resource::destroy();
 }
 
-void Framebuffer::initBuffers(DeviceMemoryAllocator& allocator, const CreateInfo& info)
+void Framebuffer::initAttachments(DeviceMemoryAllocator& allocator, const CreateInfo& info)
 {
-	buffers_.reserve(info.attachments.size());
-	for(auto& attachment : info.attachments)
+	attachments_.reserve(info.attachments.size());
+	for(auto& attachmentinfo : info.attachments)
 	{
-		Buffer buf;
+		Attachment attachment;
 
 		//image
 		vk::ImageCreateInfo imageInfo;
 		imageInfo.imageType(vk::ImageType::e2D);
-		imageInfo.format(attachment.format);
+		imageInfo.format(attachmentinfo.format);
 		imageInfo.extent({size().width(), size().height(), 1});
-		imageInfo.mipLevels(attachment.mipLevels);
-		imageInfo.arrayLayers(attachment.arrayLayers);
-		imageInfo.samples(attachment.samples);
-		imageInfo.tiling(attachment.tiling);
-		imageInfo.usage(attachment.usage);
+		imageInfo.mipLevels(attachmentinfo.mipLevels);
+		imageInfo.arrayLayers(attachmentinfo.arrayLayers);
+		imageInfo.samples(attachmentinfo.samples);
+		imageInfo.tiling(attachmentinfo.tiling);
+		imageInfo.usage(attachmentinfo.usage);
 		imageInfo.flags({});
 
-		buf.image = Image(allocator, imageInfo, attachment.imageMemoryFlags);
+		attachment.image = Image(allocator, imageInfo, attachmentinfo.imageMemoryFlags);
 
 		//imageView
 		vk::ImageSubresourceRange subrange;
-		subrange.aspectMask(attachment.aspects);
+		subrange.aspectMask(attachmentinfo.aspects);
 		subrange.baseMipLevel(0);
-		subrange.levelCount(attachment.mipLevels);
+		subrange.levelCount(attachmentinfo.mipLevels);
 		subrange.baseArrayLayer(0);
-		subrange.layerCount(attachment.arrayLayers);
+		subrange.layerCount(attachmentinfo.arrayLayers);
 
 		vk::ImageViewCreateInfo imageViewInfo;
 		imageViewInfo.viewType(vk::ImageViewType::e2D);
-		imageViewInfo.format(attachment.format);
-		imageViewInfo.image(buf.image.vkImage());
+		imageViewInfo.format(attachmentinfo.format);
+		imageViewInfo.image(attachment.image.vkImage());
 		imageViewInfo.flags({});
 		imageViewInfo.subresourceRange(subrange);
 
-		vk::createImageView(vkDevice(), &imageViewInfo, nullptr, &buf.imageView);
+		vk::createImageView(vkDevice(), &imageViewInfo, nullptr, &attachment.imageView);
 
 		//add
-		buffers_.push_back(std::move(buf));
+		attachments_.push_back(std::move(attachment));
 	}
 }
 
@@ -126,9 +126,9 @@ void Framebuffer::initFramebuffer(const CreateInfo& info)
 {
 	//attachments
 	std::vector<vk::ImageView> attachments;
-	attachments.reserve(buffers_.size() + info.externalAttachments.size());
+	attachments.reserve(attachments_.size() + info.externalAttachments.size());
 
-	for(auto& buf : buffers_) attachments.push_back(buf.imageView);
+	for(auto& buf : attachments_) attachments.push_back(buf.imageView);
 	for(auto& view : info.externalAttachments) attachments.push_back(view);
 
 	//createinfo
