@@ -17,8 +17,8 @@ class SwapChain : public Resource
 public:
     struct Buffer
     {
-        VkImage image;
-        VkImageView imageView;
+        vk::Image image;
+        vk::ImageView imageView;
     };
 
 protected:

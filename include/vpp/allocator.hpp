@@ -7,7 +7,8 @@ namespace vpp
 {
 
 ///Custom allocator class.
-///Could be used for custom vulkan allocations.
+///Could be used for custom vulkan (host memory) allocations.
+///For device memory allocation see DeviceMemory and DeviceMemoryAllocator.
 class Allocator
 {
 public:

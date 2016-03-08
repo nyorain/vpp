@@ -11,32 +11,12 @@
 namespace vpp
 {
 
-/*
-//higher abstraction needed!
-
-
-class FrameBufferRenderer : public Resource
-{
-protected:
-	vk::CommandBuffer commandBuffer_;
-
-protected:
-	FrameBufferRenderer() = default;
-
-	void create(std::vector<vk::ClearValue>& clearValues = {});
-	void create(std::vector<vk::ClearValue>& clearValues, const vk::Extent2D& size);
-
-	virtual void build(const RenderInstance& renderini) = 0;
-};
-*/
-
-/*
 class RenderInstance : public Resource
 {
 protected:
 	vk::RenderPass renderPass_;
 	vk::CommandBuffer commandBuffer_;
-	vK::FrameBuffer framebuffer_;
+	vk::Framebuffer framebuffer_;
 
 	unsigned int currentSubpass_ {0};
 
@@ -45,16 +25,17 @@ public:
 	~RenderInstance();
 
 	vk::CommandBuffer vkCommandBuffer() const { return commandBuffer_; }
-	//void nextSubpass();
+
+	unsigned int subpass() const { return currentSubpass_; }
+	void nextSubpass();
 };
 
-class RendererBase
+class RendererBuilder
 {
 public:
-	virtual void build(const RenderInstance& renderini) const = 0;
-	virtual std::vector<RendererRequirements> requirements() const = 0;
+	virtual void render(const RenderInstance& renderini) const = 0;
+	virtual std::vector<vk::ClearValue> clearValues() const = 0;
 };
-*/
 
 ///Capable of rendering on a SwapChain.
 class Renderer : public Resource
@@ -97,7 +78,7 @@ protected:
 	void destroyCommandPool();
 	void destroyDepthStencil();
 
-	virtual void buildCommandBuffer(const FrameRenderer& renderer) const;
+	void buildCommandBuffer(const FrameRenderer& renderer) const;
 	virtual void buildRenderer(vk::CommandBuffer buffer) const;
 
 public:
@@ -151,7 +132,7 @@ protected:
 	SwapChainRenderer swapChainRenderer_;
 
 public:
-	SurfaceRenderer(const Renderer& renderer, const SwapChain& swapChain);
+	SurfaceRenderer(const Renderer& renderer, const Surface& surface);
 };
 */
 

@@ -14,7 +14,9 @@ protected:
 
 protected:
 	Resource() = default;
+
 	void init(const Device& device) { device_ = &device; };
+	void destroy(){ device_ = {}; }
 
 public:
 	Resource(const Device& device) : device_(&device) {}

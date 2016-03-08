@@ -89,6 +89,16 @@ static const std::vector<float> gVertices =
 	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 };
 
+std::vector<float> gPlane =
+{
+	-2.f, 1.f, -2.f, 0.f, 0.f, 1.f,
+	-2.f, 1.f, 2.f, 0.f, 0.f, 1.f,
+	2.f, 1.f, 2.f, 0.f, 0.f, 1.f,
+	-2.f, 1.f, -2.f, 0.f, 0.f, 1.f,
+	2.f, 1.f, -2.f, 0.f, 0.f, 1.f,
+	2.f, 1.f, 2.f, 0.f, 0.f, 1.f,
+};
+
  static const std::vector<std::uint32_t> gIndices =
  {
 	 0, 1, 3, //top
@@ -140,9 +150,13 @@ protected:
 
 	std::unique_ptr<vpp::GraphicsPipeline> pipeline_;
 	std::unique_ptr<vpp::Buffer> vertexBuffer_;
+	std::unique_ptr<vpp::Buffer> planeVertexBuffer_;
 	std::unique_ptr<vpp::Buffer> descriptorBuffer_;
+	std::unique_ptr<vpp::Buffer> planeDescriptorBuffer_;
 	std::unique_ptr<vpp::Buffer> indexBuffer_;
 	std::unique_ptr<vpp::DescriptorSet> descriptorSet_;
+	std::unique_ptr<vpp::DescriptorSet> planeDescriptorSet_;
+	std::unique_ptr<vpp::DescriptorSet> planeSet_;
 	std::unique_ptr<vpp::DescriptorSetLayout> descriptorSetLayout_;
 
 	vpp::VertexBufferLayout vertexBufferLayout_;
@@ -160,13 +174,22 @@ protected:
 		auto buf = vertexBuffer_->vkBuffer();
 		auto vkDesc = descriptorSet_->vkDescriptorSet();
 
-		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics,
-			pipeline_->vkPipelineLayout(), 0, 1, &vkDesc, 0, nullptr);
+		auto planeBuf = planeVertexBuffer_->vkBuffer();
+		auto planeVkDesc = planeDescriptorSet_->vkDescriptorSet();
 
 		vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::Graphics, pipeline_->vkPipeline());
+
+		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics,
+			pipeline_->vkPipelineLayout(), 0, 1, &vkDesc, 0, nullptr);
 		vk::cmdBindVertexBuffers(cmdBuffer, 0, 1, &buf, offsets);
 		vk::cmdDraw(cmdBuffer, gVertices.size(), 1, 0, 0);
+
+		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics,
+			pipeline_->vkPipelineLayout(), 0, 1, &planeVkDesc, 0, nullptr);
+		vk::cmdBindVertexBuffers(cmdBuffer, 0, 1, &planeBuf, offsets);
+		vk::cmdDraw(cmdBuffer, gPlane.size(), 1, 0, 0);
 	};
+
 
 	void initVertexBuffer()
 	{
@@ -174,10 +197,13 @@ protected:
 		bufInfo.size(sizeof(float) * gVertices.size());
 		bufInfo.usage(vk::BufferUsageFlagBits::VertexBuffer);
 
-		 vertexBuffer_.reset(new vpp::Buffer(*allocator_, bufInfo,
+		vertexBuffer_.reset(new vpp::Buffer(*allocator_, bufInfo,
+			vk::MemoryPropertyFlagBits::HostVisible));
+
+		planeVertexBuffer_.reset(new vpp::Buffer(*allocator_, bufInfo,
 			vk::MemoryPropertyFlagBits::HostVisible));
 	}
-
+/*
 	void initIndexBuffer()
 	{
 		vk::BufferCreateInfo bufInfo;
@@ -187,17 +213,17 @@ protected:
 		 indexBuffer_.reset(new vpp::Buffer(*allocator_, bufInfo,
 			vk::MemoryPropertyFlagBits::HostVisible));
 	}
-
+*/
 	void initDescriptorPool()
 	{
 		vk::DescriptorPoolSize typeCounts[1] {};
 		typeCounts[0].type(vk::DescriptorType::UniformBuffer);
-		typeCounts[0].descriptorCount(1);
+		typeCounts[0].descriptorCount(2);
 
 		vk::DescriptorPoolCreateInfo descriptorPoolInfo;
 		descriptorPoolInfo.poolSizeCount(1);
 		descriptorPoolInfo.pPoolSizes(typeCounts);
-		descriptorPoolInfo.maxSets(1);
+		descriptorPoolInfo.maxSets(2);
 
 		vk::createDescriptorPool(vkDevice(), &descriptorPoolInfo, nullptr, &descriptorPool_);
 	}
@@ -207,9 +233,12 @@ protected:
 		//descriptorBuffer
 		vk::BufferCreateInfo bufInfo;
 		bufInfo.size(sizeof(nytl::Mat4f) * 3);
-		bufInfo.usage(vk::BufferUsageFlagBits::VertexBuffer);
+		bufInfo.usage(vk::BufferUsageFlagBits::UniformBuffer);
 
-		 descriptorBuffer_.reset(new vpp::Buffer(*allocator_, bufInfo,
+		descriptorBuffer_.reset(new vpp::Buffer(*allocator_, bufInfo,
+			vk::MemoryPropertyFlagBits::HostVisible));
+
+		planeDescriptorBuffer_.reset(new vpp::Buffer(*allocator_, bufInfo,
 			vk::MemoryPropertyFlagBits::HostVisible));
 
 		//descriptor layout
@@ -219,30 +248,54 @@ protected:
 		};
 
 		descriptorSetLayout_.reset(new vpp::DescriptorSetLayout(device(), bindings));
+
 		descriptorSet_.reset(new vpp::DescriptorSet(*descriptorSetLayout_, descriptorPool_));
+		planeDescriptorSet_.reset(new vpp::DescriptorSet(*descriptorSetLayout_, descriptorPool_));
 	}
 
 	void fillVertexBuffer()
 	{
 		auto map = vertexBuffer_->memoryMap();
 		std::memcpy(map.ptr(), gVertices.data(), sizeof(float) * gVertices.size());
+		map.unmap();
+
+		auto map2 = planeVertexBuffer_->memoryMap();
+		std::memcpy(map2.ptr(), gPlane.data(), sizeof(float) * gPlane.size());
+		map2.unmap();
 	}
 
+/*
 	void fillIndexBuffer()
 	{
 		auto map = indexBuffer_->memoryMap();
 		std::memcpy(map.ptr(), gIndices.data(), sizeof(std::uint32_t) * gIndices.size());
 	}
-
+*/
 	void fillDescriptorBuffer()
 	{
 		auto map = descriptorBuffer_->memoryMap();
 
 		auto size = sizeof(nytl::Mat4f);
 		const auto& mat = transform_.transformMatrix();
-		std::memcpy(map.ptr(), transpose(mat).data(), size);
-		std::memcpy(map.ptr() + size, transpose(viewMatrix_).data(), size);
-		std::memcpy(map.ptr() + 2 * size, projectionMatrix_.data(), size);
+
+		auto ptr = static_cast<std::uint8_t*>(map.ptr());
+		std::memcpy(ptr, transpose(mat).data(), size);
+		std::memcpy(ptr + size, transpose(viewMatrix_).data(), size);
+		std::memcpy(ptr + 2 * size, projectionMatrix_.data(), size);
+
+		map.unmap();
+
+		//plane
+		auto model = nytl::identityMat<4, float>();
+		nytl::rotate(model, {0.f, 1.f, 0.f}, 45.f);
+
+		auto map2 = planeDescriptorBuffer_->memoryMap();
+		ptr = static_cast<std::uint8_t*>(map2.ptr());
+		std::memcpy(ptr, transpose(model).data(), size);
+		std::memcpy(ptr + size, transpose(viewMatrix_).data(), size);
+		std::memcpy(ptr + 2 * size, projectionMatrix_.data(), size);
+
+		map2.unmap();
 	}
 
 public:
@@ -264,7 +317,7 @@ public:
 		allocator_.reset(new vpp::DeviceMemoryAllocator(device()));
 
 		initVertexBuffer();
-		initIndexBuffer();
+		//initIndexBuffer();
 
 		initDescriptorPool();
 		initDescriptorSets();
@@ -298,11 +351,14 @@ public:
 		allocator_.reset(); //destroy it -> allocates
 
 		fillVertexBuffer();
-		fillIndexBuffer();
+		//fillIndexBuffer();
 		fillDescriptorBuffer();
 
 		descriptorSet_->writeBuffers(0,
 			{{descriptorBuffer_->vkBuffer(), 0, sizeof(nytl::Mat4f) * 3}});
+
+		planeDescriptorSet_->writeBuffers(0,
+			{{planeDescriptorBuffer_->vkBuffer(), 0, sizeof(nytl::Mat4f) * 3}});
 
 		//builds renderers with overriden buildCommandBuffer function
 		initRenderers();
@@ -449,7 +505,7 @@ int main()
 
 	    app.context = &context;
 		app.renderer = &renderer;
-		app.queue = context.queue().queue;
+		app.queue = context.presentQueue().queue;
 
 		std::cout << "setup complete.\n";
 

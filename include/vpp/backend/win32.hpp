@@ -33,6 +33,7 @@ public:
 	Win32Context() = default;
 	Win32Context(const CreateInfo& info, HWND hwnds);
 	Win32Context(const CreateInfo& info, HINSTANCE hinstance, HWND hwnd);
+	virtual ~Win32Context();
 
 	virtual const Surface& surface() const override { return surface_; }
 };

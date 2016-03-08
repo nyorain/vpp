@@ -43,9 +43,8 @@ Image::Image(Image&& other) noexcept
 
 Image& Image::operator=(Image&& other) noexcept
 {
-	Image swapper(std::move(other));
-	this->swap(swapper);
-
+	destroy();
+	this->swap(other);
 	return *this;
 }
 
@@ -69,6 +68,7 @@ void Image::destroy()
 
 	memoryEntry_ = {};
 	image_ = {};
+	Resource::destroy();
 }
 
 MemoryMap Image::memoryMap() const

@@ -265,7 +265,7 @@ void Renderer::initDepthStencil()
 void Renderer::buildCommandBuffer(const FrameRenderer& renderer) const
 {
 	vk::ClearValue clearValues[2];
-	clearValues[0].color(std::array<float, 4>{{0.3f, 0.f, 0.2f, 1.f}});
+	clearValues[0].color(std::array<float, 4>{{1.f, 1.f, 1.f, 1.f}});
 	clearValues[1].depthStencil({1.f, 0});
 
 	auto width = swapChain().extent().width();

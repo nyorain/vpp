@@ -41,4 +41,9 @@ Win32Context::Win32Context(const CreateInfo& info, HWND hwnd)
 {
 }
 
+Win32Context::~Win32Context()
+{
+	swapChain_ = {}; //destroy it before surface destruction
+}
+
 }

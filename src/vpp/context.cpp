@@ -60,26 +60,23 @@ void Context::initInstance(const CreateInfo& info)
 	}
 }
 
-void Context::initDevice(const CreateInfo& info)
+vk::PhysicalDevice Context::choosePhysicalDevice(const std::vector<vk::PhysicalDevice>& phdevs) const
 {
-	//phyiscal device - TODO
-
-	std::vector<vk::PhysicalDevice> phdevs;
-    vk::enumeratePhysicalDevices(vkInstance(), phdevs);
-/*
-auto size = 0u;
-vk::enumeratePhysicalDevices(vkInstance(), &size, nullptr);
-
-std::vector<vk::PhysicalDevice> phdevs(size);
-vk::enumeratePhysicalDevices(vkInstance(), &size, phdevs.data());
-*/
-
 	if(phdevs.empty())
 	{
-		throw std::runtime_error("no physical devices");
+		throw std::runtime_error("Context::choosePhysicalDevice: no physical devices");
 	}
 
-	auto phdev = phdevs[0];
+	//TODO - algorithm for choosing, presetnation support
+	return phdevs[0];
+}
+
+void Context::initDevice(const CreateInfo& info)
+{
+	//phyiscal device
+	std::vector<vk::PhysicalDevice> phdevs;
+    vk::enumeratePhysicalDevices(vkInstance(), phdevs);
+	auto phdev = choosePhysicalDevice(phdevs);
 
 	//extensions & layers
 	std::vector<const char*> extensions = info.deviceExtensions;
@@ -93,27 +90,50 @@ vk::enumeratePhysicalDevices(vkInstance(), &size, phdevs.data());
 	}
 
 	//queues
-	auto queues = surface().supportedQueueFamilies(phdev);
 	auto queueProps = vk::getPhysicalDeviceQueueFamilyProperties(phdev);
 
-	std::uint32_t queueFamily = 99;
+	//present queue
+	auto queues = surface().supportedQueueFamilies(phdev);
+	std::uint32_t presentQueueFamily = -1; //only queueFamilies < 32 are valid
+	std::uint32_t presentQueueId = 0;
+
 	for(auto queue : queues)
 	{
 		if(queueProps[queue].queueFlags() & vk::QueueFlagBits::Graphics)
 		{
-			queueFamily = queue;
+			presentQueueFamily = queue;
 			break;
 		}
 	}
 
-	if(queueFamily == 99)
+	if(presentQueueFamily == std::uint32_t(-1))
 	{
 		throw std::runtime_error("unable to get present & graphical queue");
 	}
 
 	float priorities[1] = {0.0};
-	std::vector<vk::DeviceQueueCreateInfo> queueInfos(1);
-	queueInfos[0] = vk::DeviceQueueCreateInfo({}, queueFamily, 1, priorities);
+	std::vector<vk::DeviceQueueCreateInfo> queueInfos = info.extraQueues;
+
+	bool found = 0;
+	for(auto& queueinfo : queueInfos)
+	{
+		if(queueinfo.queueFamilyIndex() == presentQueueFamily)
+		{
+			if(info.extraPresentQueue)
+			{
+				presentQueueId = queueinfo.queueCount();
+				queueinfo.queueCount(queueinfo.queueCount() + 1);
+			}
+
+			found = 1;
+			break;
+		}
+	}
+
+	if(!found)
+	{
+		queueInfos.push_back({{}, presentQueueFamily, 1, priorities});
+	}
 
 	//create
     vk::DeviceCreateInfo devinfo{};
@@ -126,8 +146,8 @@ vk::enumeratePhysicalDevices(vkInstance(), &size, phdevs.data());
 
     device_ = Device(vkInstance(), phdev, devinfo);
 
-	queue_ = device_.queue(queueFamily);
-	if(!queue_)
+	presentQueue_ = device_.queue(presentQueueFamily, presentQueueId);
+	if(!presentQueue_)
 	{
 		throw std::runtime_error("failed to create queue");
 	}

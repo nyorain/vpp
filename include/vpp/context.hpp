@@ -20,18 +20,22 @@ class Context
 public:
 	struct CreateInfo
 	{
-		bool debug = 0;
 		vk::Extent2D size {800, 500};
+		bool debug = 1;
 
 		std::vector<const char*> instanceExtensions;
 		std::vector<const char*> deviceExtensions;
+
+		std::vector<vk::DeviceQueueCreateInfo> extraQueues;
+		bool extraPresentQueue = 1;
 	};
 
 protected:
 	vk::Instance instance_ {};
 	Device device_;
-	const Device::Queue* queue_ = nullptr;
 	SwapChain swapChain_;
+
+	const Device::Queue* presentQueue_ = nullptr;
 
 	std::unique_ptr<DebugCallback> debugCallback_;
 
@@ -41,6 +45,7 @@ protected:
 	void initInstance(const CreateInfo& info);
 	void initDevice(const CreateInfo& info);
 	void initSwapChain(const CreateInfo& info);
+	vk::PhysicalDevice choosePhysicalDevice(const std::vector<vk::PhysicalDevice>& devices) const;
 
 public:
 	virtual ~Context();
@@ -49,7 +54,7 @@ public:
 
 	const Device& device() const { return device_; }
 	const SwapChain& swapChain() const { return swapChain_; }
-	const Device::Queue& queue() const { return *queue_; }
+	const Device::Queue& presentQueue() const { return *presentQueue_; }
 
 	SwapChain& swapChain() { return swapChain_; }
 	Device& device() { return device_; }
