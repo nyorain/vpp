@@ -17,13 +17,15 @@ public:
 	{
 		vk::Format format;
 		vk::ImageUsageFlags usage;
-		vk::ImageAspectFlagBits aspects;
+		vk::ImageAspectFlags aspects;
+		vk::ComponentMapping components {};
 		bool mappable = 0;
 		unsigned int mipLevels = 1;
 		unsigned int arrayLayers = 1;
 		vk::ImageTiling tiling = vk::ImageTiling::Optimal;
 		vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1;
 		vk::MemoryPropertyFlags imageMemoryFlags = {};
+		vk::Extent2D size;
 	};
 
 	//convinience attachment info instances
@@ -35,9 +37,6 @@ protected:
 	vk::ImageView imageView_ {};
 
 protected:
-	void init(const Device& dev, const CreateInfo& info);
-
-	void initImage(const CreateInfo& info);
 	void initImage(DeviceMemoryAllocator& allocator, const CreateInfo& info);
 	void initView(const CreateInfo& info);
 
@@ -54,8 +53,8 @@ public:
 
 	void swap(FramebufferAttachment& other) noexcept;
 
-	void initMemoryLess(DeviceMemoryAllocator& allocator& allocator, const CreateInfo& info);
-	void initMemoryResource();
+	void initMemoryLess(DeviceMemoryAllocator& allocator, const CreateInfo& info);
+	void initMemoryResources(const CreateInfo& info);
 
 	const Image& image() const { return image_; }
 	vk::ImageView vkImageView() const { return imageView_; }
@@ -67,39 +66,30 @@ class Framebuffer : public Resource
 public:
 	struct CreateInfo
 	{
-		vk::RenderPass renderPass;
-		vk::Extent2D size;
+		vk::RenderPass renderPass {};
+		vk::Extent2D size {};
 		std::vector<FramebufferAttachment::CreateInfo> attachments;
-		std::vector<std::pair<unsigned int, vk::ImageView>> externalAttachments;
 	};
 
-	struct RenderPassCreateInfo
-	{
-		const Renderpass& renderPass;
-		vk::Extent2D size;
-		std::vector<std::pair<unsigned int, vk::ImageView>> externalAttachments;
-	};
+public:
+	static std::vector<FramebufferAttachment::CreateInfo>
+		parseRenderPass(const RenderPass& renderPass);
 
 protected:
 	vk::Framebuffer framebuffer_ {};
-	vk::Extent2D size_;
 	std::vector<FramebufferAttachment> attachments_;
-	CreateInfo createInfo_;
+	CreateInfo info_;
 
 protected:
-	void init(const Device& dev, const CreateInfo& info);
-	void init(DeviceMemoryAllocator& allocator, const CreateInfo& info);
-	void initAttachments(DeviceMemoryAllocator& allocator, const CreateInfo& info);
-	void initFramebuffer(const CreateInfo& info);
+	void initAttachments(DeviceMemoryAllocator& allocator);
+	void initFramebuffer(const std::map<unsigned int, vk::ImageView>& extAttachments);
 
 	void destroy();
 
 public:
 	Framebuffer() = default;
 	Framebuffer(const Device& dev, const CreateInfo& info);
-	Framebuffer(const Device& dev, const RenderPassCreateInfo& info);
 	Framebuffer(DeviceMemoryAllocator& allocator, const CreateInfo& info);
-	Framebuffer(DeviceMemoryAllocator& allocator, const RenderPassCreateInfo& info);
 	~Framebuffer();
 
 	Framebuffer(Framebuffer&& other) noexcept;
@@ -108,13 +98,12 @@ public:
 	void swap(Framebuffer& other) noexcept;
 
 	void initMemoryLess(DeviceMemoryAllocator& allocator, const CreateInfo& info);
-	void initMemoryLess(DeviceMemoryAllocator& allocator, const RenderPassCreateInfo& info);
-	void initMemoryResource();
+	void initMemoryResources(const std::map<unsigned int, vk::ImageView>& extAttachments = {});
 
 	vk::Framebuffer vkFramebuffer() const { return framebuffer_; }
-	const vk::Extent2D& size() const { return size_; }
+	const vk::Extent2D& size() const { return info_.size; }
 	const std::vector<FramebufferAttachment>& attachments() const { return attachments_; }
-	const CreateInfo& createInfo() const { return createInfo_; }
+	const CreateInfo& info() const { return info_; }
 };
 
 }

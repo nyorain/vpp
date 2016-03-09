@@ -131,14 +131,16 @@ void GraphicsPipeline::init(const Device& device, const CreateInfo& createInfo)
 	dynamicState.dynamicStateCount(createInfo.dynamicStates.size());
 
 	//create it
+	//why is this needed? app crashes without copying it
+	auto infos = createInfo.shader.vkStageInfos();
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
 
 	pipelineInfo.layout(pipelineLayout_);
 	pipelineInfo.pVertexInputState(&vertexInfo);
 	pipelineInfo.pDynamicState(&dynamicState);
 	pipelineInfo.renderPass(createInfo.renderPass);
-	pipelineInfo.stageCount(createInfo.shader.vkStageInfos().size());
-	pipelineInfo.pStages(createInfo.shader.vkStageInfos().data());
+	pipelineInfo.stageCount(infos.size());
+	pipelineInfo.pStages(infos.data());
 	pipelineInfo.pInputAssemblyState(&createInfo.states.inputAssembly);
 	pipelineInfo.pRasterizationState(&createInfo.states.rasterization);
 	pipelineInfo.pColorBlendState(&createInfo.states.colorBlend);

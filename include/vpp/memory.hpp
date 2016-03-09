@@ -90,6 +90,7 @@ protected:
 		vk::MemoryRequirements requirements;
 		vk::ImageTiling tiling;
 		DeviceMemory::Entry* entry {nullptr};
+		
 		std::size_t offset {0}; //internal use in alloc
 	};
 
@@ -124,8 +125,10 @@ public:
 	MemoryMap(const DeviceMemory::Entry& entry);
 	~MemoryMap();
 
-	MemoryMap(MemoryMap&& other);
-	MemoryMap& operator=(MemoryMap&& other);
+	MemoryMap(MemoryMap&& other) noexcept;
+	MemoryMap& operator=(MemoryMap&& other) noexcept;
+
+	void swap(MemoryMap& other) noexcept;
 
 	vk::DeviceMemory vkMemory() const { return memory_->vkDeviceMemory(); }
 
@@ -148,7 +151,7 @@ protected:
 
 public:
 	template<typename... Args>
-	MemoryResourceInializer(Args&&... args) : resource_()
+	MemoryResourceInializer(Args&&... args)
 	{
 		resource_.initMemoryLess(std::forward<Args>(args)...);
 	};
@@ -159,7 +162,7 @@ public:
 		if(!valid_) throw std::logic_error("Called MemoryResourceInitializer::init 2 times");
 
 		valid_ = 0;
-		resource_.initMemoryResource(std::forward<Args>(args)...);
+		resource_.initMemoryResources(std::forward<Args>(args)...);
 		return std::move(resource_);
 	}
 };

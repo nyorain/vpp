@@ -135,11 +135,72 @@ struct App
     unsigned int height = 900;
 
     vpp::Context* context = nullptr;
+	vpp::RenderPass renderPass {};
 	vpp::SwapChainRenderer* renderer = nullptr;
 	MyRenderer* myRenderer = nullptr;
 
 	vk::Queue queue {};
 };
+
+
+void initRenderPass(App& app)
+{
+	auto& dev = app.context->device();
+	auto& swapChain = app.context->swapChain();
+
+	vk::AttachmentDescription attachments[2] {};
+
+	//color from swapchain
+	attachments[0].format(swapChain.format());
+	attachments[0].samples(vk::SampleCountFlagBits::e1);
+	attachments[0].loadOp(vk::AttachmentLoadOp::Clear);
+	attachments[0].storeOp(vk::AttachmentStoreOp::Store);
+	attachments[0].stencilLoadOp(vk::AttachmentLoadOp::DontCare);
+	attachments[0].stencilStoreOp(vk::AttachmentStoreOp::DontCare);
+	attachments[0].initialLayout(vk::ImageLayout::ColorAttachmentOptimal);
+	attachments[0].finalLayout(vk::ImageLayout::ColorAttachmentOptimal);
+
+	vk::AttachmentReference colorReference;
+	colorReference.attachment(0);
+	colorReference.layout(vk::ImageLayout::ColorAttachmentOptimal);
+
+	//depth from own depth stencil
+	attachments[1].format(vk::Format::D16UnormS8Uint);
+	attachments[1].samples(vk::SampleCountFlagBits::e1);
+	attachments[1].loadOp(vk::AttachmentLoadOp::Clear);
+	attachments[1].storeOp(vk::AttachmentStoreOp::Store);
+	attachments[1].stencilLoadOp(vk::AttachmentLoadOp::DontCare);
+	attachments[1].stencilStoreOp(vk::AttachmentStoreOp::DontCare);
+	attachments[1].initialLayout(vk::ImageLayout::DepthStencilAttachmentOptimal);
+	attachments[1].finalLayout(vk::ImageLayout::DepthStencilAttachmentOptimal);
+
+	vk::AttachmentReference depthReference;
+	depthReference.attachment(1);
+	depthReference.layout(vk::ImageLayout::DepthStencilAttachmentOptimal);
+
+	//only subpass
+	vk::SubpassDescription subpass;
+	subpass.pipelineBindPoint(vk::PipelineBindPoint::Graphics);
+	subpass.flags({});
+	subpass.inputAttachmentCount(0);
+	subpass.pInputAttachments(nullptr);
+	subpass.colorAttachmentCount(1);
+	subpass.pColorAttachments(&colorReference);
+	subpass.pResolveAttachments(nullptr);
+	subpass.pDepthStencilAttachment(&depthReference);
+	subpass.preserveAttachmentCount(0);
+	subpass.pPreserveAttachments(nullptr);
+
+	vk::RenderPassCreateInfo renderPassInfo;
+	renderPassInfo.attachmentCount(2);
+	renderPassInfo.pAttachments(attachments);
+	renderPassInfo.subpassCount(1);
+	renderPassInfo.pSubpasses(&subpass);
+	renderPassInfo.dependencyCount(0);
+	renderPassInfo.pDependencies(nullptr);
+
+	app.renderPass = vpp::RenderPass(dev, renderPassInfo);
+}
 
 App* gApp;
 
@@ -276,11 +337,7 @@ protected:
 	}
 
 public:
-	MyRenderer(vpp::Device& dev) : Resource(dev)
-	{
-	}
-
-	virtual void init(vk::RenderPass pass) override
+	MyRenderer(App& app) : Resource(app.context->device())
 	{
 		viewMatrix_ = nytl::identityMat<4>();
 		viewMatrix_[2][3] = -3.0;
@@ -310,7 +367,9 @@ public:
 		info.descriptorSetLayouts = {descriptorSetLayout_.get()};
 		info.vertexBufferLayouts = {&vertexBufferLayout_};
 		info.dynamicStates = {vk::DynamicState::Viewport, vk::DynamicState::Scissor};
-		info.renderPass = pass;
+		info.renderPass = app.renderPass.vkRenderPass();
+
+		std::cout << "renderpass: " << info.renderPass << "\n";
 
 		info.shader.init(device());
 		info.shader.addStage({"vert.spv", vk::ShaderStageFlagBits::Vertex});
@@ -345,7 +404,7 @@ public:
 		fillDescriptorBuffer();
 	}
 
-	virtual void build(const vpp::RenderInstance& instance) const override
+	virtual void build(const vpp::RenderPassInstance& instance) const override
 	{
 		auto cmdBuffer = instance.vkCommandBuffer();
 		VkDeviceSize offsets[1] = { 0 };
@@ -386,7 +445,7 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
     {
 		case WM_ERASEBKGND:
 		{
-			//dont! erase it
+			//dont erase it to avoid flickering
 			break;
 		}
 
@@ -403,8 +462,8 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 			{
 				std::cout << "resizing to " << LOWORD(lparam) << "," << HIWORD(lparam) << "\n";
 				gApp->context->swapChain().resize({LOWORD(lparam), HIWORD(lparam)});
-				gApp->renderer->reset(gApp->context->swapChain());
-				gApp->renderer->render(gApp->queue);
+				//*gApp->renderer->reset(gApp->context->swapChain());
+				gApp->renderer->render();
 			}
 			break;
 		}
@@ -455,7 +514,7 @@ void initWindow(App& app)
 void render(App& app)
 {
 	app.myRenderer->updateRotation();
-	app.renderer->render(app.queue);
+	app.renderer->render();
 }
 
 
@@ -503,14 +562,24 @@ int main()
 	    app.hinstance = GetModuleHandle(nullptr);
 	    initWindow(app);
 
-		vpp::Win32Context context({}, app.window);
+		vpp::Win32Context context({{900, 900}, 0}, app.window);
+		app.context = &context;
 
-		MyRenderer myrenderer(context.device());
-		vpp::SwapChainRenderer renderer(context.swapChain(), myrenderer);
+		initRenderPass(app);
 
-	    app.context = &context;
+		MyRenderer myrenderer(app);
 		app.myRenderer = &myrenderer;
+
+		vpp::SwapChainRenderer::CreateInfo rendererInfo;
+		rendererInfo.queue = context.presentQueue();
+		rendererInfo.renderPass = &app.renderPass;
+		rendererInfo.staticAttachments = {vpp::FramebufferAttachment::defaultDepthAttachment};
+
+		std::cout << "RP::: " << rendererInfo.renderPass << "\n";
+
+		vpp::SwapChainRenderer renderer(context.swapChain(), myrenderer, rendererInfo);
 		app.renderer = &renderer;
+
 		app.queue = context.presentQueue().queue;
 
 		std::cout << "setup complete.\n";

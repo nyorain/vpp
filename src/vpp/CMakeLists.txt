@@ -1,3 +1,5 @@
+include_directories("$ENV{VK_SDK_PATH}/Include")
+
 set(vpp-sources
 	allocator.cpp
     context.cpp
@@ -15,7 +17,8 @@ set(vpp-sources
 	debug.cpp
 	pipeline.cpp
 	graphicsPipeline.cpp
-	computePipeline.cpp)
+	computePipeline.cpp
+	renderPass.cpp)
 
 
 if(WIN32)
@@ -33,6 +36,7 @@ if(WIN32)
 elseif(UNIX)
 	target_link_libraries(vpp "vulkan")
 endif(WIN32)
+
 
 install(TARGETS vpp
         RUNTIME DESTINATION bin

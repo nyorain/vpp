@@ -54,6 +54,8 @@ void Context::initInstance(const CreateInfo& info)
 		auto flags =
 			vk::DebugReportFlagBitsEXT::ErrorEXT |
 			vk::DebugReportFlagBitsEXT::WarningEXT |
+			vk::DebugReportFlagBitsEXT::InformationEXT |
+			vk::DebugReportFlagBitsEXT::DebugEXT |
 			vk::DebugReportFlagBitsEXT::PerformanceWarningEXT;
 
 		debugCallback_.reset(new DebugCallback(vkInstance(), flags));

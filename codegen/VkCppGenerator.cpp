@@ -1815,7 +1815,7 @@ void writeTypeStruct( std::ofstream & ofs, DependencyData const& dependencyData,
 	<< "    Vk" << dependencyData.name << "& vkHandle() { return " << memberName << "; }" << std::endl
 	<< "    const Vk" << dependencyData.name << "& vkHandle() const { return " << memberName << "; }" << std::endl
 	<< std::endl
-	<< "  private:" << std::endl
+	<< "  public:" << std::endl
 	<< "    Vk" << dependencyData.name << " " << memberName << ";" << std::endl
 	<< "  };" << std::endl
 #if 0

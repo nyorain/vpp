@@ -25,13 +25,13 @@ protected:
     vk::SwapchainKHR swapChain_ {};
     vk::Format format_;
     vk::ColorSpaceKHR colorSpace_;
-	vk::Extent2D extent_;
+	vk::Extent2D size_;
 
 	vk::SurfaceKHR surface_ {};
 	std::vector<Buffer> buffers_;
 
 protected:
-    void init(const Device& context, vk::SurfaceKHR surface, const vk::Extent2D& extent);
+    void init(const Device& context, vk::SurfaceKHR surface, const vk::Extent2D& size);
 
 	void initSwapChain();
     void queryFormats();
@@ -44,21 +44,21 @@ protected:
 
 public:
 	SwapChain() = default;
-    SwapChain(const Device& device, const Surface& surface, const vk::Extent2D& extent = {});
-	SwapChain(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& extent = {});
+    SwapChain(const Device& device, const Surface& surface, const vk::Extent2D& size = {});
+	SwapChain(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& size = {});
     ~SwapChain();
 
 	SwapChain(SwapChain&& other) noexcept;
 	SwapChain& operator=(SwapChain&& other) noexcept;
 
-	void resize(const vk::Extent2D& extent);
+	void resize(const vk::Extent2D& size);
 
     vk::SwapchainKHR vkSwapChain() const { return swapChain_; }
 	vk::SurfaceKHR vkSurface() const { return surface_; }
 
 	vk::Format format() const { return format_; }
 	vk::ColorSpaceKHR colorSpace() const { return colorSpace_; }
-	const vk::Extent2D& extent() const { return extent_; }
+	const vk::Extent2D& size() const { return size_; }
     const std::vector<Buffer>& buffers() const { return buffers_; }
 
     unsigned int acquireNextImage(vk::Semaphore presentComplete) const;

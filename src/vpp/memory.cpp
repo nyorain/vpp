@@ -259,6 +259,8 @@ void DeviceMemoryAllocator::allocate()
 		}
 	}
 
+	lastAlloc.clear();
+
 	//allocate and bind DeviceMemory objects
 	for(auto& entry : sizeMap)
 	{
@@ -297,6 +299,8 @@ void DeviceMemoryAllocator::allocate()
 		}
 	}
 
+	sizeMap.clear();
+
 	//clear
 	imageRequirements_.clear();
 	bufferRequirements_.clear();
@@ -319,23 +323,15 @@ MemoryMap::MemoryMap(const DeviceMemory::Entry& entry)
 {
 }
 
-MemoryMap::MemoryMap(MemoryMap&& other)
+MemoryMap::MemoryMap(MemoryMap&& other) noexcept
 {
-	std::swap(memory_, other.memory_);
-	std::swap(size_, other.size_);
-	std::swap(offset_, other.offset_);
-	std::swap(ptr_, other.ptr_);
+	this->swap(other);
 }
 
-MemoryMap& MemoryMap::operator=(MemoryMap&& other)
+MemoryMap& MemoryMap::operator=(MemoryMap&& other) noexcept
 {
 	unmap();
-
-	std::swap(memory_, other.memory_);
-	std::swap(size_, other.size_);
-	std::swap(offset_, other.offset_);
-	std::swap(ptr_, other.ptr_);
-
+	this->swap(other);
 	return *this;
 }
 
@@ -344,16 +340,26 @@ MemoryMap::~MemoryMap()
 	unmap();
 }
 
+void MemoryMap::swap(MemoryMap& other) noexcept
+{
+	using std::swap;
+
+	swap(memory_, other.memory_);
+	swap(size_, other.size_);
+	swap(offset_, other.offset_);
+	swap(ptr_, other.ptr_);
+}
+
 void MemoryMap::flushRanges() const
 {
-	//check for memory flags - function call needed?
+	//TODO: check for memory flags - function call needed?
 	vk::MappedMemoryRange range {vkMemory(), offset(), size()};
 	vk::flushMappedMemoryRanges(memory().vkDevice(), 1, &range);
 }
 
 void MemoryMap::invalidateRanges() const
 {
-	//check for memory flags - function call needed?
+	//TODO: check for memory flags - function call needed?
 	vk::MappedMemoryRange range {vkMemory(), offset(), size()};
 	vk::invalidateMappedMemoryRanges(memory().vkDevice(), 1, &range);
 }

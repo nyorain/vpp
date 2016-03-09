@@ -4,9 +4,16 @@
 namespace vpp
 {
 
+Image::Image()
+{
+	memoryEntry_ = std::make_unique<DeviceMemory::Entry>();
+}
+
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags)
 	 : Resource(dev)
 {
+	memoryEntry_ = std::make_unique<DeviceMemory::Entry>();
+
 	vk::MemoryRequirements reqs;
 	vk::createImage(vkDevice(), &info, nullptr, &image_);
 	vk::getImageMemoryRequirements(vkDevice(), image_, &reqs);
@@ -20,7 +27,7 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPrope
 	auto memory = std::make_shared<DeviceMemory>(dev, reqs.size(), type);
 
 	auto alloc = memory->alloc(reqs.size(), reqs.alignment());
-	memoryEntry_ = DeviceMemory::Entry(memory, alloc);
+	*memoryEntry_ = DeviceMemory::Entry(memory, alloc);
 
 	vk::bindImageMemory(vkDevice(), image_, memory->vkDeviceMemory(), alloc.offset);
 }
@@ -28,12 +35,14 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPrope
 Image::Image(DeviceMemoryAllocator& allctr, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags)
 	: Resource(allctr.device())
 {
+	memoryEntry_ = std::make_unique<DeviceMemory::Entry>();
+
 	vk::MemoryRequirements reqs;
 	vk::createImage(vkDevice(), &info, nullptr, &image_);
 	vk::getImageMemoryRequirements(vkDevice(), image_, &reqs);
 
 	reqs.memoryTypeBits(device().memoryTypeBits(reqs.memoryTypeBits(), mflags));
-	allctr.request(image_, reqs, info.tiling(), memoryEntry_);
+	allctr.request(image_, reqs, info.tiling(), *memoryEntry_);
 }
 
 Image::Image(Image&& other) noexcept
@@ -59,6 +68,7 @@ void Image::swap(Image& other) noexcept
 
 	swap(memoryEntry_, other.memoryEntry_);
 	swap(image_, other.image_);
+	swap(memoryEntry_, other.memoryEntry_);
 	swap(device_, other.device_);
 }
 
@@ -66,14 +76,14 @@ void Image::destroy()
 {
 	if(vkImage()) vk::destroyImage(vkDevice(), vkImage(), nullptr);
 
-	memoryEntry_ = {};
+	*memoryEntry_ = {};
 	image_ = {};
 	Resource::destroy();
 }
 
 MemoryMap Image::memoryMap() const
 {
-	return MemoryMap(memoryEntry_);
+	return MemoryMap(memoryEntry());
 }
 
 }

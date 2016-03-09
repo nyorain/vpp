@@ -57,7 +57,7 @@ namespace vk
     VkOffset2D& vkHandle() { return m_offset2D; }
     const VkOffset2D& vkHandle() const { return m_offset2D; }
 
-  private:
+  public:
     VkOffset2D m_offset2D;
   };
 
@@ -80,7 +80,7 @@ namespace vk
     VkOffset3D& vkHandle() { return m_offset3D; }
     const VkOffset3D& vkHandle() const { return m_offset3D; }
 
-  private:
+  public:
     VkOffset3D m_offset3D;
   };
 
@@ -101,7 +101,7 @@ namespace vk
     VkExtent2D& vkHandle() { return m_extent2D; }
     const VkExtent2D& vkHandle() const { return m_extent2D; }
 
-  private:
+  public:
     VkExtent2D m_extent2D;
   };
 
@@ -124,7 +124,7 @@ namespace vk
     VkExtent3D& vkHandle() { return m_extent3D; }
     const VkExtent3D& vkHandle() const { return m_extent3D; }
 
-  private:
+  public:
     VkExtent3D m_extent3D;
   };
 
@@ -153,7 +153,7 @@ namespace vk
     VkViewport& vkHandle() { return m_viewport; }
     const VkViewport& vkHandle() const { return m_viewport; }
 
-  private:
+  public:
     VkViewport m_viewport;
   };
 
@@ -174,7 +174,7 @@ namespace vk
     VkRect2D& vkHandle() { return m_rect2D; }
     const VkRect2D& vkHandle() const { return m_rect2D; }
 
-  private:
+  public:
     VkRect2D m_rect2D;
   };
 
@@ -197,7 +197,7 @@ namespace vk
     VkClearRect& vkHandle() { return m_clearRect; }
     const VkClearRect& vkHandle() const { return m_clearRect; }
 
-  private:
+  public:
     VkClearRect m_clearRect;
   };
 
@@ -213,7 +213,7 @@ namespace vk
     VkExtensionProperties& vkHandle() { return m_extensionProperties; }
     const VkExtensionProperties& vkHandle() const { return m_extensionProperties; }
 
-  private:
+  public:
     VkExtensionProperties m_extensionProperties;
   };
 
@@ -233,7 +233,7 @@ namespace vk
     VkLayerProperties& vkHandle() { return m_layerProperties; }
     const VkLayerProperties& vkHandle() const { return m_layerProperties; }
 
-  private:
+  public:
     VkLayerProperties m_layerProperties;
   };
 
@@ -261,7 +261,7 @@ namespace vk
     VkAllocationCallbacks& vkHandle() { return m_allocationCallbacks; }
     const VkAllocationCallbacks& vkHandle() const { return m_allocationCallbacks; }
 
-  private:
+  public:
     VkAllocationCallbacks m_allocationCallbacks;
   };
 
@@ -279,7 +279,7 @@ namespace vk
     VkMemoryRequirements& vkHandle() { return m_memoryRequirements; }
     const VkMemoryRequirements& vkHandle() const { return m_memoryRequirements; }
 
-  private:
+  public:
     VkMemoryRequirements m_memoryRequirements;
   };
 
@@ -302,7 +302,7 @@ namespace vk
     VkDescriptorBufferInfo& vkHandle() { return m_descriptorBufferInfo; }
     const VkDescriptorBufferInfo& vkHandle() const { return m_descriptorBufferInfo; }
 
-  private:
+  public:
     VkDescriptorBufferInfo m_descriptorBufferInfo;
   };
 
@@ -329,7 +329,7 @@ namespace vk
     VkSubresourceLayout& vkHandle() { return m_subresourceLayout; }
     const VkSubresourceLayout& vkHandle() const { return m_subresourceLayout; }
 
-  private:
+  public:
     VkSubresourceLayout m_subresourceLayout;
   };
 
@@ -352,7 +352,7 @@ namespace vk
     VkBufferCopy& vkHandle() { return m_bufferCopy; }
     const VkBufferCopy& vkHandle() const { return m_bufferCopy; }
 
-  private:
+  public:
     VkBufferCopy m_bufferCopy;
   };
 
@@ -375,7 +375,7 @@ namespace vk
     VkSpecializationMapEntry& vkHandle() { return m_specializationMapEntry; }
     const VkSpecializationMapEntry& vkHandle() const { return m_specializationMapEntry; }
 
-  private:
+  public:
     VkSpecializationMapEntry m_specializationMapEntry;
   };
 
@@ -400,7 +400,7 @@ namespace vk
     VkSpecializationInfo& vkHandle() { return m_specializationInfo; }
     const VkSpecializationInfo& vkHandle() const { return m_specializationInfo; }
 
-  private:
+  public:
     VkSpecializationInfo m_specializationInfo;
   };
 
@@ -442,7 +442,7 @@ namespace vk
     VkClearDepthStencilValue& vkHandle() { return m_clearDepthStencilValue; }
     const VkClearDepthStencilValue& vkHandle() const { return m_clearDepthStencilValue; }
 
-  private:
+  public:
     VkClearDepthStencilValue m_clearDepthStencilValue;
   };
 
@@ -587,7 +587,7 @@ namespace vk
     VkPhysicalDeviceFeatures& vkHandle() { return m_physicalDeviceFeatures; }
     const VkPhysicalDeviceFeatures& vkHandle() const { return m_physicalDeviceFeatures; }
 
-  private:
+  public:
     VkPhysicalDeviceFeatures m_physicalDeviceFeatures;
   };
 
@@ -609,7 +609,7 @@ namespace vk
     VkPhysicalDeviceSparseProperties& vkHandle() { return m_physicalDeviceSparseProperties; }
     const VkPhysicalDeviceSparseProperties& vkHandle() const { return m_physicalDeviceSparseProperties; }
 
-  private:
+  public:
     VkPhysicalDeviceSparseProperties m_physicalDeviceSparseProperties;
   };
 
@@ -634,7 +634,7 @@ namespace vk
     VkDrawIndirectCommand& vkHandle() { return m_drawIndirectCommand; }
     const VkDrawIndirectCommand& vkHandle() const { return m_drawIndirectCommand; }
 
-  private:
+  public:
     VkDrawIndirectCommand m_drawIndirectCommand;
   };
 
@@ -661,7 +661,7 @@ namespace vk
     VkDrawIndexedIndirectCommand& vkHandle() { return m_drawIndexedIndirectCommand; }
     const VkDrawIndexedIndirectCommand& vkHandle() const { return m_drawIndexedIndirectCommand; }
 
-  private:
+  public:
     VkDrawIndexedIndirectCommand m_drawIndexedIndirectCommand;
   };
 
@@ -684,7 +684,7 @@ namespace vk
     VkDispatchIndirectCommand& vkHandle() { return m_dispatchIndirectCommand; }
     const VkDispatchIndirectCommand& vkHandle() const { return m_dispatchIndirectCommand; }
 
-  private:
+  public:
     VkDispatchIndirectCommand m_dispatchIndirectCommand;
   };
 
@@ -707,7 +707,7 @@ namespace vk
     VkDescriptorImageInfo& vkHandle() { return m_descriptorImageInfo; }
     const VkDescriptorImageInfo& vkHandle() const { return m_descriptorImageInfo; }
 
-  private:
+  public:
     VkDescriptorImageInfo m_descriptorImageInfo;
   };
 
@@ -728,7 +728,7 @@ namespace vk
     VkAttachmentReference& vkHandle() { return m_attachmentReference; }
     const VkAttachmentReference& vkHandle() const { return m_attachmentReference; }
 
-  private:
+  public:
     VkAttachmentReference m_attachmentReference;
   };
 
@@ -753,7 +753,7 @@ namespace vk
     VkComponentMapping& vkHandle() { return m_componentMapping; }
     const VkComponentMapping& vkHandle() const { return m_componentMapping; }
 
-  private:
+  public:
     VkComponentMapping m_componentMapping;
   };
 
@@ -774,7 +774,7 @@ namespace vk
     VkDescriptorPoolSize& vkHandle() { return m_descriptorPoolSize; }
     const VkDescriptorPoolSize& vkHandle() const { return m_descriptorPoolSize; }
 
-  private:
+  public:
     VkDescriptorPoolSize m_descriptorPoolSize;
   };
 
@@ -811,7 +811,7 @@ namespace vk
     VkSubpassDescription& vkHandle() { return m_subpassDescription; }
     const VkSubpassDescription& vkHandle() const { return m_subpassDescription; }
 
-  private:
+  public:
     VkSubpassDescription m_subpassDescription;
   };
 
@@ -842,7 +842,7 @@ namespace vk
     VkStencilOpState& vkHandle() { return m_stencilOpState; }
     const VkStencilOpState& vkHandle() const { return m_stencilOpState; }
 
-  private:
+  public:
     VkStencilOpState m_stencilOpState;
   };
 
@@ -865,7 +865,7 @@ namespace vk
     VkVertexInputBindingDescription& vkHandle() { return m_vertexInputBindingDescription; }
     const VkVertexInputBindingDescription& vkHandle() const { return m_vertexInputBindingDescription; }
 
-  private:
+  public:
     VkVertexInputBindingDescription m_vertexInputBindingDescription;
   };
 
@@ -890,7 +890,7 @@ namespace vk
     VkVertexInputAttributeDescription& vkHandle() { return m_vertexInputAttributeDescription; }
     const VkVertexInputAttributeDescription& vkHandle() const { return m_vertexInputAttributeDescription; }
 
-  private:
+  public:
     VkVertexInputAttributeDescription m_vertexInputAttributeDescription;
   };
 
@@ -921,7 +921,7 @@ namespace vk
     VkApplicationInfo& vkHandle() { return m_applicationInfo; }
     const VkApplicationInfo& vkHandle() const { return m_applicationInfo; }
 
-  private:
+  public:
     VkApplicationInfo m_applicationInfo;
   };
 
@@ -950,7 +950,7 @@ namespace vk
     VkDeviceQueueCreateInfo& vkHandle() { return m_deviceQueueCreateInfo; }
     const VkDeviceQueueCreateInfo& vkHandle() const { return m_deviceQueueCreateInfo; }
 
-  private:
+  public:
     VkDeviceQueueCreateInfo m_deviceQueueCreateInfo;
   };
 
@@ -987,7 +987,7 @@ namespace vk
     VkDeviceCreateInfo& vkHandle() { return m_deviceCreateInfo; }
     const VkDeviceCreateInfo& vkHandle() const { return m_deviceCreateInfo; }
 
-  private:
+  public:
     VkDeviceCreateInfo m_deviceCreateInfo;
   };
 
@@ -1020,7 +1020,7 @@ namespace vk
     VkInstanceCreateInfo& vkHandle() { return m_instanceCreateInfo; }
     const VkInstanceCreateInfo& vkHandle() const { return m_instanceCreateInfo; }
 
-  private:
+  public:
     VkInstanceCreateInfo m_instanceCreateInfo;
   };
 
@@ -1045,7 +1045,7 @@ namespace vk
     VkMemoryAllocateInfo& vkHandle() { return m_memoryAllocateInfo; }
     const VkMemoryAllocateInfo& vkHandle() const { return m_memoryAllocateInfo; }
 
-  private:
+  public:
     VkMemoryAllocateInfo m_memoryAllocateInfo;
   };
 
@@ -1072,7 +1072,7 @@ namespace vk
     VkMappedMemoryRange& vkHandle() { return m_mappedMemoryRange; }
     const VkMappedMemoryRange& vkHandle() const { return m_mappedMemoryRange; }
 
-  private:
+  public:
     VkMappedMemoryRange m_mappedMemoryRange;
   };
 
@@ -1109,7 +1109,7 @@ namespace vk
     VkWriteDescriptorSet& vkHandle() { return m_writeDescriptorSet; }
     const VkWriteDescriptorSet& vkHandle() const { return m_writeDescriptorSet; }
 
-  private:
+  public:
     VkWriteDescriptorSet m_writeDescriptorSet;
   };
 
@@ -1144,7 +1144,7 @@ namespace vk
     VkCopyDescriptorSet& vkHandle() { return m_copyDescriptorSet; }
     const VkCopyDescriptorSet& vkHandle() const { return m_copyDescriptorSet; }
 
-  private:
+  public:
     VkCopyDescriptorSet m_copyDescriptorSet;
   };
 
@@ -1175,7 +1175,7 @@ namespace vk
     VkBufferViewCreateInfo& vkHandle() { return m_bufferViewCreateInfo; }
     const VkBufferViewCreateInfo& vkHandle() const { return m_bufferViewCreateInfo; }
 
-  private:
+  public:
     VkBufferViewCreateInfo m_bufferViewCreateInfo;
   };
 
@@ -1202,7 +1202,7 @@ namespace vk
     VkShaderModuleCreateInfo& vkHandle() { return m_shaderModuleCreateInfo; }
     const VkShaderModuleCreateInfo& vkHandle() const { return m_shaderModuleCreateInfo; }
 
-  private:
+  public:
     VkShaderModuleCreateInfo m_shaderModuleCreateInfo;
   };
 
@@ -1229,7 +1229,7 @@ namespace vk
     VkDescriptorSetAllocateInfo& vkHandle() { return m_descriptorSetAllocateInfo; }
     const VkDescriptorSetAllocateInfo& vkHandle() const { return m_descriptorSetAllocateInfo; }
 
-  private:
+  public:
     VkDescriptorSetAllocateInfo m_descriptorSetAllocateInfo;
   };
 
@@ -1260,7 +1260,7 @@ namespace vk
     VkPipelineVertexInputStateCreateInfo& vkHandle() { return m_pipelineVertexInputStateCreateInfo; }
     const VkPipelineVertexInputStateCreateInfo& vkHandle() const { return m_pipelineVertexInputStateCreateInfo; }
 
-  private:
+  public:
     VkPipelineVertexInputStateCreateInfo m_pipelineVertexInputStateCreateInfo;
   };
 
@@ -1287,7 +1287,7 @@ namespace vk
     VkPipelineInputAssemblyStateCreateInfo& vkHandle() { return m_pipelineInputAssemblyStateCreateInfo; }
     const VkPipelineInputAssemblyStateCreateInfo& vkHandle() const { return m_pipelineInputAssemblyStateCreateInfo; }
 
-  private:
+  public:
     VkPipelineInputAssemblyStateCreateInfo m_pipelineInputAssemblyStateCreateInfo;
   };
 
@@ -1312,7 +1312,7 @@ namespace vk
     VkPipelineTessellationStateCreateInfo& vkHandle() { return m_pipelineTessellationStateCreateInfo; }
     const VkPipelineTessellationStateCreateInfo& vkHandle() const { return m_pipelineTessellationStateCreateInfo; }
 
-  private:
+  public:
     VkPipelineTessellationStateCreateInfo m_pipelineTessellationStateCreateInfo;
   };
 
@@ -1343,7 +1343,7 @@ namespace vk
     VkPipelineViewportStateCreateInfo& vkHandle() { return m_pipelineViewportStateCreateInfo; }
     const VkPipelineViewportStateCreateInfo& vkHandle() const { return m_pipelineViewportStateCreateInfo; }
 
-  private:
+  public:
     VkPipelineViewportStateCreateInfo m_pipelineViewportStateCreateInfo;
   };
 
@@ -1386,7 +1386,7 @@ namespace vk
     VkPipelineRasterizationStateCreateInfo& vkHandle() { return m_pipelineRasterizationStateCreateInfo; }
     const VkPipelineRasterizationStateCreateInfo& vkHandle() const { return m_pipelineRasterizationStateCreateInfo; }
 
-  private:
+  public:
     VkPipelineRasterizationStateCreateInfo m_pipelineRasterizationStateCreateInfo;
   };
 
@@ -1427,7 +1427,7 @@ namespace vk
     VkPipelineDepthStencilStateCreateInfo& vkHandle() { return m_pipelineDepthStencilStateCreateInfo; }
     const VkPipelineDepthStencilStateCreateInfo& vkHandle() const { return m_pipelineDepthStencilStateCreateInfo; }
 
-  private:
+  public:
     VkPipelineDepthStencilStateCreateInfo m_pipelineDepthStencilStateCreateInfo;
   };
 
@@ -1454,7 +1454,7 @@ namespace vk
     VkPipelineCacheCreateInfo& vkHandle() { return m_pipelineCacheCreateInfo; }
     const VkPipelineCacheCreateInfo& vkHandle() const { return m_pipelineCacheCreateInfo; }
 
-  private:
+  public:
     VkPipelineCacheCreateInfo m_pipelineCacheCreateInfo;
   };
 
@@ -1507,7 +1507,7 @@ namespace vk
     VkSamplerCreateInfo& vkHandle() { return m_samplerCreateInfo; }
     const VkSamplerCreateInfo& vkHandle() const { return m_samplerCreateInfo; }
 
-  private:
+  public:
     VkSamplerCreateInfo m_samplerCreateInfo;
   };
 
@@ -1534,7 +1534,7 @@ namespace vk
     VkCommandBufferAllocateInfo& vkHandle() { return m_commandBufferAllocateInfo; }
     const VkCommandBufferAllocateInfo& vkHandle() const { return m_commandBufferAllocateInfo; }
 
-  private:
+  public:
     VkCommandBufferAllocateInfo m_commandBufferAllocateInfo;
   };
 
@@ -1565,7 +1565,7 @@ namespace vk
     VkRenderPassBeginInfo& vkHandle() { return m_renderPassBeginInfo; }
     const VkRenderPassBeginInfo& vkHandle() const { return m_renderPassBeginInfo; }
 
-  private:
+  public:
     VkRenderPassBeginInfo m_renderPassBeginInfo;
   };
 
@@ -1588,7 +1588,7 @@ namespace vk
     VkEventCreateInfo& vkHandle() { return m_eventCreateInfo; }
     const VkEventCreateInfo& vkHandle() const { return m_eventCreateInfo; }
 
-  private:
+  public:
     VkEventCreateInfo m_eventCreateInfo;
   };
 
@@ -1611,7 +1611,7 @@ namespace vk
     VkSemaphoreCreateInfo& vkHandle() { return m_semaphoreCreateInfo; }
     const VkSemaphoreCreateInfo& vkHandle() const { return m_semaphoreCreateInfo; }
 
-  private:
+  public:
     VkSemaphoreCreateInfo m_semaphoreCreateInfo;
   };
 
@@ -1646,7 +1646,7 @@ namespace vk
     VkFramebufferCreateInfo& vkHandle() { return m_framebufferCreateInfo; }
     const VkFramebufferCreateInfo& vkHandle() const { return m_framebufferCreateInfo; }
 
-  private:
+  public:
     VkFramebufferCreateInfo m_framebufferCreateInfo;
   };
 
@@ -1679,7 +1679,7 @@ namespace vk
     VkPresentInfoKHR& vkHandle() { return m_presentInfoKHR; }
     const VkPresentInfoKHR& vkHandle() const { return m_presentInfoKHR; }
 
-  private:
+  public:
     VkPresentInfoKHR m_presentInfoKHR;
   };
 
@@ -1706,7 +1706,7 @@ namespace vk
     VkPipelineDynamicStateCreateInfo& vkHandle() { return m_pipelineDynamicStateCreateInfo; }
     const VkPipelineDynamicStateCreateInfo& vkHandle() const { return m_pipelineDynamicStateCreateInfo; }
 
-  private:
+  public:
     VkPipelineDynamicStateCreateInfo m_pipelineDynamicStateCreateInfo;
   };
 
@@ -1726,7 +1726,7 @@ namespace vk
     VkQueueFamilyProperties& vkHandle() { return m_queueFamilyProperties; }
     const VkQueueFamilyProperties& vkHandle() const { return m_queueFamilyProperties; }
 
-  private:
+  public:
     VkQueueFamilyProperties m_queueFamilyProperties;
   };
 
@@ -1742,7 +1742,7 @@ namespace vk
     VkMemoryType& vkHandle() { return m_memoryType; }
     const VkMemoryType& vkHandle() const { return m_memoryType; }
 
-  private:
+  public:
     VkMemoryType m_memoryType;
   };
 
@@ -1758,7 +1758,7 @@ namespace vk
     VkMemoryHeap& vkHandle() { return m_memoryHeap; }
     const VkMemoryHeap& vkHandle() const { return m_memoryHeap; }
 
-  private:
+  public:
     VkMemoryHeap m_memoryHeap;
   };
 
@@ -1778,7 +1778,7 @@ namespace vk
     VkPhysicalDeviceMemoryProperties& vkHandle() { return m_physicalDeviceMemoryProperties; }
     const VkPhysicalDeviceMemoryProperties& vkHandle() const { return m_physicalDeviceMemoryProperties; }
 
-  private:
+  public:
     VkPhysicalDeviceMemoryProperties m_physicalDeviceMemoryProperties;
   };
 
@@ -1803,7 +1803,7 @@ namespace vk
     VkMemoryBarrier& vkHandle() { return m_memoryBarrier; }
     const VkMemoryBarrier& vkHandle() const { return m_memoryBarrier; }
 
-  private:
+  public:
     VkMemoryBarrier m_memoryBarrier;
   };
 
@@ -1838,7 +1838,7 @@ namespace vk
     VkBufferMemoryBarrier& vkHandle() { return m_bufferMemoryBarrier; }
     const VkBufferMemoryBarrier& vkHandle() const { return m_bufferMemoryBarrier; }
 
-  private:
+  public:
     VkBufferMemoryBarrier m_bufferMemoryBarrier;
   };
 
@@ -1871,7 +1871,7 @@ namespace vk
     VkBufferCreateInfo& vkHandle() { return m_bufferCreateInfo; }
     const VkBufferCreateInfo& vkHandle() const { return m_bufferCreateInfo; }
 
-  private:
+  public:
     VkBufferCreateInfo m_bufferCreateInfo;
   };
 
@@ -1898,7 +1898,7 @@ namespace vk
     VkDescriptorSetLayoutBinding& vkHandle() { return m_descriptorSetLayoutBinding; }
     const VkDescriptorSetLayoutBinding& vkHandle() const { return m_descriptorSetLayoutBinding; }
 
-  private:
+  public:
     VkDescriptorSetLayoutBinding m_descriptorSetLayoutBinding;
   };
 
@@ -1925,7 +1925,7 @@ namespace vk
     VkDescriptorSetLayoutCreateInfo& vkHandle() { return m_descriptorSetLayoutCreateInfo; }
     const VkDescriptorSetLayoutCreateInfo& vkHandle() const { return m_descriptorSetLayoutCreateInfo; }
 
-  private:
+  public:
     VkDescriptorSetLayoutCreateInfo m_descriptorSetLayoutCreateInfo;
   };
 
@@ -1956,7 +1956,7 @@ namespace vk
     VkPipelineShaderStageCreateInfo& vkHandle() { return m_pipelineShaderStageCreateInfo; }
     const VkPipelineShaderStageCreateInfo& vkHandle() const { return m_pipelineShaderStageCreateInfo; }
 
-  private:
+  public:
     VkPipelineShaderStageCreateInfo m_pipelineShaderStageCreateInfo;
   };
 
@@ -1979,7 +1979,7 @@ namespace vk
     VkPushConstantRange& vkHandle() { return m_pushConstantRange; }
     const VkPushConstantRange& vkHandle() const { return m_pushConstantRange; }
 
-  private:
+  public:
     VkPushConstantRange m_pushConstantRange;
   };
 
@@ -2010,7 +2010,7 @@ namespace vk
     VkPipelineLayoutCreateInfo& vkHandle() { return m_pipelineLayoutCreateInfo; }
     const VkPipelineLayoutCreateInfo& vkHandle() const { return m_pipelineLayoutCreateInfo; }
 
-  private:
+  public:
     VkPipelineLayoutCreateInfo m_pipelineLayoutCreateInfo;
   };
 
@@ -2041,7 +2041,7 @@ namespace vk
     VkComputePipelineCreateInfo& vkHandle() { return m_computePipelineCreateInfo; }
     const VkComputePipelineCreateInfo& vkHandle() const { return m_computePipelineCreateInfo; }
 
-  private:
+  public:
     VkComputePipelineCreateInfo m_computePipelineCreateInfo;
   };
 
@@ -2074,7 +2074,7 @@ namespace vk
     VkPipelineColorBlendAttachmentState& vkHandle() { return m_pipelineColorBlendAttachmentState; }
     const VkPipelineColorBlendAttachmentState& vkHandle() const { return m_pipelineColorBlendAttachmentState; }
 
-  private:
+  public:
     VkPipelineColorBlendAttachmentState m_pipelineColorBlendAttachmentState;
   };
 
@@ -2107,7 +2107,7 @@ namespace vk
     VkPipelineColorBlendStateCreateInfo& vkHandle() { return m_pipelineColorBlendStateCreateInfo; }
     const VkPipelineColorBlendStateCreateInfo& vkHandle() const { return m_pipelineColorBlendStateCreateInfo; }
 
-  private:
+  public:
     VkPipelineColorBlendStateCreateInfo m_pipelineColorBlendStateCreateInfo;
   };
 
@@ -2130,7 +2130,7 @@ namespace vk
     VkFenceCreateInfo& vkHandle() { return m_fenceCreateInfo; }
     const VkFenceCreateInfo& vkHandle() const { return m_fenceCreateInfo; }
 
-  private:
+  public:
     VkFenceCreateInfo m_fenceCreateInfo;
   };
 
@@ -2148,7 +2148,7 @@ namespace vk
     VkFormatProperties& vkHandle() { return m_formatProperties; }
     const VkFormatProperties& vkHandle() const { return m_formatProperties; }
 
-  private:
+  public:
     VkFormatProperties m_formatProperties;
   };
 
@@ -2181,7 +2181,7 @@ namespace vk
     VkCommandBufferInheritanceInfo& vkHandle() { return m_commandBufferInheritanceInfo; }
     const VkCommandBufferInheritanceInfo& vkHandle() const { return m_commandBufferInheritanceInfo; }
 
-  private:
+  public:
     VkCommandBufferInheritanceInfo m_commandBufferInheritanceInfo;
   };
 
@@ -2206,7 +2206,7 @@ namespace vk
     VkCommandBufferBeginInfo& vkHandle() { return m_commandBufferBeginInfo; }
     const VkCommandBufferBeginInfo& vkHandle() const { return m_commandBufferBeginInfo; }
 
-  private:
+  public:
     VkCommandBufferBeginInfo m_commandBufferBeginInfo;
   };
 
@@ -2235,7 +2235,7 @@ namespace vk
     VkQueryPoolCreateInfo& vkHandle() { return m_queryPoolCreateInfo; }
     const VkQueryPoolCreateInfo& vkHandle() const { return m_queryPoolCreateInfo; }
 
-  private:
+  public:
     VkQueryPoolCreateInfo m_queryPoolCreateInfo;
   };
 
@@ -2258,7 +2258,7 @@ namespace vk
     VkImageSubresource& vkHandle() { return m_imageSubresource; }
     const VkImageSubresource& vkHandle() const { return m_imageSubresource; }
 
-  private:
+  public:
     VkImageSubresource m_imageSubresource;
   };
 
@@ -2283,7 +2283,7 @@ namespace vk
     VkImageSubresourceLayers& vkHandle() { return m_imageSubresourceLayers; }
     const VkImageSubresourceLayers& vkHandle() const { return m_imageSubresourceLayers; }
 
-  private:
+  public:
     VkImageSubresourceLayers m_imageSubresourceLayers;
   };
 
@@ -2310,7 +2310,7 @@ namespace vk
     VkImageSubresourceRange& vkHandle() { return m_imageSubresourceRange; }
     const VkImageSubresourceRange& vkHandle() const { return m_imageSubresourceRange; }
 
-  private:
+  public:
     VkImageSubresourceRange m_imageSubresourceRange;
   };
 
@@ -2347,7 +2347,7 @@ namespace vk
     VkImageMemoryBarrier& vkHandle() { return m_imageMemoryBarrier; }
     const VkImageMemoryBarrier& vkHandle() const { return m_imageMemoryBarrier; }
 
-  private:
+  public:
     VkImageMemoryBarrier m_imageMemoryBarrier;
   };
 
@@ -2380,7 +2380,7 @@ namespace vk
     VkImageViewCreateInfo& vkHandle() { return m_imageViewCreateInfo; }
     const VkImageViewCreateInfo& vkHandle() const { return m_imageViewCreateInfo; }
 
-  private:
+  public:
     VkImageViewCreateInfo m_imageViewCreateInfo;
   };
 
@@ -2407,7 +2407,7 @@ namespace vk
     VkImageCopy& vkHandle() { return m_imageCopy; }
     const VkImageCopy& vkHandle() const { return m_imageCopy; }
 
-  private:
+  public:
     VkImageCopy m_imageCopy;
   };
 
@@ -2432,7 +2432,7 @@ namespace vk
     VkImageBlit& vkHandle() { return m_imageBlit; }
     const VkImageBlit& vkHandle() const { return m_imageBlit; }
 
-  private:
+  public:
     VkImageBlit m_imageBlit;
   };
 
@@ -2461,7 +2461,7 @@ namespace vk
     VkBufferImageCopy& vkHandle() { return m_bufferImageCopy; }
     const VkBufferImageCopy& vkHandle() const { return m_bufferImageCopy; }
 
-  private:
+  public:
     VkBufferImageCopy m_bufferImageCopy;
   };
 
@@ -2488,7 +2488,7 @@ namespace vk
     VkImageResolve& vkHandle() { return m_imageResolve; }
     const VkImageResolve& vkHandle() const { return m_imageResolve; }
 
-  private:
+  public:
     VkImageResolve m_imageResolve;
   };
 
@@ -2511,7 +2511,7 @@ namespace vk
     VkClearAttachment& vkHandle() { return m_clearAttachment; }
     const VkClearAttachment& vkHandle() const { return m_clearAttachment; }
 
-  private:
+  public:
     VkClearAttachment m_clearAttachment;
   };
 
@@ -2529,7 +2529,7 @@ namespace vk
     VkSparseImageFormatProperties& vkHandle() { return m_sparseImageFormatProperties; }
     const VkSparseImageFormatProperties& vkHandle() const { return m_sparseImageFormatProperties; }
 
-  private:
+  public:
     VkSparseImageFormatProperties m_sparseImageFormatProperties;
   };
 
@@ -2551,7 +2551,7 @@ namespace vk
     VkSparseImageMemoryRequirements& vkHandle() { return m_sparseImageMemoryRequirements; }
     const VkSparseImageMemoryRequirements& vkHandle() const { return m_sparseImageMemoryRequirements; }
 
-  private:
+  public:
     VkSparseImageMemoryRequirements m_sparseImageMemoryRequirements;
   };
 
@@ -2578,7 +2578,7 @@ namespace vk
     VkSparseMemoryBind& vkHandle() { return m_sparseMemoryBind; }
     const VkSparseMemoryBind& vkHandle() const { return m_sparseMemoryBind; }
 
-  private:
+  public:
     VkSparseMemoryBind m_sparseMemoryBind;
   };
 
@@ -2607,7 +2607,7 @@ namespace vk
     VkSparseImageMemoryBind& vkHandle() { return m_sparseImageMemoryBind; }
     const VkSparseImageMemoryBind& vkHandle() const { return m_sparseImageMemoryBind; }
 
-  private:
+  public:
     VkSparseImageMemoryBind m_sparseImageMemoryBind;
   };
 
@@ -2630,7 +2630,7 @@ namespace vk
     VkSparseBufferMemoryBindInfo& vkHandle() { return m_sparseBufferMemoryBindInfo; }
     const VkSparseBufferMemoryBindInfo& vkHandle() const { return m_sparseBufferMemoryBindInfo; }
 
-  private:
+  public:
     VkSparseBufferMemoryBindInfo m_sparseBufferMemoryBindInfo;
   };
 
@@ -2653,7 +2653,7 @@ namespace vk
     VkSparseImageOpaqueMemoryBindInfo& vkHandle() { return m_sparseImageOpaqueMemoryBindInfo; }
     const VkSparseImageOpaqueMemoryBindInfo& vkHandle() const { return m_sparseImageOpaqueMemoryBindInfo; }
 
-  private:
+  public:
     VkSparseImageOpaqueMemoryBindInfo m_sparseImageOpaqueMemoryBindInfo;
   };
 
@@ -2676,7 +2676,7 @@ namespace vk
     VkSparseImageMemoryBindInfo& vkHandle() { return m_sparseImageMemoryBindInfo; }
     const VkSparseImageMemoryBindInfo& vkHandle() const { return m_sparseImageMemoryBindInfo; }
 
-  private:
+  public:
     VkSparseImageMemoryBindInfo m_sparseImageMemoryBindInfo;
   };
 
@@ -2717,7 +2717,7 @@ namespace vk
     VkBindSparseInfo& vkHandle() { return m_bindSparseInfo; }
     const VkBindSparseInfo& vkHandle() const { return m_bindSparseInfo; }
 
-  private:
+  public:
     VkBindSparseInfo m_bindSparseInfo;
   };
 
@@ -2752,7 +2752,7 @@ namespace vk
     VkSubmitInfo& vkHandle() { return m_submitInfo; }
     const VkSubmitInfo& vkHandle() const { return m_submitInfo; }
 
-  private:
+  public:
     VkSubmitInfo m_submitInfo;
   };
 
@@ -2777,7 +2777,7 @@ namespace vk
     VkCommandPoolCreateInfo& vkHandle() { return m_commandPoolCreateInfo; }
     const VkCommandPoolCreateInfo& vkHandle() const { return m_commandPoolCreateInfo; }
 
-  private:
+  public:
     VkCommandPoolCreateInfo m_commandPoolCreateInfo;
   };
 
@@ -2799,7 +2799,7 @@ namespace vk
     VkImageFormatProperties& vkHandle() { return m_imageFormatProperties; }
     const VkImageFormatProperties& vkHandle() const { return m_imageFormatProperties; }
 
-  private:
+  public:
     VkImageFormatProperties m_imageFormatProperties;
   };
 
@@ -2846,7 +2846,7 @@ namespace vk
     VkImageCreateInfo& vkHandle() { return m_imageCreateInfo; }
     const VkImageCreateInfo& vkHandle() const { return m_imageCreateInfo; }
 
-  private:
+  public:
     VkImageCreateInfo m_imageCreateInfo;
   };
 
@@ -2881,7 +2881,7 @@ namespace vk
     VkPipelineMultisampleStateCreateInfo& vkHandle() { return m_pipelineMultisampleStateCreateInfo; }
     const VkPipelineMultisampleStateCreateInfo& vkHandle() const { return m_pipelineMultisampleStateCreateInfo; }
 
-  private:
+  public:
     VkPipelineMultisampleStateCreateInfo m_pipelineMultisampleStateCreateInfo;
   };
 
@@ -2936,7 +2936,7 @@ namespace vk
     VkGraphicsPipelineCreateInfo& vkHandle() { return m_graphicsPipelineCreateInfo; }
     const VkGraphicsPipelineCreateInfo& vkHandle() const { return m_graphicsPipelineCreateInfo; }
 
-  private:
+  public:
     VkGraphicsPipelineCreateInfo m_graphicsPipelineCreateInfo;
   };
 
@@ -3160,7 +3160,7 @@ namespace vk
     VkPhysicalDeviceLimits& vkHandle() { return m_physicalDeviceLimits; }
     const VkPhysicalDeviceLimits& vkHandle() const { return m_physicalDeviceLimits; }
 
-  private:
+  public:
     VkPhysicalDeviceLimits m_physicalDeviceLimits;
   };
 
@@ -3190,7 +3190,7 @@ namespace vk
     VkPhysicalDeviceProperties& vkHandle() { return m_physicalDeviceProperties; }
     const VkPhysicalDeviceProperties& vkHandle() const { return m_physicalDeviceProperties; }
 
-  private:
+  public:
     VkPhysicalDeviceProperties m_physicalDeviceProperties;
   };
 
@@ -3225,7 +3225,7 @@ namespace vk
     VkAttachmentDescription& vkHandle() { return m_attachmentDescription; }
     const VkAttachmentDescription& vkHandle() const { return m_attachmentDescription; }
 
-  private:
+  public:
     VkAttachmentDescription m_attachmentDescription;
   };
 
@@ -3254,7 +3254,7 @@ namespace vk
     VkDescriptorPoolCreateInfo& vkHandle() { return m_descriptorPoolCreateInfo; }
     const VkDescriptorPoolCreateInfo& vkHandle() const { return m_descriptorPoolCreateInfo; }
 
-  private:
+  public:
     VkDescriptorPoolCreateInfo m_descriptorPoolCreateInfo;
   };
 
@@ -3285,7 +3285,7 @@ namespace vk
     VkSubpassDependency& vkHandle() { return m_subpassDependency; }
     const VkSubpassDependency& vkHandle() const { return m_subpassDependency; }
 
-  private:
+  public:
     VkSubpassDependency m_subpassDependency;
   };
 
@@ -3320,7 +3320,7 @@ namespace vk
     VkRenderPassCreateInfo& vkHandle() { return m_renderPassCreateInfo; }
     const VkRenderPassCreateInfo& vkHandle() const { return m_renderPassCreateInfo; }
 
-  private:
+  public:
     VkRenderPassCreateInfo m_renderPassCreateInfo;
   };
 
@@ -3341,7 +3341,7 @@ namespace vk
     VkSurfaceFormatKHR& vkHandle() { return m_surfaceFormatKHR; }
     const VkSurfaceFormatKHR& vkHandle() const { return m_surfaceFormatKHR; }
 
-  private:
+  public:
     VkSurfaceFormatKHR m_surfaceFormatKHR;
   };
 
@@ -3378,7 +3378,7 @@ namespace vk
     VkSurfaceCapabilitiesKHR& vkHandle() { return m_surfaceCapabilitiesKHR; }
     const VkSurfaceCapabilitiesKHR& vkHandle() const { return m_surfaceCapabilitiesKHR; }
 
-  private:
+  public:
     VkSurfaceCapabilitiesKHR m_surfaceCapabilitiesKHR;
   };
 
@@ -3431,7 +3431,7 @@ namespace vk
     VkSwapchainCreateInfoKHR& vkHandle() { return m_swapchainCreateInfoKHR; }
     const VkSwapchainCreateInfoKHR& vkHandle() const { return m_swapchainCreateInfoKHR; }
 
-  private:
+  public:
     VkSwapchainCreateInfoKHR m_swapchainCreateInfoKHR;
   };
 
@@ -3457,7 +3457,7 @@ namespace vk
     VkDebugReportCallbackCreateInfoEXT& vkHandle() { return m_debugReportCallbackCreateInfoEXT; }
     const VkDebugReportCallbackCreateInfoEXT& vkHandle() const { return m_debugReportCallbackCreateInfoEXT; }
 
-  private:
+  public:
     VkDebugReportCallbackCreateInfoEXT m_debugReportCallbackCreateInfoEXT;
   };
 
@@ -3478,7 +3478,7 @@ namespace vk
     VkDisplayPlanePropertiesKHR& vkHandle() { return m_displayPlanePropertiesKHR; }
     const VkDisplayPlanePropertiesKHR& vkHandle() const { return m_displayPlanePropertiesKHR; }
 
-  private:
+  public:
     VkDisplayPlanePropertiesKHR m_displayPlanePropertiesKHR;
   };
 
@@ -3499,7 +3499,7 @@ namespace vk
     VkDisplayModeParametersKHR& vkHandle() { return m_displayModeParametersKHR; }
     const VkDisplayModeParametersKHR& vkHandle() const { return m_displayModeParametersKHR; }
 
-  private:
+  public:
     VkDisplayModeParametersKHR m_displayModeParametersKHR;
   };
 
@@ -3520,7 +3520,7 @@ namespace vk
     VkDisplayModePropertiesKHR& vkHandle() { return m_displayModePropertiesKHR; }
     const VkDisplayModePropertiesKHR& vkHandle() const { return m_displayModePropertiesKHR; }
 
-  private:
+  public:
     VkDisplayModePropertiesKHR m_displayModePropertiesKHR;
   };
 
@@ -3545,7 +3545,7 @@ namespace vk
     VkDisplayModeCreateInfoKHR& vkHandle() { return m_displayModeCreateInfoKHR; }
     const VkDisplayModeCreateInfoKHR& vkHandle() const { return m_displayModeCreateInfoKHR; }
 
-  private:
+  public:
     VkDisplayModeCreateInfoKHR m_displayModeCreateInfoKHR;
   };
 
@@ -3580,7 +3580,7 @@ namespace vk
     VkDisplayPlaneCapabilitiesKHR& vkHandle() { return m_displayPlaneCapabilitiesKHR; }
     const VkDisplayPlaneCapabilitiesKHR& vkHandle() const { return m_displayPlaneCapabilitiesKHR; }
 
-  private:
+  public:
     VkDisplayPlaneCapabilitiesKHR m_displayPlaneCapabilitiesKHR;
   };
 
@@ -3611,7 +3611,7 @@ namespace vk
     VkDisplayPropertiesKHR& vkHandle() { return m_displayPropertiesKHR; }
     const VkDisplayPropertiesKHR& vkHandle() const { return m_displayPropertiesKHR; }
 
-  private:
+  public:
     VkDisplayPropertiesKHR m_displayPropertiesKHR;
   };
 
@@ -3648,7 +3648,7 @@ namespace vk
     VkDisplaySurfaceCreateInfoKHR& vkHandle() { return m_displaySurfaceCreateInfoKHR; }
     const VkDisplaySurfaceCreateInfoKHR& vkHandle() const { return m_displaySurfaceCreateInfoKHR; }
 
-  private:
+  public:
     VkDisplaySurfaceCreateInfoKHR m_displaySurfaceCreateInfoKHR;
   };
 
@@ -3675,7 +3675,7 @@ namespace vk
     VkDisplayPresentInfoKHR& vkHandle() { return m_displayPresentInfoKHR; }
     const VkDisplayPresentInfoKHR& vkHandle() const { return m_displayPresentInfoKHR; }
 
-  private:
+  public:
     VkDisplayPresentInfoKHR m_displayPresentInfoKHR;
   };
 
@@ -3704,7 +3704,7 @@ namespace vk
     VkXlibSurfaceCreateInfoKHR& vkHandle() { return m_xlibSurfaceCreateInfoKHR; }
     const VkXlibSurfaceCreateInfoKHR& vkHandle() const { return m_xlibSurfaceCreateInfoKHR; }
 
-  private:
+  public:
     VkXlibSurfaceCreateInfoKHR m_xlibSurfaceCreateInfoKHR;
   };
 
@@ -3735,7 +3735,7 @@ namespace vk
     VkXcbSurfaceCreateInfoKHR& vkHandle() { return m_xcbSurfaceCreateInfoKHR; }
     const VkXcbSurfaceCreateInfoKHR& vkHandle() const { return m_xcbSurfaceCreateInfoKHR; }
 
-  private:
+  public:
     VkXcbSurfaceCreateInfoKHR m_xcbSurfaceCreateInfoKHR;
   };
 
@@ -3766,7 +3766,7 @@ namespace vk
     VkWaylandSurfaceCreateInfoKHR& vkHandle() { return m_waylandSurfaceCreateInfoKHR; }
     const VkWaylandSurfaceCreateInfoKHR& vkHandle() const { return m_waylandSurfaceCreateInfoKHR; }
 
-  private:
+  public:
     VkWaylandSurfaceCreateInfoKHR m_waylandSurfaceCreateInfoKHR;
   };
 
@@ -3797,7 +3797,7 @@ namespace vk
     VkMirSurfaceCreateInfoKHR& vkHandle() { return m_mirSurfaceCreateInfoKHR; }
     const VkMirSurfaceCreateInfoKHR& vkHandle() const { return m_mirSurfaceCreateInfoKHR; }
 
-  private:
+  public:
     VkMirSurfaceCreateInfoKHR m_mirSurfaceCreateInfoKHR;
   };
 
@@ -3826,7 +3826,7 @@ namespace vk
     VkAndroidSurfaceCreateInfoKHR& vkHandle() { return m_androidSurfaceCreateInfoKHR; }
     const VkAndroidSurfaceCreateInfoKHR& vkHandle() const { return m_androidSurfaceCreateInfoKHR; }
 
-  private:
+  public:
     VkAndroidSurfaceCreateInfoKHR m_androidSurfaceCreateInfoKHR;
   };
 
@@ -3857,7 +3857,7 @@ namespace vk
     VkWin32SurfaceCreateInfoKHR& vkHandle() { return m_win32SurfaceCreateInfoKHR; }
     const VkWin32SurfaceCreateInfoKHR& vkHandle() const { return m_win32SurfaceCreateInfoKHR; }
 
-  private:
+  public:
     VkWin32SurfaceCreateInfoKHR m_win32SurfaceCreateInfoKHR;
   };
 

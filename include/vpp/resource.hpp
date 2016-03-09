@@ -29,11 +29,4 @@ public:
 	VkDevice vkDevice() const { return device().vkDevice(); }
 };
 
-//swap template
-template<typename T>
-auto swap(T& a, T& b) -> decltype(a.swap(b))
-{
-	a.swap(b);
-}
-
 }

@@ -39,14 +39,14 @@ std::vector<char> readFile(const std::string& filename, bool binary)
 }
 
 //loadShader
-vk::ShaderModule loadShader(vk::Device device, const std::string& filename)
+vk::ShaderModule ShaderStage::loadModule(vk::Device device, const std::string& filename)
 {
-	vk::ShaderModule module;
+	vk::ShaderModule module {};
 
 	auto code = readFile(filename, 1);
 	if(code.empty())
 	{
-		std::cerr << "vpp::loadShader: failed to load code from " << filename << "\n";
+		std::cerr << "vpp::ShaderStage::loadModule: failed to load code from " << filename << "\n";
 		return module;
 	}
 
@@ -95,7 +95,9 @@ void ShaderStage::init(const Device& device, const CreateInfo& info)
 	stageInfo_.stage(info.stage);
 	stageInfo_.pSpecializationInfo(info.specializationInfo);
 	stageInfo_.pName(info.entry.c_str());
-	stageInfo_.module(loadShader(vkDevice(), info.filename));
+	stageInfo_.module(loadModule(vkDevice(), info.filename));
+
+	std::cout << "module1: " << stageInfo_.module() << "\n";
 }
 
 void ShaderStage::destroy()

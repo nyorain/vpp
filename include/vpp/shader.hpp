@@ -7,8 +7,6 @@
 namespace vpp
 {
 
-vk::ShaderModule loadShader(vk::Device dev, const std::string& file);
-
 ///Wrapper around the one single shader stage module.
 class ShaderStage : public Resource
 {
@@ -20,6 +18,9 @@ public:
 		const vk::SpecializationInfo* specializationInfo {nullptr};
 		std::string entry { u8"main"};
 	};
+
+public:
+	static vk::ShaderModule loadModule(vk::Device dev, const std::string& file);
 
 protected:
 	vk::PipelineShaderStageCreateInfo stageInfo_;

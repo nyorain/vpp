@@ -7,14 +7,14 @@ namespace vpp
 {
 
 //SwapChain
-SwapChain::SwapChain(const Device& device, const Surface& surface, const vk::Extent2D& extent)
-	: SwapChain(device, surface.vkSurface(), extent)
+SwapChain::SwapChain(const Device& device, const Surface& surface, const vk::Extent2D& size)
+	: SwapChain(device, surface.vkSurface(), size)
 {
 }
 
-SwapChain::SwapChain(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& extent)
+SwapChain::SwapChain(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& size)
 {
-    init(device, surface, extent);
+    init(device, surface, size);
 }
 
 SwapChain::~SwapChain()
@@ -42,18 +42,18 @@ void SwapChain::swap(SwapChain& other) noexcept
 	swap(other.buffers_, buffers_);
 	swap(format_, other.format_);
 	swap(colorSpace_, other.colorSpace_);
-	swap(extent_, other.extent_);
+	swap(size_, other.size_);
 	swap(surface_, other.surface_);
 
 	swap(device_, other.device_);
 }
 
-void SwapChain::init(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& extent)
+void SwapChain::init(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& size)
 {
     Resource::init(device);
 
     surface_ = surface;
-	extent_ = extent;
+	size_ = size;
 
 	queryFormats();
 	initSwapChain();
@@ -111,9 +111,9 @@ void SwapChain::initSwapChain()
     for(auto& img : imgs) buffers_.push_back(createBuffer(img));
 }
 
-void SwapChain::resize(const vk::Extent2D& extent)
+void SwapChain::resize(const vk::Extent2D& size)
 {
-	extent_ = extent;
+	size_ = size;
 	initSwapChain();
 }
 
@@ -205,9 +205,9 @@ VkSwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
 	vk::SurfaceCapabilitiesKHR surfCaps;
 	fpGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(), vkSurface(), &surfCaps.vkHandle());
 
-    //extents
+    //size
     if(surfCaps.currentExtent().width() > 1)
-        extent_ = surfCaps.currentExtent();
+        size_ = surfCaps.currentExtent();
 
     //number of images
     std::uint32_t imagesCount = surfCaps.minImageCount() + 1;
@@ -223,7 +223,7 @@ VkSwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
     vk::SwapchainCreateInfoKHR ret{};
     ret.surface(vkSurface());
     ret.minImageCount(imagesCount);
-    ret.imageExtent(extent_);
+    ret.imageExtent(size_);
     ret.imageUsage(vk::ImageUsageFlagBits::ColorAttachment);
     ret.preTransform(preTransform);
     ret.imageArrayLayers(1);

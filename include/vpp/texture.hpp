@@ -37,11 +37,12 @@ protected:
 public:
 	Texture2D() = default;
 	Texture2D(const Device& dev, const CreateInfo& info, const ImageData& data);
-	Texture2D(const DeviceMemoryAllocator& dev, const CreateInfo& info, const ImageData& data);
+	Texture2D(DeviceMemoryAllocator& alloc, const CreateInfo& info, const ImageData& data);
 	Texture2D(Image&& image, const CreateInfo& info);
 	~Texture2D();
 
-	void init(Image&& image, const CreateInfo& info);
+	void initMemoryLess(DeviceMemoryAllocator& alloc, const ImageData& data);
+	void initMemoryResources(const CreateInfo& info);
 
 	vk::Sampler vkSampler() const { return sampler_; };
 	vk::ImageView vkImageView() const { return imageView_; }
