@@ -105,9 +105,10 @@ void RenderPass::initInfos(const vk::RenderPassCreateInfo& info)
 //XXX: could make this RAII wrapper for render pass instances later on
 //RenderPassInstance
 RenderPassInstance::RenderPassInstance(vk::CommandBuffer cmdbuffer, const RenderPass& pass,
-	vk::Framebuffer framebuffer) : Resource(pass.device())
+	vk::Framebuffer framebuffer) : Resource(pass.device()), renderPass_(pass)
 {
-
+	commandBuffer_ = cmdbuffer;
+	framebuffer_ = framebuffer;
 }
 
 RenderPassInstance::~RenderPassInstance()

@@ -15,7 +15,7 @@ SwapChainRenderer::SwapChainRenderer(const SwapChain& swapChain, const RendererB
 		DeviceMemoryAllocator allocator(swapChain.device());
 		initMemoryLess(allocator, swapChain, info);
 	}
-	
+
 	initMemoryResources(builder);
 }
 
@@ -103,6 +103,7 @@ void SwapChainRenderer::initMemoryLess(DeviceMemoryAllocator& allocator, const S
 void SwapChainRenderer::initMemoryResources(const RendererBuilder& builder)
 {
 	builder_ = &builder;
+
 	const std::size_t dynAttachSize = info().dynamicAttachments.size() + 1;
 	std::map<unsigned int, vk::ImageView> attachmentMap;
 
@@ -178,7 +179,9 @@ void SwapChainRenderer::buildCommandBuffers()
 		scissor.offset({0, 0});
 		vk::cmdSetScissor(renderer.commandBuffer, 0, 1, &scissor);
 
-		builder_->build({renderer.commandBuffer, renderPass(), renderer.framebuffer.vkFramebuffer()});
+		RenderPassInstance ini(renderer.commandBuffer, renderPass(), renderer.framebuffer.vkFramebuffer());
+		builder_->build(ini);
+
 		vkCmdEndRenderPass(renderer.commandBuffer);
 
 		vk::ImageMemoryBarrier prePresentBarrier;
