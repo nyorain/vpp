@@ -90,11 +90,12 @@ protected:
 		vk::MemoryRequirements requirements;
 		vk::ImageTiling tiling;
 		DeviceMemory::Entry* entry {nullptr};
-		
+
 		std::size_t offset {0}; //internal use in alloc
 	};
 
 protected:
+	//all requested allocations for the given memory types
 	std::map<unsigned int, std::vector<BufferRequirement>> bufferRequirements_;
 	std::map<unsigned int, std::vector<ImageRequirement>> imageRequirements_;
 

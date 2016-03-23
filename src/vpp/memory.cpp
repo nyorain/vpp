@@ -32,13 +32,13 @@ DeviceMemory::Entry::~Entry()
 
 void DeviceMemory::Entry::free()
 {
-	if(memory_ && allocation_.size > 0)
+	if((memory_.get() != nullptr) && (allocation_.size > 0))
 	{
 		memory_->free(allocation_);
 	}
 
 	memory_.reset();
-	allocation_ = {0, 0};
+	allocation_ = {};
 }
 
 //Memory
@@ -259,8 +259,6 @@ void DeviceMemoryAllocator::allocate()
 		}
 	}
 
-	lastAlloc.clear();
-
 	//allocate and bind DeviceMemory objects
 	for(auto& entry : sizeMap)
 	{
@@ -298,8 +296,6 @@ void DeviceMemoryAllocator::allocate()
 			vk::bindImageMemory(vkDevice(), img.requestor, memory->vkDeviceMemory(), img.offset);
 		}
 	}
-
-	sizeMap.clear();
 
 	//clear
 	imageRequirements_.clear();

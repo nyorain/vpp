@@ -66,7 +66,6 @@ void Image::swap(Image& other) noexcept
 {
 	using std::swap;
 
-	swap(memoryEntry_, other.memoryEntry_);
 	swap(image_, other.image_);
 	swap(memoryEntry_, other.memoryEntry_);
 	swap(device_, other.device_);

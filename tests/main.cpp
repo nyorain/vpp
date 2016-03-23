@@ -345,8 +345,8 @@ public:
 		projectionMatrix_ = nytl::perspective3(45.f, 900.f / 900.f, 0.1f, 100.f);
 		//projectionMatrix_ = nytl::identityMat<4>();
 
-		std::cout << viewMatrix_ << "\n";
-		std::cout << projectionMatrix_ << "\n";
+		//std::cout << viewMatrix_ << "\n";
+		//std::cout << projectionMatrix_ << "\n";
 
 
 		allocator_.reset(new vpp::DeviceMemoryAllocator(device()));
@@ -368,8 +368,6 @@ public:
 		info.vertexBufferLayouts = {&vertexBufferLayout_};
 		info.dynamicStates = {vk::DynamicState::Viewport, vk::DynamicState::Scissor};
 		info.renderPass = app.renderPass.vkRenderPass();
-
-		std::cout << "renderpass: " << info.renderPass << "\n";
 
 		info.shader.init(device());
 		info.shader.addStage({"vert.spv", vk::ShaderStageFlagBits::Vertex});
@@ -574,8 +572,6 @@ int main()
 		rendererInfo.queue = context.presentQueue();
 		rendererInfo.renderPass = &app.renderPass;
 		rendererInfo.staticAttachments = {vpp::FramebufferAttachment::defaultDepthAttachment};
-
-		std::cout << "RP::: " << rendererInfo.renderPass << "\n";
 
 		vpp::SwapChainRenderer renderer(context.swapChain(), myrenderer, rendererInfo);
 		app.renderer = &renderer;
