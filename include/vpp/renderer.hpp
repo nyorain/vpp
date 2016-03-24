@@ -40,19 +40,18 @@ public:
 	};
 
 protected:
-	const SwapChain* swapChain_;
-	const RendererBuilder* builder_;
+	const SwapChain* swapChain_ = nullptr;
 
-	CreateInfo info_;
+	CreateInfo info_ {};
 	std::vector<RenderBuffer> renderBuffers_;
 	std::vector<FramebufferAttachment> staticAttachments_;
-	vk::CommandPool commandPool_;
+	vk::CommandPool commandPool_ {};
 
 protected:
 	void destroy();
 	void destroyRenderBuffers();
 
-	void buildCommandBuffers();
+	void buildCommandBuffers(const RendererBuilder& builder);
 
 public:
 	SwapChainRenderer() = default;
@@ -77,7 +76,6 @@ public:
 	const RenderPass& renderPass() const { return *info_.renderPass; }
 	const SwapChain& swapChain() const { return *swapChain_; }
 	const CreateInfo& info() const { return info_; }
-	const RendererBuilder& rendererBuilder() const { return *builder_;}
 	const std::vector<RenderBuffer>& renderBuffers() const { return renderBuffers_; }
 	const std::vector<FramebufferAttachment>& staticAttachments() const { return staticAttachments_; }
 

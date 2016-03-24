@@ -138,6 +138,7 @@ struct App
 	vpp::RenderPass renderPass {};
 	vpp::SwapChainRenderer* renderer = nullptr;
 	MyRenderer* myRenderer = nullptr;
+	vpp::SwapChainRenderer::CreateInfo rendererInfo {};
 
 	vk::Queue queue {};
 };
@@ -460,7 +461,8 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 			{
 				std::cout << "resizing to " << LOWORD(lparam) << "," << HIWORD(lparam) << "\n";
 				gApp->context->swapChain().resize({LOWORD(lparam), HIWORD(lparam)});
-				//*gApp->renderer->reset(gApp->context->swapChain());
+				*gApp->renderer = vpp::SwapChainRenderer(gApp->context->swapChain(), *gApp->myRenderer,
+					gApp->rendererInfo);
 				gApp->renderer->render();
 			}
 			break;
@@ -568,12 +570,11 @@ int main()
 		MyRenderer myrenderer(app);
 		app.myRenderer = &myrenderer;
 
-		vpp::SwapChainRenderer::CreateInfo rendererInfo;
-		rendererInfo.queue = context.presentQueue();
-		rendererInfo.renderPass = &app.renderPass;
-		rendererInfo.staticAttachments = {vpp::FramebufferAttachment::defaultDepthAttachment};
+		app.rendererInfo.queue = context.presentQueue();
+		app.rendererInfo.renderPass = &app.renderPass;
+		app.rendererInfo.staticAttachments = {vpp::FramebufferAttachment::defaultDepthAttachment};
 
-		vpp::SwapChainRenderer renderer(context.swapChain(), myrenderer, rendererInfo);
+		vpp::SwapChainRenderer renderer(context.swapChain(), myrenderer, app.rendererInfo);
 		app.renderer = &renderer;
 
 		app.queue = context.presentQueue().queue;

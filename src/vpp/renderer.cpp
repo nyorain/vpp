@@ -26,9 +26,33 @@ SwapChainRenderer::SwapChainRenderer(DeviceMemoryAllocator& allocator, const Swa
 	initMemoryResources(builder);
 }
 
+SwapChainRenderer::SwapChainRenderer(SwapChainRenderer&& other) noexcept
+{
+	this->swap(other);
+}
+
+SwapChainRenderer& SwapChainRenderer::operator=(SwapChainRenderer&& other) noexcept
+{
+	destroy();
+	this->swap(other);
+	return *this;
+}
+
 SwapChainRenderer::~SwapChainRenderer()
 {
 	destroy();
+}
+
+void SwapChainRenderer::swap(SwapChainRenderer& other) noexcept
+{
+	using std::swap;
+
+	swap(device_, other.device_);
+	swap(swapChain_, other.swapChain_);
+	swap(info_, other.info_);
+	swap(renderBuffers_, other.renderBuffers_);
+	swap(staticAttachments_, other.staticAttachments_);
+	swap(commandPool_, other.commandPool_);
 }
 
 void SwapChainRenderer::destroy()
@@ -41,7 +65,6 @@ void SwapChainRenderer::destroy()
 	//reset
 	commandPool_ = {};
 	swapChain_ = nullptr;
-	builder_ = nullptr;
 	info_ = {};
 
 	Resource::destroy();
@@ -102,8 +125,6 @@ void SwapChainRenderer::initMemoryLess(DeviceMemoryAllocator& allocator, const S
 
 void SwapChainRenderer::initMemoryResources(const RendererBuilder& builder)
 {
-	builder_ = &builder;
-
 	const std::size_t dynAttachSize = info().dynamicAttachments.size() + 1;
 	std::map<unsigned int, vk::ImageView> attachmentMap;
 
@@ -122,7 +143,7 @@ void SwapChainRenderer::initMemoryResources(const RendererBuilder& builder)
 	}
 
 	//record command buffers
-	buildCommandBuffers();
+	buildCommandBuffers(builder);
 }
 
 void SwapChainRenderer::destroyRenderBuffers()
@@ -144,9 +165,9 @@ void SwapChainRenderer::destroyRenderBuffers()
 	renderBuffers_.clear();
 }
 
-void SwapChainRenderer::buildCommandBuffers()
+void SwapChainRenderer::buildCommandBuffers(const RendererBuilder& builder)
 {
-	auto clearValues = builder_->clearValues();
+	auto clearValues = builder.clearValues();
 	auto width = swapChain().size().width();
 	auto height = swapChain().size().height();
 
@@ -179,8 +200,9 @@ void SwapChainRenderer::buildCommandBuffers()
 		scissor.offset({0, 0});
 		vk::cmdSetScissor(renderer.commandBuffer, 0, 1, &scissor);
 
-		RenderPassInstance ini(renderer.commandBuffer, renderPass(), renderer.framebuffer.vkFramebuffer());
-		builder_->build(ini);
+		RenderPassInstance ini(renderer.commandBuffer, renderPass(),
+			renderer.framebuffer.vkFramebuffer());
+		builder.build(ini);
 
 		vkCmdEndRenderPass(renderer.commandBuffer);
 
