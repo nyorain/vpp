@@ -21,7 +21,8 @@ public:
 	struct CreateInfo
 	{
 		vk::Extent2D size {800, 500};
-		bool debug = 1;
+		vk::DebugReportFlagsEXT debugFlags = vk::DebugReportFlagBitsEXT::ErrorEXT |
+			vk::DebugReportFlagBitsEXT::WarningEXT;
 
 		std::vector<const char*> instanceExtensions;
 		std::vector<const char*> deviceExtensions;

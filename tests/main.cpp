@@ -465,6 +465,7 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 					gApp->rendererInfo);
 				gApp->renderer->render();
 			}
+			
 			break;
 		}
 
@@ -562,7 +563,7 @@ int main()
 	    app.hinstance = GetModuleHandle(nullptr);
 	    initWindow(app);
 
-		vpp::Win32Context context({{900, 900}, 0}, app.window);
+		vpp::Win32Context context({{900, 900}}, app.window);
 		app.context = &context;
 
 		initRenderPass(app);

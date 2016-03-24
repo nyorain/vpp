@@ -34,7 +34,7 @@ void Context::initInstance(const CreateInfo& info)
 
 	std::vector<const char*> layers;
 
-	if(info.debug)
+	if(info.debugFlags != 0)
 	{
 		layers = validationLayerNames;
 		extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
@@ -49,15 +49,9 @@ void Context::initInstance(const CreateInfo& info)
 
     vk::createInstance(&iniinfo, nullptr, &instance_);
 
-	if(info.debug)
+	if(info.debugFlags != 0)
 	{
-		auto flags =
-			vk::DebugReportFlagBitsEXT::ErrorEXT |
-			vk::DebugReportFlagBitsEXT::WarningEXT |
-			vk::DebugReportFlagBitsEXT::InformationEXT |
-			vk::DebugReportFlagBitsEXT::DebugEXT |
-			vk::DebugReportFlagBitsEXT::PerformanceWarningEXT;
-
+		auto flags = info.debugFlags;
 		debugCallback_.reset(new DebugCallback(vkInstance(), flags));
 	}
 }
@@ -86,7 +80,7 @@ void Context::initDevice(const CreateInfo& info)
 
 	std::vector<const char*> layers;
 
-	if(info.debug)
+	if(info.debugFlags != 0)
 	{
 		layers = validationLayerNames;
 	}

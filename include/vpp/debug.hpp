@@ -6,7 +6,16 @@
 namespace vpp
 {
 
-///LeyerNames
+//flags
+/*
+vk::DebugReportFlagBitsEXT::ErrorEXT 
+vk::DebugReportFlagBitsEXT::WarningEXT
+vk::DebugReportFlagBitsEXT::InformationEXT
+vk::DebugReportFlagBitsEXT::DebugEXT
+vk::DebugReportFlagBitsEXT::PerformanceWarningEXT
+*/
+
+///LayerNames
 extern std::vector<const char*> validationLayerNames;
 
 ///Vulkan DebugCallback.
