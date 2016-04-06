@@ -3,6 +3,34 @@
 namespace vpp
 {
 
+ComputePipeline::ComputePipeline(const Device& dev, const CreateInfo& createInfo)
+{
+	init(dev, createInfo);
+}
 
+void ComputePipeline::init(const Device& dev, const CreateInfo& createInfo)
+{
+	Resource::init(dev);
+
+	//pipeline layout
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+	descriptorSetLayouts.reserve(createInfo.descriptorSetLayouts.size());
+
+	for(auto& layout : createInfo.descriptorSetLayouts)
+		descriptorSetLayouts.push_back(layout->vkDescriptorSetLayout());
+
+	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
+	pipelineLayoutInfo.setLayoutCount(descriptorSetLayouts.size());
+	pipelineLayoutInfo.pSetLayouts(descriptorSetLayouts.data());
+
+	vk::createPipelineLayout(vkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout_);
+
+	//pipeline
+	vk::ComputePipelineCreateInfo info;
+	info.stage(createInfo.shader.vkStageInfo());
+	info.layout(pipelineLayout_);
+
+	vk::createComputePipelines(vkDevice(), 0, 1, &info, nullptr, &pipeline_);
+}
 
 }

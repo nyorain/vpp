@@ -20,7 +20,7 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPr
 	auto memory = std::make_shared<DeviceMemory>(dev, type, reqs.size());
 
 	auto alloc = memory->alloc(reqs.size(), reqs.alignment());
-	memoryEntry_ = DeviceMemory::Entry(memory, alloc);
+	memoryEntry_.reset(new DeviceMemory::Entry(memory, alloc));
 
 	vk::bindBufferMemory(vkDevice(), buffer_, memory->vkDeviceMemory(), alloc.offset);
 }
@@ -28,12 +28,14 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPr
 Buffer::Buffer(DeviceMemoryAllocator& allctr, const vk::BufferCreateInfo& info,
 	vk::MemoryPropertyFlags mflags) : Resource(allctr.device())
 {
+	memoryEntry_.reset(new DeviceMemory::Entry());
+
 	vk::MemoryRequirements reqs;
 	vk::createBuffer(vkDevice(), &info, nullptr, &buffer_);
 	vk::getBufferMemoryRequirements(vkDevice(), buffer_, &reqs);
 
 	reqs.memoryTypeBits(device().memoryTypeBits(reqs.memoryTypeBits(), mflags));
-	allctr.request(buffer_, reqs, memoryEntry_);
+	allctr.request(buffer_, reqs, *memoryEntry_);
 }
 
 Buffer::Buffer(Buffer&& other) noexcept
@@ -72,7 +74,7 @@ void Buffer::destroy()
 
 MemoryMap Buffer::memoryMap() const
 {
-	return MemoryMap(memoryEntry_);
+	return MemoryMap(*memoryEntry_);
 }
 
 }

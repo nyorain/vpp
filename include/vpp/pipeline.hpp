@@ -17,9 +17,8 @@ struct DescriptorBinding
 	unsigned int count {1};
 };
 
-class VertexBufferLayout
+struct VertexBufferLayout
 {
-public:
 	std::vector<vk::Format> attributes;
 	unsigned int binding {0};
 };
@@ -31,8 +30,15 @@ protected:
 	vk::DescriptorSetLayout layout_;
 
 public:
+	DescriptorSetLayout() = default;
 	DescriptorSetLayout(const Device& dev, const std::vector<DescriptorBinding>& bindings);
 	~DescriptorSetLayout();
+
+	DescriptorSetLayout(DescriptorSetLayout&& other) noexcept;
+	DescriptorSetLayout& operator=(DescriptorSetLayout&& other) noexcept;
+
+	void swap(DescriptorSetLayout& other) noexcept;
+	void destroy();
 
 	vk::DescriptorSetLayout vkDescriptorSetLayout() const { return layout_; }
 	const std::vector<DescriptorBinding> bindings() const { return bindings_; }
@@ -46,14 +52,21 @@ protected:
 	vk::DescriptorSet descriptorSet_ {};
 
 public:
+	DescriptorSet() = default;
 	DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPool pool);
 	~DescriptorSet();
+
+	DescriptorSet(DescriptorSet&& other) noexcept;
+	DescriptorSet& operator=(DescriptorSet&& other) noexcept;
+
+	void swap(DescriptorSet& other) noexcept;
+	void destroy();
 
 	vk::DescriptorSet vkDescriptorSet() const { return descriptorSet_; }
 	const DescriptorSetLayout& layout() const { return *layout_; }
 
 	void writeImages(std::size_t binding, const std::vector<vk::DescriptorImageInfo>& updates) const;
-	void writeBuffers(std::size_t binding, const std::vector<vk::DescriptorBufferInfo>& updates) const;
+	void writeBuffers(std::size_t binding, const std::vector<vk::DescriptorBufferInfo>& updates, vk::DescriptorType type) const;
 	void writeBufferViews(std::size_t binding, const std::vector<vk::BufferView>& updates) const;
 };
 
@@ -64,10 +77,17 @@ protected:
 	vk::PipelineLayout pipelineLayout_ {};
 	vk::Pipeline pipeline_ {};
 
-public:
+protected:
 	Pipeline() = default;
 	Pipeline(const Device& dev);
+
+	Pipeline(Pipeline&& other) noexcept;
+	Pipeline& operator=(Pipeline&& other) noexcept;
+
+public:
 	~Pipeline();
+
+	void swap(Pipeline& other) noexcept;
 
 	using Resource::init;
 	void destroy();

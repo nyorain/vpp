@@ -15,17 +15,20 @@ public:
 	struct CreateInfo
 	{
 		std::vector<DescriptorSetLayout*> descriptorSetLayouts;
-		std::vector<VertexBufferLayout*> vertexBufferLayouts;
 		ShaderStage shader;
 		vk::PipelineCreateFlags flags {};
 	};
 
 public:
 	ComputePipeline() = default;
-	ComputePipeline(const Device& device, const CreateInfo& createInfo);
-	~ComputePipeline();
+	ComputePipeline(const Device& dev, const CreateInfo& createInfo);
+	~ComputePipeline() = default;
 
-	void init(const Device& context, const CreateInfo& createInfo);
+	ComputePipeline(ComputePipeline&& other) noexcept : Pipeline(std::move(other)) {}
+	ComputePipeline& operator=(ComputePipeline&& other) noexcept
+		{ Pipeline::operator=(std::move(other)); return *this; }
+
+	void init(const Device& dev, const CreateInfo& createInfo);
 };
 
 }

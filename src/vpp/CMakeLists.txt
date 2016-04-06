@@ -20,7 +20,6 @@ set(vpp-sources
 	computePipeline.cpp
 	renderPass.cpp)
 
-
 if(WIN32)
 	set(vpp-sources ${vpp-sources} backend/win32.cpp)
 endif(WIN32)

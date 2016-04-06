@@ -27,9 +27,35 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	vk::createDescriptorSetLayout(vkDevice(), &descriptorLayout, nullptr, &layout_);
 	bindings_ = bindings;
 }
+DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& other) noexcept
+{
+	this->swap(other);
+}
+
+DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout&& other) noexcept
+{
+	destroy();
+	this->swap(other);
+	return *this;
+}
+
 DescriptorSetLayout::~DescriptorSetLayout()
 {
-	if(vkDescriptorSetLayout())
+	destroy();
+}
+
+void DescriptorSetLayout::swap(DescriptorSetLayout& other) noexcept
+{
+	using std::swap;
+
+	swap(bindings_, other.bindings_);
+	swap(layout_, other.layout_);
+	swap(device_, other.device_);
+}
+
+void DescriptorSetLayout::destroy()
+{
+	if(device_ && vkDescriptorSetLayout())
 	{
 		vk::destroyDescriptorSetLayout(vkDevice(), layout_, nullptr);
 	}
@@ -51,10 +77,40 @@ DescriptorSet::DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPo
 
 	vk::allocateDescriptorSets(vkDevice(), &allocInfo, &descriptorSet_);
 }
+
+DescriptorSet::DescriptorSet(DescriptorSet&& other) noexcept
+{
+	this->swap(other);
+}
+
+DescriptorSet& DescriptorSet::operator=(DescriptorSet&& other) noexcept
+{
+	destroy();
+	this->swap(other);
+}
+
 DescriptorSet::~DescriptorSet()
 {
-	//what to do here? check for free descriptorSet?
+	destroy();
 }
+
+void DescriptorSet::swap(DescriptorSet& other) noexcept
+{
+	using std::swap;
+
+	swap(descriptorSet_, other.descriptorSet_);
+	swap(layout_, other.layout_);
+	swap(device_, other.device_);
+}
+
+void DescriptorSet::destroy()
+{
+	//what to do here? check if it can be freed?
+
+	layout_ = nullptr;
+	descriptorSet_ = {};
+}
+
 
 void DescriptorSet::writeImages(std::size_t binding,
 	const std::vector<vk::DescriptorImageInfo>& updates) const
@@ -62,17 +118,18 @@ void DescriptorSet::writeImages(std::size_t binding,
 
 }
 void DescriptorSet::writeBuffers(std::size_t binding,
-	const std::vector<vk::DescriptorBufferInfo>& updates) const
+	const std::vector<vk::DescriptorBufferInfo>& updates, vk::DescriptorType type) const
 {
 	vk::WriteDescriptorSet writeDescriptorSet;
 	writeDescriptorSet.dstSet(descriptorSet_);
 	writeDescriptorSet.descriptorCount(updates.size());
-	writeDescriptorSet.descriptorType(vk::DescriptorType::UniformBuffer);
+	writeDescriptorSet.descriptorType(type);
 	writeDescriptorSet.pBufferInfo(updates.data());
 	writeDescriptorSet.dstBinding(binding);
 
 	vk::updateDescriptorSets(vkDevice(), 1, &writeDescriptorSet, 0, nullptr);
 }
+
 void DescriptorSet::writeBufferViews(std::size_t binding,
 	const std::vector<vk::BufferView>& updates) const
 {
@@ -85,9 +142,30 @@ Pipeline::Pipeline(const Device& dev) : Resource(dev)
 {
 }
 
+Pipeline::Pipeline(Pipeline&& other) noexcept
+{
+	this->swap(other);
+}
+
+Pipeline& Pipeline::operator=(Pipeline&& other) noexcept
+{
+	destroy();
+	this->swap(other);
+	return *this;
+}
+
 Pipeline::~Pipeline()
 {
 	destroy();
+}
+
+void Pipeline::swap(Pipeline& other) noexcept
+{
+	using std::swap;
+
+	swap(pipelineLayout_, other.pipelineLayout_);
+	swap(pipeline_, other.pipeline_);
+	swap(device_, other.device_);
 }
 
 void Pipeline::destroy()

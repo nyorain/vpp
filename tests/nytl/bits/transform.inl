@@ -32,7 +32,7 @@ namespace detail
 {
 
 //returns the plane (e.g. 0,1 for xy or 2,3 for zw) for a given id in a given dimension
-Vec2<std::size_t> indexPlane(std::size_t dim, std::size_t idx)
+inline Vec2<std::size_t> indexPlane(std::size_t dim, std::size_t idx)
 {
 	auto ret = Vec2<std::size_t> {};
 

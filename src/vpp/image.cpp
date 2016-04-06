@@ -12,8 +12,6 @@ Image::Image()
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags)
 	 : Resource(dev)
 {
-	memoryEntry_ = std::make_unique<DeviceMemory::Entry>();
-
 	vk::MemoryRequirements reqs;
 	vk::createImage(vkDevice(), &info, nullptr, &image_);
 	vk::getImageMemoryRequirements(vkDevice(), image_, &reqs);
@@ -27,7 +25,7 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPrope
 	auto memory = std::make_shared<DeviceMemory>(dev, reqs.size(), type);
 
 	auto alloc = memory->alloc(reqs.size(), reqs.alignment());
-	*memoryEntry_ = DeviceMemory::Entry(memory, alloc);
+	memoryEntry_.reset(new DeviceMemory::Entry(memory, alloc));
 
 	vk::bindImageMemory(vkDevice(), image_, memory->vkDeviceMemory(), alloc.offset);
 }
@@ -35,7 +33,7 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPrope
 Image::Image(DeviceMemoryAllocator& allctr, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags)
 	: Resource(allctr.device())
 {
-	memoryEntry_ = std::make_unique<DeviceMemory::Entry>();
+	memoryEntry_.reset(new DeviceMemory::Entry());
 
 	vk::MemoryRequirements reqs;
 	vk::createImage(vkDevice(), &info, nullptr, &image_);

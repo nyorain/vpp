@@ -135,7 +135,7 @@ public:
 
 	std::size_t offset() const { return offset_; }
 	std::size_t size() const { return size_; }
-	void* ptr() const { return ptr_; }
+	std::uint8_t* ptr() const { return static_cast<std::uint8_t*>(ptr_); }
 	const DeviceMemory& memory() const { return *memory_; }
 
 	void flushRanges() const;

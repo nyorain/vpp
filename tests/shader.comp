@@ -1,0 +1,44 @@
+#version 450
+
+#extension GL_ARB_separate_shader_objects : enable
+#extension GL_ARB_shading_language_420pack : enable
+
+struct Particle
+{
+	vec3 pos;
+	vec3 vel;
+	vec4 col;
+};
+
+layout (std140, binding = 0) buffer particlesBuffer
+{
+	Particle particles[];
+};
+
+layout (binding = 1) uniform ubo
+{
+	uint deltaTime;
+	vec2 attractorPosition;
+};
+
+layout (local_size_x = 128) in;
+
+void main()
+{
+	float speedFactor = 100;
+	uint index = gl_GlobalInvocationID.x;
+
+	if(index >= 128 * 10) return;
+
+	particles[index].pos.x += 0.1;
+	return;
+
+	particles[index].pos += particles[index].vel * speedFactor * deltaTime;
+	particles[index].vel.xy += 1.f / (attractorPosition - particles[index].pos.xy);
+
+	float vel = sqrt(pow(particles[index].vel.x, 2) + pow(particles[index].vel.y, 2));
+	particles[index].col.r = clamp(vel / 255, 0.f, 1.f);
+	particles[index].col.g = 0.f;
+	particles[index].col.b = 0.5;
+	particles[index].col.a = 1.0;
+}
