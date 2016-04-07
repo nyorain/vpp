@@ -5,40 +5,59 @@
 
 struct Particle
 {
-	vec3 pos;
-	vec3 vel;
+	vec4 pos;
+	vec4 vel;
 	vec4 col;
 };
 
-layout (std140, binding = 0) buffer particlesBuffer
+layout (std430, binding = 0) buffer Pos
 {
 	Particle particles[];
 };
 
-layout (binding = 1) uniform ubo
-{
-	uint deltaTime;
-	vec2 attractorPosition;
-};
+layout (local_size_x = 16) in;
 
-layout (local_size_x = 128) in;
+/*
+layout (binding = 1) uniform UBO
+{
+	uint deltaT;
+	vec2 attractorPosition;
+} ubo;
+*/
 
 void main()
 {
-	float speedFactor = 100;
-	uint index = gl_GlobalInvocationID.x;
 
-	if(index >= 128 * 10) return;
-
-	particles[index].pos.x += 0.1;
+uint index = gl_GlobalInvocationID.x;
+if (index >= particles.length())
 	return;
 
-	particles[index].pos += particles[index].vel * speedFactor * deltaTime;
-	particles[index].vel.xy += 1.f / (attractorPosition - particles[index].pos.xy);
+particles[index].pos.x = 0.5f;
+particles[index].vel.x = 0.5f;
+//particles[index].vel.xyz = vec3(0.f, 1.f, 0.f);
+//particles[index].col.xyz = vec3(1.f, 0.f, 0.f);
 
-	float vel = sqrt(pow(particles[index].vel.x, 2) + pow(particles[index].vel.y, 2));
-	particles[index].col.r = clamp(vel / 255, 0.f, 1.f);
-	particles[index].col.g = 0.f;
-	particles[index].col.b = 0.5;
-	particles[index].col.a = 1.0;
+/*
+// Read position and velocity
+vec3 vPos = particles[index].pos.xyz;
+vec3 vVel = particles[index].vel.xyz;
+
+// Calculate new velocity depending on attraction point
+vec3 delta = vec3(ubo.attractorPosition, 0.f) - vPos;
+vVel += 0.0000001 / delta;
+
+// Move by velocity
+vPos += vVel * ubo.deltaT * 0.01;
+
+if ((vPos.x < -1.0) || (vPos.x > 1.0))
+	vVel.x -= vVel.x;
+
+if ((vPos.y < -1.0) || (vPos.y > 1.0))
+	vVel.y -= vVel.y;
+
+// Write back
+particles[index].pos.xyz = vPos;
+particles[index].vel.xyz = vVel;
+*/
+
 }

@@ -90,7 +90,10 @@ void render(App& app)
 	GetCursorPos(&pos);
 	ScreenToClient(app.window, &pos);
 
-	app.particleSystem->update({pos.x, pos.y});
+	auto vec = nytl::Vec2ui(pos.x, pos.y);
+	vec = nytl::clamp(vec, nytl::Vec2ui(0, 0), nytl::Vec2ui(app.width, app.height));
+
+	app.particleSystem->update(vec);
 }
 
 
@@ -149,7 +152,7 @@ int main()
 		app.rendererInfo.renderPass = &app.renderPass;
 		app.rendererInfo.staticAttachments = {vpp::FramebufferAttachment::defaultDepthAttachment};
 
-		ParticleSystem particleSystem(app, 128 * 100);
+		ParticleSystem particleSystem(app, 16);
 		app.particleSystem = &particleSystem;
 
 		vpp::SwapChainRenderer renderer(context.swapChain(), particleSystem, app.rendererInfo);

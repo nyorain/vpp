@@ -18,6 +18,9 @@ class RendererBuilder
 public:
 	virtual void build(const RenderPassInstance& renderini) const = 0;
 	virtual std::vector<vk::ClearValue> clearValues() const = 0;
+
+	virtual void beforeRender(vk::CommandBuffer) const {};
+	virtual void afterRender(vk::CommandBuffer) const {};
 };
 
 ///Capable of rendering on a SwapChain.

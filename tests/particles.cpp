@@ -1,6 +1,13 @@
 #include "particles.hpp"
 
 #include <random>
+#include <type_traits>
+#include <cassert>
+
+static_assert(sizeof(float) == 4, "fail");
+static_assert(std::is_standard_layout<nytl::Vec3f>::value, "fail2");
+static_assert(sizeof(nytl::Vec3f) == sizeof(float) * 3, "fail3");
+static_assert(sizeof(nytl::Vec4f) == sizeof(float) * 4, "fail3");
 
 App* gApp;
 
@@ -26,6 +33,9 @@ ParticleSystem::ParticleSystem(App& app, std::size_t count)
 	buildComputeBuffer();
 
 	lastUpdate_ = Clock::now();
+
+	assert(particles_.size() == count);
+	assert((particlesBuffer_.memoryEntry().offset() % device().properties().limits().minStorageBufferOffsetAlignment()) == 0);
 }
 
 ParticleSystem::~ParticleSystem()
@@ -55,14 +65,34 @@ std::vector<vk::ClearValue> ParticleSystem::clearValues() const
 	return ret;
 }
 
+void ParticleSystem::beforeRender(vk::CommandBuffer cmdBuffer) const
+{
+	vk::BufferMemoryBarrier bufferBarrier;
+	bufferBarrier.srcAccessMask(vk::AccessFlagBits::ShaderWrite);
+	bufferBarrier.dstAccessMask(vk::AccessFlagBits::VertexAttributeRead);
+	bufferBarrier.buffer(particlesBuffer_.vkBuffer());
+	bufferBarrier.offset(0);
+	bufferBarrier.size(sizeof(Particle) * particles_.size());
+	bufferBarrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+	bufferBarrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+
+	vk::cmdPipelineBarrier(
+		cmdBuffer,
+		vk::PipelineStageFlagBits::AllCommands,
+		vk::PipelineStageFlagBits::TopOfPipe,
+		{},
+		0, nullptr,
+		1, &bufferBarrier,
+		0, nullptr);
+}
 
 void ParticleSystem::initGraphicsPipeline()
 {
 	//vertexBufferLayout
 	vertexBufferLayout_ = {
 		{
-			vk::Format::R32G32B32Sfloat, //position
-			vk::Format::R32G32B32Sfloat, //velocity
+			vk::Format::R32G32B32A32Sfloat, //position
+			vk::Format::R32G32B32A32Sfloat, //velocity
 			vk::Format::R32G32B32A32Sfloat //color
 		},
 	0}; //at binding 0
@@ -78,7 +108,7 @@ void ParticleSystem::initGraphicsPipeline()
 	info.shader.addStage({"frag.spv", vk::ShaderStageFlagBits::Fragment});
 
 	info.states = vpp::GraphicsPipeline::StatesCreateInfo{vk::Viewport{0, 0, 900, 900, 0.f, 1.f}};
-	info.states.rasterization.cullMode(vk::CullModeFlagBits::None); //triangles are not all cc order
+	info.states.rasterization.cullMode(vk::CullModeFlagBits::None);
 	info.states.inputAssembly.topology(vk::PrimitiveTopology::PointList);
 
 	graphicsPipeline_ = vpp::GraphicsPipeline(device(), info);
@@ -121,10 +151,17 @@ void ParticleSystem::initDescriptors()
 
 
 	//computeSet
+	/*
 	std::vector<vpp::DescriptorBinding> compBindings =
 	{
 		{vk::DescriptorType::StorageBuffer, vk::ShaderStageFlagBits::Compute}, //the particles
 		{vk::DescriptorType::UniformBuffer, vk::ShaderStageFlagBits::Compute} //delta time, mouse pos
+	};
+	*/
+
+	std::vector<vpp::DescriptorBinding> compBindings =
+	{
+		{vk::DescriptorType::StorageBuffer, vk::ShaderStageFlagBits::Compute} //the particles
 	};
 
 	computeDescriptorSetLayout_ = vpp::DescriptorSetLayout(device(), compBindings);
@@ -142,7 +179,7 @@ void ParticleSystem::initDescriptorBuffers()
 
 	//compute
 	vk::BufferCreateInfo compInfo;
-	compInfo.size(sizeof(float) * 2 + sizeof(std::uint32_t)); //mouse pos.x, mouse pos.y, delta time
+	compInfo.size(sizeof(nytl::Vec2f) + sizeof(std::uint32_t)); //mouse pos.x, mouse pos.y, delta time
 	compInfo.usage(vk::BufferUsageFlagBits::UniformBuffer);
 
 	computeUBO_ = vpp::Buffer(allocator_, compInfo, vk::MemoryPropertyFlagBits::HostVisible);
@@ -150,18 +187,21 @@ void ParticleSystem::initDescriptorBuffers()
 
 void ParticleSystem::initParticles()
 {
-	std::random_device rseed;
-	std::mt19937 rgen(rseed());
-
+	std::mt19937 rgen;
+	rgen.seed(time(nullptr));
 	std::uniform_real_distribution<float> distr(-1.f, 1.f);
 
 	for(auto& particle : particles_)
 	{
+		/*
 		particle.position.x = distr(rgen);
 		particle.position.y = distr(rgen);
 		particle.position.z = 0.f;
+		*/
 
-		particle.velocity = nytl::Vec3f{0.f, 0.f, 0.f};
+		particle.position = nytl::Vec4f{0.f, 0.f, 0.f, 1.f};
+		particle.velocity = nytl::Vec4f{0.f, 0.f, 0.f, 0.f};
+		particle.color = nytl::Vec4f(0.0, 0.0, 1.0, 1.0);
 	}
 }
 void ParticleSystem::initParticleBuffer()
@@ -181,8 +221,6 @@ void ParticleSystem::writeParticleBuffer()
 
 void ParticleSystem::buildComputeBuffer()
 {
-	auto localComputeShaderSize = 128; //compute shader local workgroup size
-
 	//command pool
 	vk::CommandPoolCreateInfo cmdPoolInfo;
 	cmdPoolInfo.queueFamilyIndex(0);
@@ -207,7 +245,7 @@ void ParticleSystem::buildComputeBuffer()
 	vk::cmdBindPipeline(computeBuffer_, vk::PipelineBindPoint::Compute, computePipeline_.vkPipeline());
 	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::Compute,
 		computePipeline_.vkPipelineLayout(), 0, 1, &cd, 0, nullptr);
-	vk::cmdDispatch(computeBuffer_, 100, 1, 1);
+	vk::cmdDispatch(computeBuffer_, particles_.size() / 16, 1, 1);
 
 	vk::endCommandBuffer(computeBuffer_);
 }
@@ -216,10 +254,10 @@ void ParticleSystem::updateUBOs(const nytl::Vec2ui& mousePos)
 {
 	//compute
 	auto now = Clock::now();
-	std::uint32_t delta = std::chrono::duration_cast<std::chrono::milliseconds>((now - lastUpdate_)).count();
+	std::uint32_t delta = 1;
 	lastUpdate_ = now;
 
-	nytl::Vec2f normMousePos = mousePos / nytl::Vec2ui{app_.width, app_.height};
+	nytl::Vec2f normMousePos = 2 * (mousePos / nytl::Vec2f(app_.width, app_.height)) - 1;
 
 	auto map = computeUBO_.memoryMap();
 	std::memcpy(map.ptr(), &delta, sizeof(std::uint32_t));
@@ -242,7 +280,7 @@ void ParticleSystem::writeDescriptorSets()
 	graphicsDescriptorSet_.writeBuffers(0, {{graphicsUBO_.vkBuffer(), 0, sizeof(nytl::Mat4f) * 2}}, vk::DescriptorType::UniformBuffer);
 
 	computeDescriptorSet_.writeBuffers(0, {{particlesBuffer_.vkBuffer(), 0, sizeof(Particle) * particles_.size()}}, vk::DescriptorType::StorageBuffer);
-	computeDescriptorSet_.writeBuffers(1, {{computeUBO_.vkBuffer(), 0, sizeof(float) * 2 + sizeof(std::uint32_t)}}, vk::DescriptorType::UniformBuffer);
+	//computeDescriptorSet_.writeBuffers(1, {{computeUBO_.vkBuffer(), 0, sizeof(float) * 2 + sizeof(std::uint32_t)}}, vk::DescriptorType::UniformBuffer);
 }
 
 void ParticleSystem::compute()

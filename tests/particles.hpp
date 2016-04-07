@@ -34,8 +34,8 @@ extern App* gApp;
 
 struct Particle
 {
-	nytl::Vec3f position;
-	nytl::Vec3f velocity;
+	nytl::Vec4f position;
+	nytl::Vec4f velocity;
 	nytl::Vec4f color;
 };
 
@@ -95,6 +95,7 @@ public:
 
 	virtual void build(const vpp::RenderPassInstance& instance) const override;
 	virtual std::vector<vk::ClearValue> clearValues() const override;
+	virtual void beforeRender(vk::CommandBuffer cmdBuffer) const override;
 };
 
 //utility
