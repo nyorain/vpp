@@ -17,7 +17,7 @@ layout (location = 0) out vec4 outColor;
 
 void main()
 {
-	gl_PointSize = 8.0;
+	gl_PointSize = 1.0;
 	outColor = inCol;
 	gl_Position = vec4(inPos);
 }

@@ -60,7 +60,7 @@ void ParticleSystem::build(const vpp::RenderPassInstance& instance) const
 std::vector<vk::ClearValue> ParticleSystem::clearValues() const
 {
 	std::vector<vk::ClearValue> ret(2);
-	ret[0].color(std::array<float, 4>{{1.f, 1.f, 1.f, 1.f}});
+	ret[0].color(std::array<float, 4>{{0.f, 0.f, 0.f, 1.f}});
 	ret[1].depthStencil({1.f, 0});
 	return ret;
 }
@@ -151,17 +151,10 @@ void ParticleSystem::initDescriptors()
 
 
 	//computeSet
-	/*
 	std::vector<vpp::DescriptorBinding> compBindings =
 	{
 		{vk::DescriptorType::StorageBuffer, vk::ShaderStageFlagBits::Compute}, //the particles
 		{vk::DescriptorType::UniformBuffer, vk::ShaderStageFlagBits::Compute} //delta time, mouse pos
-	};
-	*/
-
-	std::vector<vpp::DescriptorBinding> compBindings =
-	{
-		{vk::DescriptorType::StorageBuffer, vk::ShaderStageFlagBits::Compute} //the particles
 	};
 
 	computeDescriptorSetLayout_ = vpp::DescriptorSetLayout(device(), compBindings);
@@ -179,7 +172,7 @@ void ParticleSystem::initDescriptorBuffers()
 
 	//compute
 	vk::BufferCreateInfo compInfo;
-	compInfo.size(sizeof(nytl::Vec2f) + sizeof(std::uint32_t)); //mouse pos.x, mouse pos.y, delta time
+	compInfo.size(sizeof(float) * 5); //mouse pos(vec2f), speed, deltaTime, attract
 	compInfo.usage(vk::BufferUsageFlagBits::UniformBuffer);
 
 	computeUBO_ = vpp::Buffer(allocator_, compInfo, vk::MemoryPropertyFlagBits::HostVisible);
@@ -189,17 +182,15 @@ void ParticleSystem::initParticles()
 {
 	std::mt19937 rgen;
 	rgen.seed(time(nullptr));
-	std::uniform_real_distribution<float> distr(-1.f, 1.f);
+	std::uniform_real_distribution<float> distr(-0.5f, 0.5f);
 
 	for(auto& particle : particles_)
 	{
-		/*
 		particle.position.x = distr(rgen);
 		particle.position.y = distr(rgen);
 		particle.position.z = 0.f;
-		*/
+		particle.position.w = 1.f;
 
-		particle.position = nytl::Vec4f{0.f, 0.f, 0.f, 1.f};
 		particle.velocity = nytl::Vec4f{0.f, 0.f, 0.f, 0.f};
 		particle.color = nytl::Vec4f(0.0, 0.0, 1.0, 1.0);
 	}
@@ -254,14 +245,19 @@ void ParticleSystem::updateUBOs(const nytl::Vec2ui& mousePos)
 {
 	//compute
 	auto now = Clock::now();
-	std::uint32_t delta = 1;
+	float delta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1, 1>>>(now - lastUpdate_).count();
 	lastUpdate_ = now;
+
+	float speed = 15.f;
+	float attract = (GetKeyState(VK_LBUTTON) < 0);
 
 	nytl::Vec2f normMousePos = 2 * (mousePos / nytl::Vec2f(app_.width, app_.height)) - 1;
 
 	auto map = computeUBO_.memoryMap();
-	std::memcpy(map.ptr(), &delta, sizeof(std::uint32_t));
-	std::memcpy(map.ptr() + sizeof(std::uint32_t), &normMousePos, sizeof(nytl::Vec2f));
+	std::memcpy(map.ptr(), &delta, sizeof(float));
+	std::memcpy(map.ptr() + sizeof(float), &speed, sizeof(float));
+	std::memcpy(map.ptr() + sizeof(float) * 2, &attract, sizeof(float));
+	std::memcpy(map.ptr() + sizeof(float) * 3, &normMousePos, sizeof(nytl::Vec2f));
 }
 
 void ParticleSystem::writeGraphicsUBO()
@@ -280,7 +276,7 @@ void ParticleSystem::writeDescriptorSets()
 	graphicsDescriptorSet_.writeBuffers(0, {{graphicsUBO_.vkBuffer(), 0, sizeof(nytl::Mat4f) * 2}}, vk::DescriptorType::UniformBuffer);
 
 	computeDescriptorSet_.writeBuffers(0, {{particlesBuffer_.vkBuffer(), 0, sizeof(Particle) * particles_.size()}}, vk::DescriptorType::StorageBuffer);
-	//computeDescriptorSet_.writeBuffers(1, {{computeUBO_.vkBuffer(), 0, sizeof(float) * 2 + sizeof(std::uint32_t)}}, vk::DescriptorType::UniformBuffer);
+	computeDescriptorSet_.writeBuffers(1, {{computeUBO_.vkBuffer(), 0, sizeof(float) * 5}}, vk::DescriptorType::UniformBuffer);
 }
 
 void ParticleSystem::compute()

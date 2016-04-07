@@ -34,6 +34,9 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 				*gApp->renderer = vpp::SwapChainRenderer(gApp->context->swapChain(),
 					*gApp->particleSystem, gApp->rendererInfo);
 				gApp->renderer->render();
+
+				gApp->width = LOWORD(lparam);
+				gApp->height = HIWORD(lparam);
 			}
 
 			break;
@@ -152,7 +155,7 @@ int main()
 		app.rendererInfo.renderPass = &app.renderPass;
 		app.rendererInfo.staticAttachments = {vpp::FramebufferAttachment::defaultDepthAttachment};
 
-		ParticleSystem particleSystem(app, 16);
+		ParticleSystem particleSystem(app, 1024 * 1000);
 		app.particleSystem = &particleSystem;
 
 		vpp::SwapChainRenderer renderer(context.swapChain(), particleSystem, app.rendererInfo);

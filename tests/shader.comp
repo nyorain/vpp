@@ -17,47 +17,59 @@ layout (std430, binding = 0) buffer Pos
 
 layout (local_size_x = 16) in;
 
-/*
 layout (binding = 1) uniform UBO
 {
-	uint deltaT;
-	vec2 attractorPosition;
+	float deltaT;
+	float speed;
+
+	float attract;
+	float attractorX;
+	float attractorY;
 } ubo;
-*/
+
+vec3 attraction(vec3 pos, vec3 attractPos)
+{
+    vec3 delta = attractPos - pos;
+	const float damp = 0.5;
+    float dDampedDot = dot(delta, delta) + damp;
+    float invDist = 1.0f / sqrt(dDampedDot);
+    float invDistCubed = invDist*invDist*invDist;
+    return delta * invDistCubed * 0.00035;
+}
 
 void main()
 {
+    // Current SSBO index
+    uint index = gl_GlobalInvocationID.x;
+	// Don't try to write beyond particle count
+    if (index >= particles.length())
+		return;
 
-uint index = gl_GlobalInvocationID.x;
-if (index >= particles.length())
-	return;
+    // Read position and velocity
+    vec3 vPos = particles[index].pos.xyz;
+    vec3 vVel = particles[index].vel.xyz;
 
-particles[index].pos.x = 0.5f;
-particles[index].vel.x = 0.5f;
-//particles[index].vel.xyz = vec3(0.f, 1.f, 0.f);
-//particles[index].col.xyz = vec3(1.f, 0.f, 0.f);
+	vec3 destPos = vec3(ubo.attractorX, ubo.attractorY, 0.0);
 
-/*
-// Read position and velocity
-vec3 vPos = particles[index].pos.xyz;
-vec3 vVel = particles[index].vel.xyz;
+    // Calculate new velocity depending on attraction point
+	if(ubo.attract != 0.0) vVel += attraction(vPos, destPos.xyz);
+	vVel *= 0.995;
 
-// Calculate new velocity depending on attraction point
-vec3 delta = vec3(ubo.attractorPosition, 0.f) - vPos;
-vVel += 0.0000001 / delta;
+    // Move by velocity
+	vPos += vVel * ubo.speed * ubo.deltaT * 10;
 
-// Move by velocity
-vPos += vVel * ubo.deltaT * 0.01;
+	if ((vPos.x < -1.0) || (vPos.x > 1.0))
+		vVel.x -= vVel.x;
 
-if ((vPos.x < -1.0) || (vPos.x > 1.0))
-	vVel.x -= vVel.x;
+	//color
+	vec3 color = particles[index].col.xyz;
+	color.g = clamp(10 * sqrt(abs(vVel.x) + abs(vVel.y)), 0., 1.);
 
-if ((vPos.y < -1.0) || (vPos.y > 1.0))
-	vVel.y -= vVel.y;
+	//col.r = 1 - clamp(7 * sqrt(abs(vVel.x) + abs(vVel.y)), 0., 1.);
 
-// Write back
-particles[index].pos.xyz = vPos;
-particles[index].vel.xyz = vVel;
-*/
+    // Write back
+    particles[index].pos.xyz = vPos;
+    particles[index].vel.xyz = vVel;
+	particles[index].col.xyz = color;
 
 }
