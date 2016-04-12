@@ -1,5 +1,7 @@
 #pragma once
 
+//XXX: ecperimental header atm. Broken and without implementation.
+
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/image.hpp>

@@ -77,4 +77,9 @@ MemoryMap Buffer::memoryMap() const
 	return MemoryMap(*memoryEntry_);
 }
 
+void Buffer::fill(const std::vector<BufferData>& data) const
+{
+
+}
+
 }
