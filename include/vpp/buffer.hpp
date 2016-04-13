@@ -19,10 +19,10 @@ public:
 	std::size_t offset = 0;
 
 public:
-	Data() = default;
+	BufferData() = default;
 
-	template<typename T>
-	Data(const T& obj, std::size_t poffset = 0) : data(&obj), size(sizeof(T)), offset(xoffset) {}
+	template<typename T> BufferData(const T& obj, std::size_t xoffset = 0)
+		: data(&obj), size(sizeof(T)), offset(xoffset) {}
 };
 
 ///Representing a vulkan buffer on a device.
