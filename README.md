@@ -26,4 +26,4 @@ vertexBuffer.fill({{vertexData}});
 indexBuffer.fill({{indexData}});
 ````
 
-[nytl::Mat]: https://github.com/nvpro-pipeline/vkcpp
+[vkcpp]: https://github.com/nvpro-pipeline/vkcpp
