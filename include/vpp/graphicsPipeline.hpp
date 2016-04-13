@@ -55,6 +55,10 @@ public:
 	GraphicsPipeline(const Device& device, const CreateInfo& createInfo);
 	~GraphicsPipeline() = default;
 
+	GraphicsPipeline(GraphicsPipeline&& other) noexcept : Pipeline(std::move(other)) {}
+	GraphicsPipeline& operator=(GraphicsPipeline&& other) noexcept
+		{ Pipeline::operator=(std::move(other)); return *this; }
+
 	void init(const Device& context, const CreateInfo& createInfo);
 };
 

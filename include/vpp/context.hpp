@@ -14,6 +14,7 @@ namespace vpp
 
 class DebugCallback;
 
+//TODO: correct graphics/compute/present queue support
 //Context
 class Context
 {
@@ -55,6 +56,9 @@ public:
 
 	const Device& device() const { return device_; }
 	const SwapChain& swapChain() const { return swapChain_; }
+
+	const Device::Queue* graphicsQueue() const { return presentQueue_; }
+	const Device::Queue* computeQueue() const { return presentQueue_; }
 	const Device::Queue& presentQueue() const { return *presentQueue_; }
 
 	SwapChain& swapChain() { return swapChain_; }

@@ -184,6 +184,9 @@ void SwapChainRenderer::buildCommandBuffers(const RendererBuilder& builder)
 		beginInfo.framebuffer(renderer.framebuffer.vkFramebuffer());
 
 		vk::beginCommandBuffer(renderer.commandBuffer, cmdBufInfo);
+
+		builder.beforeRender(renderer.commandBuffer);
+
 		vk::cmdBeginRenderPass(renderer.commandBuffer, &beginInfo, vk::SubpassContents::Inline);
 
 		//Update dynamic viewport state
@@ -216,9 +219,13 @@ void SwapChainRenderer::buildCommandBuffers(const RendererBuilder& builder)
 		prePresentBarrier.subresourceRange({vk::ImageAspectFlagBits::Color, 0, 1, 0, 1});
 		prePresentBarrier.image(swapChain().buffers()[i].image);
 
+		builder.afterRender(renderer.commandBuffer);
+
+/*
 		vk::cmdPipelineBarrier(renderer.commandBuffer, vk::PipelineStageFlagBits::AllCommands,
 			vk::PipelineStageFlagBits::TopOfPipe, vk::DependencyFlags(), 0,
 			nullptr, 0, nullptr, 0, nullptr);
+*/
 
 		vk::endCommandBuffer(renderer.commandBuffer);
 	}
