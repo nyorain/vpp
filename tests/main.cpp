@@ -1,5 +1,6 @@
 #include "particles.hpp"
 #include <vpp/backend/win32.hpp>
+#include <vpp/commandBuffer.hpp>
 
 #include <string>
 #include <iostream>
@@ -137,6 +138,9 @@ void mainLoop(App& app)
 //
 int main()
 {
+	vpp::CommandBuffer buffer;
+	buffer.device();
+
 	{
 		std::uint32_t computeQF; //queueFamily
 

@@ -42,6 +42,4 @@ public:
 	void swap(Surface& other) noexcept;
 };
 
-inline void swap(Surface& a, Surface& b) noexcept { return a.swap(b); }
-
 }

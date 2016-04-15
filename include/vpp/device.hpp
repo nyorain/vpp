@@ -2,26 +2,17 @@
 
 #include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
+#include <vpp/utility/copy.hpp>
+
+#include <memory>
 
 namespace vpp
 {
 
-///Can not be copied but moved.
-class NonCopyable
-{
-private:
-	NonCopyable(const NonCopyable&) = delete;
-	NonCopyable& operator=(const NonCopyable&) = delete;
-
-public:
-	NonCopyable() = default;
-	~NonCopyable() = default;
-
-	NonCopyable(NonCopyable&& other) noexcept = default;
-	NonCopyable& operator=(NonCopyable&& other) noexcept = default;
-};
-
-///Vulkan Device
+///Vulkan Device.
+///When a DeviceLost vulkan error occures, the program can try to create a new Device object for the
+///same PhysicalDevice, if this fails again with the DeviceLost, the physical device is not longer
+///valid.
 class Device : public NonCopyable
 {
 public:
@@ -43,21 +34,13 @@ protected:
 	vk::PhysicalDeviceMemoryProperties memoryProperties_ {};
 	vk::PhysicalDeviceProperties physicalDeviceProperties_ {};
 
-	/*
-	//concept for associating a device with threadlocal setup stuff provider
-	CommandBufferProvider commandBufferProvder_;
-	DeviceMemoryProvider deviceMemoryProvider_;
-
-	//holds setup commands that are executed all together to achieve more efficiency
-	//XXX: is this really more efficient? better use transient command buffers, so setup commands
-	//can be on the device executed in parallel to the host.
-	std::map<std::thread::id, vk::CommandBuffer> setupCommandBuffers_;
-	*/
+	std::unique_ptr<CommandBufferProvider> commandBufferProvder_;
+	std::unique_ptr<DeviceMemoryProvider> deviceMemoryProvider_;
 
 public:
-	Device() = default;
+	Device();
     Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info);
-    virtual ~Device();
+    ~Device();
 
 	Device(Device&& other) noexcept;
 	Device& operator=(Device&& other) noexcept;
@@ -67,9 +50,6 @@ public:
     VkInstance vkInstance() const { return instance_; }
     VkPhysicalDevice vkPhysicalDevice() const { return physicalDevice_; }
     VkDevice vkDevice() const { return device_; }
-
-	///Signals the device that a device lost vulkan error ocurred and it should try to fix it.
-	void deviceLost();
 
 	///Waits until all operations on this device are finished.
     void waitIdle() const;
@@ -88,15 +68,13 @@ public:
 	///Returns a bitmask of memoryTypes that match the given parameters.
 	std::uint32_t memoryTypeBits(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const;
 
-/*
-	///Returns a command buffer in recording state that can be used to record setup commands.
-	///Is internally synchronized, i.e. will return a different and valid command buffer for every
-	///thread.
-	vk::CommandBuffer setupCommandBuffer() const { return {}; };
+	///Returns a CommandBufferProvider that can be used to easily allocate a command buffer in the
+	///current thread.
+	CommandBufferProvider& cmdBufProvider() const;
 
-	///Executes all setup command buffers for the current thread and wait for them to finish.
-	void finishSetup() {  }
-*/
+	///Returns a DeviceMemoryProvider that can be used to easily allocate vulkan device memory in the
+	///current thread.
+	DeviceMemoryProvider& memoryProvider() const;
 };
 
 }

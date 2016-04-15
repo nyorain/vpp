@@ -18,7 +18,9 @@ set(vpp-sources
 	pipeline.cpp
 	graphicsPipeline.cpp
 	computePipeline.cpp
-	renderPass.cpp)
+	renderPass.cpp
+	commandBuffer.cpp
+	provider.cpp)
 
 if(WIN32)
 	set(vpp-sources ${vpp-sources} backend/win32.cpp)

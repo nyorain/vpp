@@ -1,7 +1,10 @@
 #include <vpp/device.hpp>
+#include <vpp/provider.hpp>
 
 namespace vpp
 {
+
+Device::Device() = default;
 
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info)
 	: instance_(ini), physicalDevice_(phdev)

@@ -1,4 +1,5 @@
 #include <vpp/renderPass.hpp>
+#include <vpp/utility/range.hpp>
 
 namespace vpp
 {
