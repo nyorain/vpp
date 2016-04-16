@@ -72,6 +72,14 @@ public:
 	///current thread.
 	CommandBufferProvider& cmdBufProvider() const;
 
+	///Returns a transient command buffer wrapper in recording state that will automatically
+	///execute itself on destruction and can therfore easily be used to run setup commands
+	///on the device.
+	SetupCommandBuffer setupCommandBuffer() const;
+
+	///Makes sure that all queues setup commandBuffers have been executed.
+	void finishSetup() const;
+
 	///Returns a DeviceMemoryProvider that can be used to easily allocate vulkan device memory in the
 	///current thread.
 	DeviceMemoryProvider& memoryProvider() const;

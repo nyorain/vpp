@@ -32,5 +32,7 @@ class Allocator;
 class CommandBufferProvider;
 class DeviceMemoryProvider;
 class CommandPool;
+class CommandBuffer;
+class SetupCommandBuffer;
 
 }

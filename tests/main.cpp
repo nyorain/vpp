@@ -138,9 +138,6 @@ void mainLoop(App& app)
 //
 int main()
 {
-	vpp::CommandBuffer buffer;
-	buffer.device();
-
 	{
 		std::uint32_t computeQF; //queueFamily
 

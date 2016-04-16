@@ -75,6 +75,19 @@ public:
 //Makes it possible to allocate a few vk::DeviceMemory objects for many buffers/images.
 class DeviceMemoryAllocator : public Resource
 {
+public:
+	/*
+	class Entry : public DeviceMemory::Entry
+	{
+	public:
+		DeviceMemoryAllocator* allocator_ {};
+
+	public:
+		bool allocated() const { return allocator_; }
+		void allocate() { if(allocator_) allocator_->allocate(); allocator_ = nullptr; }
+	};
+	*/
+
 protected:
 	struct BufferRequirement
 	{
@@ -98,6 +111,8 @@ protected:
 	//all requested allocations for the given memory types
 	std::map<unsigned int, std::vector<BufferRequirement>> bufferRequirements_;
 	std::map<unsigned int, std::vector<ImageRequirement>> imageRequirements_;
+
+	//std::vector<DeviceMemoryPtr> memories_;
 
 public:
 	DeviceMemoryAllocator(const Device& dev);

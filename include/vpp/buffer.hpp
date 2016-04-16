@@ -50,6 +50,10 @@ public:
 	const DeviceMemory::Entry& memoryEntry() const { return *memoryEntry_; }
 	vk::Buffer vkBuffer() const { return buffer_; }
 
+	///Assures that there is device memory associated with this buffer.
+	///Will be implicitly called on member functions that require it.
+	void assureMemory();
+
 	///Returns a vulkan memory map guard. Should only be called when buffer was created on a
 	///host visible device memory heap and if the device memory was allocated.
 	MemoryMap memoryMap() const;
