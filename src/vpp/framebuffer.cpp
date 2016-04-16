@@ -1,6 +1,7 @@
 #include <vpp/framebuffer.hpp>
 #include <vpp/memory.hpp>
 #include <vpp/renderPass.hpp>
+#include <vpp/utility/range.hpp>
 
 namespace vpp
 {
@@ -106,7 +107,7 @@ void FramebufferAttachment::initImage(DeviceMemoryAllocator& allocator, const Cr
 	imageInfo.usage(info.usage);
 	imageInfo.flags({});
 
-	image_ = Image(allocator, imageInfo, info.imageMemoryFlags);
+	image_ = Image(device(), imageInfo, info.imageMemoryFlags);
 }
 
 void FramebufferAttachment::initView(const CreateInfo& info)

@@ -29,24 +29,11 @@ class RenderPass;
 class RenderPassInstance;
 class Texture;
 class Allocator;
-
-//utility
-template<typename T>
-class Range
-{
-public:
-	T* ptr;
-	unsigned int size;
-
-public:
-	constexpr T* begin() const { return ptr; }
-	constexpr T* end() const { return ptr + size; }
-};
-
-template<typename T>
-Range<T> makeRange(T* ptr, unsigned int size)
-{
-	return Range<T>{ptr, size};
-}
+class CommandBufferProvider;
+class DeviceMemoryProvider;
+class CommandPool;
+class CommandBuffer;
+class SetupCommandBuffer;
+class CommandManager;
 
 }

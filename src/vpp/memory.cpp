@@ -4,43 +4,6 @@
 namespace vpp
 {
 
-//Entry
-DeviceMemory::Entry::Entry(DeviceMemoryPtr memory, const Allocation& alloc)
-	: memory_(memory), allocation_(alloc)
-{
-}
-
-DeviceMemory::Entry::Entry(Entry&& other) noexcept
-{
-	std::swap(memory_, other.memory_);
-	std::swap(allocation_, other.allocation_);
-}
-
-DeviceMemory::Entry& DeviceMemory::Entry::operator=(Entry&& other) noexcept
-{
-	this->free();
-	std::swap(memory_, other.memory_);
-	std::swap(allocation_, other.allocation_);
-
-	return *this;
-}
-
-DeviceMemory::Entry::~Entry()
-{
-	free();
-}
-
-void DeviceMemory::Entry::free()
-{
-	if((memory_.get() != nullptr) && (allocation_.size > 0))
-	{
-		memory_->free(allocation_);
-	}
-
-	memory_.reset();
-	allocation_ = {};
-}
-
 //Memory
 DeviceMemory::DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info)
 	: Resource(dev)
@@ -151,7 +114,52 @@ std::size_t DeviceMemory::size() const
 	return size_;
 }
 
-//Manager
+//Entry
+DeviceMemoryAllocator::Entry::Entry(DeviceMemoryPtr memory, const DeviceMemory::Allocation& alloc)
+	: memory_(memory), allocation_(alloc)
+{
+}
+
+DeviceMemoryAllocator::Entry::Entry(Entry&& other) noexcept
+{
+	this->swap(other);
+}
+
+DeviceMemoryAllocator::Entry& DeviceMemoryAllocator::Entry::operator=(Entry&& other) noexcept
+{
+	this->free();
+	this->swap(other);
+	return *this;
+}
+
+DeviceMemoryAllocator::Entry::~Entry()
+{
+	if(allocator_) allocator_->removeRequest(*this);
+	free();
+}
+
+void DeviceMemoryAllocator::Entry::swap(Entry& other) noexcept
+{
+	using std::swap;
+
+	swap(memory_, other.memory_);
+	swap(allocation_, other.allocation_);
+	swap(allocator_, other.allocator_);
+}
+
+void DeviceMemoryAllocator::Entry::free()
+{
+	if((memory_.get() != nullptr) && (allocation_.size > 0))
+	{
+		memory_->free(allocation_);
+	}
+
+	memory_.reset();
+	allocation_ = {};
+}
+
+
+//Allocator
 DeviceMemoryAllocator::DeviceMemoryAllocator(const Device& dev) : Resource(dev)
 {
 }
@@ -159,12 +167,34 @@ DeviceMemoryAllocator::DeviceMemoryAllocator(const Device& dev) : Resource(dev)
 DeviceMemoryAllocator::~DeviceMemoryAllocator()
 {
 	//RAII
-	allocate();
+	if(device_)allocate();
+}
+
+DeviceMemoryAllocator::DeviceMemoryAllocator(DeviceMemoryAllocator&& other) noexcept
+{
+	this->swap(other);
+}
+DeviceMemoryAllocator& DeviceMemoryAllocator::operator=(DeviceMemoryAllocator&& other) noexcept
+{
+	if(device_)allocate();
+	this->swap(other);
+	return *this;
+}
+
+void DeviceMemoryAllocator::swap(DeviceMemoryAllocator& other) noexcept
+{
+	using std::swap;
+
+	swap(bufferRequirements_, other.bufferRequirements_);
+	swap(imageRequirements_, other.imageRequirements_);
+	swap(device_, other.device_);
 }
 
 void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
-	DeviceMemory::Entry& entry)
+	Entry& entry)
 {
+	entry.allocator_ = this;
+
 	for(auto& type : bufferRequirements_)
 	{
 		if(reqs.memoryTypeBits() & (1 << type.first))
@@ -180,8 +210,10 @@ void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequir
 }
 
 void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequirements& reqs,
-	vk::ImageTiling tiling, DeviceMemory::Entry& entry)
+	vk::ImageTiling tiling, Entry& entry)
 {
+	entry.allocator_ = this;
+
 	for(auto& type : imageRequirements_)
 	{
 		if(reqs.memoryTypeBits() & (1 << type.first))
@@ -194,6 +226,38 @@ void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequire
 	unsigned int typeIndex = 0;
 	while(((reqs.memoryTypeBits() >> typeIndex++) & 1) != 1);
 	imageRequirements_[typeIndex].push_back({requestor, reqs, tiling, &entry});
+}
+
+bool DeviceMemoryAllocator::removeRequest(const Entry& entry)
+{
+	//check buffer
+	for(auto& reqs : bufferRequirements_)
+	{
+		for(auto it = reqs.second.begin(); it != reqs.second.end(); ++it)
+		{
+			if(it->entry == &entry)
+			{
+				reqs.second.erase(it);
+				return true;
+			}
+		}
+	}
+
+	//check image
+	for(auto& reqs : imageRequirements_)
+	{
+		for(auto it = reqs.second.begin(); it != reqs.second.end(); ++it)
+		{
+			if(it->entry == &entry)
+			{
+				reqs.second.erase(it);
+				return true;
+			}
+		}
+	}
+
+	//not found
+	return false;
 }
 
 void DeviceMemoryAllocator::allocate()
@@ -274,7 +338,8 @@ void DeviceMemoryAllocator::allocate()
 			}
 			else
 			{
-				*buf.entry = DeviceMemory::Entry(memory, alloc);
+				*buf.entry = Entry(memory, alloc);
+				buf.entry->allocator_ = nullptr;
 			}
 
 			vk::bindBufferMemory(vkDevice(), buf.requestor, memory->vkDeviceMemory(), buf.offset);
@@ -290,7 +355,8 @@ void DeviceMemoryAllocator::allocate()
 			}
 			else
 			{
-				*img.entry = DeviceMemory::Entry(memory, alloc);
+				*img.entry = Entry(memory, alloc);
+				img.entry->allocator_ = nullptr;
 			}
 
 			vk::bindImageMemory(vkDevice(), img.requestor, memory->vkDeviceMemory(), img.offset);
@@ -314,7 +380,7 @@ MemoryMap::MemoryMap(const DeviceMemory& memory, const DeviceMemory::Allocation&
 {
 }
 
-MemoryMap::MemoryMap(const DeviceMemory::Entry& entry)
+MemoryMap::MemoryMap(const DeviceMemoryAllocator::Entry& entry)
 	: MemoryMap(entry.memory(), entry.offset(), entry.size())
 {
 }

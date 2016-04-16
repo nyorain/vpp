@@ -96,8 +96,6 @@ void ShaderStage::init(const Device& device, const CreateInfo& info)
 	stageInfo_.pSpecializationInfo(info.specializationInfo);
 	stageInfo_.pName(info.entry.c_str());
 	stageInfo_.module(loadModule(vkDevice(), info.filename));
-
-	std::cout << "module1: " << stageInfo_.module() << "\n";
 }
 
 void ShaderStage::destroy()

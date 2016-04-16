@@ -24,28 +24,6 @@ public:
 		std::size_t size {0};
 	};
 
-	class Entry : public NonCopyable
-	{
-	protected:
-		DeviceMemoryPtr memory_ {nullptr};
-		Allocation allocation_ {};
-
-	protected:
-		void free();
-
-	public:
-		Entry() = default;
-		Entry(DeviceMemoryPtr memory, const Allocation& alloc);
-		~Entry();
-
-		Entry(Entry&& other) noexcept;
-		Entry& operator=(Entry&& other) noexcept;
-
-		DeviceMemory& memory() const { return *memory_; };
-		std::size_t offset() const { return allocation_.offset; };
-		std::size_t size() const { return allocation_.size; }
-	};
-
 protected:
 	std::vector<Allocation> allocations_ {}; //use sorted container!
 	vk::DeviceMemory memory_ {};
@@ -75,12 +53,44 @@ public:
 //Makes it possible to allocate a few vk::DeviceMemory objects for many buffers/images.
 class DeviceMemoryAllocator : public Resource
 {
+public:
+	class Entry : public NonCopyable
+	{
+	protected:
+		friend class DeviceMemoryAllocator;
+
+		DeviceMemoryAllocator* allocator_ {};
+		DeviceMemoryPtr memory_ {};
+		DeviceMemory::Allocation allocation_ {};
+
+	protected:
+		void free();
+
+	public:
+		Entry() = default;
+		Entry(DeviceMemoryPtr memory, const DeviceMemory::Allocation& alloc);
+		~Entry();
+
+		Entry(Entry&& other) noexcept;
+		Entry& operator=(Entry&& other) noexcept;
+
+		void swap(Entry& other) noexcept;
+
+		bool allocated() const { return allocator_; }
+		void allocate() { if(!memory_) allocator_->allocate(); }
+
+		DeviceMemory& memory() const { return *memory_; };
+		std::size_t offset() const { return allocation_.offset; };
+		std::size_t size() const { return allocation_.size; }
+	};
+
+
 protected:
 	struct BufferRequirement
 	{
 		vk::Buffer requestor;
 		vk::MemoryRequirements requirements;
-		DeviceMemory::Entry* entry {nullptr};
+		Entry* entry {nullptr};
 		std::size_t offset {0}; //internal use in alloc
 	};
 
@@ -89,7 +99,7 @@ protected:
 		vk::Image requestor;
 		vk::MemoryRequirements requirements;
 		vk::ImageTiling tiling;
-		DeviceMemory::Entry* entry {nullptr};
+		Entry* entry {nullptr};
 
 		std::size_t offset {0}; //internal use in alloc
 	};
@@ -99,15 +109,28 @@ protected:
 	std::map<unsigned int, std::vector<BufferRequirement>> bufferRequirements_;
 	std::map<unsigned int, std::vector<ImageRequirement>> imageRequirements_;
 
+	//std::vector<DeviceMemoryPtr> memories_;
+
 public:
+	DeviceMemoryAllocator() = default;
 	DeviceMemoryAllocator(const Device& dev);
 	~DeviceMemoryAllocator();
 
-	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
-		DeviceMemory::Entry& entry);
-	void request(vk::Image requestor,  const vk::MemoryRequirements& reqs, vk::ImageTiling tiling,
-		DeviceMemory::Entry& entry);
+	DeviceMemoryAllocator(DeviceMemoryAllocator&& other) noexcept;
+	DeviceMemoryAllocator& operator=(DeviceMemoryAllocator&& other) noexcept;
 
+	void swap(DeviceMemoryAllocator& other) noexcept;
+
+	//requests memory
+	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
+		Entry& entry);
+	void request(vk::Image requestor,  const vk::MemoryRequirements& reqs, vk::ImageTiling tiling,
+		Entry& entry);
+
+	//withdraws a memory request
+	bool removeRequest(const Entry& entry);
+
+	//allocates memory for all requested requirements
 	void allocate();
 };
 
@@ -123,7 +146,7 @@ protected:
 public:
 	MemoryMap(const DeviceMemory& memory, std::size_t offset, std::size_t size);
 	MemoryMap(const DeviceMemory& memory, const DeviceMemory::Allocation& alloc);
-	MemoryMap(const DeviceMemory::Entry& entry);
+	MemoryMap(const DeviceMemoryAllocator::Entry& entry);
 	~MemoryMap();
 
 	MemoryMap(MemoryMap&& other) noexcept;

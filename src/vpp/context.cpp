@@ -140,9 +140,9 @@ void Context::initDevice(const CreateInfo& info)
 	devinfo.enabledExtensionCount(extensions.size());
 	devinfo.ppEnabledExtensionNames(extensions.data());
 
-    device_ = Device(vkInstance(), phdev, devinfo);
+    device_.reset(new Device(vkInstance(), phdev, devinfo));
 
-	presentQueue_ = device_.queue(presentQueueFamily, presentQueueId);
+	presentQueue_ = device().queue(presentQueueFamily, presentQueueId);
 	if(!presentQueue_)
 	{
 		throw std::runtime_error("failed to create queue");

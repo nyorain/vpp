@@ -34,7 +34,7 @@ public:
 
 protected:
 	vk::Instance instance_ {};
-	Device device_;
+	std::unique_ptr<Device> device_;
 	SwapChain swapChain_;
 
 	const Device::Queue* presentQueue_ = nullptr;
@@ -54,7 +54,7 @@ public:
 
 	virtual const Surface& surface() const = 0;
 
-	const Device& device() const { return device_; }
+	const Device& device() const { return *device_; }
 	const SwapChain& swapChain() const { return swapChain_; }
 
 	const Device::Queue* graphicsQueue() const { return presentQueue_; }
@@ -62,7 +62,7 @@ public:
 	const Device::Queue& presentQueue() const { return *presentQueue_; }
 
 	SwapChain& swapChain() { return swapChain_; }
-	Device& device() { return device_; }
+	Device& device() { return *device_; }
 
 	const vk::Instance& vkInstance() const { return instance_; }
 };

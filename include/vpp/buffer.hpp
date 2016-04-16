@@ -30,7 +30,7 @@ class Buffer : public Resource
 {
 protected:
 	vk::Buffer buffer_ {};
-	std::unique_ptr<DeviceMemory::Entry> memoryEntry_;
+	std::unique_ptr<DeviceMemoryAllocator::Entry> memoryEntry_;
 
 protected:
 	void destroy();
@@ -38,8 +38,6 @@ protected:
 public:
 	Buffer() = default;
 	Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
-	Buffer(DeviceMemoryAllocator& allctr, const vk::BufferCreateInfo& info,
-		vk::MemoryPropertyFlags mflags = {});
 	~Buffer();
 
 	Buffer(Buffer&& other) noexcept;
@@ -47,8 +45,12 @@ public:
 
 	void swap(Buffer& other) noexcept;
 
-	const DeviceMemory::Entry& memoryEntry() const { return *memoryEntry_; }
+	const DeviceMemoryAllocator::Entry& memoryEntry() const { return *memoryEntry_; }
 	vk::Buffer vkBuffer() const { return buffer_; }
+
+	///Assures that there is device memory associated with this buffer.
+	///Will be implicitly called on member functions that require it.
+	void assureMemory() const;
 
 	///Returns a vulkan memory map guard. Should only be called when buffer was created on a
 	///host visible device memory heap and if the device memory was allocated.

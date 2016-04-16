@@ -14,16 +14,14 @@ class Image : public Resource
 {
 protected:
 	vk::Image image_ {};
-	std::unique_ptr<DeviceMemory::Entry> memoryEntry_ {};
+	std::unique_ptr<DeviceMemoryAllocator::Entry> memoryEntry_ {};
 
 protected:
 	void destroy();
 
 public:
-	Image();
+	Image() = default;
 	Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
-	Image(DeviceMemoryAllocator& allctr, const vk::ImageCreateInfo& info,
-		vk::MemoryPropertyFlags mflags = {});
 	~Image();
 
 	Image(Image&& other) noexcept;
@@ -31,7 +29,11 @@ public:
 
 	void swap(Image& other) noexcept;
 
-	const DeviceMemory::Entry& memoryEntry() const { return *memoryEntry_; }
+	///Assures that there is device memory associated with this buffer.
+	///Will be implicitly called on member functions that require it.
+	void assureMemory() const;
+
+	const DeviceMemoryAllocator::Entry& memoryEntry() const { return *memoryEntry_; }
 	vk::Image vkImage() const { return image_; }
 	MemoryMap memoryMap() const;
 };
