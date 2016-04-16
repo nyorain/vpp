@@ -125,6 +125,8 @@ void SwapChainRenderer::initMemoryLess(DeviceMemoryAllocator& allocator, const S
 
 void SwapChainRenderer::initMemoryResources(const RendererBuilder& builder)
 {
+	device().deviceMemoryAllocator().allocate();
+
 	const std::size_t dynAttachSize = info().dynamicAttachments.size() + 1;
 	std::map<unsigned int, vk::ImageView> attachmentMap;
 
@@ -209,6 +211,8 @@ void SwapChainRenderer::buildCommandBuffers(const RendererBuilder& builder)
 
 		vkCmdEndRenderPass(renderer.commandBuffer);
 
+		builder.afterRender(renderer.commandBuffer);
+
 		vk::ImageMemoryBarrier prePresentBarrier;
 		prePresentBarrier.srcAccessMask(vk::AccessFlagBits::ColorAttachmentWrite);
 		prePresentBarrier.dstAccessMask(vk::AccessFlags());
@@ -219,13 +223,9 @@ void SwapChainRenderer::buildCommandBuffers(const RendererBuilder& builder)
 		prePresentBarrier.subresourceRange({vk::ImageAspectFlagBits::Color, 0, 1, 0, 1});
 		prePresentBarrier.image(swapChain().buffers()[i].image);
 
-		builder.afterRender(renderer.commandBuffer);
-
-/*
 		vk::cmdPipelineBarrier(renderer.commandBuffer, vk::PipelineStageFlagBits::AllCommands,
 			vk::PipelineStageFlagBits::TopOfPipe, vk::DependencyFlags(), 0,
-			nullptr, 0, nullptr, 0, nullptr);
-*/
+			nullptr, 0, nullptr, 1, &prePresentBarrier);
 
 		vk::endCommandBuffer(renderer.commandBuffer);
 	}

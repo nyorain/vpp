@@ -2,7 +2,7 @@
 
 #include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
-#include <vpp/utility/copy.hpp>
+#include <vpp/utility/nonCopyable.hpp>
 
 #include <memory>
 
@@ -11,9 +11,9 @@ namespace vpp
 
 ///Vulkan Device.
 ///When a DeviceLost vulkan error occures, the program can try to create a new Device object for the
-///same PhysicalDevice, if this fails again with the DeviceLost, the physical device is not longer
 ///valid.
-class Device : public NonCopyable
+///same PhysicalDevice, if this fails again with the DeviceLost, the physical device is not longer
+class Device : public NonMoveable
 {
 public:
 	struct Queue
@@ -34,18 +34,14 @@ protected:
 	vk::PhysicalDeviceMemoryProperties memoryProperties_ {};
 	vk::PhysicalDeviceProperties physicalDeviceProperties_ {};
 
-	std::unique_ptr<CommandBufferProvider> commandBufferProvder_;
-	std::unique_ptr<DeviceMemoryProvider> deviceMemoryProvider_;
+	std::unique_ptr<CommandBufferProvider> cbProvider_;
+	std::unique_ptr<DeviceMemoryProvider> dmProvider_;
+	std::unique_ptr<CommandManager> commandManager_;
 
 public:
 	Device();
     Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info);
     ~Device();
-
-	Device(Device&& other) noexcept;
-	Device& operator=(Device&& other) noexcept;
-
-	void swap(Device& other) noexcept;
 
     VkInstance vkInstance() const { return instance_; }
     VkPhysicalDevice vkPhysicalDevice() const { return physicalDevice_; }
@@ -70,19 +66,26 @@ public:
 
 	///Returns a CommandBufferProvider that can be used to easily allocate a command buffer in the
 	///current thread.
-	CommandBufferProvider& cmdBufProvider() const;
+	CommandBufferProvider& commandBufferProvider() const;
 
 	///Returns a transient command buffer wrapper in recording state that will automatically
 	///execute itself on destruction and can therfore easily be used to run setup commands
 	///on the device.
 	SetupCommandBuffer setupCommandBuffer() const;
 
+	///Returns the setup command buffer manager.
+	///Mainly useful for the SetupCommandBuffer class.
+	CommandManager& commandManager() const { return *commandManager_; }
+
 	///Makes sure that all queues setup commandBuffers have been executed.
 	void finishSetup() const;
 
 	///Returns a DeviceMemoryProvider that can be used to easily allocate vulkan device memory in the
 	///current thread.
-	DeviceMemoryProvider& memoryProvider() const;
+	DeviceMemoryProvider& deviceMemoryProvider() const;
+
+	///Returns a deviceMemory allocator for the current thread.
+	DeviceMemoryAllocator& deviceMemoryAllocator() const;
 };
 
 }

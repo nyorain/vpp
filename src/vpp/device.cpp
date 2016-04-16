@@ -1,5 +1,6 @@
 #include <vpp/device.hpp>
 #include <vpp/provider.hpp>
+#include <vpp/commandBuffer.hpp>
 
 namespace vpp
 {
@@ -32,35 +33,15 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 
 		queues_.push_back({queue, qproperties[i], queueInfo.queueFamilyIndex(), idx});
 	}
+
+	cbProvider_.reset(new CommandBufferProvider(*this));
+	dmProvider_.reset(new DeviceMemoryProvider(*this));
+	commandManager_.reset(new CommandManager(*this));
 }
 
 Device::~Device()
 {
 	if(vkDevice()) vk::destroyDevice(device_, nullptr);
-}
-
-Device::Device(Device&& other) noexcept
-{
-	this->swap(other);
-}
-
-Device& Device::operator=(Device&& other) noexcept
-{
-	Device swapper(std::move(other));
-	this->swap(swapper);
-	return *this;
-}
-
-void Device::swap(Device& other) noexcept
-{
-	using std::swap;
-
-	swap(device_, other.device_);
-	swap(physicalDevice_, other.physicalDevice_);
-	swap(instance_, other.instance_);
-	swap(queues_, other.queues_);
-	swap(physicalDeviceProperties_, other.physicalDeviceProperties_);
-	swap(memoryProperties_, other.memoryProperties_);
 }
 
 void Device::waitIdle() const
@@ -110,6 +91,32 @@ std::uint32_t Device::memoryTypeBits(std::uint32_t typeBits, vk::MemoryPropertyF
 	}
 
 	return typeBits;
+}
+
+CommandBufferProvider& Device::commandBufferProvider() const
+{
+	return *cbProvider_;
+}
+
+SetupCommandBuffer Device::setupCommandBuffer() const
+{
+	//todo: querygood qFamily instead of using 0
+	return std::move(SetupCommandBuffer(std::move(commandBufferProvider().allocate(0))));
+}
+
+void Device::finishSetup() const
+{
+	commandManager_->wait();
+}
+
+DeviceMemoryProvider& Device::deviceMemoryProvider() const
+{
+	return *dmProvider_;
+}
+
+DeviceMemoryAllocator& Device::deviceMemoryAllocator() const
+{
+	return deviceMemoryProvider().get();
 }
 
 }

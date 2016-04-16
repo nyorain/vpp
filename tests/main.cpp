@@ -159,8 +159,12 @@ int main()
 		ParticleSystem particleSystem(app, 1024 * 1000);
 		app.particleSystem = &particleSystem;
 
+		context.device().deviceMemoryAllocator().allocate();
+
 		vpp::SwapChainRenderer renderer(context.swapChain(), particleSystem, app.rendererInfo);
 		app.renderer = &renderer;
+
+		context.device().deviceMemoryAllocator().allocate();
 
 		app.presentQueue = context.presentQueue().queue;
 		app.computeQueue = context.computeQueue()->queue;

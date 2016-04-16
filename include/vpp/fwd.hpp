@@ -34,5 +34,6 @@ class DeviceMemoryProvider;
 class CommandPool;
 class CommandBuffer;
 class SetupCommandBuffer;
+class CommandManager;
 
 }

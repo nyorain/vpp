@@ -25,7 +25,8 @@ ParticleSystem::ParticleSystem(App& app, std::size_t count)
 	initGraphicsPipeline();
 	initComputePipeline();
 
-	allocator_.allocate();
+	//allocator_.allocate();
+	device().deviceMemoryAllocator().allocate();
 
 	writeDescriptorSets();
 	writeParticleBuffer();
@@ -168,14 +169,14 @@ void ParticleSystem::initDescriptorBuffers()
 	gfxInfo.size(sizeof(nytl::Mat4f) * 2); //viewMatrix, perspectiveMatrix
 	gfxInfo.usage(vk::BufferUsageFlagBits::UniformBuffer);
 
-	graphicsUBO_ = vpp::Buffer(allocator_, gfxInfo, vk::MemoryPropertyFlagBits::HostVisible);
+	graphicsUBO_ = vpp::Buffer(device(), gfxInfo, vk::MemoryPropertyFlagBits::HostVisible);
 
 	//compute
 	vk::BufferCreateInfo compInfo;
 	compInfo.size(sizeof(float) * 5); //mouse pos(vec2f), speed, deltaTime, attract
 	compInfo.usage(vk::BufferUsageFlagBits::UniformBuffer);
 
-	computeUBO_ = vpp::Buffer(allocator_, compInfo, vk::MemoryPropertyFlagBits::HostVisible);
+	computeUBO_ = vpp::Buffer(device(), compInfo, vk::MemoryPropertyFlagBits::HostVisible);
 }
 
 void ParticleSystem::initParticles()
@@ -201,7 +202,7 @@ void ParticleSystem::initParticleBuffer()
 	bufInfo.size(sizeof(Particle) * particles_.size());
 	bufInfo.usage(vk::BufferUsageFlagBits::VertexBuffer | vk::BufferUsageFlagBits::StorageBuffer);
 
-	particlesBuffer_ = vpp::Buffer(allocator_, bufInfo, vk::MemoryPropertyFlagBits::HostVisible);
+	particlesBuffer_ = vpp::Buffer(device(), bufInfo, vk::MemoryPropertyFlagBits::HostVisible);
 }
 
 void ParticleSystem::writeParticleBuffer()
@@ -236,7 +237,7 @@ void ParticleSystem::buildComputeBuffer()
 	vk::cmdBindPipeline(computeBuffer_, vk::PipelineBindPoint::Compute, computePipeline_.vkPipeline());
 	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::Compute,
 		computePipeline_.vkPipelineLayout(), 0, 1, &cd, 0, nullptr);
-	vk::cmdDispatch(computeBuffer_, particles_.size() / 16, 1, 1);
+	vk::cmdDispatch(computeBuffer_, particles_.size(), 1, 1);
 
 	vk::endCommandBuffer(computeBuffer_);
 }

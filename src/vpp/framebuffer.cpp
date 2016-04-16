@@ -107,7 +107,7 @@ void FramebufferAttachment::initImage(DeviceMemoryAllocator& allocator, const Cr
 	imageInfo.usage(info.usage);
 	imageInfo.flags({});
 
-	image_ = Image(allocator, imageInfo, info.imageMemoryFlags);
+	image_ = Image(device(), imageInfo, info.imageMemoryFlags);
 }
 
 void FramebufferAttachment::initView(const CreateInfo& info)
