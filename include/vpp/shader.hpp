@@ -25,6 +25,10 @@ public:
 protected:
 	vk::PipelineShaderStageCreateInfo stageInfo_;
 
+protected:
+	void init(const Device& device, const CreateInfo& info);
+	void destroy();
+
 public:
 	ShaderStage() = default;
 	ShaderStage(const Device& device, const CreateInfo& info);
@@ -32,9 +36,6 @@ public:
 
 	ShaderStage(ShaderStage&& other) noexcept;
 	ShaderStage& operator=(ShaderStage&& other) noexcept;
-
-	void init(const Device& device, const CreateInfo& info);
-	void destroy();
 
 	const vk::PipelineShaderStageCreateInfo& vkStageInfo() const { return stageInfo_; }
 };
@@ -45,6 +46,10 @@ class ShaderProgram : public Resource
 protected:
 	std::vector<ShaderStage> stages_;
 
+protected:
+	void init(const Device& device, const std::vector<ShaderStage::CreateInfo>& infos = {});
+	void destroy();
+
 public:
 	ShaderProgram() = default;
 	ShaderProgram(const Device& device, const std::vector<ShaderStage::CreateInfo>& infos = {});
@@ -52,9 +57,6 @@ public:
 
 	ShaderProgram(ShaderProgram&& other) noexcept = default;
 	ShaderProgram& operator=(ShaderProgram&& other) noexcept = default;
-
-	void init(const Device& device, const std::vector<ShaderStage::CreateInfo>& infos = {});
-	void destroy();
 
 	void addStage(const ShaderStage::CreateInfo& createInfo);
 	void addStages(const std::vector<ShaderStage::CreateInfo>& crrateInfo);

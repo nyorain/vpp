@@ -14,14 +14,16 @@ protected:
 
 protected:
 	Resource() = default;
+	Resource(const Device& device) : device_(&device) {}
+	~Resource() = default;
+
+	Resource(Resource&& other) noexcept = default;
+	Resource& operator=(Resource&& other) noexcept = default;
 
 	void init(const Device& device) { device_ = &device; };
 	void destroy(){ device_ = {}; }
 
 public:
-	Resource(const Device& device) : device_(&device) {}
-	~Resource() = default;
-
 	const Device& device() const { return *device_; }
 
 	VkInstance vkInstance() const { return device().vkInstance(); }
