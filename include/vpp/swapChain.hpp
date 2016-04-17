@@ -67,6 +67,4 @@ public:
 	void swap(SwapChain& other) noexcept;
 };
 
-inline void swap(SwapChain& a, SwapChain& b) noexcept { a.swap(b); }
-
 }
