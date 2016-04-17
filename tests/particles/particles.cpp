@@ -105,8 +105,8 @@ void ParticleSystem::initGraphicsPipeline()
 	info.renderPass = app_.renderPass.vkRenderPass();
 
 	info.shader.init(device());
-	info.shader.addStage({"vert.spv", vk::ShaderStageFlagBits::Vertex});
-	info.shader.addStage({"frag.spv", vk::ShaderStageFlagBits::Fragment});
+	info.shader.addStage({"particles.vert.spv", vk::ShaderStageFlagBits::Vertex});
+	info.shader.addStage({"particles.frag.spv", vk::ShaderStageFlagBits::Fragment});
 
 	info.states = vpp::GraphicsPipeline::StatesCreateInfo{vk::Viewport{0, 0, 900, 900, 0.f, 1.f}};
 	info.states.rasterization.cullMode(vk::CullModeFlagBits::None);
@@ -118,7 +118,7 @@ void ParticleSystem::initComputePipeline()
 {
 	vpp::ComputePipeline::CreateInfo info;
 	info.descriptorSetLayouts = {&computeDescriptorSetLayout_};
-	info.shader.init(device(), {"comp.spv", vk::ShaderStageFlagBits::Compute});
+	info.shader.init(device(), {"particles.comp.spv", vk::ShaderStageFlagBits::Compute});
 
 	computePipeline_ = vpp::ComputePipeline(device(), info);
 }

@@ -176,6 +176,10 @@ int main()
 	    mainLoop(app);
 
 		std::cout << "main loop exited sucessful.\n";
+
+		//would otherwise be implicitly destructed on App::~App call when going out of scope
+		//but at that point the vulkan device would have been already destructed
+		app.renderPass = {};
 	}
 
 	std::cout << "exiting.\n";
