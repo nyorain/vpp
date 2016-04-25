@@ -59,10 +59,10 @@ public:
 	const vk::PhysicalDeviceProperties& properties() const { return physicalDeviceProperties_; }
 
 	///Returns the first memoryType for the given memoryTypeBits and flags.
-	int memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const;
+	int memoryType(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits = ~0u) const;
 
 	///Returns a bitmask of memoryTypes that match the given parameters.
-	std::uint32_t memoryTypeBits(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const;
+	std::uint32_t memoryTypeBits(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits = ~0u) const;
 
 	///Returns a CommandBufferProvider that can be used to easily allocate a command buffer in the
 	///current thread.

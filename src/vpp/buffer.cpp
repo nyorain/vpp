@@ -13,7 +13,7 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPr
 	vk::createBuffer(vkDevice(), &info, nullptr, &buffer_);
 	vk::getBufferMemoryRequirements(vkDevice(), buffer_, &reqs);
 
-	reqs.memoryTypeBits(device().memoryTypeBits(reqs.memoryTypeBits(), mflags));
+	reqs.memoryTypeBits(device().memoryTypeBits(mflags, reqs.memoryTypeBits()));
 	device().deviceMemoryAllocator().request(buffer_, reqs, *memoryEntry_);
 }
 
@@ -55,7 +55,7 @@ void Buffer::destroy()
 MemoryMap Buffer::memoryMap() const
 {
 	assureMemory();
-	return MemoryMap(*memoryEntry_);
+	return MemoryMap(memoryEntry().allocation());
 }
 
 void Buffer::fill(const std::vector<BufferData>& data) const

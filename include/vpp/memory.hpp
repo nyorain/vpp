@@ -11,184 +11,152 @@
 namespace vpp
 {
 
-using DeviceMemoryPtr = std::shared_ptr<DeviceMemory>;
-
-///DeviceMemory class that keeps track of its allocated and freed areas.
-// /Makes it easy to resuse memory as well as bind multiple memoryRequestors to one allocation.
-class DeviceMemory : public Resource
+///Represents a part on an allocated DeviceMemory.
+struct Allocation
 {
-public:
-	struct Allocation
-	{
-		std::size_t offset {0};
-		std::size_t size {0};
-	};
-
-protected:
-	std::vector<Allocation> allocations_ {}; //use sorted container!
-	vk::DeviceMemory memory_ {};
-	std::size_t size_ {};
-
-	std::size_t typeIndex_ {};
-	vk::MemoryPropertyFlags flags_ {};
-
-public:
-	DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info);
-	DeviceMemory(const Device& dev, std::uint32_t size, std::uint32_t typeIndex);
-	DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryPropertyFlags flgs);
-	~DeviceMemory();
-
-	Allocation alloc(std::size_t size, std::size_t aligment);
-	Allocation allocSpecified(std::size_t offset, std::size_t size);
-	void free(const Allocation& alloc);
-
-	std::size_t biggestBlock() const; //the biggest (continuously) allocatable block.
-	std::size_t free() const; //how much is free at all
-	std::size_t size() const;
-
-	vk::DeviceMemory vkDeviceMemory() const { return memory_; }
-	vk::MemoryPropertyFlags propertyFlags() const { return flags_; }
+	std::size_t offset {0};
+	std::size_t size {0};
 };
 
-//Makes it possible to allocate a few vk::DeviceMemory objects for many buffers/images.
-class DeviceMemoryAllocator : public Resource
+///Represents a mapped range of a vulkan DeviceMemory.
+///There shall always be at least one MemoryMap object for on DeviceMemory object.
+class MemoryMap : public ResourceReference<MemoryMap>
 {
 public:
-	class Entry : public NonCopyable
-	{
-	protected:
-		friend class DeviceMemoryAllocator;
-
-		DeviceMemoryAllocator* allocator_ {};
-		DeviceMemoryPtr memory_ {};
-		DeviceMemory::Allocation allocation_ {};
-
-	protected:
-		void free();
-
-	public:
-		Entry() = default;
-		Entry(DeviceMemoryPtr memory, const DeviceMemory::Allocation& alloc);
-		~Entry();
-
-		Entry(Entry&& other) noexcept;
-		Entry& operator=(Entry&& other) noexcept;
-
-		void swap(Entry& other) noexcept;
-
-		bool allocated() const { return allocator_; }
-		void allocate() { if(!memory_) allocator_->allocate(); }
-
-		DeviceMemory& memory() const { return *memory_; };
-		std::size_t offset() const { return allocation_.offset; };
-		std::size_t size() const { return allocation_.size; }
-	};
-
-
-protected:
-	struct BufferRequirement
-	{
-		vk::Buffer requestor;
-		vk::MemoryRequirements requirements;
-		Entry* entry {nullptr};
-		std::size_t offset {0}; //internal use in alloc
-	};
-
-	struct ImageRequirement
-	{
-		vk::Image requestor;
-		vk::MemoryRequirements requirements;
-		vk::ImageTiling tiling;
-		Entry* entry {nullptr};
-
-		std::size_t offset {0}; //internal use in alloc
-	};
-
-protected:
-	//all requested allocations for the given memory types
-	std::map<unsigned int, std::vector<BufferRequirement>> bufferRequirements_;
-	std::map<unsigned int, std::vector<ImageRequirement>> imageRequirements_;
-
-	//std::vector<DeviceMemoryPtr> memories_;
-
-public:
-	DeviceMemoryAllocator() = default;
-	DeviceMemoryAllocator(const Device& dev);
-	~DeviceMemoryAllocator();
-
-	DeviceMemoryAllocator(DeviceMemoryAllocator&& other) noexcept;
-	DeviceMemoryAllocator& operator=(DeviceMemoryAllocator&& other) noexcept;
-
-	void swap(DeviceMemoryAllocator& other) noexcept;
-
-	//requests memory
-	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
-		Entry& entry);
-	void request(vk::Image requestor,  const vk::MemoryRequirements& reqs, vk::ImageTiling tiling,
-		Entry& entry);
-
-	//withdraws a memory request
-	bool removeRequest(const Entry& entry);
-
-	//allocates memory for all requested requirements
-	void allocate();
-};
-
-///MemoryMap
-class MemoryMap : public NonCopyable
-{
-protected:
-	const DeviceMemory* memory_ {nullptr};
-	std::size_t offset_ {0};
-	std::size_t size_ {0};
-	void* ptr_ {nullptr};
-
-public:
-	MemoryMap(const DeviceMemory& memory, std::size_t offset, std::size_t size);
-	MemoryMap(const DeviceMemory& memory, const DeviceMemory::Allocation& alloc);
-	MemoryMap(const DeviceMemoryAllocator::Entry& entry);
+	MemoryMap()  = default;
+	MemoryMap(const DeviceMemory& memory, const Allocation& alloc);
 	~MemoryMap();
 
 	MemoryMap(MemoryMap&& other) noexcept;
 	MemoryMap& operator=(MemoryMap&& other) noexcept;
 
-	void swap(MemoryMap& other) noexcept;
+	///Fills the mapped memory with the given data.
+	void fill(void* data, std::size_t size, std::size_t offset = 0) const;
 
-	vk::DeviceMemory vkMemory() const { return memory_->vkDeviceMemory(); }
+	///Makes sure the mapped data is visibile on the device.
+	///Not needed when memory is coherent, look at vkFlushMappedMemoryRanges.
+	void flushRanges() const;
 
-	std::size_t offset() const { return offset_; }
-	std::size_t size() const { return size_; }
+	///Reloads the memory into memory, i.e. makes sure writes by the device are made visible.
+	///Not needed when memory is coherent, look at vkInvalidateMappedMemoryRanges
+	void invalidateRanges() const;
+
+	vk::DeviceMemory vkMemory() const;
+	const Allocation& allocation() const { return allocation_; }
+	std::size_t offset() const { return allocation().offset; }
+	std::size_t size() const { return allocation().size; }
 	std::uint8_t* ptr() const { return static_cast<std::uint8_t*>(ptr_); }
 	const DeviceMemory& memory() const { return *memory_; }
 
-	void flushRanges() const;
-	void invalidateRanges() const;
+	const DeviceMemory& resourceRef() const { return *memory_; }
+	void swap(MemoryMap& other) noexcept;
+
+protected:
+	friend class MemoryMapView;
+
+	void unref();
 	void unmap();
+
+protected:
+	const DeviceMemory* memory_ {nullptr};
+	Allocation allocation_ {};
+	std::size_t views_ {};
+	void* ptr_ {nullptr};
 };
 
-///Memory Resource initializer.
-template<typename T> class MemoryResourceInitializer
-{
-protected:
-	bool valid_ {1};
-	T resource_;
 
+///A view into a mapped memory range
+class MemoryMapView : public ResourceReference<MemoryMapView>
+{
 public:
-	template<typename... Args>
-	MemoryResourceInializer(Args&&... args)
+	MemoryMapView() = default;
+	MemoryMapView(MemoryMap& map, const Allocation& range);
+	~MemoryMapView();
+
+	std::uint8_t* ptr() const;
+
+	const DeviceMemory& resourceRef() const { return *memory_; }
+
+protected:
+	DeviceMemory* memory_;
+	Allocation allocation_;
+};
+
+///DeviceMemory class that keeps track of its allocated and freed areas.
+///Makes it easy to resuse memory as well as bind multiple memoryRequestors to one allocation.
+///Note that there are additional rules for allocating device memory on vulkan (like e.g. needed
+///offsets between image and buffer allocations) which are not checked/stored by this class, this
+///has to be done externally.
+class DeviceMemory : public Resource
+{
+public:
+	///Specifies the different types of allocation on a memory object.
+	enum class AllocationType
 	{
-		resource_.initMemoryLess(std::forward<Args>(args)...);
+		none,
+		buffer,
+		imageOptimal,
+		imageLinear
 	};
 
-	template<typename... Args>
-	T init(Args&&... args)
+	struct AllocationEntry
 	{
-		if(!valid_) throw std::logic_error("Called MemoryResourceInitializer::init 2 times");
+		Allocation allocation;
+		AllocationType type;
+	};
 
-		valid_ = 0;
-		resource_.initMemoryResources(std::forward<Args>(args)...);
-		return std::move(resource_);
-	}
+public:
+	DeviceMemory() = default;
+	DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info);
+	DeviceMemory(const Device& dev, std::uint32_t size, std::uint32_t typeIndex);
+	DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryPropertyFlags flgs);
+	~DeviceMemory();
+
+	///Tries to allocate a memory part that matches the given size and aligment requirements.
+	///If there is not enough free space left, a std::runtime_error will be thrown.
+	Allocation alloc(std::size_t size, std::size_t aligment, AllocationType type);
+
+	///Allocates the specified memory part. Does not check for matched requirements or if
+	///the specified space is already occupied, so this function have to be used with care.
+	Allocation allocSpecified(std::size_t offset, std::size_t size, AllocationType type);
+
+	///Frees the given allocation. Will throw a std::logic_error if the given allocation is not
+	///part of this Memory object.
+	void free(const Allocation& alloc);
+
+	///Returns the the biggest (continuously) allocatable block.
+	///This does not mean that an allocation of this size can be made, since there are also
+	///alignment or granularity requirements which will effectively "shrink" this block.
+	std::size_t biggestBlock() const;
+
+	///Returns the total amount of free bytes.
+	std::size_t free() const;
+
+	///Returns the total size this DeviceMemory object has.
+	std::size_t size() const;
+
+	///Returns the currently mapped range, or nullptr if there is none.
+	MemoryMap* mapped() { return &memoryMap_; }
+
+	///Returns the currently mapped range, or nullptr if there is none.
+	const MemoryMap* mapped() const { return &memoryMap_; }
+
+	///Maps the specified memory range.
+	///Will throw a std::logic_error if this memory is not mappeble.
+	MemoryMapView map(const Allocation& allocation);
+
+
+	vk::DeviceMemory vkDeviceMemory() const { return memory_; }
+	vk::MemoryPropertyFlags propertyFlags() const { return flags_; }
+
+protected:
+	std::vector<AllocationEntry> allocations_ {}; //use sorted container?
+	vk::DeviceMemory memory_ {};
+	std::size_t size_ {};
+
+	std::size_t typeIndex_ {};
+	vk::MemoryPropertyFlags flags_ {};
+	MemoryMap memoryMap_;
 };
 
 }

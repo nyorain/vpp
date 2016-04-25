@@ -13,7 +13,7 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPrope
 	vk::createImage(vkDevice(), &info, nullptr, &image_);
 	vk::getImageMemoryRequirements(vkDevice(), image_, &reqs);
 
-	reqs.memoryTypeBits(device().memoryTypeBits(reqs.memoryTypeBits(), mflags));
+	reqs.memoryTypeBits(device().memoryTypeBits(mflags, reqs.memoryTypeBits()));
 	device().deviceMemoryAllocator().request(image_, reqs, info.tiling(), *memoryEntry_);
 }
 
@@ -55,7 +55,7 @@ void Image::destroy()
 MemoryMap Image::memoryMap() const
 {
 	assureMemory();
-	return MemoryMap(memoryEntry());
+	return memoryEntry().map();
 }
 
 void Image::assureMemory() const

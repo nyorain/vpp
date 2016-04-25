@@ -3,7 +3,7 @@
 #include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
-#include <vpp/memory.hpp>
+#include <vpp/allocator.hpp>
 
 #include <memory>
 

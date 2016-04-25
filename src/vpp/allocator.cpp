@@ -1,205 +1,257 @@
 #include <vpp/allocator.hpp>
-#include <memory>
-#include <algorithm>
-#include <iostream>
 
 namespace vpp
 {
 
-//Buffer
-void Allocator::Buffer::recalcBiggest(const Allocation* freed)
+//Entry
+DeviceMemoryAllocator::Entry::Entry(DeviceMemory* memory, const Allocation& alloc)
+	: memory_(memory), allocation_(alloc)
 {
-	if(freed && freed->position == biggest.end() + 1)
-	{
-		biggest.size += freed->size;
-	}
-	else if(freed && freed->end() == biggest.position - 1)
-	{
-		biggest.position = freed->position;
-		biggest.size += freed->size;
-	}
-	else
-	{
-		Pointer oldEnd = nullptr;
-		for(auto& alloc : allocs)
-		{
-			if(oldEnd != nullptr)
-			{
-				if(alloc.position - oldEnd > biggest.size)
-				{
-					biggest.size = alloc.position - oldEnd;
-					biggest.position = oldEnd + 1;
-				}
-			}
-
-			oldEnd = alloc.end();
-		}
-	}
 }
+
+DeviceMemoryAllocator::Entry::Entry(Entry&& other) noexcept
+{
+	this->swap(other);
+}
+
+DeviceMemoryAllocator::Entry& DeviceMemoryAllocator::Entry::operator=(Entry&& other) noexcept
+{
+	this->free();
+	this->swap(other);
+	return *this;
+}
+
+DeviceMemoryAllocator::Entry::~Entry()
+{
+	if(allocator_) allocator_->removeRequest(*this);
+	free();
+}
+
+void DeviceMemoryAllocator::Entry::swap(Entry& other) noexcept
+{
+	using std::swap;
+
+	swap(memory_, other.memory_);
+	swap(allocation_, other.allocation_);
+	swap(allocator_, other.allocator_);
+}
+
+void DeviceMemoryAllocator::Entry::free()
+{
+	if((memory_ != nullptr) && (allocation_.size > 0))
+	{
+		memory_->free(allocation_);
+	}
+
+	memory_ = nullptr;
+	allocation_ = {};
+}
+
 
 //Allocator
-Allocator::Allocator(Size pbufferSize, Size pallocsSize, Size pallocsIncrease)
-	: bufferSize(pbufferSize), allocsSize(pallocsSize), allocsIncrease(pallocsIncrease)
+DeviceMemoryAllocator::DeviceMemoryAllocator(const Device& dev) : Resource(dev)
 {
-	addBuffer();
 }
 
-Allocator::~Allocator()
+DeviceMemoryAllocator::~DeviceMemoryAllocator()
 {
-	if(numberAllocations() > 0) std::cerr << "vpp::~Allocator: allocations left\n.";
+	//RAII
+	if(device_)allocate();
 }
 
-void Allocator::addBuffer()
+DeviceMemoryAllocator::DeviceMemoryAllocator(DeviceMemoryAllocator&& other) noexcept
 {
-	buffers_.push_back({});
-
-	buffers_.back().buffer.resize(bufferSize);
-	buffers_.back().allocs.resize(allocsSize);
-	buffers_.back().biggest = {buffers_.back().buffer.data(), bufferSize};
+	this->swap(other);
+}
+DeviceMemoryAllocator& DeviceMemoryAllocator::operator=(DeviceMemoryAllocator&& other) noexcept
+{
+	if(device_)allocate();
+	this->swap(other);
+	return *this;
 }
 
-Allocator::Allocation& Allocator::nextAllocation(Buffer& buf)
+void DeviceMemoryAllocator::swap(DeviceMemoryAllocator& other) noexcept
 {
-	for(auto& alloc : buf.allocs)
+	using std::swap;
+
+	swap(bufferRequirements_, other.bufferRequirements_);
+	swap(imageRequirements_, other.imageRequirements_);
+	swap(device_, other.device_);
+}
+
+void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
+	Entry& entry)
+{
+	entry.allocator_ = this;
+
+	for(auto& type : bufferRequirements_)
 	{
-		if(alloc.position == nullptr) return alloc;
-	}
-
-	buf.allocs.resize(buf.allocs.size() + allocsIncrease);
-	return nextAllocation(buf); //try again!
-}
-
-void* Allocator::alloc(Size size, Size alignment)
-{
-	for(auto& buf : buffers_)
-	{
-		void* pos = buf.biggest.position;
-		pos = std::align(alignment, size, pos, buf.biggest.size);
-		auto ptr = static_cast<Pointer>(pos);
-
-		if(ptr)
+		if(reqs.memoryTypeBits() & (1 << type.first))
 		{
-			auto& al = nextAllocation(buf);
-			al.position = ptr;
-			al.size = size;
-			al.alignment = alignment;
-
-			buf.recalcBiggest();
-			std::sort(buf.allocs.begin(), buf.allocs.end(),
-				[](const Allocation& a, const Allocation& b) { return (a.position < b.position); });
-
-			return ptr;
-		}
-	}
-
-	if(size > bufferSize)
-	{
-		bufferSize = size * 2;
-	}
-
-	addBuffer();
-	return this->alloc(size, alignment); //try again!
-}
-
-void Allocator::free(void* buffer)
-{
-	for(auto& buf : buffers_)
-	{
-		auto it = std::find_if(buf.allocs.cbegin(), buf.allocs.cend(),
-			[=](const Allocation& alloc) { return alloc.position == buffer; });
-
-		if(it != buf.allocs.end())
-		{
-			auto a = *it;
-			buf.allocs.erase(it);
-			buf.recalcBiggest(&a);
+			type.second.push_back({requestor, reqs, &entry});
 			return;
 		}
 	}
 
-	std::cerr << "vpp::Allocator::free: could not find " << buffer << "\n";
+	std::uint32_t typeIndex = 0;
+	while(((reqs.memoryTypeBits() >> typeIndex++) & 1) != 1);
+	bufferRequirements_[typeIndex].push_back({requestor, reqs, &entry});
 }
 
-void* Allocator::realloc(void* buffer, Size size)
+void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequirements& reqs,
+	vk::ImageTiling tiling, Entry& entry)
 {
-	for(auto& buf : buffers_)
+	entry.allocator_ = this;
+
+	for(auto& type : imageRequirements_)
 	{
-		auto it = std::find_if(buf.allocs.begin(), buf.allocs.end(),
-			[=](const Allocation& alloc) { return alloc.position == buffer; });
-
-		if(it != buf.allocs.end())
+		if(reqs.memoryTypeBits() & (1 << type.first))
 		{
-			auto nextPos = buf.buffer.data() + buf.buffer.size();
-			if((it + 1) != buf.allocs.end()) nextPos = (it + 1)->position;
+			type.second.push_back({requestor, reqs, tiling, &entry});
+			return;
+		}
+	}
 
-			if((nextPos - it->position) > size)
+	unsigned int typeIndex = 0;
+	while(((reqs.memoryTypeBits() >> typeIndex++) & 1) != 1);
+	imageRequirements_[typeIndex].push_back({requestor, reqs, tiling, &entry});
+}
+
+bool DeviceMemoryAllocator::removeRequest(const Entry& entry)
+{
+	//check buffer
+	for(auto& reqs : bufferRequirements_)
+	{
+		for(auto it = reqs.second.begin(); it != reqs.second.end(); ++it)
+		{
+			if(it->entry == &entry)
 			{
-				bool recalc = (buf.biggest.position == it->end() + 1);
-				it->size = size;
-				if(recalc) buf.recalcBiggest();
-				return buffer;
+				reqs.second.erase(it);
+				return true;
+			}
+		}
+	}
+
+	//check image
+	for(auto& reqs : imageRequirements_)
+	{
+		for(auto it = reqs.second.begin(); it != reqs.second.end(); ++it)
+		{
+			if(it->entry == &entry)
+			{
+				reqs.second.erase(it);
+				return true;
+			}
+		}
+	}
+
+	//not found
+	return false;
+}
+
+void DeviceMemoryAllocator::allocate()
+{
+	using AllocType = DeviceMemory::AllocationType;
+
+	//physical device granularity (space between different allocation types)
+	auto granularity = device().properties().limits().bufferImageGranularity();
+
+	//holding the total size for each needed deivceMemory
+	std::map<unsigned int, std::size_t> sizeMap;
+
+	//hold the (virtually registered) lat allocation on the given deviceMemory
+	std::map<unsigned int, AllocType> lastAlloc;
+
+	//add bufferRequirements to sizeMap
+	for(auto i = 0u; i < 32; ++i)
+	{
+		auto itbuf = bufferRequirements_.find(i);
+		if(itbuf != bufferRequirements_.cend())
+		{
+			for(auto& req : itbuf->second)
+			{
+				auto align = req.requirements.alignment();
+				auto alignedOffset = ((sizeMap[i] + align) & ~align);
+				req.offset = alignedOffset;
+
+				sizeMap[i] = alignedOffset + req.requirements.size();
+				lastAlloc[i] = AllocType::buffer;
+			}
+		}
+	}
+
+	//add ImageRrequirements to sizeMap, care for granularity
+	for(auto i = 0u; i < 32; ++i)
+	{
+		auto itimg = imageRequirements_.find(i);
+		if(itimg != imageRequirements_.cend())
+		{
+			for(auto& req : itimg->second)
+			{
+				auto allocType = (req.tiling == vk::ImageTiling::Optimal) ?
+						AllocType::imageOptimal : AllocType::imageLinear;
+
+				if(lastAlloc[i] != AllocType::none && allocType != lastAlloc[i])
+				{
+					sizeMap[i] = (sizeMap[i] + granularity) & ~granularity;
+					lastAlloc[i] = allocType;
+				}
+
+				auto align = req.requirements.alignment();
+				auto alignedOffset = ((sizeMap[i] + align) & ~align);
+				req.offset = alignedOffset;
+
+				sizeMap[i] = alignedOffset + req.requirements.size();
+			}
+		}
+	}
+
+	//allocate and bind DeviceMemory objects
+	for(auto& entry : sizeMap)
+	{
+		auto memory = std::make_unique<DeviceMemory>(device(), entry.second, entry.first);
+
+		//buffers
+		for(auto& buf : bufferRequirements_[entry.first])
+		{
+			auto alloc = memory->allocSpecified(buf.offset, buf.requirements.size(),
+				AllocType::buffer);
+			if(!buf.entry)
+			{
+				std::cerr << "vpp::DeviceMemoryAllocator: no buffer requirement entry\n";
 			}
 			else
 			{
-				auto a = *it;
-				buf.allocs.erase(it);
-				buf.recalcBiggest(&a);
-				return alloc(a.size, a.alignment);
+				*buf.entry = Entry(memory.get(), alloc);
+				buf.entry->allocator_ = nullptr;
 			}
+
+			vk::bindBufferMemory(vkDevice(), buf.requestor, memory->vkDeviceMemory(), buf.offset);
 		}
-	}
 
-	std::cerr << "vpp::Allocator::realloc: could not find " << buffer << "\n";
-	return nullptr;
-}
-
-std::size_t Allocator::size() const
-{
-	std::size_t ret = 0;
-	for(auto& buf : buffers_)
-	{
-		ret += buf.buffer.size();
-	}
-
-	return ret;
-}
-
-std::size_t Allocator::allocated() const
-{
-	std::size_t ret = 0;
-	for(auto& buf : buffers_)
-	{
-		for(auto& alloc : buf.allocs)
+		//images
+		for(auto& img : imageRequirements_[entry.first])
 		{
-			ret += alloc.size;
+			auto alloctype = (img.tiling == vk::ImageTiling::Linear) ? AllocType::imageLinear
+				: AllocType::imageOptimal;
+			auto alloc = memory->allocSpecified(img.offset, img.requirements.size(), alloctype);
+			if(!img.entry)
+			{
+				std::cerr << "vpp::DeviceMemoryAllocator: no image requirement entry\n";
+			}
+			else
+			{
+				*img.entry = Entry(memory.get(), alloc);
+				img.entry->allocator_ = nullptr;
+			}
+
+			vk::bindImageMemory(vkDevice(), img.requestor, memory->vkDeviceMemory(), img.offset);
 		}
 	}
 
-	return ret;
-}
-
-std::size_t Allocator::biggestBlock() const
-{
-	std::size_t ret = 0;
-	for(auto& buf : buffers_)
-	{
-		if(buf.biggest.size > ret)
-			ret = buf.biggest.size;
-	}
-}
-
-std::size_t Allocator::numberAllocations() const
-{
-	std::size_t ret = 0;
-	for(auto& buf : buffers_)
-	{
-		for(auto& alloc : buf.allocs)
-		{
-			if(alloc.position != nullptr) ++ret;
-		}
-	}
-
-	return ret;
+	//clear
+	imageRequirements_.clear();
+	bufferRequirements_.clear();
 }
 
 }

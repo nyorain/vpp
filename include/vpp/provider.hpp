@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vpp/vk.hpp>
-#include <vpp/memory.hpp>
+#include <vpp/allocator.hpp>
 #include <vpp/commandBuffer.hpp>
 
 #include <vector>

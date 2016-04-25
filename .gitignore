@@ -1,3 +1,6 @@
 build/
 buildwin/
 test.cpp
+.idea/
+.clang_complete
+.build-tools.cson

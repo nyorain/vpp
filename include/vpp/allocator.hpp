@@ -1,64 +1,157 @@
 #pragma once
 
+#include <vpp/vk.hpp>
+#include <vpp/fwd.hpp>
+#include <vpp/resource.hpp>
+#include <vpp/memory.hpp>
+
+#include <memory>
+#include <map>
 #include <vector>
-#include <cstdint>
 
 namespace vpp
 {
 
-///Custom allocator class.
-///Could be used for custom vulkan (host memory) allocations.
-///For device memory allocation see DeviceMemory and DeviceMemoryAllocator.
-class Allocator
+//TODO: Dummy allocations (for later easy image resizing e.g. for window framebuffers)
+//needed? just use bigger allocations?
+
+///Makes it possible to allocate a few vk::DeviceMemory objects for many buffers/images.
+///Basically a memory pool
+class DeviceMemoryAllocator : public Resource
 {
 public:
-	using Size = std::size_t;
-	using Value = std::uint8_t;
-	using Pointer = Value*;
-
-protected:
-	struct Allocation
+	class Entry : public NonCopyable
 	{
-		Pointer position {nullptr};
-		Size size {0};
-		Size alignment {0};
+	public:
+		Entry() = default;
+		Entry(DeviceMemory* memory, const Allocation& alloc);
+		~Entry();
 
-		Pointer end() const { return position + size - 1; }
+		Entry(Entry&& other) noexcept;
+		Entry& operator=(Entry&& other) noexcept;
+
+		///Will try to map the Memory and return a view to the location where this entry is placed.
+		///Throws a std::logic_error if the DeviceMemory is not mappable.
+		MemoryMapView memoryMap() const;
+
+		///Returns whether memory on the device was allocated for this entry.
+		bool allocated() const { return (allocator_); }
+
+		///Assures that there is memory allocated and associated with this entry.
+		void allocate() { if(!memory_) allocator_->allocate(*this); }
+
+		DeviceMemory& memory() const { return *memory_; };
+		std::size_t offset() const { return allocation_.offset; };
+		std::size_t size() const { return allocation_.size; }
+		const Allocation& allocation() const { return allocation_; }
+
+		void swap(Entry& other) noexcept;
+
+	protected:
+		void free();
+
+	protected:
+		friend class DeviceMemoryAllocator;
+
+		DeviceMemoryAllocator* allocator_ {};
+		DeviceMemory* memory_ {};
+		Allocation allocation_ {};
 	};
 
-	struct Buffer
-	{
-		Allocation biggest; //biggest free block, just uses Allocation struct
-		std::vector<Value> buffer;
-		std::vector<Allocation> allocs;
+public:
+	DeviceMemoryAllocator() = default;
+	DeviceMemoryAllocator(const Device& dev);
+	~DeviceMemoryAllocator();
 
-		void recalcBiggest(const Allocation* freed = nullptr);
+	DeviceMemoryAllocator(DeviceMemoryAllocator&& other) noexcept;
+	DeviceMemoryAllocator& operator=(DeviceMemoryAllocator&& other) noexcept;
+
+	///Requests memory for the given vulkan buffer and stores a (pending) reference to it into
+	///the given entry.
+	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
+		Entry& entry);
+
+	///Requests memory for the given vulkan image and stores a (pending) reference to it into
+	///the given entry. It additionally requires the tiling of the image to fulfill vulkans
+	///granularity requiremens.
+	void request(vk::Image requestor,  const vk::MemoryRequirements& reqs, vk::ImageTiling tiling,
+		Entry& entry);
+
+	///Removes the (pending) request from this allocator. Returns false if the given entry could
+	///not be found.
+	bool removeRequest(const Entry& entry);
+
+	///This function will be called when a stored entry is moved.
+	void moveEntry(const Entry& oldOne, const Entry& newOne);
+
+	///Allocates and associated device memory for all pending requests.
+	void allocate();
+
+	///Makes sure that the given entry has associated memory.
+	void allocate(const Entry& entry);
+
+	///Returns all memories that this allocator manages.
+	std::vector<DeviceMemory*> memories() const;
+	void swap(DeviceMemoryAllocator& other) noexcept;
+
+protected:
+	struct BufferRequirement
+	{
+		vk::Buffer requestor;
+		vk::MemoryRequirements requirements;
+		Entry* entry {nullptr};
+		std::size_t offset {0}; //internal use in alloc
+	};
+
+	struct ImageRequirement
+	{
+		vk::Image requestor;
+		vk::MemoryRequirements requirements;
+		vk::ImageTiling tiling;
+		Entry* entry {nullptr};
+
+		std::size_t offset {0}; //internal use in alloc
 	};
 
 protected:
-	std::vector<Buffer> buffers_ {};
+	//all requested allocations
+	std::map<unsigned int, std::vector<BufferRequirement>> bufferRequirements_;
+	std::map<unsigned int, std::vector<ImageRequirement>> imageRequirements_;
 
+	//all owned deviceMemories
+	std::vector<std::unique_ptr<DeviceMemory>> memories_;
+};
+
+
+///Memory Resource initializer.
+///Useful template class for easy and safe 2-step-resource initialization.
+template<typename T> class MemoryResourceInitializer
+{
 protected:
-	Allocation& nextAllocation(Buffer& buf);
-	void addBuffer();
+	bool valid_ {1};
+	T resource_;
 
 public:
-	Size bufferSize;
-	Size allocsSize;
-	Size allocsIncrease;
+	///Constructs the underlaying resource with the given arguments.
+	template<typename... Args>
+	MemoryResourceInitializer(Args&&... args)
+	{
+		resource_.initMemoryLess(std::forward<Args>(args)...);
+	};
 
-public:
-	Allocator(Size pbufferSize = 20000, Size pallocsSize = 100, Size pallocsIncrease = 50);
-	~Allocator();
+	///Initialized the memory resources of the resource with the given arguments and returns
+	///the completely intialized object. After this the Initializer object is invalid and if this
+	///function will be called a second time, it will throw a std::logic_error, since it has
+	///no more a resource to return.
+	template<typename... Args>
+	T init(Args&&... args)
+	{
+		if(!valid_) throw std::logic_error("Called MemoryResourceInitializer::init 2 times");
 
-	void* alloc(Size size, Size alignment);
-	void free(void* buffer);
-	void* realloc(void* buffer, Size size);
-
-	Size size() const;
-	Size allocated() const;
-	Size biggestBlock() const;
-	Size numberAllocations() const;
+		valid_ = 0;
+		resource_.initMemoryResources(std::forward<Args>(args)...);
+		return std::move(resource_);
+	}
 };
 
 }
