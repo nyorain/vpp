@@ -73,7 +73,7 @@ ShaderStage::ShaderStage(ShaderStage&& other) noexcept
 {
 	using std::swap;
 
-	device_ = other.device_;
+	swap(device_, other.device_);
 	swap(stageInfo_, other.stageInfo_);
 }
 
@@ -81,8 +81,10 @@ ShaderStage& ShaderStage::operator=(ShaderStage&& other) noexcept
 {
 	destroy();
 
-	stageInfo_ = std::move(other.stageInfo_);
-	other.stageInfo_ = vk::PipelineShaderStageCreateInfo {};
+	using std::swap;
+	
+	swap(device_, other.device_);
+	swap(stageInfo_, other.stageInfo_);
 
 	return *this;
 }

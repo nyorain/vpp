@@ -11,13 +11,15 @@ DeviceMemoryAllocator::Entry::Entry(DeviceMemory* memory, const Allocation& allo
 
 DeviceMemoryAllocator::Entry::Entry(Entry&& other) noexcept
 {
-	this->swap(other);
+	swap(*this, other);
+	if(allocator_) allocator_->moveEntry(other, *this);
 }
 
 DeviceMemoryAllocator::Entry& DeviceMemoryAllocator::Entry::operator=(Entry&& other) noexcept
 {
 	this->free();
-	this->swap(other);
+	swap(*this, other);
+	if(allocator_) allocator_->moveEntry(other, *this);
 	return *this;
 }
 
@@ -27,26 +29,29 @@ DeviceMemoryAllocator::Entry::~Entry()
 	free();
 }
 
-void DeviceMemoryAllocator::Entry::swap(Entry& other) noexcept
+void swap(DeviceMemoryAllocator::Entry& a, DeviceMemoryAllocator::Entry& b) noexcept
 {
 	using std::swap;
 
-	swap(memory_, other.memory_);
-	swap(allocation_, other.allocation_);
-	swap(allocator_, other.allocator_);
+	swap(a.memory_, b.memory_);
+	swap(a.allocation_, b.allocation_);
+	swap(a.allocator_, b.allocator_);
 }
 
 void DeviceMemoryAllocator::Entry::free()
 {
-	if((memory_ != nullptr) && (allocation_.size > 0))
-	{
-		memory_->free(allocation_);
-	}
+	if(allocator_) allocator_->removeRequest(*this);
+	if((memory_ != nullptr) && (allocation_.size > 0)) memory_->free(allocation_);
 
 	memory_ = nullptr;
 	allocation_ = {};
 }
 
+MemoryMapView DeviceMemoryAllocator::Entry::map() const
+{
+	std::cout << "memory: " << memory_ << "\n";
+	return memory().map(allocation());
+}
 
 //Allocator
 DeviceMemoryAllocator::DeviceMemoryAllocator(const Device& dev) : Resource(dev)
@@ -55,28 +60,27 @@ DeviceMemoryAllocator::DeviceMemoryAllocator(const Device& dev) : Resource(dev)
 
 DeviceMemoryAllocator::~DeviceMemoryAllocator()
 {
-	//RAII
-	if(device_)allocate();
+	if(device_) allocate();
 }
 
 DeviceMemoryAllocator::DeviceMemoryAllocator(DeviceMemoryAllocator&& other) noexcept
 {
-	this->swap(other);
+	swap(*this, other);
 }
 DeviceMemoryAllocator& DeviceMemoryAllocator::operator=(DeviceMemoryAllocator&& other) noexcept
 {
-	if(device_)allocate();
-	this->swap(other);
+	if(device_) allocate();
+	swap(*this, other);
 	return *this;
 }
 
-void DeviceMemoryAllocator::swap(DeviceMemoryAllocator& other) noexcept
+void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept
 {
 	using std::swap;
 
-	swap(bufferRequirements_, other.bufferRequirements_);
-	swap(imageRequirements_, other.imageRequirements_);
-	swap(device_, other.device_);
+	swap(a.bufferRequirements_, b.bufferRequirements_);
+	swap(a.imageRequirements_, b.imageRequirements_);
+	swap(a.device_, b.device_);
 }
 
 void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
@@ -120,12 +124,9 @@ void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequire
 bool DeviceMemoryAllocator::removeRequest(const Entry& entry)
 {
 	//check buffer
-	for(auto& reqs : bufferRequirements_)
-	{
-		for(auto it = reqs.second.begin(); it != reqs.second.end(); ++it)
-		{
-			if(it->entry == &entry)
-			{
+	for(auto& reqs : bufferRequirements_) {
+		for(auto it = reqs.second.begin(); it != reqs.second.end(); ++it) {
+			if(it->entry == &entry) {
 				reqs.second.erase(it);
 				return true;
 			}
@@ -133,12 +134,9 @@ bool DeviceMemoryAllocator::removeRequest(const Entry& entry)
 	}
 
 	//check image
-	for(auto& reqs : imageRequirements_)
-	{
-		for(auto it = reqs.second.begin(); it != reqs.second.end(); ++it)
-		{
-			if(it->entry == &entry)
-			{
+	for(auto& reqs : imageRequirements_) {
+		for(auto it = reqs.second.begin(); it != reqs.second.end(); ++it) {
+			if(it->entry == &entry) {
 				reqs.second.erase(it);
 				return true;
 			}
@@ -149,6 +147,33 @@ bool DeviceMemoryAllocator::removeRequest(const Entry& entry)
 	return false;
 }
 
+bool DeviceMemoryAllocator::moveEntry(Entry& oldOne, Entry& newOne)
+{
+	//check buffer
+	for(auto& reqs : bufferRequirements_) {
+		for(auto& req : reqs.second) {
+			if(req.entry == &oldOne) {
+				req.entry = &newOne;
+				return true;
+			}
+		}
+	}
+
+	//check image
+	for(auto& reqs : imageRequirements_) {
+		for(auto& req : reqs.second) {
+			if(req.entry == &oldOne) {
+				req.entry = &newOne;
+				return true;
+			}
+		}
+	}
+
+	//not found
+	return false;
+}
+
+//TODO: reimplement both allocate functions to be more effeicient (reuse old mem esp.)
 void DeviceMemoryAllocator::allocate()
 {
 	using AllocType = DeviceMemory::AllocationType;
@@ -163,13 +188,10 @@ void DeviceMemoryAllocator::allocate()
 	std::map<unsigned int, AllocType> lastAlloc;
 
 	//add bufferRequirements to sizeMap
-	for(auto i = 0u; i < 32; ++i)
-	{
+	for(auto i = 0u; i < 32; ++i) {
 		auto itbuf = bufferRequirements_.find(i);
-		if(itbuf != bufferRequirements_.cend())
-		{
-			for(auto& req : itbuf->second)
-			{
+		if(itbuf != bufferRequirements_.cend()) {
+			for(auto& req : itbuf->second) {
 				auto align = req.requirements.alignment();
 				auto alignedOffset = ((sizeMap[i] + align) & ~align);
 				req.offset = alignedOffset;
@@ -181,18 +203,14 @@ void DeviceMemoryAllocator::allocate()
 	}
 
 	//add ImageRrequirements to sizeMap, care for granularity
-	for(auto i = 0u; i < 32; ++i)
-	{
+	for(auto i = 0u; i < 32; ++i) {
 		auto itimg = imageRequirements_.find(i);
-		if(itimg != imageRequirements_.cend())
-		{
-			for(auto& req : itimg->second)
-			{
+		if(itimg != imageRequirements_.cend()) {
+			for(auto& req : itimg->second) {
 				auto allocType = (req.tiling == vk::ImageTiling::Optimal) ?
 						AllocType::imageOptimal : AllocType::imageLinear;
 
-				if(lastAlloc[i] != AllocType::none && allocType != lastAlloc[i])
-				{
+				if(lastAlloc[i] != AllocType::none && allocType != lastAlloc[i]) {
 					sizeMap[i] = (sizeMap[i] + granularity) & ~granularity;
 					lastAlloc[i] = allocType;
 				}
@@ -207,21 +225,16 @@ void DeviceMemoryAllocator::allocate()
 	}
 
 	//allocate and bind DeviceMemory objects
-	for(auto& entry : sizeMap)
-	{
+	for(auto& entry : sizeMap) {
 		auto memory = std::make_unique<DeviceMemory>(device(), entry.second, entry.first);
 
 		//buffers
-		for(auto& buf : bufferRequirements_[entry.first])
-		{
+		for(auto& buf : bufferRequirements_[entry.first]) {
 			auto alloc = memory->allocSpecified(buf.offset, buf.requirements.size(),
 				AllocType::buffer);
-			if(!buf.entry)
-			{
+			if(!buf.entry) {
 				std::cerr << "vpp::DeviceMemoryAllocator: no buffer requirement entry\n";
-			}
-			else
-			{
+			} else {
 				*buf.entry = Entry(memory.get(), alloc);
 				buf.entry->allocator_ = nullptr;
 			}
@@ -230,17 +243,14 @@ void DeviceMemoryAllocator::allocate()
 		}
 
 		//images
-		for(auto& img : imageRequirements_[entry.first])
-		{
+		for(auto& img : imageRequirements_[entry.first]) {
 			auto alloctype = (img.tiling == vk::ImageTiling::Linear) ? AllocType::imageLinear
 				: AllocType::imageOptimal;
 			auto alloc = memory->allocSpecified(img.offset, img.requirements.size(), alloctype);
-			if(!img.entry)
-			{
+			if(!img.entry) {
 				std::cerr << "vpp::DeviceMemoryAllocator: no image requirement entry\n";
 			}
-			else
-			{
+			else {
 				*img.entry = Entry(memory.get(), alloc);
 				img.entry->allocator_ = nullptr;
 			}
@@ -252,6 +262,20 @@ void DeviceMemoryAllocator::allocate()
 	//clear
 	imageRequirements_.clear();
 	bufferRequirements_.clear();
+}
+
+bool DeviceMemoryAllocator::allocate(const Entry &entry)
+{
+	allocate();
+	return true;
+}
+
+std::vector<DeviceMemory*> DeviceMemoryAllocator::memories() const
+{
+	std::vector<DeviceMemory*> ret;
+	ret.reserve(memories_.size());
+	for(auto& mem : memories_) ret.push_back(mem.get());
+	return ret;
 }
 
 }

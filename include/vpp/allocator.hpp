@@ -20,7 +20,7 @@ namespace vpp
 class DeviceMemoryAllocator : public Resource
 {
 public:
-	class Entry : public NonCopyable
+	class Entry : public ResourceReference<Entry>
 	{
 	public:
 		Entry() = default;
@@ -32,10 +32,10 @@ public:
 
 		///Will try to map the Memory and return a view to the location where this entry is placed.
 		///Throws a std::logic_error if the DeviceMemory is not mappable.
-		MemoryMapView memoryMap() const;
+		MemoryMapView map() const;
 
 		///Returns whether memory on the device was allocated for this entry.
-		bool allocated() const { return (allocator_); }
+		bool allocated() const { return (memory_); }
 
 		///Assures that there is memory allocated and associated with this entry.
 		void allocate() { if(!memory_) allocator_->allocate(*this); }
@@ -45,7 +45,8 @@ public:
 		std::size_t size() const { return allocation_.size; }
 		const Allocation& allocation() const { return allocation_; }
 
-		void swap(Entry& other) noexcept;
+		const Resource& resourceRef() const { if(memory_) return *memory_; else return *allocator_; }
+		friend void swap(Entry& a, Entry& b) noexcept;
 
 	protected:
 		void free();
@@ -82,17 +83,20 @@ public:
 	bool removeRequest(const Entry& entry);
 
 	///This function will be called when a stored entry is moved.
-	void moveEntry(const Entry& oldOne, const Entry& newOne);
+	///Will return false if the given entry is not found.
+	bool moveEntry(Entry& oldOne, Entry& newOne);
 
 	///Allocates and associated device memory for all pending requests.
 	void allocate();
 
 	///Makes sure that the given entry has associated memory.
-	void allocate(const Entry& entry);
+	///Will return false if the given entry cannot be found.
+	bool allocate(const Entry& entry);
 
 	///Returns all memories that this allocator manages.
 	std::vector<DeviceMemory*> memories() const;
-	void swap(DeviceMemoryAllocator& other) noexcept;
+
+	friend void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept;
 
 protected:
 	struct BufferRequirement
@@ -122,6 +126,8 @@ protected:
 	std::vector<std::unique_ptr<DeviceMemory>> memories_;
 };
 
+///Convinience typedef for a shorter type name
+using MemoryEntry = DeviceMemoryAllocator::Entry;
 
 ///Memory Resource initializer.
 ///Useful template class for easy and safe 2-step-resource initialization.

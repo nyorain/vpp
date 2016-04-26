@@ -19,13 +19,13 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPrope
 
 Image::Image(Image&& other) noexcept
 {
-	this->swap(other);
+	swap(*this, other);
 }
 
 Image& Image::operator=(Image&& other) noexcept
 {
 	destroy();
-	this->swap(other);
+	swap(*this, other);
 	return *this;
 }
 
@@ -34,13 +34,13 @@ Image::~Image()
 	destroy();
 }
 
-void Image::swap(Image& other) noexcept
+void swap(Image& a, Image& b) noexcept
 {
 	using std::swap;
 
-	swap(image_, other.image_);
-	swap(memoryEntry_, other.memoryEntry_);
-	swap(device_, other.device_);
+	swap(a.image_, b.image_);
+	swap(a.memoryEntry_, b.memoryEntry_);
+	swap(a.device_, b.device_);
 }
 
 void Image::destroy()
@@ -52,7 +52,7 @@ void Image::destroy()
 	Resource::destroy();
 }
 
-MemoryMap Image::memoryMap() const
+MemoryMapView Image::memoryMap() const
 {
 	assureMemory();
 	return memoryEntry().map();

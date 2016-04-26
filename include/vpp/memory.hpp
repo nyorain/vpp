@@ -16,6 +16,8 @@ struct Allocation
 {
 	std::size_t offset {0};
 	std::size_t size {0};
+
+	std::size_t end() const { return offset + size; }
 };
 
 ///Represents a mapped range of a vulkan DeviceMemory.
@@ -30,8 +32,8 @@ public:
 	MemoryMap(MemoryMap&& other) noexcept;
 	MemoryMap& operator=(MemoryMap&& other) noexcept;
 
-	///Fills the mapped memory with the given data.
-	void fill(void* data, std::size_t size, std::size_t offset = 0) const;
+	///Might remaps the mapped range to assure it also includes the given allocation.
+	void remap(const Allocation& allocation);
 
 	///Makes sure the mapped data is visibile on the device.
 	///Not needed when memory is coherent, look at vkFlushMappedMemoryRanges.
@@ -49,11 +51,12 @@ public:
 	const DeviceMemory& memory() const { return *memory_; }
 
 	const DeviceMemory& resourceRef() const { return *memory_; }
-	void swap(MemoryMap& other) noexcept;
+	friend void swap(MemoryMap& a, MemoryMap& b) noexcept;
 
 protected:
 	friend class MemoryMapView;
 
+	void ref();
 	void unref();
 	void unmap();
 
@@ -73,13 +76,20 @@ public:
 	MemoryMapView(MemoryMap& map, const Allocation& range);
 	~MemoryMapView();
 
+	MemoryMapView(MemoryMapView&& other) noexcept;
+	MemoryMapView& operator=(MemoryMapView other) noexcept;
+
 	std::uint8_t* ptr() const;
 
-	const DeviceMemory& resourceRef() const { return *memory_; }
+	const Allocation& allocation() const { return allocation_; }
+	MemoryMap& memoryMap() const { return *memoryMap_; }
+
+	const MemoryMap& resourceRef() const { return *memoryMap_; }
+	friend void swap(MemoryMapView& a, MemoryMapView& b) noexcept;
 
 protected:
-	DeviceMemory* memory_;
-	Allocation allocation_;
+	MemoryMap* memoryMap_ {};
+	Allocation allocation_ {};
 };
 
 ///DeviceMemory class that keeps track of its allocated and freed areas.
@@ -136,10 +146,10 @@ public:
 	std::size_t size() const;
 
 	///Returns the currently mapped range, or nullptr if there is none.
-	MemoryMap* mapped() { return &memoryMap_; }
+	MemoryMap* mapped() { return (memoryMap_.ptr()) ? &memoryMap_ : nullptr; }
 
 	///Returns the currently mapped range, or nullptr if there is none.
-	const MemoryMap* mapped() const { return &memoryMap_; }
+	const MemoryMap* mapped() const { return (memoryMap_.ptr()) ? &memoryMap_ : nullptr; }
 
 	///Maps the specified memory range.
 	///Will throw a std::logic_error if this memory is not mappeble.

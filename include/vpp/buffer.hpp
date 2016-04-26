@@ -28,13 +28,6 @@ public:
 ///Representing a vulkan buffer on a device.
 class Buffer : public Resource
 {
-protected:
-	vk::Buffer buffer_ {};
-	std::unique_ptr<DeviceMemoryAllocator::Entry> memoryEntry_;
-
-protected:
-	void destroy();
-
 public:
 	Buffer() = default;
 	Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
@@ -43,18 +36,13 @@ public:
 	Buffer(Buffer&& other) noexcept;
 	Buffer& operator=(Buffer&& other) noexcept;
 
-	void swap(Buffer& other) noexcept;
-
-	const DeviceMemoryAllocator::Entry& memoryEntry() const { return *memoryEntry_; }
-	vk::Buffer vkBuffer() const { return buffer_; }
-
 	///Assures that there is device memory associated with this buffer.
 	///Will be implicitly called on member functions that require it.
 	void assureMemory() const;
 
 	///Returns a vulkan memory map guard. Should only be called when buffer was created on a
 	///host visible device memory heap and if the device memory was allocated.
-	MemoryMap memoryMap() const;
+	MemoryMapView memoryMap() const;
 
 	///Fills the buffer with the given data.
 	///Does this either by memory mapping the buffer or by copying it via command buffer.
@@ -64,6 +52,18 @@ public:
 	///Note that this operation may be asnyc, so shall call Device::finishSetup to make sure the
 	///buffer is really filled with the given data.
 	void fill(const std::vector<BufferData>& data) const;
+
+	const DeviceMemoryAllocator::Entry& memoryEntry() const { return *memoryEntry_; }
+	vk::Buffer vkBuffer() const { return buffer_; }
+
+	friend void swap(Buffer& a, Buffer& b) noexcept;
+
+protected:
+	void destroy();
+
+protected:
+	vk::Buffer buffer_ {};
+	std::unique_ptr<MemoryEntry> memoryEntry_;
 };
 
 };

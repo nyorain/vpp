@@ -65,7 +65,7 @@ const Device::Queue* Device::queue(std::uint32_t family, std::uint32_t id) const
 	return nullptr;
 }
 
-int Device::memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const
+int Device::memoryType(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits) const
 {
 	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount(); ++i)
 	{
@@ -79,7 +79,7 @@ int Device::memoryType(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) c
 	return -1;
 }
 
-std::uint32_t Device::memoryTypeBits(std::uint32_t typeBits, vk::MemoryPropertyFlags mflags) const
+std::uint32_t Device::memoryTypeBits(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits) const
 {
 	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount(); ++i)
 	{

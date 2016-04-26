@@ -19,13 +19,13 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPr
 
 Buffer::Buffer(Buffer&& other) noexcept
 {
-	this->swap(other);
+	swap(*this, other);
 }
 
 Buffer& Buffer::operator=(Buffer&& other) noexcept
 {
-	Buffer swapper(std::move(other));
-	this->swap(swapper);
+	destroy();
+	swap(*this, other);
 	return *this;
 }
 
@@ -34,13 +34,13 @@ Buffer::~Buffer()
 	destroy();
 }
 
-void Buffer::swap(Buffer& other) noexcept
+void swap(Buffer& a, Buffer& b) noexcept
 {
 	using std::swap;
 
-	swap(memoryEntry_, other.memoryEntry_);
-	swap(buffer_, other.buffer_);
-	swap(device_, other.device_);
+	swap(b.memoryEntry_, a.memoryEntry_);
+	swap(b.buffer_, a.buffer_);
+	swap(b.device_, a.device_);
 }
 
 void Buffer::destroy()
@@ -52,10 +52,10 @@ void Buffer::destroy()
 	Resource::destroy();
 }
 
-MemoryMap Buffer::memoryMap() const
+MemoryMapView Buffer::memoryMap() const
 {
 	assureMemory();
-	return MemoryMap(memoryEntry().allocation());
+	return memoryEntry().map();
 }
 
 void Buffer::fill(const std::vector<BufferData>& data) const

@@ -4,6 +4,132 @@
 namespace vpp
 {
 
+//MemoryMap
+MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
+	: memory_(&memory), allocation_(alloc)
+{
+	vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {}, &ptr_);
+}
+
+MemoryMap::MemoryMap(MemoryMap&& other) noexcept
+{
+	swap(*this, other);
+}
+
+MemoryMap& MemoryMap::operator=(MemoryMap&& other) noexcept
+{
+	unmap();
+	swap(*this, other);
+	return *this;
+}
+
+MemoryMap::~MemoryMap()
+{
+	unmap();
+}
+
+void MemoryMap::remap(const Allocation& allocation)
+{
+	auto nbeg = std::min(allocation.offset, allocation_.offset);
+	auto nsize = std::max(allocation.end(), allocation_.end()) - nbeg;
+
+	if(offset() <= nbeg && offset() + size() >= nbeg + nsize) return;
+
+	vk::unmapMemory(memory().vkDevice(), vkMemory());
+	allocation_ = {nbeg, nsize};
+
+	vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {}, &ptr_);
+}
+
+void swap(MemoryMap& a, MemoryMap& b) noexcept
+{
+	using std::swap;
+
+	swap(a.memory_, b.memory_);
+	swap(a.allocation_, b.allocation_);
+	swap(a.ptr_, b.ptr_);
+	swap(a.views_, b.views_);
+}
+
+vk::DeviceMemory MemoryMap::vkMemory() const
+{
+	return memory_->vkDeviceMemory();
+}
+
+void MemoryMap::flushRanges() const
+{
+	//TODO: check for memory flags - function call needed?
+	vk::MappedMemoryRange range {vkMemory(), offset(), size()};
+	vk::flushMappedMemoryRanges(memory().vkDevice(), 1, &range);
+}
+
+void MemoryMap::invalidateRanges() const
+{
+	//TODO: check for memory flags - function call needed?
+	vk::MappedMemoryRange range {vkMemory(), offset(), size()};
+	vk::invalidateMappedMemoryRanges(memory().vkDevice(), 1, &range);
+}
+
+void MemoryMap::unmap()
+{
+	if(memory_ && vkMemory() && ptr() && size())
+	{
+		vk::unmapMemory(memory().vkDevice(), vkMemory());
+	}
+
+	memory_ = nullptr;
+	allocation_ = {};
+	ptr_ = nullptr;
+	views_ = 0;
+}
+
+void MemoryMap::ref()
+{
+	views_++;
+}
+
+void MemoryMap::unref()
+{
+	if(views_ <= 1) unmap();
+	else views_--;
+}
+
+//MemoryMapView
+MemoryMapView::MemoryMapView(MemoryMap& map, const Allocation& allocation)
+	: memoryMap_(&map), allocation_(allocation)
+{
+	memoryMap_->ref();
+}
+
+MemoryMapView::~MemoryMapView()
+{
+	if(memoryMap_) memoryMap_->unref();
+}
+
+MemoryMapView::MemoryMapView(MemoryMapView&& other) noexcept
+{
+	swap(*this, other);
+}
+
+MemoryMapView& MemoryMapView::operator=(MemoryMapView other) noexcept
+{
+	swap(*this, other);
+	return *this;
+}
+
+std::uint8_t* MemoryMapView::ptr() const
+{
+	return memoryMap().ptr() + allocation().offset - memoryMap().offset();
+}
+
+void swap(MemoryMapView& a, MemoryMapView& b) noexcept
+{
+	using std::swap;
+
+	swap(a.memoryMap_, b.memoryMap_);
+	swap(a.allocation_, b.allocation_);
+}
+
 //Memory
 DeviceMemory::DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info)
 	: Resource(dev)
@@ -108,68 +234,16 @@ std::size_t DeviceMemory::size() const
 	return size_;
 }
 
-//MemoryMap
-MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
-	: memory_(&memory), allocation_(alloc)
+MemoryMapView DeviceMemory::map(const Allocation& allocation)
 {
-	vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {}, &ptr_);
-}
+	std::cout << "mapped: " << memoryMap_.ptr() << "\n";
+	if(!(propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible))
+		throw std::logic_error("DeviceMemory::map: not mappable.");
 
-MemoryMap::MemoryMap(MemoryMap&& other) noexcept
-{
-	this->swap(other);
-}
+	if(!mapped()) memoryMap_ = MemoryMap(*this, allocation);
+	else memoryMap_.remap(allocation);
 
-MemoryMap& MemoryMap::operator=(MemoryMap&& other) noexcept
-{
-	unmap();
-	this->swap(other);
-	return *this;
-}
-
-MemoryMap::~MemoryMap()
-{
-	unmap();
-}
-
-void MemoryMap::swap(MemoryMap& other) noexcept
-{
-	using std::swap;
-
-	swap(memory_, other.memory_);
-	swap(allocation_, other.allocation_);
-	swap(ptr_, other.ptr_);
-}
-
-vk::DeviceMemory MemoryMap::vkMemory() const
-{
-	return memory_->vkDeviceMemory();
-}
-
-void MemoryMap::flushRanges() const
-{
-	//TODO: check for memory flags - function call needed?
-	vk::MappedMemoryRange range {vkMemory(), offset(), size()};
-	vk::flushMappedMemoryRanges(memory().vkDevice(), 1, &range);
-}
-
-void MemoryMap::invalidateRanges() const
-{
-	//TODO: check for memory flags - function call needed?
-	vk::MappedMemoryRange range {vkMemory(), offset(), size()};
-	vk::invalidateMappedMemoryRanges(memory().vkDevice(), 1, &range);
-}
-
-void MemoryMap::unmap()
-{
-	if(memory_ && vkMemory() && ptr() && size())
-	{
-		vk::unmapMemory(memory().vkDevice(), vkMemory());
-	}
-
-	memory_ = nullptr;
-	allocation_ = {};
-	ptr_ = nullptr;
+	return MemoryMapView(memoryMap_, allocation);
 }
 
 }
