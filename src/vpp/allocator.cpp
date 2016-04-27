@@ -12,14 +12,12 @@ DeviceMemoryAllocator::Entry::Entry(DeviceMemory* memory, const Allocation& allo
 DeviceMemoryAllocator::Entry::Entry(Entry&& other) noexcept
 {
 	swap(*this, other);
-	if(allocator_) allocator_->moveEntry(other, *this);
 }
 
 DeviceMemoryAllocator::Entry& DeviceMemoryAllocator::Entry::operator=(Entry&& other) noexcept
 {
 	this->free();
 	swap(*this, other);
-	if(allocator_) allocator_->moveEntry(other, *this);
 	return *this;
 }
 
@@ -33,6 +31,9 @@ void swap(DeviceMemoryAllocator::Entry& a, DeviceMemoryAllocator::Entry& b) noex
 {
 	using std::swap;
 
+	if(a.allocator_) a.allocator_->moveEntry(a, b);
+	if(b.allocator_) b.allocator_->moveEntry(b, a);
+
 	swap(a.memory_, b.memory_);
 	swap(a.allocation_, b.allocation_);
 	swap(a.allocator_, b.allocator_);
@@ -41,16 +42,16 @@ void swap(DeviceMemoryAllocator::Entry& a, DeviceMemoryAllocator::Entry& b) noex
 void DeviceMemoryAllocator::Entry::free()
 {
 	if(allocator_) allocator_->removeRequest(*this);
-	if((memory_ != nullptr) && (allocation_.size > 0)) memory_->free(allocation_);
+	if((memory_) && (allocation_.size > 0)) memory_->free(allocation_);
 
 	memory_ = nullptr;
 	allocation_ = {};
+	allocator_ = nullptr;
 }
 
 MemoryMapView DeviceMemoryAllocator::Entry::map() const
 {
-	std::cout << "memory: " << memory_ << "\n";
-	return memory().map(allocation());
+	return memory()->map(allocation());
 }
 
 //Allocator
@@ -81,6 +82,7 @@ void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept
 	swap(a.bufferRequirements_, b.bufferRequirements_);
 	swap(a.imageRequirements_, b.imageRequirements_);
 	swap(a.device_, b.device_);
+	swap(a.memories_, b.memories_);
 }
 
 void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
@@ -232,12 +234,9 @@ void DeviceMemoryAllocator::allocate()
 		for(auto& buf : bufferRequirements_[entry.first]) {
 			auto alloc = memory->allocSpecified(buf.offset, buf.requirements.size(),
 				AllocType::buffer);
-			if(!buf.entry) {
-				std::cerr << "vpp::DeviceMemoryAllocator: no buffer requirement entry\n";
-			} else {
-				*buf.entry = Entry(memory.get(), alloc);
-				buf.entry->allocator_ = nullptr;
-			}
+			buf.entry->allocator_ = nullptr;
+			buf.entry->memory_ = memory.get();
+			buf.entry->allocation_ = alloc;
 
 			vk::bindBufferMemory(vkDevice(), buf.requestor, memory->vkDeviceMemory(), buf.offset);
 		}
@@ -247,16 +246,14 @@ void DeviceMemoryAllocator::allocate()
 			auto alloctype = (img.tiling == vk::ImageTiling::Linear) ? AllocType::imageLinear
 				: AllocType::imageOptimal;
 			auto alloc = memory->allocSpecified(img.offset, img.requirements.size(), alloctype);
-			if(!img.entry) {
-				std::cerr << "vpp::DeviceMemoryAllocator: no image requirement entry\n";
-			}
-			else {
-				*img.entry = Entry(memory.get(), alloc);
-				img.entry->allocator_ = nullptr;
-			}
+			img.entry->allocator_ = nullptr;
+			img.entry->memory_ = memory.get();
+			img.entry->allocation_ = alloc;
 
 			vk::bindImageMemory(vkDevice(), img.requestor, memory->vkDeviceMemory(), img.offset);
 		}
+
+		memories_.push_back(std::move(memory));
 	}
 
 	//clear

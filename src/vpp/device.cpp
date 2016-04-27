@@ -41,6 +41,10 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 
 Device::~Device()
 {
+	cbProvider_.reset();
+	dmProvider_.reset();
+	commandManager_.reset();
+
 	if(vkDevice()) vk::destroyDevice(device_, nullptr);
 }
 

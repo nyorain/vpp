@@ -82,7 +82,7 @@ ShaderStage& ShaderStage::operator=(ShaderStage&& other) noexcept
 	destroy();
 
 	using std::swap;
-	
+
 	swap(device_, other.device_);
 	swap(stageInfo_, other.stageInfo_);
 

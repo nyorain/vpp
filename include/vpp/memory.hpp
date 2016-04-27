@@ -166,7 +166,7 @@ protected:
 
 	std::size_t typeIndex_ {};
 	vk::MemoryPropertyFlags flags_ {};
-	MemoryMap memoryMap_;
+	MemoryMap memoryMap_ {};
 };
 
 }

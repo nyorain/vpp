@@ -40,7 +40,8 @@ public:
 		///Assures that there is memory allocated and associated with this entry.
 		void allocate() { if(!memory_) allocator_->allocate(*this); }
 
-		DeviceMemory& memory() const { return *memory_; };
+		DeviceMemory* memory() const { return memory_; };
+		DeviceMemoryAllocator* allocator() const { return allocator_; };
 		std::size_t offset() const { return allocation_.offset; };
 		std::size_t size() const { return allocation_.size; }
 		const Allocation& allocation() const { return allocation_; }

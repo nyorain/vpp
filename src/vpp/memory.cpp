@@ -236,7 +236,6 @@ std::size_t DeviceMemory::size() const
 
 MemoryMapView DeviceMemory::map(const Allocation& allocation)
 {
-	std::cout << "mapped: " << memoryMap_.ptr() << "\n";
 	if(!(propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible))
 		throw std::logic_error("DeviceMemory::map: not mappable.");
 
