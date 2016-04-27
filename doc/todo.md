@@ -1,2 +1,3 @@
 - better renderer resetting (all command pools at once, just resize the frameRenderers vector)
 - textures
+- correctly (efficient) device memory allocator

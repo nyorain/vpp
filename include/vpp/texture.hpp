@@ -19,6 +19,12 @@ public:
 		vk::SamplerCreateInfo samplerInfo = {};
 	};
 
+	struct ImageData
+	{
+		std::uint8_t* data;
+		vk::Extent2D size_;
+	};
+
 protected:
 	Image image_;
 	vk::ImageView imageView_;

@@ -32,8 +32,8 @@ public:
 	{
 		const RenderPass* renderPass = nullptr;
 		Device::Queue queue {};
-		std::vector<FramebufferAttachment::CreateInfo> dynamicAttachments;
-		std::vector<FramebufferAttachment::CreateInfo> staticAttachments;
+		std::vector<ViewableImage::CreateInfo> staticAttachments;
+		std::vector<ViewableImage::CreateInfo> dynamicAttachments;
 	};
 
 	struct RenderBuffer
@@ -42,35 +42,16 @@ public:
 		vk::CommandBuffer commandBuffer;
 	};
 
-protected:
-	const SwapChain* swapChain_ = nullptr;
-
-	CreateInfo info_ {};
-	std::vector<RenderBuffer> renderBuffers_;
-	std::vector<FramebufferAttachment> staticAttachments_;
-	vk::CommandPool commandPool_ {};
-
-protected:
-	void destroy();
-	void destroyRenderBuffers();
-
-	void buildCommandBuffers(const RendererBuilder& builder);
-
 public:
 	SwapChainRenderer() = default;
 	SwapChainRenderer(const SwapChain& swapChain, const RendererBuilder& builder,
 		const CreateInfo& info);
-	SwapChainRenderer(DeviceMemoryAllocator& allocator, const SwapChain& swapChain,
-		const RendererBuilder& builder, const CreateInfo& info);
 	~SwapChainRenderer();
 
 	SwapChainRenderer(SwapChainRenderer&& other) noexcept;
 	SwapChainRenderer& operator=(SwapChainRenderer&& other) noexcept;
 
-	void swap(SwapChainRenderer& other) noexcept;
-
-	void initMemoryLess(DeviceMemoryAllocator& allocator, const SwapChain& swapChain,
-		const CreateInfo& info);
+	void initMemoryLess(const SwapChain& swapChain, const CreateInfo& info);
 	void initMemoryResources(const RendererBuilder& builder);
 
 	///Renders one frame and presents the swapChain buffer.
@@ -80,11 +61,26 @@ public:
 	const SwapChain& swapChain() const { return *swapChain_; }
 	const CreateInfo& info() const { return info_; }
 	const std::vector<RenderBuffer>& renderBuffers() const { return renderBuffers_; }
-	const std::vector<FramebufferAttachment>& staticAttachments() const { return staticAttachments_; }
+	const std::vector<ViewableImage>& staticAttachments() const { return staticAttachments_; }
 
 	vk::CommandPool vkCommandPool() const { return commandPool_; }
 	vk::RenderPass vkRenderPass() const { return renderPass().vkRenderPass(); }
 	vk::Queue vkQueue()	const { return info().queue.queue; }
+
+	void destroy();
+	friend void swap(SwapChainRenderer& a, SwapChainRenderer& b) noexcept;
+
+protected:
+	void destroyRenderBuffers();
+	void buildCommandBuffers(const RendererBuilder& builder);
+
+protected:
+	const SwapChain* swapChain_ = nullptr;
+
+	CreateInfo info_ {};
+	std::vector<RenderBuffer> renderBuffers_;
+	std::vector<ViewableImage> staticAttachments_;
+	vk::CommandPool commandPool_ {};
 };
 
 }

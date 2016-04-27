@@ -9,55 +9,43 @@
 namespace vpp
 {
 
-//Framebuffer attachment holding image, imageView and format.
-class FramebufferAttachment : public Resource
+///Viewable image
+class ViewableImage : public Resource
 {
 public:
 	struct CreateInfo
 	{
-		vk::Format format;
-		vk::ImageUsageFlags usage;
-		vk::ImageAspectFlags aspects;
-		vk::ComponentMapping components {};
-		bool mappable = 0;
-		unsigned int mipLevels = 1;
-		unsigned int arrayLayers = 1;
-		vk::ImageTiling tiling = vk::ImageTiling::Optimal;
-		vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1;
+		vk::ImageCreateInfo imageInfo {};
+		vk::ImageViewCreateInfo viewInfo {};
 		vk::MemoryPropertyFlags imageMemoryFlags = {};
-		vk::Extent2D size;
 	};
 
 	//convinience attachment info instances
-	static CreateInfo defaultDepthAttachment;
-	static CreateInfo defaultColorAttachment;
+	static CreateInfo defaultDepth2D;
+	static CreateInfo defaultColor2D;
+
+public:
+	ViewableImage() = default;
+	ViewableImage(const Device& dev, const CreateInfo& info);
+	~ViewableImage();
+
+	ViewableImage(ViewableImage&& other) noexcept;
+	ViewableImage& operator=(ViewableImage&& other) noexcept;
+
+	void initMemoryLess(const Device& dev, const vk::ImageCreateInfo& info,
+		vk::MemoryPropertyFlags imageMemFlags = {});
+	void initMemoryResources(vk::ImageViewCreateInfo info);
+
+	const Image& image() const { return image_; }
+	vk::ImageView vkImageView() const { return imageView_; }
+	vk::Image vkImage() const { return image_.vkImage(); }
+
+	void destroy();
+	friend void swap(ViewableImage& a, ViewableImage& b) noexcept;
 
 protected:
 	Image image_;
 	vk::ImageView imageView_ {};
-
-protected:
-	void initImage(DeviceMemoryAllocator& allocator, const CreateInfo& info);
-	void initView(const CreateInfo& info);
-
-	void destroy();
-
-public:
-	FramebufferAttachment() = default;
-	FramebufferAttachment(const Device& dev, const CreateInfo& info);
-	FramebufferAttachment(DeviceMemoryAllocator& allocator, const CreateInfo& info);
-	~FramebufferAttachment();
-
-	FramebufferAttachment(FramebufferAttachment&& other) noexcept;
-	FramebufferAttachment& operator=(FramebufferAttachment&& other) noexcept;
-
-	void swap(FramebufferAttachment& other) noexcept;
-
-	void initMemoryLess(DeviceMemoryAllocator& allocator, const CreateInfo& info);
-	void initMemoryResources(const CreateInfo& info);
-
-	const Image& image() const { return image_; }
-	vk::ImageView vkImageView() const { return imageView_; }
 };
 
 ///Vulkan Framebuffer.
@@ -68,42 +56,35 @@ public:
 	{
 		vk::RenderPass renderPass {};
 		vk::Extent2D size {};
-		std::vector<FramebufferAttachment::CreateInfo> attachments;
+		std::vector<ViewableImage::CreateInfo> attachments;
 	};
 
 public:
-	static std::vector<FramebufferAttachment::CreateInfo>
-		parseRenderPass(const RenderPass& renderPass);
-
-protected:
-	vk::Framebuffer framebuffer_ {};
-	std::vector<FramebufferAttachment> attachments_;
-	CreateInfo info_;
-
-protected:
-	void initAttachments(DeviceMemoryAllocator& allocator);
-	void initFramebuffer(const std::map<unsigned int, vk::ImageView>& extAttachments);
-
-	void destroy();
+	static std::vector<ViewableImage::CreateInfo> parseRenderPass(const RenderPass& renderPass);
 
 public:
 	Framebuffer() = default;
 	Framebuffer(const Device& dev, const CreateInfo& info);
-	Framebuffer(DeviceMemoryAllocator& allocator, const CreateInfo& info);
 	~Framebuffer();
 
 	Framebuffer(Framebuffer&& other) noexcept;
 	Framebuffer& operator=(Framebuffer&& other) noexcept;
 
-	void swap(Framebuffer& other) noexcept;
-
-	void initMemoryLess(DeviceMemoryAllocator& allocator, const CreateInfo& info);
+	void initMemoryLess(const Device& dev, const CreateInfo& info);
 	void initMemoryResources(const std::map<unsigned int, vk::ImageView>& extAttachments = {});
 
 	vk::Framebuffer vkFramebuffer() const { return framebuffer_; }
 	const vk::Extent2D& size() const { return info_.size; }
-	const std::vector<FramebufferAttachment>& attachments() const { return attachments_; }
+	const std::vector<ViewableImage>& attachments() const { return attachments_; }
 	const CreateInfo& info() const { return info_; }
+
+	void destroy();
+	friend void swap(Framebuffer& a, Framebuffer& b) noexcept;
+
+protected:
+	vk::Framebuffer framebuffer_ {};
+	std::vector<ViewableImage> attachments_;
+	CreateInfo info_ {};
 };
 
 }

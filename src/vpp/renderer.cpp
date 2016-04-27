@@ -11,30 +11,19 @@ namespace vpp
 SwapChainRenderer::SwapChainRenderer(const SwapChain& swapChain, const RendererBuilder& builder,
 	const CreateInfo& info)
 {
-	{
-		DeviceMemoryAllocator allocator(swapChain.device());
-		initMemoryLess(allocator, swapChain, info);
-	}
-
-	initMemoryResources(builder);
-}
-
-SwapChainRenderer::SwapChainRenderer(DeviceMemoryAllocator& allocator, const SwapChain& swapChain,
-	const RendererBuilder& builder, const CreateInfo& info)
-{
-	initMemoryLess(allocator, swapChain, info);
+	initMemoryLess(swapChain, info);
 	initMemoryResources(builder);
 }
 
 SwapChainRenderer::SwapChainRenderer(SwapChainRenderer&& other) noexcept
 {
-	this->swap(other);
+	swap(*this, other);
 }
 
 SwapChainRenderer& SwapChainRenderer::operator=(SwapChainRenderer&& other) noexcept
 {
 	destroy();
-	this->swap(other);
+	swap(*this, other);
 	return *this;
 }
 
@@ -43,16 +32,16 @@ SwapChainRenderer::~SwapChainRenderer()
 	destroy();
 }
 
-void SwapChainRenderer::swap(SwapChainRenderer& other) noexcept
+void swap(SwapChainRenderer& a, SwapChainRenderer& b) noexcept
 {
 	using std::swap;
 
-	swap(device_, other.device_);
-	swap(swapChain_, other.swapChain_);
-	swap(info_, other.info_);
-	swap(renderBuffers_, other.renderBuffers_);
-	swap(staticAttachments_, other.staticAttachments_);
-	swap(commandPool_, other.commandPool_);
+	swap(a.device_, b.device_);
+	swap(a.swapChain_, b.swapChain_);
+	swap(a.info_, b.info_);
+	swap(a.renderBuffers_, b.renderBuffers_);
+	swap(a.staticAttachments_, b.staticAttachments_);
+	swap(a.commandPool_, b.commandPool_);
 }
 
 void SwapChainRenderer::destroy()
@@ -70,15 +59,14 @@ void SwapChainRenderer::destroy()
 	Resource::destroy();
 }
 
-void SwapChainRenderer::initMemoryLess(DeviceMemoryAllocator& allocator, const SwapChain& swapChain,
-	const CreateInfo& info)
+void SwapChainRenderer::initMemoryLess(const SwapChain& swapChain, const CreateInfo& info)
 {
 	if(info.renderPass == nullptr)
 	{
 		throw std::runtime_error("SwapChainRenderer: nullptr renderPass");
 	}
 
-	Resource::init(allocator.device());
+	Resource::init(swapChain.device());
 	swapChain_ = &swapChain;
 	info_ = info;
 
@@ -90,13 +78,13 @@ void SwapChainRenderer::initMemoryLess(DeviceMemoryAllocator& allocator, const S
 	vk::createCommandPool(vkDevice(), &cmdPoolInfo, nullptr, &commandPool_);
 
 	//static attachments
+	auto size = swapChain.size();
 	staticAttachments_.reserve(info_.staticAttachments.size());
 	for(auto& attachInfo : info_.staticAttachments)
 	{
-		attachInfo.size = swapChain.size();
-
+		attachInfo.imageInfo.extent({size.width(), size.height(), 1});
 		staticAttachments_.emplace_back();
-		staticAttachments_.back().initMemoryLess(allocator, attachInfo);
+		staticAttachments_.back().initMemoryLess(device(), attachInfo.imageInfo);
 	}
 
 	//RenderBuffers
@@ -119,7 +107,7 @@ void SwapChainRenderer::initMemoryLess(DeviceMemoryAllocator& allocator, const S
 	{
 		renderBuffers_.emplace_back();
 		renderBuffers_.back().commandBuffer = cmdBuffer;
-		renderBuffers_.back().framebuffer.initMemoryLess(allocator, fbInfo);
+		renderBuffers_.back().framebuffer.initMemoryLess(device(), fbInfo);
 	}
 }
 
@@ -133,7 +121,7 @@ void SwapChainRenderer::initMemoryResources(const RendererBuilder& builder)
 	//static attachments
 	for(std::size_t i(0); i < staticAttachments_.size(); i++)
 	{
-		staticAttachments_[i].initMemoryResources(info_.staticAttachments[i]);
+		staticAttachments_[i].initMemoryResources(info_.staticAttachments[i].viewInfo);
 		attachmentMap[dynAttachSize + i] = staticAttachments_[i].vkImageView();
 	}
 
@@ -180,7 +168,7 @@ void SwapChainRenderer::buildCommandBuffers(const RendererBuilder& builder)
 
 		vk::RenderPassBeginInfo beginInfo;
 		beginInfo.renderPass(vkRenderPass());
-		beginInfo.renderArea({{0, 0}, {width - 1, height - 1}}); //why +1 needed to show sth?
+		beginInfo.renderArea({{0, 0}, {width, height}});
 		beginInfo.clearValueCount(clearValues.size());
 		beginInfo.pClearValues(clearValues.data());
 		beginInfo.framebuffer(renderer.framebuffer.vkFramebuffer());
@@ -251,71 +239,5 @@ void SwapChainRenderer::render()
     vk::destroySemaphore(vkDevice(), presentComplete, nullptr);
 	vk::queueWaitIdle(vkQueue());
 }
-
-/*
-void SwapChainRenderer::initDepthStencil()
-{
-	//query depth format
-	std::vector<vk::Format> formats =
-	{
-		vk::Format::D32SfloatS8Uint,
-		vk::Format::D32Sfloat,
-		vk::Format::D24UnormS8Uint,
-		vk::Format::D16UnormS8Uint,
-		vk::Format::D16Unorm
-	};
-
-	bool found = 0;
-	for (auto& format : formats)
-	{
-		vk::FormatProperties formatProps;
-		vk::getPhysicalDeviceFormatProperties(vkPhysicalDevice(), format, &formatProps);
-		if(formatProps.optimalTilingFeatures() & vk::FormatFeatureFlagBits::DepthStencilAttachment)
-		{
-			depthStencil_.format = format;
-			found = 1;
-			break;
-		}
-	}
-
-	if(!found)
-	{
-		throw std::runtime_error("vpp::Renderer: found no valid depth stencil format\n");
-	}
-
-	//image
-	vk::ImageCreateInfo info;
-	info.imageType(vk::ImageType::e2D);
-	info.format(depthStencil_.format);
-	info.extent({swapChain().extent().width(), swapChain().extent().height(), 1});
-	info.mipLevels(1);
-	info.arrayLayers(1);
-	info.samples(vk::SampleCountFlagBits::e1);
-	info.tiling(vk::ImageTiling::Optimal);
-	info.usage(vk::ImageUsageFlagBits::DepthStencilAttachment | vk::ImageUsageFlagBits::TransferSrc);
-	info.flags({});
-
-	depthStencil_.image.reset(new Image(device(), info, vk::MemoryPropertyFlagBits::DeviceLocal));
-
-	//view
-	auto aspects = vk::ImageAspectFlagBits::Depth | vk::ImageAspectFlagBits::Stencil;
-
-	vk::ImageSubresourceRange subrange;
-	subrange.aspectMask(aspects);
-	subrange.baseMipLevel(0);
-	subrange.levelCount(1);
-	subrange.baseArrayLayer(0);
-	subrange.layerCount(1);
-
-	vk::ImageViewCreateInfo viewInfo = {};
-	viewInfo.viewType(vk::ImageViewType::e2D);
-	viewInfo.format(depthStencil_.format);
-	viewInfo.image(depthStencil_.image->vkImage());
-	viewInfo.flags({});
-	viewInfo.subresourceRange(subrange);
-
-	vk::createImageView(vkDevice(), &viewInfo, nullptr, &depthStencil_.imageView);
-}
-*/
 
 }

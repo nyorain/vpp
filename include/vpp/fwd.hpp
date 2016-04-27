@@ -24,7 +24,7 @@ class DescriptorSet;
 class VertexBufferLayout;
 class DescriptorSetLayout;
 class Framebuffer;
-class FramebufferAttachment;
+class ViewableImage;
 class RenderPass;
 class RenderPassInstance;
 class Texture;

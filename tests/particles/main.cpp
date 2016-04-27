@@ -154,7 +154,7 @@ int main()
 
 		app.rendererInfo.queue = context.presentQueue();
 		app.rendererInfo.renderPass = &app.renderPass;
-		app.rendererInfo.staticAttachments = {vpp::FramebufferAttachment::defaultDepthAttachment};
+		app.rendererInfo.staticAttachments = {vpp::ViewableImage::defaultDepth2D};
 
 		ParticleSystem particleSystem(app, 1024 * 1000);
 		app.particleSystem = &particleSystem;

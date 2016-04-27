@@ -4,11 +4,6 @@
 #include <type_traits>
 #include <cassert>
 
-static_assert(sizeof(float) == 4, "fail");
-static_assert(std::is_standard_layout<nytl::Vec3f>::value, "fail2");
-static_assert(sizeof(nytl::Vec3f) == sizeof(float) * 3, "fail3");
-static_assert(sizeof(nytl::Vec4f) == sizeof(float) * 4, "fail3");
-
 App* gApp;
 
 //ParticleSystem
@@ -34,9 +29,6 @@ ParticleSystem::ParticleSystem(App& app, std::size_t count)
 	buildComputeBuffer();
 
 	lastUpdate_ = Clock::now();
-
-	assert(particles_.size() == count);
-	assert((particlesBuffer_.memoryEntry().offset() % device().properties().limits().minStorageBufferOffsetAlignment()) == 0);
 }
 
 ParticleSystem::~ParticleSystem()
