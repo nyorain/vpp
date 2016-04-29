@@ -80,7 +80,7 @@ protected:
 	CreateInfo info_ {};
 	std::vector<RenderBuffer> renderBuffers_;
 	std::vector<ViewableImage> staticAttachments_;
-	vk::CommandPool commandPool_ {};
+	vk::CommandPool commandPool_ {}; //TODO: replace with provider
 };
 
 }

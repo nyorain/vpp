@@ -38,7 +38,7 @@ public:
 		bool allocated() const { return (memory_); }
 
 		///Assures that there is memory allocated and associated with this entry.
-		void allocate() { if(!memory_) allocator_->allocate(*this); }
+		void allocate() const { if(!memory_) allocator_->allocate(*this); }
 
 		DeviceMemory* memory() const { return memory_; };
 		DeviceMemoryAllocator* allocator() const { return allocator_; };

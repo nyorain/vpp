@@ -16,3 +16,4 @@ endfunction(add_shader)
 
 add_subdirectory(particles)
 add_subdirectory(clouds)
+add_subdirectory(godrays)

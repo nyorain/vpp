@@ -29,17 +29,61 @@ public:
 	///host visible device memory heap and if the device memory was allocated.
 	MemoryMapView memoryMap() const;
 
-	const DeviceMemoryAllocator::Entry& memoryEntry() const { return *memoryEntry_; }
+	///Fills the image with the given data.
+	///Expects that the image was either created with the host visible memory flag or
+	///with the transfer dst flag.
+	void fill(const std::uint8_t& data, std::size_t size, vk::Format format,
+		const vk::Extent3D& extent) const;
+
+	const DeviceMemoryAllocator::Entry& memoryEntry() const { return memoryEntry_; }
 	vk::Image vkImage() const { return image_; }
 
+	void destroy();
 	friend void swap(Image& a, Image& b) noexcept;
 
 protected:
+	vk::Image image_ {};
+	MemoryEntry memoryEntry_ {};
+};
+
+///Viewable image, can be e.g. used as framebuffer attachment.
+class ViewableImage : public ResourceReference<ViewableImage>
+{
+public:
+	struct CreateInfo
+	{
+		vk::ImageCreateInfo imageInfo {};
+		vk::ImageViewCreateInfo viewInfo {};
+		vk::MemoryPropertyFlags imageMemoryFlags = {};
+	};
+
+	//convinience attachment info instances
+	static CreateInfo defaultDepth2D;
+	static CreateInfo defaultColor2D;
+
+public:
+	ViewableImage() = default;
+	ViewableImage(const Device& dev, const CreateInfo& info);
+	~ViewableImage();
+
+	ViewableImage(ViewableImage&& other) noexcept;
+	ViewableImage& operator=(ViewableImage&& other) noexcept;
+
+	void initMemoryLess(const Device& dev, const vk::ImageCreateInfo& info,
+		vk::MemoryPropertyFlags imageMemFlags = {});
+	void initMemoryResources(vk::ImageViewCreateInfo info);
+
+	const Image& image() const { return image_; }
+	vk::ImageView vkImageView() const { return imageView_; }
+	vk::Image vkImage() const { return image_.vkImage(); }
+
 	void destroy();
+	const Image& resourceRef() const { return image_; }
+	friend void swap(ViewableImage& a, ViewableImage& b) noexcept;
 
 protected:
-	vk::Image image_ {};
-	std::unique_ptr<MemoryEntry> memoryEntry_ {};
+	Image image_;
+	vk::ImageView imageView_ {};
 };
 
 };

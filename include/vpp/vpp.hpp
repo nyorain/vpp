@@ -20,5 +20,5 @@
 #include <vpp/surface.hpp>
 #include <vpp/swapChain.hpp>
 #include <vpp/sync.hpp>
-//#include <vpp/texture.hpp>
+#include <vpp/texture.hpp>
 #include <vpp/vk.hpp>

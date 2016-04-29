@@ -22,21 +22,26 @@ set(vpp-sources
 	commandBuffer.cpp
 	provider.cpp)
 
-if(WIN32)
-	set(vpp-sources ${vpp-sources} backend/win32.cpp)
-endif(WIN32)
 
-if(UNIX)
+if(WIN32 OR MSYS OR MINGW)
+	set(VPP_WINDOWS 1)
+else()
+	set(VPP_WINDOWS 0)
+endif()
+
+if(${VPP_WINDOWS})
+	set(vpp-sources ${vpp-sources} backend/win32.cpp)
+elseif(UNIX)
 	set(vpp-sources ${vpp-sources} backend/xcb.cpp backend/wayland.cpp)
-endif(UNIX)
+endif()
 
 add_library(vpp SHARED ${vpp-sources})
 
-if(WIN32)
+if(${VPP_WINDOWS})
 	target_link_libraries(vpp "$ENV{VK_SDK_PATH}/Source/lib/vulkan-1.dll")
-elseif(UNIX)
+elseif()
 	target_link_libraries(vpp "vulkan")
-endif(WIN32)
+endif()
 
 
 install(TARGETS vpp
