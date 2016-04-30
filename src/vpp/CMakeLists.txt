@@ -22,7 +22,6 @@ set(vpp-sources
 	commandBuffer.cpp
 	provider.cpp)
 
-
 if(WIN32 OR MSYS OR MINGW)
 	set(VPP_WINDOWS 1)
 else()
@@ -42,7 +41,6 @@ if(${VPP_WINDOWS})
 elseif()
 	target_link_libraries(vpp "vulkan")
 endif()
-
 
 install(TARGETS vpp
         RUNTIME DESTINATION bin

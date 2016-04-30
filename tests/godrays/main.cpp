@@ -162,8 +162,6 @@ int main()
 		Renderer gRenderer(app);
 		app.gRenderer = &gRenderer;
 
-		context.device().deviceMemoryAllocator().allocate();
-
 		vpp::SwapChainRenderer renderer(context.swapChain(), gRenderer, app.rendererInfo);
 		app.renderer = &renderer;
 

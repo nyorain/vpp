@@ -1,5 +1,6 @@
 #include <vpp/memory.hpp>
 #include <iostream>
+#include <algorithm>
 
 namespace vpp
 {
@@ -176,31 +177,44 @@ DeviceMemory::~DeviceMemory()
 
 Allocation DeviceMemory::alloc(std::size_t size, std::size_t alignment, AllocationType type)
 {
-	static const Allocation start = {0, 0};
+	auto allocation = allocatable(size, alignment, type);
+	if(allocation.size > 0) return allocSpecified(allocation.offset, allocation.size, type);
 
-	const Allocation* old = &start;
-	for(auto& alloc : allocations_)
-	{
-		auto alignedOffset = ((old->offset + alignment) & ~alignment);
-		if((alloc.allocation.offset - alignedOffset) > size)
-			return allocSpecified(alignedOffset, size, type);
-	}
-
-	return {0, 0};
+	throw std::runtime_error("vpp::DeviceMemory::alloc: not enough memory left");
 }
 
 Allocation DeviceMemory::allocSpecified(std::size_t offset, std::size_t size, AllocationType type)
 {
-	allocations_.push_back({{offset, size}, type});
+	AllocationEntry allocation = {{offset, size}, type};
+	auto it = std::lower_bound(allocations_.begin(), allocations_.end(), allocation,
+		[](auto& a, auto& b){ return a.allocation.offset < b.allocation.offset; });
+	allocations_.insert(it, allocation);
 	return allocations_.back().allocation;
+}
+
+Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
+	AllocationType type) const
+{
+	static const AllocationEntry start = {{0, 0}, AllocationType::none};
+	auto granularity = device().properties().limits().bufferImageGranularity();
+
+	const AllocationEntry* old = &start;
+	for(auto& alloc : allocations_) {
+		auto alignedOffset = ((old->allocation.offset + alignment) & ~(alignment - 1));
+		if(old->type != AllocationType::none && old->type != alloc.type)
+			alignedOffset = (alignedOffset + granularity) & ~(granularity - 1);
+
+		if((alloc.allocation.offset - alignedOffset) > size) return {alignedOffset, size};
+		old = &alloc;
+	}
+
+	return {};
 }
 
 void DeviceMemory::free(const Allocation& alloc)
 {
-	for(auto it = allocations_.cbegin(); it != allocations_.cend(); ++it)
-	{
-		if(it->allocation.offset == alloc.offset && it->allocation.size == alloc.size)
-		{
+	for(auto it = allocations_.cbegin(); it != allocations_.cend(); ++it) {
+		if(it->allocation.offset == alloc.offset && it->allocation.size == alloc.size) {
 			allocations_.erase(it);
 			return;
 		}
@@ -212,8 +226,7 @@ std::size_t DeviceMemory::biggestBlock() const
 	std::size_t ret {0};
 	std::size_t oldend {0};
 
-	for(auto& alloc : allocations_)
-	{
+	for(auto& alloc : allocations_) {
 		if(alloc.allocation.offset - oldend > ret) ret = alloc.allocation.offset - oldend;
 		oldend = alloc.allocation.offset + alloc.allocation.size;
 	}

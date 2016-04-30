@@ -108,19 +108,20 @@ void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequire
 	vk::ImageTiling tiling, Entry& entry)
 {
 	entry.allocator_ = this;
+	auto typ = (tiling == vk::ImageTiling::Linear) ? AllocationType::linear : AllocationType::optimal;
 
 	for(auto& type : imageRequirements_)
 	{
 		if(reqs.memoryTypeBits() & (1 << type.first))
 		{
-			type.second.push_back({requestor, reqs, tiling, &entry});
+			type.second.push_back({requestor, reqs, typ, &entry});
 			return;
 		}
 	}
 
 	unsigned int typeIndex = 0;
 	while(((reqs.memoryTypeBits() >> typeIndex++) & 1) != 1);
-	imageRequirements_[typeIndex].push_back({requestor, reqs, tiling, &entry});
+	imageRequirements_[typeIndex].push_back({requestor, reqs, typ, &entry});
 }
 
 bool DeviceMemoryAllocator::removeRequest(const Entry& entry)
@@ -175,19 +176,40 @@ bool DeviceMemoryAllocator::moveEntry(Entry& oldOne, Entry& newOne)
 	return false;
 }
 
-//TODO: reimplement both allocate functions to be more effeicient (reuse old mem esp.)
-void DeviceMemoryAllocator::allocate()
+DeviceMemoryAllocator::BufReqs::iterator DeviceMemoryAllocator::findBufReq(const Entry& entry,
+	unsigned int& type)
 {
-	using AllocType = DeviceMemory::AllocationType;
+
+}
+
+DeviceMemoryAllocator::ImgReqs::iterator DeviceMemoryAllocator::findImgReq(const Entry& entry,
+	unsigned int& type)
+{
+
+}
+
+void DeviceMemoryAllocator::minimizeAllocations()
+{
+	//some code to allocate on already existent memories with free space
+}
+
+DeviceMemory* DeviceMemoryAllocator::findMem(const vk::MemoryRequirements& reqs, AllocationType type,
+	Allocation& allocation)
+{
+	//try to find free memory that is able to allocate for the given requirements
+	return nullptr;
+}
+
+std::map<unsigned int, std::size_t> DeviceMemoryAllocator::sizeMap()
+{
+	//holding the total size for each needed deivceMemory
+	std::map<unsigned int, std::size_t> sMap;
 
 	//physical device granularity (space between different allocation types)
 	auto granularity = device().properties().limits().bufferImageGranularity();
 
-	//holding the total size for each needed deivceMemory
-	std::map<unsigned int, std::size_t> sizeMap;
-
 	//hold the (virtually registered) lat allocation on the given deviceMemory
-	std::map<unsigned int, AllocType> lastAlloc;
+	std::map<unsigned int, AllocationType> lastAlloc;
 
 	//add bufferRequirements to sizeMap
 	for(auto i = 0u; i < 32; ++i) {
@@ -195,45 +217,51 @@ void DeviceMemoryAllocator::allocate()
 		if(itbuf != bufferRequirements_.cend()) {
 			for(auto& req : itbuf->second) {
 				auto align = req.requirements.alignment();
-				auto alignedOffset = ((sizeMap[i] + align) & ~align);
+				auto alignedOffset = (sMap[i] + align) & ~(align - 1);
 				req.offset = alignedOffset;
 
-				sizeMap[i] = alignedOffset + req.requirements.size();
-				lastAlloc[i] = AllocType::buffer;
+				sMap[i] = alignedOffset + req.requirements.size();
+				lastAlloc[i] = AllocationType::linear;
 			}
 		}
 	}
 
-	//add ImageRrequirements to sizeMap, care for granularity
+	//add ImageRequirements to sizeMap, care for granularity
 	for(auto i = 0u; i < 32; ++i) {
 		auto itimg = imageRequirements_.find(i);
 		if(itimg != imageRequirements_.cend()) {
 			for(auto& req : itimg->second) {
-				auto allocType = (req.tiling == vk::ImageTiling::Optimal) ?
-						AllocType::imageOptimal : AllocType::imageLinear;
-
-				if(lastAlloc[i] != AllocType::none && allocType != lastAlloc[i]) {
-					sizeMap[i] = (sizeMap[i] + granularity) & ~granularity;
-					lastAlloc[i] = allocType;
+				if(lastAlloc[i] != AllocationType::none && req.type != lastAlloc[i]) {
+					sMap[i] = (sMap[i] + granularity) & ~(granularity - 1);
+					lastAlloc[i] = req.type;
 				}
 
 				auto align = req.requirements.alignment();
-				auto alignedOffset = ((sizeMap[i] + align) & ~align);
+				auto alignedOffset = (sMap[i] + align) & ~(align - 1);
 				req.offset = alignedOffset;
 
-				sizeMap[i] = alignedOffset + req.requirements.size();
+				sMap[i] = alignedOffset + req.requirements.size();
 			}
 		}
 	}
 
+	return sMap;
+}
+
+//TODO: reimplement both allocate functions to be more effeicient (reuse old mem esp.)
+void DeviceMemoryAllocator::allocate()
+{
+	minimizeAllocations();
+	auto sMap = sizeMap();
+
 	//allocate and bind DeviceMemory objects
-	for(auto& entry : sizeMap) {
+	for(auto& entry : sMap) {
 		auto memory = std::make_unique<DeviceMemory>(device(), entry.second, entry.first);
 
 		//buffers
 		for(auto& buf : bufferRequirements_[entry.first]) {
 			auto alloc = memory->allocSpecified(buf.offset, buf.requirements.size(),
-				AllocType::buffer);
+				AllocationType::linear);
 			buf.entry->allocator_ = nullptr;
 			buf.entry->memory_ = memory.get();
 			buf.entry->allocation_ = alloc;
@@ -243,9 +271,7 @@ void DeviceMemoryAllocator::allocate()
 
 		//images
 		for(auto& img : imageRequirements_[entry.first]) {
-			auto alloctype = (img.tiling == vk::ImageTiling::Linear) ? AllocType::imageLinear
-				: AllocType::imageOptimal;
-			auto alloc = memory->allocSpecified(img.offset, img.requirements.size(), alloctype);
+			auto alloc = memory->allocSpecified(img.offset, img.requirements.size(), img.type);
 			img.entry->allocator_ = nullptr;
 			img.entry->memory_ = memory.get();
 			img.entry->allocation_ = alloc;
@@ -261,10 +287,52 @@ void DeviceMemoryAllocator::allocate()
 	bufferRequirements_.clear();
 }
 
-bool DeviceMemoryAllocator::allocate(const Entry &entry)
+bool DeviceMemoryAllocator::allocate(const Entry& entry)
 {
 	allocate();
 	return true;
+	
+	//try to find memory for the given entry
+	constexpr static unsigned int undef = -1;
+
+	unsigned int type = undef;
+	Allocation allocation;
+
+	auto buf = findBufReq(entry, type);
+	if(type != undef) {
+		auto mem = findMem(buf->requirements, AllocationType::linear, allocation);
+		if(mem) {
+			buf->entry->allocator_ = nullptr;
+			buf->entry->memory_ = mem;
+			buf->entry->allocation_ = allocation;
+
+			vk::bindBufferMemory(vkDevice(), buf->requestor, mem->vkDeviceMemory(), buf->offset);
+			return true;
+		}
+	} else {
+		auto img = findImgReq(entry, type);
+		if(type == undef) return false; //cannot be found as buffer nor as image
+
+		auto mem = findMem(img->requirements, AllocationType::linear, allocation);
+		if(mem) {
+			img->entry->allocator_ = nullptr;
+			img->entry->memory_ = mem;
+			img->entry->allocation_ = allocation;
+
+			vk::bindImageMemory(vkDevice(), img->requestor, mem->vkDeviceMemory(), img->offset);
+			return true;
+		}
+	}
+
+	//allocate a new memory for the needed type
+	//allocate(type);
+	allocate();
+	return true;
+}
+
+void DeviceMemoryAllocator::allocate(unsigned int type)
+{
+	//find all requests that might be allocated on this type an allocate them
 }
 
 std::vector<DeviceMemory*> DeviceMemoryAllocator::memories() const

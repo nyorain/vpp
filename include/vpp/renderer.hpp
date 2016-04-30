@@ -19,6 +19,7 @@ public:
 	virtual void build(const RenderPassInstance& renderini) const = 0;
 	virtual std::vector<vk::ClearValue> clearValues() const = 0;
 
+	virtual void init(const SwapChainRenderer&) {};
 	virtual void beforeRender(vk::CommandBuffer) const {};
 	virtual void afterRender(vk::CommandBuffer) const {};
 };
@@ -28,12 +29,18 @@ public:
 class SwapChainRenderer : public Resource
 {
 public:
+	//todo
+	struct AttachmentMapping
+	{
+		ViewableImage::CreateInfo info;
+		const ViewableImage* external = nullptr;
+	};
+
 	struct CreateInfo
 	{
 		const RenderPass* renderPass = nullptr;
 		Device::Queue queue {};
 		std::vector<ViewableImage::CreateInfo> staticAttachments;
-		std::vector<ViewableImage::CreateInfo> dynamicAttachments;
 	};
 
 	struct RenderBuffer
@@ -44,7 +51,7 @@ public:
 
 public:
 	SwapChainRenderer() = default;
-	SwapChainRenderer(const SwapChain& swapChain, const RendererBuilder& builder,
+	SwapChainRenderer(const SwapChain& swapChain, RendererBuilder& builder,
 		const CreateInfo& info);
 	~SwapChainRenderer();
 
@@ -52,7 +59,7 @@ public:
 	SwapChainRenderer& operator=(SwapChainRenderer&& other) noexcept;
 
 	void initMemoryLess(const SwapChain& swapChain, const CreateInfo& info);
-	void initMemoryResources(const RendererBuilder& builder);
+	void initMemoryResources(RendererBuilder& builder);
 
 	///Renders one frame and presents the swapChain buffer.
 	void render();
@@ -72,7 +79,7 @@ public:
 
 protected:
 	void destroyRenderBuffers();
-	void buildCommandBuffers(const RendererBuilder& builder);
+	void buildCommandBuffers(RendererBuilder& builder);
 
 protected:
 	const SwapChain* swapChain_ = nullptr;

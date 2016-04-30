@@ -8,24 +8,22 @@ Renderer::Renderer(App& app)
 {
 	initDescriptors();
 	initDescriptorBuffers();
-
-	initStencilTexture();
 	initVertexBuffer();
-
-	initPipeline();
-
-	//it is used to write the descriptor set
-	ubo_.assureMemory();
-	vertexBuffer_.assureMemory();
-
-	writeDescriptorSets();
-	writeVertexBuffer();
-
-	lastUpdate_ = Clock::now();
 }
 
 Renderer::~Renderer()
 {
+}
+
+void Renderer::init(const vpp::SwapChainRenderer& renderer)
+{
+	app_.renderer = const_cast<vpp::SwapChainRenderer*>(&renderer);
+	initStencilTexture();
+	writeDescriptorSets();
+	writeVertexBuffer();
+	initPipeline();
+
+	lastUpdate_ = Clock::now();
 }
 
 void Renderer::build(const vpp::RenderPassInstance& instance) const
@@ -42,7 +40,7 @@ void Renderer::build(const vpp::RenderPassInstance& instance) const
 	vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics,
 		pipeline_.vkPipelineLayout(), 0, 1, &gd, 0, nullptr);
 	vk::cmdBindVertexBuffers(cmdBuffer, 0, 1, &vb, offsets);
-	vk::cmdDraw(cmdBuffer, 6, 1, 0, 0);
+	vk::cmdDraw(cmdBuffer, 3, 1, 0, 0);
 
 	//god rays post-processing
 	vk::cmdNextSubpass(cmdBuffer, vk::SubpassContents::Inline);
@@ -63,42 +61,55 @@ std::vector<vk::ClearValue> Renderer::clearValues() const
 
 void Renderer::initPipeline()
 {
+	vpp::VertexBufferLayout layout = {{vk::Format::R32G32Sfloat}};
+
 	vpp::GraphicsPipeline::CreateInfo info;
 	info.descriptorSetLayouts = {&descriptorSetLayout_};
+	info.vertexBufferLayouts = {&layout};
 	info.dynamicStates = {};
 	info.renderPass = app_.renderPass.vkRenderPass();
 
 	info.shader = vpp::ShaderProgram(device());
 	info.shader.addStage({"godrays-source.vert.spv", vk::ShaderStageFlagBits::Vertex});
-	info.shader.addStage({"godrays-source.clouds.frag.spv", vk::ShaderStageFlagBits::Fragment});
+	info.shader.addStage({"godrays-source.frag.spv", vk::ShaderStageFlagBits::Fragment});
 
 	info.states = vpp::GraphicsPipeline::StatesCreateInfo{vk::Viewport{0, 0, 900, 900, 0.f, 1.f}};
 	info.states.rasterization.cullMode(vk::CullModeFlagBits::None);
 	info.states.inputAssembly.topology(vk::PrimitiveTopology::TriangleList);
 
-	pipeline_ = vpp::GraphicsPipeline(device(), info);
-
-	//post
 	vk::StencilOpState stencilop;
 	stencilop.compareOp(vk::CompareOp::Always);
-	stencilop.reference(1);
+	stencilop.reference(0);
 	stencilop.passOp(vk::StencilOp::Replace);
-
-	info.descriptorSetLayouts = {&postDescriptorSetLayout_};
-
-	info.shader = vpp::ShaderProgram(device());
-	info.shader.addStage({"clouds-combine.vert.spv", vk::ShaderStageFlagBits::Vertex});
-	info.shader.addStage({"clouds-combine.frag.spv", vk::ShaderStageFlagBits::Fragment});
-
-	info.states = vpp::GraphicsPipeline::StatesCreateInfo{vk::Viewport{0, 0, 900, 900, 0.f, 1.f}};
-	info.states.rasterization.cullMode(vk::CullModeFlagBits::None);
-	info.states.inputAssembly.topology(vk::PrimitiveTopology::TriangleList);
 
 	info.states.depthStencil.stencilTestEnable(1);
 	info.states.depthStencil.front(stencilop);
 	info.states.depthStencil.back(stencilop);
 
+	pipeline_ = vpp::GraphicsPipeline(device(), info);
+
+	//post
+
+	info.descriptorSetLayouts = {&postDescriptorSetLayout_};
+
+	info.shader = vpp::ShaderProgram(device());
+	info.shader.addStage({"godrays-combine.vert.spv", vk::ShaderStageFlagBits::Vertex});
+	info.shader.addStage({"godrays-combine.frag.spv", vk::ShaderStageFlagBits::Fragment});
+
+	info.states = vpp::GraphicsPipeline::StatesCreateInfo{vk::Viewport{0, 0, 900, 900, 0.f, 1.f}};
+	info.states.rasterization.cullMode(vk::CullModeFlagBits::None);
+	info.states.inputAssembly.topology(vk::PrimitiveTopology::TriangleList);
+
 	postPipeline_ = vpp::GraphicsPipeline(device(), info);
+}
+
+void Renderer::initVertexBuffer()
+{
+	vk::BufferCreateInfo info;
+	info.size(sizeof(nytl::Vec2f) * 3);
+	info.usage(vk::BufferUsageFlagBits::VertexBuffer);
+
+	vertexBuffer_ = vpp::Buffer(device(), info, vk::MemoryPropertyFlagBits::HostVisible);
 }
 
 void Renderer::initStencilTexture()
@@ -184,29 +195,110 @@ void Renderer::initDescriptorBuffers()
 
 void Renderer::updateUBO(const nytl::Vec2ui& mousePos)
 {
-	//compute
+	//normal
 	static float time = 0.f;
 
 	auto now = Clock::now();
 	float delta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1, 1>>>(now - lastUpdate_).count();
 	lastUpdate_ = now;
 
-	float speed = 15.f;
-	float attract = (GetKeyState(VK_LBUTTON) < 0);
-
-	nytl::Vec2f normMousePos = 2 * (mousePos / nytl::Vec2f(app_.width, app_.height)) - 1;
-
 	time += delta;
 
+	//float attract = (GetKeyState(VK_LBUTTON) < 0);
+	//nytl::Vec2f normMousePos = 2 * (mousePos / nytl::Vec2f(app_.width, app_.height)) - 1;
+
 	auto map = ubo_.memoryMap();
+	//std::cout << (void*)map.ptr() << " vs " << (void*)map.memoryMap().ptr() << "\n";
 	std::memcpy(map.ptr(), &time, sizeof(float));
+	map.memoryMap().flushRanges();
+
+	map = {};
+
+	std::cout << time << "\n";
+
+	//post
+	nytl::Vec2f lightPos(0.2, 0.7);
+	float exposure = 1.f;
+	std::uint32_t samples = 128;
+
+	auto map2 = postUbo_.memoryMap();
+	std::memcpy(map2.ptr(), &lightPos, sizeof(nytl::Vec2f));
+	std::memcpy(map2.ptr() + sizeof(nytl::Vec2f), &exposure, sizeof(float));
+	std::memcpy(map2.ptr() + sizeof(nytl::Vec2f) + sizeof(float), &samples, sizeof(std::uint32_t));
+
+	map2.memoryMap().flushRanges();
 }
 
 void Renderer::writeDescriptorSets()
 {
-	//write buffers
-	descriptorSet_.writeBuffers(0, {{ubo_.vkBuffer(), 0, sizeof(nytl::Mat4f) * 2}},
-		vk::DescriptorType::UniformBuffer);
+	ubo_.assureMemory();
+	postUbo_.assureMemory();
+
+	vk::WriteDescriptorSet writes[4];
+
+	//normal
+	vk::DescriptorBufferInfo binfo1;
+	binfo1.buffer(ubo_.vkBuffer());
+	binfo1.offset(0);
+	binfo1.range(VK_WHOLE_SIZE);
+
+	writes[0].dstSet(descriptorSet_.vkDescriptorSet());
+	writes[0].dstBinding(0);
+	writes[0].dstArrayElement(0);
+	writes[0].descriptorCount(1);
+	writes[0].descriptorType(vk::DescriptorType::UniformBuffer);
+	writes[0].pBufferInfo(&binfo1);
+
+	//post
+	vk::DescriptorBufferInfo binfo2;
+	binfo2.buffer(postUbo_.vkBuffer());
+	binfo2.offset(0);
+	binfo2.range(VK_WHOLE_SIZE);
+
+	vk::DescriptorImageInfo imginfo1;
+	imginfo1.imageView(stencilView_);
+	imginfo1.sampler(stencilSampler_);
+	imginfo1.imageLayout(vk::ImageLayout::DepthStencilAttachmentOptimal);
+
+	vk::DescriptorImageInfo imginfo2;
+	imginfo2.imageView(app_.renderer->staticAttachments()[1].vkImageView());
+	imginfo2.imageLayout(vk::ImageLayout::ColorAttachmentOptimal);
+
+	writes[1].dstSet(postDescriptorSet_.vkDescriptorSet());
+	writes[1].dstBinding(0);
+	writes[1].dstArrayElement(0);
+	writes[1].descriptorCount(1);
+	writes[1].descriptorType(vk::DescriptorType::UniformBuffer);
+	writes[1].pBufferInfo(&binfo2);
+
+	writes[2].dstSet(postDescriptorSet_.vkDescriptorSet());
+	writes[2].dstBinding(1);
+	writes[2].dstArrayElement(0);
+	writes[2].descriptorCount(1);
+	writes[2].descriptorType(vk::DescriptorType::CombinedImageSampler);
+	writes[2].pImageInfo(&imginfo1);
+
+	writes[3].dstSet(postDescriptorSet_.vkDescriptorSet());
+	writes[3].dstBinding(2);
+	writes[3].dstArrayElement(0);
+	writes[3].descriptorCount(1);
+	writes[3].descriptorType(vk::DescriptorType::InputAttachment);
+	writes[3].pImageInfo(&imginfo2);
+
+	//write
+	vk::updateDescriptorSets(vkDevice(), 4, writes, 0, nullptr);
+}
+
+void Renderer::writeVertexBuffer()
+{
+	std::vector<nytl::Vec2f> points = {
+		{-0.25, -0.25}, {0.25, -0.25}, {0.25, 0.25}
+	};
+
+	vertexBuffer_.assureMemory();
+	auto map = vertexBuffer_.memoryMap();
+
+	std::memcpy(map.ptr(), points.data(), points.size() * sizeof(nytl::Vec2f));
 }
 
 void Renderer::update(const nytl::Vec2ui& mousePos)
@@ -220,8 +312,21 @@ vk::SamplerCreateInfo defaultSamplerInfo()
 {
 	vk::SamplerCreateInfo ret;
 
-
-	ret.
+	ret.magFilter(vk::Filter::Linear);
+	ret.minFilter(vk::Filter::Linear);
+	ret.mipmapMode(vk::SamplerMipmapMode::Linear);
+	ret.addressModeU(vk::SamplerAddressMode::ClampToEdge);
+	ret.addressModeV(vk::SamplerAddressMode::ClampToEdge);
+	ret.addressModeW(vk::SamplerAddressMode::ClampToEdge);
+	ret.mipLodBias(0.f);
+	ret.anisotropyEnable(1);
+	ret.maxAnisotropy(8);
+	ret.compareEnable(0);
+	ret.compareOp(vk::CompareOp::Always);
+	ret.minLod(0.f);
+	ret.maxLod(0.25f);
+	ret.borderColor(vk::BorderColor::IntOpaqueBlack);
+	ret.unnormalizedCoordinates(0);
 
 	return ret;
 }
@@ -275,6 +380,10 @@ void initRenderPass(App& app)
 	customColorReference.attachment(2);
 	customColorReference.layout(vk::ImageLayout::ColorAttachmentOptimal);
 
+	vk::AttachmentReference customColorInputReference;
+	customColorReference.attachment(2);
+	customColorReference.layout(vk::ImageLayout::ShaderReadOnlyOptimal);
+
 	//subpasses
 	vk::SubpassDescription subpasses[2];
 
@@ -286,6 +395,7 @@ void initRenderPass(App& app)
 	fbSubpass.pInputAttachments(nullptr);
 	fbSubpass.colorAttachmentCount(1);
 	fbSubpass.pColorAttachments(&customColorReference);
+	//fbSubpass.pColorAttachments(&swapchainColorReference);
 	fbSubpass.pResolveAttachments(nullptr);
 	fbSubpass.pDepthStencilAttachment(&depthReference);
 	fbSubpass.preserveAttachmentCount(0);
@@ -295,8 +405,8 @@ void initRenderPass(App& app)
 	vk::SubpassDescription& finalSubpass = subpasses[1];
 	finalSubpass.pipelineBindPoint(vk::PipelineBindPoint::Graphics);
 	finalSubpass.flags({});
-	finalSubpass.inputAttachmentCount(0);
-	finalSubpass.pInputAttachments(&customColorReference);
+	finalSubpass.inputAttachmentCount(1);
+	finalSubpass.pInputAttachments(&customColorInputReference);
 	finalSubpass.colorAttachmentCount(1);
 	finalSubpass.pColorAttachments(&swapchainColorReference);
 	finalSubpass.pResolveAttachments(nullptr);
@@ -310,6 +420,8 @@ void initRenderPass(App& app)
 	dependency.dstSubpass(1);
 	dependency.srcStageMask(vk::PipelineStageFlagBits::AllCommands);
 	dependency.dstStageMask(vk::PipelineStageFlagBits::FragmentShader);
+	dependency.srcAccessMask(vk::AccessFlagBits::ColorAttachmentWrite);
+	dependency.dstAccessMask(vk::AccessFlagBits::InputAttachmentRead);
 	dependency.dependencyFlags(vk::DependencyFlagBits::ByRegion);
 
 	//render pass

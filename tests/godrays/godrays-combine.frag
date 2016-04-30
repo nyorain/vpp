@@ -13,7 +13,7 @@ layout (set = 0, binding = 0) uniform UBO
 
 //stencil buffer of scene uniform input
 layout (set = 0, binding = 1) uniform sampler2D stencil;
-layout (input_attachment_index = 2, set = 0, binding = 2) uniform subpassInput color;
+layout (input_attachment_index = 0, set = 0, binding = 2) uniform subpassInput color;
 
 //resulting output color
 layout (location = 0) out vec4 outFragColor;
@@ -34,6 +34,7 @@ void main()
 		decay *= 0.95;
 	}
 
-	vec4 color = subpassLoad(color);
-	outFragColor = colorFac * ubo.exposure * color;
+	vec4 fragColor = subpassLoad(color);
+	outFragColor = /*ubo.exposure */ fragColor;
+	//outFragColor = fragColor;
 }

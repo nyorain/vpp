@@ -112,11 +112,24 @@ protected:
 	{
 		vk::Image requestor;
 		vk::MemoryRequirements requirements;
-		vk::ImageTiling tiling;
+		AllocationType type;
 		Entry* entry {nullptr};
-
 		std::size_t offset {0}; //internal use in alloc
 	};
+
+	using BufReqs = std::vector<BufferRequirement>;
+	using ImgReqs = std::vector<ImageRequirement>;
+
+protected:
+	//utility allocation functions
+	void minimizeAllocations();
+	void allocate(unsigned int type);
+	DeviceMemory* findMem(const vk::MemoryRequirements&, AllocationType, Allocation&);
+
+	BufReqs::iterator findBufReq(const Entry& entry, unsigned int& type);
+	ImgReqs::iterator findImgReq(const Entry& entry, unsigned int& type);
+
+	std::map<unsigned int, std::size_t> sizeMap();
 
 protected:
 	//all requested allocations

@@ -7,6 +7,7 @@
 #include <memory>
 #include <map>
 #include <vector>
+#include <vector>
 
 namespace vpp
 {
@@ -21,7 +22,7 @@ struct Allocation
 };
 
 ///Represents a mapped range of a vulkan DeviceMemory.
-///There shall always be at least one MemoryMap object for on DeviceMemory object.
+///There shall never be more than one MemoryMap object for on DeviceMemory object.
 class MemoryMap : public ResourceReference<MemoryMap>
 {
 public:
@@ -39,8 +40,8 @@ public:
 	///Not needed when memory is coherent, look at vkFlushMappedMemoryRanges.
 	void flushRanges() const;
 
-	///Reloads the memory into memory, i.e. makes sure writes by the device are made visible.
-	///Not needed when memory is coherent, look at vkInvalidateMappedMemoryRanges
+	///Reloads the device memory into mapped memory, i.e. makes sure writes by the device
+	//are made visible. Not needed when memory is coherent, look at vkInvalidateMappedMemoryRanges.
 	void invalidateRanges() const;
 
 	vk::DeviceMemory vkMemory() const;
@@ -68,7 +69,8 @@ protected:
 };
 
 
-///A view into a mapped memory range
+///A view into a mapped memory range.
+///Makes it possible to write/read from multiple allocations on a mapped memory.
 class MemoryMapView : public ResourceReference<MemoryMapView>
 {
 public:
@@ -92,6 +94,15 @@ protected:
 	Allocation allocation_ {};
 };
 
+
+///Specifies the different types of allocation on a memory object.
+enum class AllocationType
+{
+	none = 0,
+	linear,
+	optimal
+};
+
 ///DeviceMemory class that keeps track of its allocated and freed areas.
 ///Makes it easy to resuse memory as well as bind multiple memoryRequestors to one allocation.
 ///Note that there are additional rules for allocating device memory on vulkan (like e.g. needed
@@ -100,15 +111,6 @@ protected:
 class DeviceMemory : public Resource
 {
 public:
-	///Specifies the different types of allocation on a memory object.
-	enum class AllocationType
-	{
-		none,
-		buffer,
-		imageOptimal,
-		imageLinear
-	};
-
 	struct AllocationEntry
 	{
 		Allocation allocation;
@@ -124,10 +126,24 @@ public:
 
 	///Tries to allocate a memory part that matches the given size and aligment requirements.
 	///If there is not enough free space left, a std::runtime_error will be thrown.
+	///One can test if there is enough space for the needed allocation with the
+	///allocatable() member function.
 	Allocation alloc(std::size_t size, std::size_t aligment, AllocationType type);
+
+	///Tests if an allocation for the given requirements can be made.
+	///Will return an empty (size = 0) allocation if it is not possible or the theoretically
+	///possible alloction. This can then (before any other allocate call) safely be allocated
+	///with a call to allocSpecified.
+	///Notice that this call itself does NOT reserve any memory for the caller so the memory
+	///range of the returned allocatin shall not be used.
+	Allocation allocatable(std::size_t size, std::size_t aligment, AllocationType type) const;
 
 	///Allocates the specified memory part. Does not check for matched requirements or if
 	///the specified space is already occupied, so this function have to be used with care.
+	///This function can be useful if the possibility of a given allocation was checked before
+	///with a call to the allocatable function (than the returned range can safely be allocated)
+	///with this function. It might also be useful if one wants to manage the memory reservation
+	///itself externally and can therefore assure that the given range can be allocated.
 	Allocation allocSpecified(std::size_t offset, std::size_t size, AllocationType type);
 
 	///Frees the given allocation. Will throw a std::logic_error if the given allocation is not
@@ -154,7 +170,6 @@ public:
 	///Maps the specified memory range.
 	///Will throw a std::logic_error if this memory is not mappeble.
 	MemoryMapView map(const Allocation& allocation);
-
 
 	vk::DeviceMemory vkDeviceMemory() const { return memory_; }
 	vk::MemoryPropertyFlags propertyFlags() const { return flags_; }

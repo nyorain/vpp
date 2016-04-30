@@ -8,7 +8,7 @@ namespace vpp
 {
 
 //SwapChainRenderer
-SwapChainRenderer::SwapChainRenderer(const SwapChain& swapChain, const RendererBuilder& builder,
+SwapChainRenderer::SwapChainRenderer(const SwapChain& swapChain, RendererBuilder& builder,
 	const CreateInfo& info)
 {
 	initMemoryLess(swapChain, info);
@@ -101,7 +101,7 @@ void SwapChainRenderer::initMemoryLess(const SwapChain& swapChain, const CreateI
 
 	//frame buffers
 	Framebuffer::CreateInfo fbInfo {vkRenderPass(), swapChain.size()};
-	fbInfo.attachments = info_.dynamicAttachments;
+	//fbInfo.attachments = info_.dynamicAttachments;
 
 	for(auto& cmdBuffer : cmdBuffers)
 	{
@@ -111,26 +111,27 @@ void SwapChainRenderer::initMemoryLess(const SwapChain& swapChain, const CreateI
 	}
 }
 
-void SwapChainRenderer::initMemoryResources(const RendererBuilder& builder)
+void SwapChainRenderer::initMemoryResources(RendererBuilder& builder)
 {
-	device().deviceMemoryAllocator().allocate();
-
-	const std::size_t dynAttachSize = info().dynamicAttachments.size() + 1;
+	//const std::size_t dynAttachSize = info().dynamicAttachments.size() + 1;
 	std::map<unsigned int, vk::ImageView> attachmentMap;
 
 	//static attachments
 	for(std::size_t i(0); i < staticAttachments_.size(); i++)
 	{
+		staticAttachments_[i].image().assureMemory();
 		staticAttachments_[i].initMemoryResources(info_.staticAttachments[i].viewInfo);
-		attachmentMap[dynAttachSize + i] = staticAttachments_[i].vkImageView();
+		attachmentMap[i + 1] = staticAttachments_[i].vkImageView();
 	}
 
 	//frameBufferAttachment resources
 	for(std::size_t i(0); i < renderBuffers_.size(); i++)
 	{
-		attachmentMap[dynAttachSize - 1] = swapChain().buffers()[i].imageView;
+		attachmentMap[0] = swapChain().buffers()[i].imageView;
 		renderBuffers_[i].framebuffer.initMemoryResources(attachmentMap);
 	}
+
+	builder.init(*this);
 
 	//record command buffers
 	buildCommandBuffers(builder);
@@ -155,7 +156,7 @@ void SwapChainRenderer::destroyRenderBuffers()
 	renderBuffers_.clear();
 }
 
-void SwapChainRenderer::buildCommandBuffers(const RendererBuilder& builder)
+void SwapChainRenderer::buildCommandBuffers(RendererBuilder& builder)
 {
 	auto clearValues = builder.clearValues();
 	auto width = swapChain().size().width();

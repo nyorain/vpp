@@ -46,7 +46,7 @@ protected:
 	//holds 1 uniform buffer with object color and time
 	vpp::DescriptorSet descriptorSet_;
 
-	//holds 1 uniform buffer with godrays combine vars
+	//holds 1 uniform buffer with godrays combine vars, 1 stencil image, 1 color attachment
 	vpp::DescriptorSet postDescriptorSet_;
 
 	vpp::Buffer ubo_;
@@ -79,6 +79,8 @@ public:
 
 	virtual void build(const vpp::RenderPassInstance& instance) const override;
 	virtual std::vector<vk::ClearValue> clearValues() const override;
+
+	virtual void init(const vpp::SwapChainRenderer& renderer) override;
 };
 
 //utility

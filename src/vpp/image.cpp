@@ -77,7 +77,7 @@ ViewableImage::CreateInfo ViewableImage::defaultDepth2D {
 		1, 1,
 		vk::SampleCountFlagBits::e1,
 		vk::ImageTiling::Optimal,
-		vk::ImageUsageFlagBits::DepthStencilAttachment | vk::ImageUsageFlagBits::TransferSrc,
+		vk::ImageUsageFlagBits::DepthStencilAttachment | vk::ImageUsageFlagBits::Sampled,
 		vk::SharingMode::Exclusive,
 		0, nullptr, vk::ImageLayout::Undefined
 	},
@@ -102,20 +102,15 @@ ViewableImage::CreateInfo ViewableImage::defaultColor2D {
 		1, 1,
 		vk::SampleCountFlagBits::e1,
 		vk::ImageTiling::Optimal,
-		vk::ImageUsageFlagBits::ColorAttachment,
+		vk::ImageUsageFlagBits::ColorAttachment | vk::ImageUsageFlagBits::InputAttachment,
 		vk::SharingMode::Exclusive,
 		0, nullptr, vk::ImageLayout::Undefined
 	},
 	{
 		{}, {},
 		vk::ImageViewType::e2D,
-		vk::Format::D16UnormS8Uint,
-		{
-			vk::ComponentSwizzle::R,
-			vk::ComponentSwizzle::G,
-			vk::ComponentSwizzle::B,
-			vk::ComponentSwizzle::A
-		},
+		vk::Format::B8G8R8A8Unorm,
+		{},
 		{
 			vk::ImageAspectFlagBits::Color,
 			0, 1, 0, 1
@@ -165,8 +160,7 @@ void ViewableImage::destroy()
 void ViewableImage::initMemoryLess(const Device& dev, const vk::ImageCreateInfo& info,
 	vk::MemoryPropertyFlags flags)
 {
-	Resource::init(dev);
-	image_ = Image(device(), info, flags);
+	image_ = Image(dev, info, flags);
 }
 
 void ViewableImage::initMemoryResources(vk::ImageViewCreateInfo info)
