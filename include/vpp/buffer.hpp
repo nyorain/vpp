@@ -4,6 +4,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/allocator.hpp>
+#include <vpp/commandBuffer.hpp>
 
 #include <memory>
 
@@ -51,7 +52,7 @@ public:
 	///it is allowed to copy data into it and the device was created with a matching queue.
 	///Note that this operation may be asnyc, so shall call Device::finishSetup to make sure the
 	///buffer is really filled with the given data.
-	void fill(const std::vector<BufferData>& data) const;
+	CommandExecutionState fill(const std::vector<BufferData>& data) const;
 
 	const DeviceMemoryAllocator::Entry& memoryEntry() const { return *memoryEntry_; }
 	vk::Buffer vkBuffer() const { return buffer_; }

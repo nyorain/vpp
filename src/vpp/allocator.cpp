@@ -206,7 +206,7 @@ std::map<unsigned int, std::size_t> DeviceMemoryAllocator::sizeMap()
 	std::map<unsigned int, std::size_t> sMap;
 
 	//physical device granularity (space between different allocation types)
-	auto granularity = device().properties().limits().bufferImageGranularity();
+	auto gran = device().properties().limits().bufferImageGranularity();
 
 	//hold the (virtually registered) lat allocation on the given deviceMemory
 	std::map<unsigned int, AllocationType> lastAlloc;
@@ -217,11 +217,10 @@ std::map<unsigned int, std::size_t> DeviceMemoryAllocator::sizeMap()
 		if(itbuf != bufferRequirements_.cend()) {
 			for(auto& req : itbuf->second) {
 				auto align = req.requirements.alignment();
-				auto alignedOffset = (sMap[i] + align) & ~(align - 1);
-				req.offset = alignedOffset;
+				if(sMap[i] % align) sMap[i] = sMap[i] - (sMap[i] % align) + align;
+				req.offset = sMap[i];
 
-				sMap[i] = alignedOffset + req.requirements.size();
-				lastAlloc[i] = AllocationType::linear;
+				sMap[i] += req.requirements.size();
 			}
 		}
 	}
@@ -232,15 +231,15 @@ std::map<unsigned int, std::size_t> DeviceMemoryAllocator::sizeMap()
 		if(itimg != imageRequirements_.cend()) {
 			for(auto& req : itimg->second) {
 				if(lastAlloc[i] != AllocationType::none && req.type != lastAlloc[i]) {
-					sMap[i] = (sMap[i] + granularity) & ~(granularity - 1);
+					if(sMap[i] % gran) sMap[i] = sMap[i] - (sMap[i] % gran) + gran;
 					lastAlloc[i] = req.type;
 				}
 
 				auto align = req.requirements.alignment();
-				auto alignedOffset = (sMap[i] + align) & ~(align - 1);
-				req.offset = alignedOffset;
+				if(sMap[i] % align) sMap[i] = sMap[i] - (sMap[i] % align) + align;
+				req.offset = sMap[i];
 
-				sMap[i] = alignedOffset + req.requirements.size();
+				sMap[i] += req.requirements.size();
 			}
 		}
 	}
@@ -291,7 +290,7 @@ bool DeviceMemoryAllocator::allocate(const Entry& entry)
 {
 	allocate();
 	return true;
-	
+
 	//try to find memory for the given entry
 	constexpr static unsigned int undef = -1;
 

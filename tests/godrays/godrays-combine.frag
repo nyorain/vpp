@@ -35,6 +35,7 @@ void main()
 	}
 
 	vec4 fragColor = subpassLoad(color);
-	outFragColor = /*ubo.exposure */ fragColor;
+	//outFragColor = ubo.exposure * fragColor + clamp(colorFac, 0.0, 1.0) * vec4(1.0, 1.0, 1.0, 1.0);
+	outFragColor = texture(stencil, gl_FragCoord.xy).rrrr;
 	//outFragColor = fragColor;
 }

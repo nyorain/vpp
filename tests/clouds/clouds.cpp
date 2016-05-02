@@ -126,7 +126,6 @@ void FragmentRenderer::update(const nytl::Vec2ui& mousePos)
 	updateUBO(mousePos);
 }
 
-
 //utility
 void initRenderPass(App& app)
 {

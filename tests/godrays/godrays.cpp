@@ -79,18 +79,23 @@ void Renderer::initPipeline()
 
 	vk::StencilOpState stencilop;
 	stencilop.compareOp(vk::CompareOp::Always);
-	stencilop.reference(0);
 	stencilop.passOp(vk::StencilOp::Replace);
+	stencilop.compareMask(~0u);
+	stencilop.writeMask(~0u);
+	stencilop.reference(0);
 
 	info.states.depthStencil.stencilTestEnable(1);
 	info.states.depthStencil.front(stencilop);
 	info.states.depthStencil.back(stencilop);
+	info.states.depthStencil.depthTestEnable(0);
+	info.states.depthStencil.depthBoundsTestEnable(0);
 
 	pipeline_ = vpp::GraphicsPipeline(device(), info);
 
 	//post
 
 	info.descriptorSetLayouts = {&postDescriptorSetLayout_};
+	info.vertexBufferLayouts = {};
 
 	info.shader = vpp::ShaderProgram(device());
 	info.shader.addStage({"godrays-combine.vert.spv", vk::ShaderStageFlagBits::Vertex});
@@ -160,11 +165,9 @@ void Renderer::initDescriptors()
 	//graphics set
 	std::vector<vpp::DescriptorBinding> gfxBindings =
 	{
-		{vk::DescriptorType::UniformBuffer, vk::ShaderStageFlagBits::Vertex |
-			vk::ShaderStageFlagBits::Fragment}
+		{vk::DescriptorType::UniformBuffer, vk::ShaderStageFlagBits::Fragment}
 	};
 	descriptorSetLayout_ = vpp::DescriptorSetLayout(device(), gfxBindings);
-
 	descriptorSet_ = vpp::DescriptorSet(descriptorSetLayout_, descriptorPool_);
 
 	//post
@@ -181,7 +184,7 @@ void Renderer::initDescriptors()
 void Renderer::initDescriptorBuffers()
 {
 	vk::BufferCreateInfo gfxInfo;
-	gfxInfo.size(sizeof(nytl::Vec3f) + sizeof(float));
+	gfxInfo.size(sizeof(float));
 	gfxInfo.usage(vk::BufferUsageFlagBits::UniformBuffer);
 
 	ubo_ = vpp::Buffer(device(), gfxInfo, vk::MemoryPropertyFlagBits::HostVisible);
@@ -209,16 +212,16 @@ void Renderer::updateUBO(const nytl::Vec2ui& mousePos)
 
 	auto map = ubo_.memoryMap();
 	//std::cout << (void*)map.ptr() << " vs " << (void*)map.memoryMap().ptr() << "\n";
+	// std::cout << reinterpret_cast<float&>(*map.ptr()) << " time \n";
 	std::memcpy(map.ptr(), &time, sizeof(float));
-	map.memoryMap().flushRanges();
+	//map.memoryMap().flushRanges();
 
-	map = {};
-
-	std::cout << time << "\n";
+	// std::cout << "o: " << ubo_.memoryEntry().allocation().offset << "\n";
+	// std::cout << time << "\n";
 
 	//post
 	nytl::Vec2f lightPos(0.2, 0.7);
-	float exposure = 1.f;
+	float exposure = 0.5;
 	std::uint32_t samples = 128;
 
 	auto map2 = postUbo_.memoryMap();
@@ -240,7 +243,7 @@ void Renderer::writeDescriptorSets()
 	vk::DescriptorBufferInfo binfo1;
 	binfo1.buffer(ubo_.vkBuffer());
 	binfo1.offset(0);
-	binfo1.range(VK_WHOLE_SIZE);
+	binfo1.range(sizeof(float)); //vk_whole_size seems broken?
 
 	writes[0].dstSet(descriptorSet_.vkDescriptorSet());
 	writes[0].dstBinding(0);
@@ -253,7 +256,7 @@ void Renderer::writeDescriptorSets()
 	vk::DescriptorBufferInfo binfo2;
 	binfo2.buffer(postUbo_.vkBuffer());
 	binfo2.offset(0);
-	binfo2.range(VK_WHOLE_SIZE);
+	binfo2.range(sizeof(nytl::Vec2f) + sizeof(float) + sizeof(std::uint32_t));
 
 	vk::DescriptorImageInfo imginfo1;
 	imginfo1.imageView(stencilView_);
@@ -320,12 +323,12 @@ vk::SamplerCreateInfo defaultSamplerInfo()
 	ret.addressModeW(vk::SamplerAddressMode::ClampToEdge);
 	ret.mipLodBias(0.f);
 	ret.anisotropyEnable(1);
-	ret.maxAnisotropy(8);
+	ret.maxAnisotropy(0);
 	ret.compareEnable(0);
-	ret.compareOp(vk::CompareOp::Always);
+	ret.compareOp(vk::CompareOp::Never);
 	ret.minLod(0.f);
-	ret.maxLod(0.25f);
-	ret.borderColor(vk::BorderColor::IntOpaqueBlack);
+	ret.maxLod(0.f);
+	ret.borderColor(vk::BorderColor::FloatOpaqueWhite);
 	ret.unnormalizedCoordinates(0);
 
 	return ret;
@@ -354,7 +357,7 @@ void initRenderPass(App& app)
 	attachments[1].loadOp(vk::AttachmentLoadOp::Clear);
 	attachments[1].storeOp(vk::AttachmentStoreOp::Store);
 	attachments[1].stencilLoadOp(vk::AttachmentLoadOp::DontCare);
-	attachments[1].stencilStoreOp(vk::AttachmentStoreOp::DontCare);
+	attachments[1].stencilStoreOp(vk::AttachmentStoreOp::Store);
 	attachments[1].initialLayout(vk::ImageLayout::DepthStencilAttachmentOptimal);
 	attachments[1].finalLayout(vk::ImageLayout::DepthStencilAttachmentOptimal);
 

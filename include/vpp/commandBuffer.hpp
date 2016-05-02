@@ -1,6 +1,6 @@
 #pragma once
 
-//experimental feature, may not bne fully working
+//experimental feature, may not be fully working
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>

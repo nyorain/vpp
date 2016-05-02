@@ -58,10 +58,26 @@ MemoryMapView Buffer::memoryMap() const
 	return memoryEntry().map();
 }
 
-void Buffer::fill(const std::vector<BufferData>& data) const
+//todo
+CommandExecutionState Buffer::fill(const std::vector<BufferData>& data) const
 {
 	assureMemory();
-	//TODO
+
+	//mappable?
+	if(memoryEntry().memory()->propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible) {
+		auto map = memoryEntry().map();
+
+		std::size_t offset = 0;
+		for(auto& dataEntry : data) {
+			offset += dataEntry.offset;
+			std::memcpy(map.ptr() + offset, dataEntry.data, dataEntry.size);
+			offset += dataEntry.size;
+		}
+
+		//flushMemoryRanges?
+	} else {
+		auto cmdBuffer = device().setupCommandBuffer();
+	}
 }
 
 void Buffer::assureMemory() const
