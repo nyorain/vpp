@@ -3,6 +3,7 @@
 #include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
+#include <vpp/utility/allocation.hpp>
 
 #include <memory>
 #include <map>
@@ -11,15 +12,6 @@
 
 namespace vpp
 {
-
-///Represents a part on an allocated DeviceMemory.
-struct Allocation
-{
-	std::size_t offset {0};
-	std::size_t size {0};
-
-	std::size_t end() const { return offset + size; }
-};
 
 ///Represents a mapped range of a vulkan DeviceMemory.
 ///There shall never be more than one MemoryMap object for on DeviceMemory object.
@@ -156,7 +148,7 @@ public:
 	std::size_t biggestBlock() const;
 
 	///Returns the total amount of free bytes.
-	std::size_t free() const;
+	std::size_t totalFree() const;
 
 	///Returns the total size this DeviceMemory object has.
 	std::size_t size() const;

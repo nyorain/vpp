@@ -51,7 +51,7 @@ protected:
 	std::vector<std::unique_ptr<Work>> todo_;
 
 public:
-	void add(std::unique_ptr<Work> work);
+	Work& add(std::unique_ptr<Work> work);
 	void submit();
 	void finish();
 };

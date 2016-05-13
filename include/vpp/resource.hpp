@@ -7,6 +7,12 @@ namespace vpp
 {
 
 ///The Resource class represents a vulkan resource associated to a vulkan device.
+///Almost all resources or resource references may be in an uninitialized state, since they
+///do not fully follow RAII to make themselves movable. The resources classes theirself
+///will NOT perform any checks whether they are initialized in their member function (the
+///destructor excluded), so calling member functions of uninitialized (default constructed)
+///resources is undefined behaviour (usually ends in a crash).
+///\sa ResourceReference
 class Resource : public NonCopyable
 {
 protected:
@@ -41,6 +47,7 @@ public:
 ///CommandPool it is allocated from and therefore does not have to hold a additional reference to
 ///its vulkan devcie, since this information can be retrieved from the CommandPool reference (done
 ///by this template class).
+///\sa Resource
 template <typename T>
 class ResourceReference : public NonCopyable
 {

@@ -234,7 +234,7 @@ std::size_t DeviceMemory::biggestBlock() const
 	return ret;
 }
 
-std::size_t DeviceMemory::free() const
+std::size_t DeviceMemory::totalFree() const
 {
 	std::size_t ret {0};
 	for(auto& alloc : allocations_)

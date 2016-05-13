@@ -7,14 +7,12 @@ namespace vpp
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags)
 	 : Resource(dev)
 {
-	memoryEntry_.reset(new DeviceMemoryAllocator::Entry());
-
 	vk::MemoryRequirements reqs;
 	vk::createBuffer(vkDevice(), &info, nullptr, &buffer_);
 	vk::getBufferMemoryRequirements(vkDevice(), buffer_, &reqs);
 
 	reqs.memoryTypeBits(device().memoryTypeBits(mflags, reqs.memoryTypeBits()));
-	device().deviceMemoryAllocator().request(buffer_, reqs, *memoryEntry_);
+	device().deviceMemoryAllocator().request(buffer_, reqs, memoryEntry_);
 }
 
 Buffer::Buffer(Buffer&& other) noexcept
@@ -59,7 +57,7 @@ MemoryMapView Buffer::memoryMap() const
 }
 
 //todo
-CommandExecutionState Buffer::fill(const std::vector<BufferData>& data) const
+std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data) const
 {
 	assureMemory();
 
@@ -75,8 +73,23 @@ CommandExecutionState Buffer::fill(const std::vector<BufferData>& data) const
 		}
 
 		//flushMemoryRanges?
+		return std::make_unique<FinishedWork<void>>();
 	} else {
+		class WorkImpl : public Work<void>
+		{
+		protected:
+
+		public:
+
+		};
+
 		auto cmdBuffer = device().setupCommandBuffer();
+		auto uploadBuffer = device().uploadBuffer(memoryEntry().allocation().size);
+
+		vk::BufferCopy region(0, 0, memoryEntry().allocation().size);
+		vk::cmdCopyBuffer(cmdBuffer, uploadBuffer.vkBuffer(), vkBuffer(), 1, &region);
+
+		return std::make_unique<WorkImpl>();
 	}
 }
 

@@ -5,6 +5,7 @@
 #include <vpp/resource.hpp>
 #include <vpp/allocator.hpp>
 #include <vpp/commandBuffer.hpp>
+#include <vpp/work.hpp>
 
 #include <memory>
 
@@ -22,8 +23,13 @@ public:
 public:
 	BufferData() = default;
 
-	template<typename T> BufferData(const T& obj, std::size_t xoffset = 0)
-		: data(&obj), size(sizeof(T)), offset(xoffset) {}
+	template<typename T>
+	BufferData(const T& obj, std::size_t xoff = 0)
+		: data(&obj), size(sizeof(T)), offset(xoff) {}
+
+	template<typename T>
+	BufferData(const std::vector<T>& vec, std::size_t xoff = 0)
+		: data(vec.data()), size(vec.size() * sizeof(T)), offset(xoff) {}
 };
 
 ///Representing a vulkan buffer on a device.
@@ -52,9 +58,13 @@ public:
 	///it is allowed to copy data into it and the device was created with a matching queue.
 	///Note that this operation may be asnyc, so shall call Device::finishSetup to make sure the
 	///buffer is really filled with the given data.
-	CommandExecutionState fill(const std::vector<BufferData>& data) const;
+	std::unique_ptr<Work<void>> fill(const std::vector<BufferData>& data) const;
 
-	const DeviceMemoryAllocator::Entry& memoryEntry() const { return *memoryEntry_; }
+	///Retrives the data stored in the buffer.
+	std::unique_ptr<Work<std::uint8_t&>> retrieve() const;
+
+	const DeviceMemoryAllocator::Entry& memoryEntry() const { return memoryEntry_; }
+	std::size_t size() const { return memoryEntry().allocation().size; }
 	vk::Buffer vkBuffer() const { return buffer_; }
 
 	friend void swap(Buffer& a, Buffer& b) noexcept;
@@ -64,7 +74,7 @@ protected:
 
 protected:
 	vk::Buffer buffer_ {};
-	std::unique_ptr<MemoryEntry> memoryEntry_;
+	MemoryEntry memoryEntry_;
 };
 
 };

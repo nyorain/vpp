@@ -50,3 +50,30 @@ vk::cmdCopyBuffer(setupCommandBuffer, uploadBuffer.vkBuffer(), buffer.vkBuffer()
 
 //Will mark the buffer as used until the setupCommandBuffer completes.
 uploadBuffer.used(setupCommandBuffer.state());
+
+
+class SubmitManager
+{
+public:
+	void submit();
+	vk::Fence submit(vk::Queue queue);
+	ExecuteState add(vk::Queue, vk::SubmitInfo info);
+
+protected:
+	std::size_t autoSubmitThreshold_;
+	std::vector with submissions
+};
+
+
+class ExecuteState
+{
+public:
+	void submit();
+	void wait();
+};
+
+class SetupCommandBuffer
+{
+public:
+	ExecuteState queue(); //queues the setup buffer for execution
+};
