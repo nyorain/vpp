@@ -5,14 +5,13 @@ namespace vpp
 {
 
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags)
-	 : Resource(dev)
 {
 	vk::MemoryRequirements reqs;
-	vk::createBuffer(vkDevice(), &info, nullptr, &buffer_);
-	vk::getBufferMemoryRequirements(vkDevice(), buffer_, &reqs);
+	vk::createBuffer(dev.vkDevice(), &info, nullptr, &buffer_);
+	vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_, &reqs);
 
 	reqs.memoryTypeBits(device().memoryTypeBits(mflags, reqs.memoryTypeBits()));
-	device().deviceMemoryAllocator().request(buffer_, reqs, memoryEntry_);
+	dev.deviceMemoryAllocator().request(buffer_, reqs, memoryEntry_);
 }
 
 Buffer::Buffer(Buffer&& other) noexcept
@@ -38,7 +37,6 @@ void swap(Buffer& a, Buffer& b) noexcept
 
 	swap(b.memoryEntry_, a.memoryEntry_);
 	swap(b.buffer_, a.buffer_);
-	swap(b.device_, a.device_);
 }
 
 void Buffer::destroy()
@@ -47,7 +45,6 @@ void Buffer::destroy()
 
 	memoryEntry_ = {};
 	buffer_ = {};
-	Resource::destroy();
 }
 
 MemoryMapView Buffer::memoryMap() const
@@ -59,10 +56,15 @@ MemoryMapView Buffer::memoryMap() const
 //todo
 std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data) const
 {
+	//TODO: check for overflow (too much data given?)
+	//when to use vkCmdUpdateBuffer (multiple times if needed) and when vkCmdCopyBuffer?
+
 	assureMemory();
 
 	//mappable?
-	if(memoryEntry().memory()->propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible) {
+	if(memoryEntry().memory()->propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible)
+	{
+		//directly map it
 		auto map = memoryEntry().map();
 
 		std::size_t offset = 0;
@@ -74,16 +76,30 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data) co
 
 		//flushMemoryRanges?
 		return std::make_unique<FinishedWork<void>>();
-	} else {
-		class WorkImpl : public Work<void>
+	}
+	else if(memoryEntry().allocation().size <= 65536)
+	{
+		//use the update buffer command
+		auto cmdBuffer = device().commandProvider().alloc();
+	}
+	else
+	{
+		//update the buffer manually via transferHeap
+		struct WorkImpl : public Work<void>
 		{
-		protected:
+		public:
+			vk::CommmandBuffer cmdBuffer_;
+			TransferManager::BufferRange uploadRange_;
 
 		public:
+			WorkImpl(Buffer& buffer)
+			{
 
+			}
 		};
 
-		auto cmdBuffer = device().setupCommandBuffer();
+		//TODO: implement
+		auto cmdBuffer = device().commandProvider().alloc();
 		auto uploadBuffer = device().uploadBuffer(memoryEntry().allocation().size);
 
 		vk::BufferCopy region(0, 0, memoryEntry().allocation().size);

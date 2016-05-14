@@ -11,7 +11,7 @@ namespace vpp
 {
 
 ///Represinting a vulkan image on a device and having its own memory allocation bound to it.
-class Image : public Resource
+class Image : public ResourceReference<Image>
 {
 public:
 	Image() = default;
@@ -35,11 +35,14 @@ public:
 	void fill(const std::uint8_t& data, std::size_t size, vk::Format format,
 		const vk::Extent3D& extent) const;
 
-	const DeviceMemoryAllocator::Entry& memoryEntry() const { return memoryEntry_; }
+	const MemoryEntry& memoryEntry() const { return memoryEntry_; }
 	vk::Image vkImage() const { return image_; }
 
-	void destroy();
+	const MemoryEntry& resourceRef() const { return memoryEntry(); }
 	friend void swap(Image& a, Image& b) noexcept;
+
+protected:
+	void destroy();
 
 protected:
 	vk::Image image_ {};

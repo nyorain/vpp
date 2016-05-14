@@ -31,20 +31,39 @@ void swap(DeviceMemoryAllocator::Entry& a, DeviceMemoryAllocator::Entry& b) noex
 {
 	using std::swap;
 
-	if(a.allocator_) a.allocator_->moveEntry(a, b);
-	if(b.allocator_) b.allocator_->moveEntry(b, a);
+	//signal the allocator (if there is any) that the entry has been moved
+	//since the allocator stores references (addresses) of the entries
+	if(!a.allocated() && a.allocator_) a.allocator_->moveEntry(a, b);
+	if(!b.allocated() && b.allocator_) b.allocator_->moveEntry(b, a);
 
-	swap(a.memory_, b.memory_);
+	//correclty swap the anonymous union
+	//can be proably be done more elegant...
+	//backup the memory or allocator values of a
+	auto memTmp = a.allocated() ? a.memory() : nullptr;
+	auto allocTmp = a.allocated() ? nullptr : b.allocator();
+
+	//correclty "swap" the unions
+	if(b.allocated())
+	{
+		a.memory_ = b.memory_;
+		if(a.allocated()) b.memory_ = memTmp;
+		else b.allocator_ = allocTmp;
+	}
+	else
+	{
+		a.allocator_ = b.allocator_;
+		if(a.allocated()) b.memory_ = memTmp;
+		else b.allocator_ = allocTmp;
+	}
+
 	swap(a.allocation_, b.allocation_);
-	swap(a.allocator_, b.allocator_);
 }
 
 void DeviceMemoryAllocator::Entry::free()
 {
-	if(allocator_) allocator_->removeRequest(*this);
-	if((memory_) && (allocation_.size > 0)) memory_->free(allocation_);
+	if(!allocated() && allocator_) allocator_->removeRequest(*this);
+	else if(allocated()) memory_->free(allocation_);
 
-	memory_ = nullptr;
 	allocation_ = {};
 	allocator_ = nullptr;
 }

@@ -32,8 +32,9 @@ public:
 		: data(vec.data()), size(vec.size() * sizeof(T)), offset(xoff) {}
 };
 
+//TODO: make resourceReference (image too) with the memoryEntry
 ///Representing a vulkan buffer on a device.
-class Buffer : public Resource
+class Buffer : public ResourceReference<Buffer>
 {
 public:
 	Buffer() = default;
@@ -67,6 +68,7 @@ public:
 	std::size_t size() const { return memoryEntry().allocation().size; }
 	vk::Buffer vkBuffer() const { return buffer_; }
 
+	const DeviceMemoryAllocator::Entry& resourceRef() const { return memoryEntry(); }
 	friend void swap(Buffer& a, Buffer& b) noexcept;
 
 protected:

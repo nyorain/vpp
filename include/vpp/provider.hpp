@@ -52,14 +52,4 @@ public:
 		vk::CommandBufferLevel lvl = vk::CommandBufferLevel::Primary);
 };
 
-///Can provide and manage setup command buffers.
-class SetupProvider : public Resource
-{
-protected:
-	std::vector<CommandBuffer> commandBuffers_;
-
-public:
-	
-};
-
 }

@@ -4,6 +4,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/memory.hpp>
+#include <vpp/utility/allocation.hpp>
 
 #include <memory>
 #include <map>
@@ -35,18 +36,19 @@ public:
 		MemoryMapView map() const;
 
 		///Returns whether memory on the device was allocated for this entry.
-		bool allocated() const { return (memory_); }
+		bool allocated() const { return (allocation_.size > 0); }
 
 		///Assures that there is memory allocated and associated with this entry.
-		void allocate() const { if(!memory_) allocator_->allocate(*this); }
+		void allocate() const { if(!allocated()) allocator_->allocate(*this); }
 
-		DeviceMemory* memory() const { return memory_; };
-		DeviceMemoryAllocator* allocator() const { return allocator_; };
+		DeviceMemory* memory() const { return allocated() ? memory_ : nullptr; };
+		DeviceMemoryAllocator* allocator() const { return allocated() ? nullptr : allocator_; };
 		std::size_t offset() const { return allocation_.offset; };
 		std::size_t size() const { return allocation_.size; }
 		const Allocation& allocation() const { return allocation_; }
 
-		const Resource& resourceRef() const { if(memory_) return *memory_; else return *allocator_; }
+		const Resource& resourceRef() const
+			{ if(allocated()) return *memory_; else return *allocator_; }
 		friend void swap(Entry& a, Entry& b) noexcept;
 
 	protected:
@@ -55,8 +57,14 @@ public:
 	protected:
 		friend class DeviceMemoryAllocator;
 
-		DeviceMemoryAllocator* allocator_ {};
-		DeviceMemory* memory_ {};
+		//if there is an allocation associated with this entry (the allocation size is > 0)
+		//the memory member wil be active, otherwise the allocator.
+		union
+		{
+			DeviceMemoryAllocator* allocator_ {};
+			DeviceMemory* memory_;
+		};
+
 		Allocation allocation_ {};
 	};
 
@@ -140,7 +148,7 @@ protected:
 	std::vector<std::unique_ptr<DeviceMemory>> memories_;
 };
 
-///Convinience typedef for a shorter type name
+///Convinience typedef for a DeviceMemoryAllocator::Entry
 using MemoryEntry = DeviceMemoryAllocator::Entry;
 
 ///Memory Resource initializer.
