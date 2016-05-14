@@ -4,23 +4,34 @@
 #include <vpp/device.hpp>
 #include <vpp/resource.hpp>
 
-#include <map>
+#include <unordered_map>
 #include <vector>
+#include <mutex>
 
 namespace vpp
 {
 
+///A submission for executing work on the device.
+struct CommandSubmission
+{
+	vk::Queue queue;
+	vk::SubmitInfo info;
+	vk::Fence fence;
+};
+
+///Typedef for a shared Submission ptr, since this class is ususally used as shared ptr.
+using CommandSubmissionPtr = std::shared_ptr<CommandSubmission>;
+
 ///Can be used to track the state of a queued command buffer or to submit it to the device.
-class ExecutionState : public Resource
+class CommandExecutionState : public Resource
 {
 public:
 	void submit();
-	void wait();
-	bool submitted() const { return submitted_; }
+	void wait(std::uint64_t timeout = ~std::uint64_t(0));
+	bool submitted() const;
 
 protected:
-	bool submitted_ = false;
-	vk::Queue queue_; //queue the command buffer is submitted to
+	CommandSubmissionPtr submission_;
 };
 
 ///Class that manages all commands submitted to the gpu.
@@ -34,6 +45,8 @@ protected:
 class SubmitManager : public Resource
 {
 public:
+
+public:
 	///Submits all CommandBuffers in the submission queue.
 	///To wait for their completion, one can simply wait for the device to become idle.
 	void submit();
@@ -45,10 +58,15 @@ public:
 	///Adds a given vulkan submit info for exection of a commandBuffer on the given queue.
 	///Note that this function does NOT directly submits the given info. It will wait until there
 	///are many submissions batched together or a submit member function is called.
-	ExecutionState add(vk::Queue, vk::SubmitInfo info);
+	CommandExecutionState add(vk::Queue, const vk::SubmitInfo& info);
+
+	///Function for ExecutionState
+	void submit(const vk::Fence& id);
 
 protected:
-	std::size_t autoSubmitThreshold_;
-	std::map<vk::Queue, std::vector<vk::SubmitInfo>> submissions_;
+	std::mutex mutex_;
+	std::size_t autoSubmitThreshold_; //XXX: needed?
+	std::unordered_map<vk::Queue, std::vector<CommandSubmissionPtr>> submissions_;
 };
+
 }

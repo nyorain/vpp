@@ -59,7 +59,22 @@ public:
 
 	virtual void submit() override {}
 	virtual void finish() override {}
+	virtual void wait() override {}
 	virtual WorkBase::State state() override { return WorkBase::State::finished; }
+};
+
+///Class that implements the work interface for command buffers and gpu submissions.
+template<typename R>
+class CommandWork : public Work<R>
+{
+public:
+	virtual void submit() override;
+	virtual void finish() override;
+	virtual void wait() override;
+	virtual WorkBase::State state() override;
+
+protected:
+	CommandExecutionState executionState_;
 };
 
 ///Manages (i.e. submits and waits) for multiple work objects.

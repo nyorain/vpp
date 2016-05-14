@@ -44,29 +44,6 @@ void CommandBuffer::destroy()
 	commandPool_ = {};
 }
 
-//SetupCommandBuffer
-SetupCommandBuffer::SetupCommandBuffer(CommandBuffer&& buffer) : commandBuffer_(std::move(buffer))
-{
-	entry_ = std::make_shared<CommandManagerEntry>();
-
-	//set command buffer into recording state
-	vk::CommandBufferBeginInfo beginInfo;
-	beginInfo.flags(vk::CommandBufferUsageFlagBits::OneTimeSubmit);
-	vk::beginCommandBuffer(vkCommandBuffer(), &beginInfo);
-}
-
-SetupCommandBuffer::~SetupCommandBuffer()
-{
-	//end recording state
-	vk::endCommandBuffer(vkCommandBuffer());
-
-	//submit
-	vk::SubmitInfo info;
-	auto queue = device().queue(commandBuffer().commandPool().queueFamily())->queue;
-
-	device().commandManager().execute(vkCommandBuffer(), queue, info, entry_);
-}
-
 //CommandPool
 CommandPool::CommandPool(const Device& dev, std::uint32_t qfam, vk::CommandPoolCreateFlags flags)
 	: Resource(dev)
@@ -145,52 +122,6 @@ CommandBuffer CommandPool::allocate(vk::CommandBufferLevel lvl)
 void CommandPool::reset(vk::CommandPoolResetFlags flags) const
 {
 	vk::resetCommandPool(vkDevice(), vkCommandPool(), flags);
-}
-
-//CommandManager
-CommandExecutionState CommandManager::execute(vk::CommandBuffer buffer, vk::Queue queue,
-	vk::SubmitInfo info)
-{
-	buffers_.emplace_back(std::make_shared<CommandManagerEntry>());
-	buffers_.back()->buffer = buffer;
-
-	//TODO: submit!
-}
-
-void CommandManager::execute(vk::CommandBuffer buffer, vk::Queue queue, vk::SubmitInfo info,
-	const std::shared_ptr<CommandManagerEntry>& entry)
-{
-	buffers_.push_back(entry);
-	buffers_.back()->buffer = buffer;
-	buffers_.back()->destroy = true;
-
-	//TODO: submit!
-}
-
-void CommandManager::wait()
-{
-	std::vector<vk::Fence> fences(buffers_.size());
-	for(auto& buf : buffers_)
-	{
-		if(buf->fence) fences.push_back(buf->fence);
-	}
-
-	//TODO
-	while(vk::waitForFences(vkDevice(), fences.size(),
-		fences.data(), 1, -1) == vk::Result::Timeout);
-
-	for(auto& buf : buffers_)
-	{
-		if(buf->destroy)
-		{
-			//vk::freeCommandBuffers(vkDevice(), buf, [pool?]);
-		}
-
-		buf->buffer = {};
-		buf->fence = {};
-	}
-
-	buffers_.clear();
 }
 
 }

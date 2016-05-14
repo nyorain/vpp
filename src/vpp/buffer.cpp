@@ -80,38 +80,38 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data) co
 	else if(memoryEntry().allocation().size <= 65536)
 	{
 		//use the update buffer command
-		auto cmdBuffer = device().commandProvider().alloc();
+		// auto cmdBuffer = device().commandProvider().alloc();
 	}
-	else
-	{
-		//update the buffer manually via transferHeap
-		struct WorkImpl : public Work<void>
-		{
-		public:
-			vk::CommmandBuffer cmdBuffer_;
-			TransferManager::BufferRange uploadRange_;
-
-		public:
-			WorkImpl(Buffer& buffer)
-			{
-
-			}
-		};
-
-		//TODO: implement
-		auto cmdBuffer = device().commandProvider().alloc();
-		auto uploadBuffer = device().uploadBuffer(memoryEntry().allocation().size);
-
-		vk::BufferCopy region(0, 0, memoryEntry().allocation().size);
-		vk::cmdCopyBuffer(cmdBuffer, uploadBuffer.vkBuffer(), vkBuffer(), 1, &region);
-
-		return std::make_unique<WorkImpl>();
-	}
+	// else
+	// {
+	// 	//update the buffer manually via transferHeap
+	// 	struct WorkImpl : public Work<void>
+	// 	{
+	// 	public:
+	// 		vk::CommmandBuffer cmdBuffer_;
+	// 		TransferManager::BufferRange uploadRange_;
+	//
+	// 	public:
+	// 		WorkImpl(Buffer& buffer)
+	// 		{
+	//
+	// 		}
+	// 	};
+	//
+	// 	//TODO: implement
+	// 	auto cmdBuffer = device().commandProvider().alloc();
+	// 	auto uploadBuffer = device().uploadBuffer(memoryEntry().allocation().size);
+	//
+	// 	vk::BufferCopy region(0, 0, memoryEntry().allocation().size);
+	// 	vk::cmdCopyBuffer(cmdBuffer, uploadBuffer.vkBuffer(), vkBuffer(), 1, &region);
+	//
+	// 	return std::make_unique<WorkImpl>();
+	// }
 }
 
 void Buffer::assureMemory() const
 {
-	memoryEntry_->allocate();
+	memoryEntry_.allocate();
 }
 
 }

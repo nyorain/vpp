@@ -36,7 +36,6 @@ protected:
 
 	std::unique_ptr<CommandBufferProvider> cbProvider_;
 	std::unique_ptr<DeviceMemoryProvider> dmProvider_;
-	std::unique_ptr<CommandManager> commandManager_;
 
 public:
 	Device();
@@ -67,15 +66,6 @@ public:
 	///Returns a CommandBufferProvider that can be used to easily allocate a command buffer in the
 	///current thread.
 	CommandBufferProvider& commandBufferProvider() const;
-
-	///Returns a transient command buffer wrapper in recording state that will automatically
-	///execute itself on destruction and can therfore easily be used to run setup commands
-	///on the device.
-	SetupCommandBuffer setupCommandBuffer() const;
-
-	///Returns the setup command buffer manager.
-	///Mainly useful for the SetupCommandBuffer class.
-	CommandManager& commandManager() const { return *commandManager_; }
 
 	///Makes sure that all queues setup commandBuffers have been executed.
 	void finishSetup() const;

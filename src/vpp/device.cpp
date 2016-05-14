@@ -36,14 +36,12 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 
 	cbProvider_.reset(new CommandBufferProvider(*this));
 	dmProvider_.reset(new DeviceMemoryProvider(*this));
-	commandManager_.reset(new CommandManager(*this));
 }
 
 Device::~Device()
 {
 	cbProvider_.reset();
 	dmProvider_.reset();
-	commandManager_.reset();
 
 	if(vkDevice()) vk::destroyDevice(device_, nullptr);
 }
@@ -102,15 +100,8 @@ CommandBufferProvider& Device::commandBufferProvider() const
 	return *cbProvider_;
 }
 
-SetupCommandBuffer Device::setupCommandBuffer() const
-{
-	//todo: querygood qFamily instead of using 0
-	return std::move(SetupCommandBuffer(std::move(commandBufferProvider().allocate(0))));
-}
-
 void Device::finishSetup() const
 {
-	commandManager_->wait();
 }
 
 DeviceMemoryProvider& Device::deviceMemoryProvider() const

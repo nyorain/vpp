@@ -13,7 +13,7 @@ namespace vpp
 
 ///Provides transfer buffers to easily fill large device local buffers and images.
 ///Basically a pool of mappable vulkan buffers, which can be used for copying.
-class TransferManager : public ResourceReference<TransferManager>
+class TransferManager : public Resource
 {
 public:
 	///A vulkan buffer wrapper that can be used for multiple transferations at the same time.
@@ -68,13 +68,20 @@ public:
 	///Returns the amount of currently for transerfing used ranges.
 	std::size_t activeRanges() const;
 
+	///Reserves the amount of transfer buffer capacity
+	void reserve(std::size_t size);
+
 	///Releases all currently unused buffers.
 	void shrink();
 
-	const Resource& resourceRef() const { return buffers_[0]->buffer(); }
+	///Optimizes the memory allocation. Will recreate all buffers as one big buffer.
+	void optimize();
 
 protected:
 	std::vector<std::unique_ptr<TransferBuffer>> buffers_;
 };
+
+///Convinient typedef for TransferManager::BufferRange
+using TransferRange = TransferManager::BufferRange;
 
 }
