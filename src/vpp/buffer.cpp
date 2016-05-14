@@ -10,7 +10,7 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPr
 	vk::createBuffer(dev.vkDevice(), &info, nullptr, &buffer_);
 	vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_, &reqs);
 
-	reqs.memoryTypeBits(device().memoryTypeBits(mflags, reqs.memoryTypeBits()));
+	reqs.memoryTypeBits(dev.memoryTypeBits(mflags, reqs.memoryTypeBits()));
 	dev.deviceMemoryAllocator().request(buffer_, reqs, memoryEntry_);
 }
 

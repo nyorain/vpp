@@ -87,6 +87,7 @@ DescriptorSet& DescriptorSet::operator=(DescriptorSet&& other) noexcept
 {
 	destroy();
 	this->swap(other);
+	return *this;
 }
 
 DescriptorSet::~DescriptorSet()

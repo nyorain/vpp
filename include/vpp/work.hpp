@@ -3,6 +3,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/vk.hpp>
 #include <vpp/resource.hpp>
+#include <vpp/submit.hpp>
 
 #include <memory>
 
@@ -68,6 +69,8 @@ template<typename R>
 class CommandWork : public Work<R>
 {
 public:
+	CommandWork(CommandExecutionState&& state);
+
 	virtual void submit() override;
 	virtual void finish() override;
 	virtual void wait() override;
@@ -75,6 +78,7 @@ public:
 
 protected:
 	CommandExecutionState executionState_;
+	WorkBase::State state_;
 };
 
 ///Manages (i.e. submits and waits) for multiple work objects.
@@ -92,5 +96,8 @@ protected:
 	std::size_t submitThreshold_;
 	std::vector<std::unique_ptr<WorkBase>> todo_;
 };
+
+//commandWork implementation
+#include <vpp/bits/work.inl>
 
 }

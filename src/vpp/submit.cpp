@@ -1,14 +1,21 @@
 #include <vpp/submit.hpp>
+#include <algorithm>
 
 namespace vpp
 {
 
 using Lock = std::lock_guard<std::mutex>;
 
+//CommandSubmission
+CommandSubmission::~CommandSubmission()
+{
+	if(fence) vk::destroyFence(vkDevice(), fence, nullptr);
+}
+
 //ExecutionState
 void CommandExecutionState::submit()
 {
-	device().submitManager().submit(*submission_);
+	device().submitManager().submit(submission_);
 }
 
 void CommandExecutionState::wait(std::uint64_t timeout)
@@ -19,9 +26,14 @@ void CommandExecutionState::wait(std::uint64_t timeout)
 
 bool CommandExecutionState::submitted() const
 {
+	if(!submission_->fence) return false;
+	if(submission_->completed) return true;
 
+	auto result = vk::getFenceStatus(vkDevice(), submission_->fence);
+	if(result == vk::Result::Success) submission_->completed = true;
+
+	return submission_->completed;
 }
-
 
 //SubmitManager
 void SubmitManager::submit()
@@ -32,7 +44,7 @@ void SubmitManager::submit()
 
 vk::Fence SubmitManager::submit(vk::Queue queue)
 {
-	Lock l(mutex_);
+	Lock lock(mutex_);
 
 	auto it = submissions_.find(queue);
 	if(it == submissions_.end()) return {};
@@ -56,11 +68,30 @@ vk::Fence SubmitManager::submit(vk::Queue queue)
 
 CommandExecutionState SubmitManager::add(vk::Queue queue, const vk::SubmitInfo& info)
 {
+	Lock lock(mutex_);
+
 	auto submission = std::make_shared<CommandSubmission>();
 	submission->info = info;
 	auto ret = CommandExecutionState(submission);
 	submissions_[queue].push_back(std::move(submission));
 	return ret;
+}
+
+void SubmitManager::submit(const CommandSubmissionPtr& ptr)
+{
+	Lock lock(mutex_);
+
+	for(auto entry : submissions_)
+	{
+		auto it = std::find(entry.second.begin(), entry.second.end(), ptr);
+		if(it != entry.second.end())
+		{
+			submit((*it)->queue);
+			return;
+		}
+	}
+
+	//todo: warn?
 }
 
 }

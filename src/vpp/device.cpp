@@ -1,6 +1,7 @@
 #include <vpp/device.hpp>
 #include <vpp/provider.hpp>
 #include <vpp/commandBuffer.hpp>
+#include <vpp/submit.hpp>
 
 namespace vpp
 {
@@ -112,6 +113,11 @@ DeviceMemoryProvider& Device::deviceMemoryProvider() const
 DeviceMemoryAllocator& Device::deviceMemoryAllocator() const
 {
 	return deviceMemoryProvider().get();
+}
+
+SubmitManager& Device::submitManager() const
+{
+	return *submitManager_;
 }
 
 }

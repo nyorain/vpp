@@ -10,7 +10,7 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPrope
 	vk::createImage(dev.vkDevice(), &info, nullptr, &image_);
 	vk::getImageMemoryRequirements(dev.vkDevice(), image_, &reqs);
 
-	reqs.memoryTypeBits(device().memoryTypeBits(mflags, reqs.memoryTypeBits()));
+	reqs.memoryTypeBits(dev.memoryTypeBits(mflags, reqs.memoryTypeBits()));
 	dev.deviceMemoryAllocator().request(image_, reqs, info.tiling(), memoryEntry_);
 }
 

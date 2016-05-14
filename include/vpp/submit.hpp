@@ -12,23 +12,38 @@ namespace vpp
 {
 
 ///A submission for executing work on the device.
-struct CommandSubmission
+///If the submission was not yet submitted the fence member is 0.
+class CommandSubmission : public Resource
 {
+public:
 	vk::Queue queue;
 	vk::SubmitInfo info;
-	vk::Fence fence;
+	vk::Fence fence {};
+	bool completed {}; //fence status cache
+
+public:
+	using Resource::Resource;
+	~CommandSubmission();
 };
 
 ///Typedef for a shared Submission ptr, since this class is ususally used as shared ptr.
 using CommandSubmissionPtr = std::shared_ptr<CommandSubmission>;
 
 ///Can be used to track the state of a queued command buffer or to submit it to the device.
-class CommandExecutionState : public Resource
+class CommandExecutionState : public ResourceReference<CommandExecutionState>
 {
 public:
+	CommandExecutionState(CommandSubmissionPtr subm) : submission_(std::move(subm)) {}
+	~CommandExecutionState() = default;
+
+	CommandExecutionState(CommandExecutionState&& other) noexcept = default;
+	CommandExecutionState& operator=(CommandExecutionState&& other) noexcept = default;
+
 	void submit();
 	void wait(std::uint64_t timeout = ~std::uint64_t(0));
 	bool submitted() const;
+
+	const Resource& resourceRef() const { return *submission_; }
 
 protected:
 	CommandSubmissionPtr submission_;
@@ -45,8 +60,6 @@ protected:
 class SubmitManager : public Resource
 {
 public:
-
-public:
 	///Submits all CommandBuffers in the submission queue.
 	///To wait for their completion, one can simply wait for the device to become idle.
 	void submit();
@@ -61,7 +74,7 @@ public:
 	CommandExecutionState add(vk::Queue, const vk::SubmitInfo& info);
 
 	///Function for ExecutionState
-	void submit(const vk::Fence& id);
+	void submit(const CommandSubmissionPtr& ptr);
 
 protected:
 	std::mutex mutex_;

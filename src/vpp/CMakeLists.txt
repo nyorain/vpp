@@ -20,6 +20,9 @@ set(vpp-sources
 	computePipeline.cpp
 	renderPass.cpp
 	commandBuffer.cpp
+	submit.cpp
+	transfer.cpp
+	work.cpp
 	provider.cpp)
 
 if(WIN32 OR MSYS OR MINGW)

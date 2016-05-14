@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <unordered_map>
+#include <string>
 
 namespace vpp
 {

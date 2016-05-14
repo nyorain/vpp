@@ -33,7 +33,8 @@ class CommandBufferProvider;
 class DeviceMemoryProvider;
 class CommandPool;
 class CommandBuffer;
-class SetupCommandBuffer;
-class CommandManager;
+class SubmitManager;
+class WorkBase;
+class TransferManager;
 
 }

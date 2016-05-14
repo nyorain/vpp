@@ -17,16 +17,19 @@ class TransferManager : public Resource
 {
 public:
 	///A vulkan buffer wrapper that can be used for multiple transferations at the same time.
-	class TransferBuffer
+	class TransferBuffer : ResourceReference<TransferBuffer>
 	{
 	public:
-		TransferBuffer(std::size_t size);
+		TransferBuffer(const Device& dev, std::size_t size);
 		~TransferBuffer();
 
 		const Buffer& buffer() const { return buffer_; }
 
 		Allocation use(std::size_t size);
 		bool release(const Allocation& alloc);
+		std::size_t rangesCount() const { return ranges_.size(); }
+
+		const Buffer& resourceRef() const { return buffer_; }
 
 	protected:
 		Buffer buffer_;
@@ -35,20 +38,25 @@ public:
 
 	///Represents a part of a transfer buffer which can be used for transerfering data to the gpu.
 	///The destructor does automatically release the used transfer buffer range.
-	class BufferRange
+	class BufferRange : public ResourceReference<BufferRange>
 	{
 	public:
-		BufferRange(TransferBuffer& buffer, const Allocation& alloc);
-		~BufferRange();
+		BufferRange(TransferBuffer& buf, const Allocation& al) : buffer_(&buf), allocation_(al) {}
+		~BufferRange() { if(buffer_) buffer_->release(allocation_); }
 
-		const Buffer& buffer() const { return buffer_.buffer(); }
+		BufferRange(BufferRange&& other) noexcept = default;
+		BufferRange& operator=(BufferRange&& other) noexcept = default;
+
+		const Buffer& buffer() const { return buffer_->buffer(); }
 		vk::Buffer vkBuffer() const { return buffer().vkBuffer(); }
 		const Allocation& allocation() const { return allocation_; }
 		std::size_t offset() const { return allocation().offset; }
 		std::size_t size() const { return allocation().size; }
 
+		const TransferBuffer& resourceRef() const { return *buffer_; }
+
 	protected:
-		TransferBuffer& buffer_;
+		TransferBuffer* buffer_;
 		Allocation allocation_;
 	};
 
@@ -74,10 +82,11 @@ public:
 	///Releases all currently unused buffers.
 	void shrink();
 
-	///Optimizes the memory allocation. Will recreate all buffers as one big buffer.
+	///Optimizes the memory allocation. Will recreate all unused buffers as one big buffer.
 	void optimize();
 
 protected:
+	//must be a pointer for the BufferRange pointer member to stay valid.
 	std::vector<std::unique_ptr<TransferBuffer>> buffers_;
 };
 

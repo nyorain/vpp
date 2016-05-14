@@ -36,6 +36,7 @@ protected:
 
 	std::unique_ptr<CommandBufferProvider> cbProvider_;
 	std::unique_ptr<DeviceMemoryProvider> dmProvider_;
+	std::unique_ptr<SubmitManager> submitManager_;
 
 public:
 	Device();
@@ -76,6 +77,9 @@ public:
 
 	///Returns a deviceMemory allocator for the current thread.
 	DeviceMemoryAllocator& deviceMemoryAllocator() const;
+
+	///Returns the submit manager for this device.
+	SubmitManager& submitManager() const;
 };
 
 }
