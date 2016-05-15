@@ -155,10 +155,6 @@ using MemoryEntry = DeviceMemoryAllocator::Entry;
 ///Useful template class for easy and safe 2-step-resource initialization.
 template<typename T> class MemoryResourceInitializer
 {
-protected:
-	bool valid_ {1};
-	T resource_;
-
 public:
 	///Constructs the underlaying resource with the given arguments.
 	template<typename... Args>
@@ -180,6 +176,10 @@ public:
 		resource_.initMemoryResources(std::forward<Args>(args)...);
 		return std::move(resource_);
 	}
+
+protected:
+	bool valid_ {1};
+	T resource_;
 };
 
 }

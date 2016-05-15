@@ -9,7 +9,7 @@
 namespace vpp
 {
 
-///Instance.
+///Vulkan Instance.
 class Instance
 {
 public:
@@ -21,21 +21,21 @@ public:
 		unsigned int appVersion {0};
 		std::string engineName {"vpp"};
 		unsigned int engineVersion {0};
-		unsigned int apiVersion {VK_MAKE_VERSION(1, 0, 2)};
+		unsigned int apiVersion {VK_MAKE_VERSION(1, 0, 2)}; //todo
 
 		CreateInfo();
 	};
-
-protected:
-	vk::Instance instance_ {};
 
 public:
 	Instance(const CreateInfo& createInfo = {});
 	Instance(const vk::InstanceCreateInfo& createInfo);
 	~Instance();
 
-	vk::Instance vkInstance() const { return instance_; }
+	const vk::Instance& vkInstance() const { return instance_; }
 	std::vector<vk::PhysicalDevice> enumeratePhysicalDevices() const;
+
+protected:
+	vk::Instance instance_ {};
 };
 
 }

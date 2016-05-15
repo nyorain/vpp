@@ -33,6 +33,7 @@ using CommandSubmissionPtr = std::shared_ptr<CommandSubmission>;
 class CommandExecutionState : public ResourceReference<CommandExecutionState>
 {
 public:
+	CommandExecutionState() = default;
 	CommandExecutionState(CommandSubmissionPtr subm) : submission_(std::move(subm)) {}
 	~CommandExecutionState() = default;
 

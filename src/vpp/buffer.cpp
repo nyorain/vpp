@@ -1,4 +1,5 @@
 #include <vpp/buffer.hpp>
+#include <vpp/provider.hpp>
 #include <utility>
 
 namespace vpp
@@ -58,6 +59,7 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data) co
 {
 	//TODO: check for overflow (too much data given?)
 	//when to use vkCmdUpdateBuffer (multiple times if needed) and when vkCmdCopyBuffer?
+	//detailed checks for vkcmdupdatebuffer reqs? alignment, multiple of 4...
 
 	assureMemory();
 
@@ -80,7 +82,51 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data) co
 	else if(memoryEntry().allocation().size <= 65536)
 	{
 		//use the update buffer command
-		// auto cmdBuffer = device().commandProvider().alloc();
+		//TODO: correct queue
+		auto cmdBuffer = device().commandBufferProvider().get(0);
+		auto vkcmdb = cmdBuffer.vkCommandBuffer();
+
+		vk::CommandBufferBeginInfo info;
+		vk::beginCommandBuffer(vkcmdb, &info);
+
+		auto offset = 0u;
+		for(auto& entry : data)
+		{
+			auto size = entry.size;
+			auto data = reinterpret_cast<const std::uint32_t*>(entry.data);
+			vk::cmdUpdateBuffer(vkcmdb, vkBuffer(), offset, size, data);
+			offset += size;
+		}
+
+		vk::endCommandBuffer(vkcmdb);
+
+		struct WorkImpl : public CommandWork<void>
+		{
+			std::vector<std::uint8_t> data_;
+			CommandBuffer cmdBuffer_;
+			vk::CommandBuffer vkCommandBuffer_; //need valid pointer for vk::SubmitInfo
+
+			WorkImpl(CommandBuffer&& cmdBuffer) : cmdBuffer_(std::move(cmdBuffer))
+			{
+				vkCommandBuffer_ = cmdBuffer_.vkCommandBuffer();
+
+				vk::SubmitInfo submitInfo;
+				submitInfo.commandBufferCount(1);
+				submitInfo.pCommandBuffers(&vkCommandBuffer_);
+
+				auto queueptr = cmdBuffer_.device().queue(vk::QueueFlagBits::Graphics);
+				CommandWork::operator=(cmdBuffer_.device().submitManager().add(queue, submitInfo));
+			}
+
+			virtual void finish() override
+			{
+				cmdBuffer_ = {};
+				vkCommandBuffer_ = {};
+				data_ = {};
+			}
+		};
+
+		return std::make_unique<WorkImpl>(std::move(cmdBuffer));
 	}
 	// else
 	// {

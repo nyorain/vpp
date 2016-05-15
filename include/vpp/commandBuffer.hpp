@@ -21,13 +21,6 @@ class CommandPool;
 //CommandBuffer
 class CommandBuffer : public ResourceReference<CommandBuffer>
 {
-protected:
-	vk::CommandBuffer commandBuffer_ {};
-	const CommandPool* commandPool_ {};
-
-protected:
-	void destroy();
-
 public:
 	CommandBuffer() = default;
 	CommandBuffer(vk::CommandBuffer buffer, const CommandPool& pool);
@@ -41,21 +34,20 @@ public:
 	const CommandPool& resourceRef() const { return *commandPool_; }
 
 	const CommandPool& commandPool() const { return *commandPool_; }
-	vk::CommandBuffer vkCommandBuffer() const { return commandBuffer_; }
+	const vk::CommandBuffer& vkCommandBuffer() const { return commandBuffer_; }
+
+protected:
+	void destroy();
+
+protected:
+	vk::CommandBuffer commandBuffer_ {};
+	const CommandPool* commandPool_ {};
 };
 
 //CommandPool
 //XXX: needed?
 class CommandPool : public Resource
 {
-protected:
-	vk::CommandPool commandPool_ {};
-	vk::CommandPoolCreateFlags flags_ {};
-	std::uint32_t qFamily_ {};
-
-protected:
-	void destroy();
-
 public:
 	CommandPool() = default;
 	CommandPool(const Device& dev, std::uint32_t qfam, vk::CommandPoolCreateFlags flags = {});
@@ -72,9 +64,17 @@ public:
 
 	void reset(vk::CommandPoolResetFlags flags) const;
 
-	std::uint32_t queueFamily() const { return qFamily_; }
-	vk::CommandPoolCreateFlags flags() const { return flags_; }
-	vk::CommandPool vkCommandPool() const { return commandPool_; }
+	const std::uint32_t& queueFamily() const { return qFamily_; }
+	const vk::CommandPoolCreateFlags& flags() const { return flags_; }
+	const vk::CommandPool& vkCommandPool() const { return commandPool_; }
+
+protected:
+	void destroy();
+
+protected:
+	vk::CommandPool commandPool_ {};
+	vk::CommandPoolCreateFlags flags_ {};
+	std::uint32_t qFamily_ {};
 };
 
 }

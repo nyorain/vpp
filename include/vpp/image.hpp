@@ -36,7 +36,7 @@ public:
 		const vk::Extent3D& extent) const;
 
 	const MemoryEntry& memoryEntry() const { return memoryEntry_; }
-	vk::Image vkImage() const { return image_; }
+	const vk::Image& vkImage() const { return image_; }
 
 	const MemoryEntry& resourceRef() const { return memoryEntry(); }
 	friend void swap(Image& a, Image& b) noexcept;

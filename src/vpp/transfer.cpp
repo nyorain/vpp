@@ -54,6 +54,35 @@ bool TransferManager::TransferBuffer::release(const Allocation& alloc)
 	return false;
 }
 
+//BufferRange
+TransferManager::BufferRange::~BufferRange()
+{
+	if(buffer_) buffer_->release(allocation());
+}
+
+TransferManager::BufferRange::BufferRange(BufferRange&& other) noexcept
+{
+	swap(*this, other);
+}
+
+TransferRange& TransferManager::BufferRange::operator=(BufferRange&& other) noexcept
+{
+	if(buffer_) buffer_->release(allocation());
+	buffer_ = {};
+	allocation_ = {};
+	swap(*this, other);
+
+	return *this;
+}
+
+void swap(TransferRange& a, TransferRange& b) noexcept
+{
+	using std::swap;
+
+	swap(a.buffer_, b.buffer_);
+	swap(a.allocation_, b.allocation_);
+}
+
 //TransferManager
 TransferManager::TransferManager(const Device& dev) : Resource(dev)
 {

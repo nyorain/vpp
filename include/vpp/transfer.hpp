@@ -42,10 +42,10 @@ public:
 	{
 	public:
 		BufferRange(TransferBuffer& buf, const Allocation& al) : buffer_(&buf), allocation_(al) {}
-		~BufferRange() { if(buffer_) buffer_->release(allocation_); }
+		~BufferRange();
 
-		BufferRange(BufferRange&& other) noexcept = default;
-		BufferRange& operator=(BufferRange&& other) noexcept = default;
+		BufferRange(BufferRange&& other) noexcept;
+		BufferRange& operator=(BufferRange&& other) noexcept;
 
 		const Buffer& buffer() const { return buffer_->buffer(); }
 		vk::Buffer vkBuffer() const { return buffer().vkBuffer(); }
@@ -54,10 +54,11 @@ public:
 		std::size_t size() const { return allocation().size; }
 
 		const TransferBuffer& resourceRef() const { return *buffer_; }
+		friend void swap(BufferRange& a, BufferRange& b) noexcept;
 
 	protected:
-		TransferBuffer* buffer_;
-		Allocation allocation_;
+		TransferBuffer* buffer_ {};
+		Allocation allocation_ {};
 	};
 
 public:

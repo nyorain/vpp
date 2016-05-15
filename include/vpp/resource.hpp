@@ -15,8 +15,12 @@ namespace vpp
 ///\sa ResourceReference
 class Resource : public NonCopyable
 {
-protected:
-	const Device* device_ {nullptr};
+public:
+	const Device& device() const { return *device_; }
+
+	const VkInstance& vkInstance() const { return device().vkInstance(); }
+	const VkPhysicalDevice& vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
+	const VkDevice& vkDevice() const { return device().vkDevice(); }
 
 protected:
 	Resource() = default;
@@ -29,12 +33,8 @@ protected:
 	void init(const Device& device) { device_ = &device; };
 	void destroy(){ device_ = {}; }
 
-public:
-	const Device& device() const { return *device_; }
-
-	VkInstance vkInstance() const { return device().vkInstance(); }
-	VkPhysicalDevice vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
-	VkDevice vkDevice() const { return device().vkDevice(); }
+protected:
+	const Device* device_ {nullptr};
 };
 
 ///Resource class that already owns another resource and does therefore not have to hold a second
@@ -54,9 +54,9 @@ class ResourceReference : public NonCopyable
 public:
 	const Device& device() const { return reinterpret_cast<const T&>(*this).resourceRef().device(); }
 
-	VkInstance vkInstance() const { return device().vkInstance(); }
-	VkPhysicalDevice vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
-	VkDevice vkDevice() const { return device().vkDevice(); }
+	const VkInstance& vkInstance() const { return device().vkInstance(); }
+	const VkPhysicalDevice& vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
+	const VkDevice& vkDevice() const { return device().vkDevice(); }
 };
 
 }

@@ -66,7 +66,7 @@ public:
 
 	const DeviceMemoryAllocator::Entry& memoryEntry() const { return memoryEntry_; }
 	std::size_t size() const { return memoryEntry().allocation().size; }
-	vk::Buffer vkBuffer() const { return buffer_; }
+	const vk::Buffer& vkBuffer() const { return buffer_; }
 
 	const DeviceMemoryAllocator::Entry& resourceRef() const { return memoryEntry(); }
 	friend void swap(Buffer& a, Buffer& b) noexcept;

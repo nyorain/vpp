@@ -23,7 +23,7 @@ CommandBufferProvider::CommandBufferProvider(const Device& dev) : Resource(dev)
 {
 }
 
-CommandBuffer CommandBufferProvider::allocate(std::uint32_t family,
+CommandBuffer CommandBufferProvider::get(std::uint32_t family,
  	vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
 {
 	auto& pools = commandPools_[std::this_thread::get_id()];
@@ -40,7 +40,7 @@ CommandBuffer CommandBufferProvider::allocate(std::uint32_t family,
 }
 
 
-std::vector<CommandBuffer> CommandBufferProvider::allocate(std::uint32_t family, unsigned int count,
+std::vector<CommandBuffer> CommandBufferProvider::get(std::uint32_t family, unsigned int count,
 	vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
 {
 	auto& pools = commandPools_[std::this_thread::get_id()];

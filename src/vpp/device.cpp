@@ -68,6 +68,14 @@ const Device::Queue* Device::queue(std::uint32_t family, std::uint32_t id) const
 	return nullptr;
 }
 
+const Device::Queue* Device::queue(vk::QueueFlags flags) const
+{
+	for(auto& queue : queues())
+		if(queue.properties.queueFlags() & flags) return &queue;
+
+	return nullptr;
+}
+
 int Device::memoryType(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits) const
 {
 	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount(); ++i)

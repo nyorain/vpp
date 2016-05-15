@@ -4,6 +4,7 @@
 #include <vpp/vk.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/submit.hpp>
+#include <vpp/commandBuffer.hpp>
 
 #include <memory>
 
@@ -69,16 +70,20 @@ template<typename R>
 class CommandWork : public Work<R>
 {
 public:
-	CommandWork(CommandExecutionState&& state);
+	CommandWork() = default;
+	CommandWork(CommandBuffer&& buffer) : cmdBuffer_(std::move(buffer)) { queue(); }
 
 	virtual void submit() override;
 	virtual void finish() override;
 	virtual void wait() override;
-	virtual WorkBase::State state() override;
+	virtual WorkBase::State state() override { return state_; }
+
+	virtual void queue();
 
 protected:
+	CommandBuffer cmdBuffer_;
 	CommandExecutionState executionState_;
-	WorkBase::State state_;
+	WorkBase::State state_ {};
 };
 
 ///Manages (i.e. submits and waits) for multiple work objects.
