@@ -43,6 +43,8 @@ public:
 	std::uint8_t* ptr() const { return static_cast<std::uint8_t*>(ptr_); }
 	const DeviceMemory& memory() const { return *memory_; }
 
+	vk::MappedMemoryRange mappedMemoryRange() const { return {vkMemory(), offset(), size()}; };
+
 	const DeviceMemory& resourceRef() const { return *memory_; }
 	friend void swap(MemoryMap& a, MemoryMap& b) noexcept;
 
@@ -73,10 +75,14 @@ public:
 	MemoryMapView(MemoryMapView&& other) noexcept;
 	MemoryMapView& operator=(MemoryMapView other) noexcept;
 
+	vk::DeviceMemory vkMemory() const { return memoryMap().vkMemory(); }
 	std::uint8_t* ptr() const;
-
 	const Allocation& allocation() const { return allocation_; }
+	std::size_t offset() const { return allocation().offset; }
+	std::size_t size() const { return allocation().size; }
 	MemoryMap& memoryMap() const { return *memoryMap_; }
+
+	vk::MappedMemoryRange mappedMemoryRange() const { return {vkMemory(), offset(), size()}; };
 
 	const MemoryMap& resourceRef() const { return *memoryMap_; }
 	friend void swap(MemoryMapView& a, MemoryMapView& b) noexcept;
@@ -173,7 +179,7 @@ protected:
 
 	std::size_t typeIndex_ {};
 	vk::MemoryPropertyFlags flags_ {};
-	MemoryMap memoryMap_ {};
+	MemoryMap memoryMap_ {}; //the current memory map, or invalid object
 };
 
 }

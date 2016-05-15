@@ -9,6 +9,9 @@ namespace vpp
 MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
 	: memory_(&memory), allocation_(alloc)
 {
+	if(memory.propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible)
+		throw std::logic_error("vpp::MemoryMap: trying to map device local memory");
+
 	vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {}, &ptr_);
 }
 
@@ -59,14 +62,24 @@ vk::DeviceMemory MemoryMap::vkMemory() const
 
 void MemoryMap::flushRanges() const
 {
-	//TODO: check for memory flags - function call needed?
+	if(memory().propertyFlags() & vk::MemoryPropertyFlagBits::HostCoherent)
+	{
+		///XXX: warning;
+		return;
+	}
+
 	vk::MappedMemoryRange range {vkMemory(), offset(), size()};
 	vk::flushMappedMemoryRanges(memory().vkDevice(), 1, &range);
 }
 
 void MemoryMap::invalidateRanges() const
 {
-	//TODO: check for memory flags - function call needed?
+	if(memory().propertyFlags() & vk::MemoryPropertyFlagBits::HostCoherent)
+	{
+		///XXX: warning;
+		return;
+	}
+
 	vk::MappedMemoryRange range {vkMemory(), offset(), size()};
 	vk::invalidateMappedMemoryRanges(memory().vkDevice(), 1, &range);
 }

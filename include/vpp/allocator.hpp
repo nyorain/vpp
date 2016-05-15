@@ -13,9 +13,6 @@
 namespace vpp
 {
 
-//TODO: Dummy allocations (for later easy image resizing e.g. for window framebuffers)
-//needed? just use bigger allocations?
-
 ///Makes it possible to allocate a few vk::DeviceMemory objects for many buffers/images.
 ///Basically a memory pool
 class DeviceMemoryAllocator : public Resource

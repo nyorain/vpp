@@ -26,7 +26,12 @@ void CommandExecutionState::wait(std::uint64_t timeout)
 
 bool CommandExecutionState::submitted() const
 {
-	if(!submission_->fence) return false;
+	return (submission_->fence);
+}
+
+bool CommandExecutionState::completed() const
+{
+	if(!submitted()) return false;
 	if(submission_->completed) return true;
 
 	auto result = vk::getFenceStatus(vkDevice(), submission_->fence);

@@ -13,6 +13,7 @@ namespace vpp
 
 ///A submission for executing work on the device.
 ///If the submission was not yet submitted the fence member is 0.
+///Internally used by CommandExecutionState and SubmitManager.
 class CommandSubmission : public Resource
 {
 public:
@@ -40,9 +41,18 @@ public:
 	CommandExecutionState(CommandExecutionState&& other) noexcept = default;
 	CommandExecutionState& operator=(CommandExecutionState&& other) noexcept = default;
 
+	///Makes sure the commands associated with this control are submitted to the gpu.
 	void submit();
+
+	///Waits for the commands associated with this control to finish.
+	///Will wait at least for the given timeout on nanoseconds.
 	void wait(std::uint64_t timeout = ~std::uint64_t(0));
+
+	///Returns whether the commands were submitted to the gpu.
 	bool submitted() const;
+
+	///Returns whether execution of the associated commands have been finished.
+	bool completed() const;
 
 	const Resource& resourceRef() const { return *submission_; }
 

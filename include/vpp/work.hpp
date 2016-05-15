@@ -33,6 +33,11 @@ public:
 	virtual State state() = 0; //returns the current state of the work
 	virtual void wait() = 0; //waits until the command buffer is fullly executed
 	virtual void finish() = 0; //will block until the opertion has completed (if it hasnt)
+
+	bool pending() { return state() == State::pending; }
+	bool submitted() { return static_cast<unsigned int>(state()) > 1; }
+	bool executed() { return static_cast<unsigned int>(state()) > 2; }
+	bool finished() { return static_cast<unsigned int>(state()) > 3; }
 };
 
 ///Abstract base class representing (possibly async) work which might return data of type R.
@@ -76,7 +81,7 @@ public:
 	virtual void submit() override;
 	virtual void finish() override;
 	virtual void wait() override;
-	virtual WorkBase::State state() override { return state_; }
+	virtual WorkBase::State state() override;
 
 	virtual void queue();
 
@@ -93,7 +98,7 @@ public:
 	WorkManager() = default;
 	WorkManager(const Device& dev, std::size_t submitThreshold = 100);
 
-	WorkBase& add(std::unique_ptr<WorkBase> work);
+	void add(std::unique_ptr<WorkBase> work);
 	void submit();
 	void finish();
 

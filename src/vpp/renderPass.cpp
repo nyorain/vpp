@@ -5,7 +5,6 @@ namespace vpp
 {
 
 //RenderPass
-//Renderpass
 RenderPass::RenderPass(const Device& dev, const vk::RenderPassCreateInfo& info)
 {
 	init(dev, info);
@@ -119,8 +118,6 @@ RenderPassInstance::~RenderPassInstance()
 
 void RenderPassInstance::nextSubpass()
 {
-	//TODO: check renderpass for left subpasses.
-
 	currentSubpass_ += 1;
 	vk::cmdNextSubpass(vkCommandBuffer(), vk::SubpassContents::Inline);
 }
