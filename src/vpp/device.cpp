@@ -71,7 +71,7 @@ const Device::Queue* Device::queue(std::uint32_t family, std::uint32_t id) const
 const Device::Queue* Device::queue(vk::QueueFlags flags) const
 {
 	for(auto& queue : queues())
-		if(queue.properties & props) return &queue;
+		if(queue.properties.queueFlags() & flags) return &queue;
 
 	return nullptr;
 }

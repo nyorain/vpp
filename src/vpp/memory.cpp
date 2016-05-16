@@ -9,7 +9,7 @@ namespace vpp
 MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
 	: memory_(&memory), allocation_(alloc)
 {
-	if(memory.propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible)
+	if(!(memory.propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible))
 		throw std::logic_error("vpp::MemoryMap: trying to map device local memory");
 
 	vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {}, &ptr_);
