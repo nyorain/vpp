@@ -88,7 +88,7 @@ TransferManager::TransferManager(const Device& dev) : Resource(dev)
 {
 }
 
-TransferRange TransferManager::transferBuffer(std::size_t size)
+TransferRange TransferManager::buffer(std::size_t size)
 {
 	for(auto& buffp : buffers_)
 	{

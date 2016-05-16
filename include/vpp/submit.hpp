@@ -88,6 +88,10 @@ public:
 	void submit(const CommandSubmissionPtr& ptr);
 
 protected:
+	friend class Device;
+	SubmitManager(const Device& dev) : Resource(dev) {}
+
+protected:
 	std::mutex mutex_;
 	std::size_t autoSubmitThreshold_; //XXX: needed?
 	std::unordered_map<vk::Queue, std::vector<CommandSubmissionPtr>> submissions_;

@@ -34,12 +34,15 @@ MemoryMap::~MemoryMap()
 
 void MemoryMap::remap(const Allocation& allocation)
 {
+	//new allocation extent
 	auto nbeg = std::min(allocation.offset, allocation_.offset);
 	auto nsize = std::max(allocation.end(), allocation_.end()) - nbeg;
 
+	//if new extent lay inside old do nothing
 	if(offset() <= nbeg && offset() + size() >= nbeg + nsize) return;
 
-	vk::unmapMemory(memory().vkDevice(), vkMemory());
+	//else remap the memory
+	vk::unmapMemory(vkDevice(), vkMemory());
 	allocation_ = {nbeg, nsize};
 
 	vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {}, &ptr_);
@@ -55,33 +58,38 @@ void swap(MemoryMap& a, MemoryMap& b) noexcept
 	swap(a.views_, b.views_);
 }
 
-vk::DeviceMemory MemoryMap::vkMemory() const
+const vk::DeviceMemory& MemoryMap::vkMemory() const
 {
 	return memory_->vkDeviceMemory();
 }
 
 void MemoryMap::flushRanges() const
 {
-	if(memory().propertyFlags() & vk::MemoryPropertyFlagBits::HostCoherent)
+	if(coherent())
 	{
-		///XXX: warning;
+		std::cout << "vpp::MemoryMap::flushRanges: called but not needed, mem coherent";
 		return;
 	}
 
-	vk::MappedMemoryRange range {vkMemory(), offset(), size()};
-	vk::flushMappedMemoryRanges(memory().vkDevice(), 1, &range);
+	auto range = mappedMemoryRange();
+	vk::flushMappedMemoryRanges(vkDevice(), 1, &range);
 }
 
 void MemoryMap::invalidateRanges() const
 {
-	if(memory().propertyFlags() & vk::MemoryPropertyFlagBits::HostCoherent)
+	if(coherent())
 	{
-		///XXX: warning;
+		std::cout << "vpp::MemoryMap::invalidateRanges: called but not needed, mem coherent";
 		return;
 	}
 
-	vk::MappedMemoryRange range {vkMemory(), offset(), size()};
-	vk::invalidateMappedMemoryRanges(memory().vkDevice(), 1, &range);
+	auto range = mappedMemoryRange();
+	vk::invalidateMappedMemoryRanges(vkDevice(), 1, &range);
+}
+
+bool MemoryMap::coherent() const
+{
+	return memory().propertyFlags() & vk::MemoryPropertyFlagBits::HostCoherent;
 }
 
 void MemoryMap::unmap()
@@ -131,9 +139,38 @@ MemoryMapView& MemoryMapView::operator=(MemoryMapView other) noexcept
 	return *this;
 }
 
+void MemoryMapView::flushRanges() const
+{
+	if(coherent())
+	{
+		std::cout << "vpp::MemoryMapView::flushRanges: called but not needed, mem coherent";
+		return;
+	}
+
+	auto range = mappedMemoryRange();
+	vk::flushMappedMemoryRanges(vkDevice(), 1, &range);
+}
+
+void MemoryMapView::invalidateRanges() const
+{
+	if(coherent())
+	{
+		std::cout << "vpp::MemoryMapView::invalidateRanges: called but not needed, mem coherent";
+		return;
+	}
+
+	auto range = mappedMemoryRange();
+	vk::invalidateMappedMemoryRanges(vkDevice(), 1, &range);
+}
+
 std::uint8_t* MemoryMapView::ptr() const
 {
 	return memoryMap().ptr() + allocation().offset - memoryMap().offset();
+}
+
+bool MemoryMapView::coherent() const
+{
+	return memory().propertyFlags() & vk::MemoryPropertyFlagBits::HostCoherent;
 }
 
 void swap(MemoryMapView& a, MemoryMapView& b) noexcept
@@ -263,7 +300,7 @@ std::size_t DeviceMemory::size() const
 MemoryMapView DeviceMemory::map(const Allocation& allocation)
 {
 	if(!(propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible))
-		throw std::logic_error("DeviceMemory::map: not mappable.");
+		throw std::logic_error("vpp::DeviceMemory::map: not mappable.");
 
 	if(!mapped()) memoryMap_ = MemoryMap(*this, allocation);
 	else memoryMap_.remap(allocation);

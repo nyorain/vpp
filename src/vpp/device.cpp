@@ -2,6 +2,7 @@
 #include <vpp/provider.hpp>
 #include <vpp/commandBuffer.hpp>
 #include <vpp/submit.hpp>
+#include <vpp/transfer.hpp>
 
 namespace vpp
 {
@@ -11,13 +12,9 @@ Device::Device() = default;
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info)
 	: instance_(ini), physicalDevice_(phdev)
 {
-	//physicalDevice properties
 	vk::getPhysicalDeviceProperties(vkPhysicalDevice(), &physicalDeviceProperties_);
-
-	//physicalDevice memoryProperties
 	vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice(), &memoryProperties_);
 
-	//createDevice
 	vk::createDevice(vkPhysicalDevice(), &info, nullptr, &device_);
 
 	//retrieve/store requested queues
@@ -35,8 +32,11 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 		queues_.push_back({queue, qproperties[i], queueInfo.queueFamilyIndex(), idx});
 	}
 
+	//setup provider and manager
 	cbProvider_.reset(new CommandBufferProvider(*this));
 	dmProvider_.reset(new DeviceMemoryProvider(*this));
+	submitManager_.reset(new SubmitManager(*this));
+	transferManager_.reset(new TransferManager(*this));
 }
 
 Device::~Device()
@@ -71,7 +71,7 @@ const Device::Queue* Device::queue(std::uint32_t family, std::uint32_t id) const
 const Device::Queue* Device::queue(vk::QueueFlags flags) const
 {
 	for(auto& queue : queues())
-		if(queue.properties.queueFlags() & flags) return &queue;
+		if(queue.properties & props) return &queue;
 
 	return nullptr;
 }

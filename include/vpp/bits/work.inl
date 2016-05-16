@@ -1,40 +1,43 @@
 #pragma once
 
-void CommandWork::submit()
+template<typename R>
+void CommandWork<R>::submit()
 {
-	if(static_cast<unsigned int>(state()) > static_cast<unsigned int>(WorkBase::State::pending))
-		return;
+	if(Work<R>::submitted()) return;
 
 	executionState_.submit();
 	state_ = WorkBase::State::submitted;
 }
 
-void CommandWork::wait()
+template<typename R>
+void CommandWork<R>::wait()
 {
-	if(static_cast<unsigned int>(state()) > static_cast<unsigned int>(WorkBase::State::submitted))
-		return;
+	if(Work<R>::executed()) return;
 
 	submit();
-	state_.wait();
+	executionState_.wait();
 	state_ = WorkBase::State::executed;
 }
 
-void CommandWork::finish()
+template<typename R>
+void CommandWork<R>::finish()
 {
-	if(static_cast<unsigned int>(state()) > static_cast<unsigned int>(WorkBase::State::executed))
-		return;
+	if(Work<R>::finished()) return;
 
 	wait();
+	cmdBuffer_ = {}; //free the commandBuffer it is no longer needed
+
 	state_ = WorkBase::State::finished;
 }
 
-void CommandWork::queue()
+template<typename R>
+void CommandWork<R>::queue()
 {
 	vk::SubmitInfo submitInfo;
 	submitInfo.commandBufferCount(1);
 	submitInfo.pCommandBuffers(&cmdBuffer_.vkCommandBuffer());
 
-	//TODO: queues
+	//TODO: correct queues
 	auto queue = cmdBuffer_.device().queue(cmdBuffer_.commandPool().queueFamily());
 	if(!queue) throw std::logic_error("dummy1");
 
@@ -42,12 +45,14 @@ void CommandWork::queue()
 	state_ = WorkBase::State::pending;
 }
 
-WorkBase::State CommandWork::state() const
+template<typename R>
+WorkBase::State CommandWork<R>::state()
 {
+	//update state
 	if(state_ == WorkBase::State::pending && executionState_.submitted())
 		state_ = WorkBase::State::submitted;
 
-	if(state_ == WorkBase::State::submited && executionState_.completed())
+	if(state_ == WorkBase::State::submitted && executionState_.completed())
 		state_ = WorkBase::State::executed;
 
 	return state_;

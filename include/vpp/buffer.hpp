@@ -62,6 +62,7 @@ public:
 	std::unique_ptr<Work<void>> fill(const std::vector<BufferData>& data) const;
 
 	///Retrives the data stored in the buffer.
+	///\return A Work object that is able to retrive an array of std::uint8_t values storing the data.
 	std::unique_ptr<Work<std::uint8_t&>> retrieve() const;
 
 	const DeviceMemoryAllocator::Entry& memoryEntry() const { return memoryEntry_; }

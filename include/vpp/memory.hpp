@@ -36,12 +36,13 @@ public:
 	//are made visible. Not needed when memory is coherent, look at vkInvalidateMappedMemoryRanges.
 	void invalidateRanges() const;
 
-	vk::DeviceMemory vkMemory() const;
+	const vk::DeviceMemory& vkMemory() const;
 	const Allocation& allocation() const { return allocation_; }
 	std::size_t offset() const { return allocation().offset; }
 	std::size_t size() const { return allocation().size; }
 	std::uint8_t* ptr() const { return static_cast<std::uint8_t*>(ptr_); }
 	const DeviceMemory& memory() const { return *memory_; }
+	bool coherent() const; 
 
 	vk::MappedMemoryRange mappedMemoryRange() const { return {vkMemory(), offset(), size()}; };
 
@@ -75,12 +76,24 @@ public:
 	MemoryMapView(MemoryMapView&& other) noexcept;
 	MemoryMapView& operator=(MemoryMapView other) noexcept;
 
-	vk::DeviceMemory vkMemory() const { return memoryMap().vkMemory(); }
-	std::uint8_t* ptr() const;
+	///Makes sure the mapped data is visibile on the device.
+	///Not needed when memory is coherent, look at vkFlushMappedMemoryRanges.
+	///Can be checked with coherent().
+	void flushRanges() const;
+
+	///Reloads the device memory into mapped memory, i.e. makes sure writes by the device
+	///are made visible. Not needed when memory is coherent, look at vkInvalidateMappedMemoryRanges.
+	///Can be checked with coherent().
+	void invalidateRanges() const;
+
+	MemoryMap& memoryMap() const { return *memoryMap_; }
+	const DeviceMemory& memory() const { return memoryMap().memory(); }
+	const vk::DeviceMemory& vkMemory() const { return memoryMap().vkMemory(); }
 	const Allocation& allocation() const { return allocation_; }
 	std::size_t offset() const { return allocation().offset; }
 	std::size_t size() const { return allocation().size; }
-	MemoryMap& memoryMap() const { return *memoryMap_; }
+	std::uint8_t* ptr() const;
+	bool coherent() const;
 
 	vk::MappedMemoryRange mappedMemoryRange() const { return {vkMemory(), offset(), size()}; };
 
@@ -169,7 +182,7 @@ public:
 	///Will throw a std::logic_error if this memory is not mappeble.
 	MemoryMapView map(const Allocation& allocation);
 
-	vk::DeviceMemory vkDeviceMemory() const { return memory_; }
+	const vk::DeviceMemory& vkDeviceMemory() const { return memory_; }
 	vk::MemoryPropertyFlags propertyFlags() const { return flags_; }
 
 protected:

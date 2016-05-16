@@ -41,6 +41,7 @@ public:
 	class BufferRange : public ResourceReference<BufferRange>
 	{
 	public:
+		BufferRange() = default;
 		BufferRange(TransferBuffer& buf, const Allocation& al) : buffer_(&buf), allocation_(al) {}
 		~BufferRange();
 
@@ -66,7 +67,7 @@ public:
 	TransferManager(const Device& dev);
 
 	///Returns an avaible upload buffer with the given size (allocates one if not already there).
-	BufferRange transferBuffer(std::size_t size);
+	BufferRange buffer(std::size_t size);
 
 	///Returns the amount of vulkan buffers managed.
 	std::size_t bufferCount() const { return buffers_.size(); }
