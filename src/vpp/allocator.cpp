@@ -38,24 +38,19 @@ void swap(DeviceMemoryAllocator::Entry& a, DeviceMemoryAllocator::Entry& b) noex
 
 	//correclty swap the anonymous union
 	//can be proably be done more elegant...
+
 	//backup the memory or allocator values of a
 	auto memTmp = a.allocated() ? a.memory() : nullptr;
-	auto allocTmp = a.allocated() ? nullptr : b.allocator();
+	auto allocTmp = a.allocated() ? nullptr : a.allocator();
 
 	//correclty "swap" the unions
-	if(b.allocated())
-	{
-		a.memory_ = b.memory_;
-		if(a.allocated()) b.memory_ = memTmp;
-		else b.allocator_ = allocTmp;
-	}
-	else
-	{
-		a.allocator_ = b.allocator_;
-		if(a.allocated()) b.memory_ = memTmp;
-		else b.allocator_ = allocTmp;
-	}
+	if(b.allocated()) a.memory_ = b.memory_;
+	else a.allocator_ = b.allocator_;
 
+	if(a.allocated()) b.memory_ = memTmp;
+	else b.allocator_ = allocTmp;
+
+	//swap allocations
 	swap(a.allocation_, b.allocation_);
 }
 
@@ -107,6 +102,10 @@ void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept
 void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
 	Entry& entry)
 {
+	if(reqs.size() == 0)
+		throw std::logic_error("vpp::DeviceMemAllocator::request: allocation size of 0 not allowed");
+
+	entry = {};
 	entry.allocator_ = this;
 
 	for(auto& type : bufferRequirements_)
@@ -126,6 +125,10 @@ void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequir
 void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequirements& reqs,
 	vk::ImageTiling tiling, Entry& entry)
 {
+	if(reqs.size() == 0)
+		throw std::logic_error("vpp::DeviceMemAllocator::request: allocation size of 0 not allowed");
+
+	entry = {};
 	entry.allocator_ = this;
 	auto typ = (tiling == vk::ImageTiling::Linear) ? AllocationType::linear : AllocationType::optimal;
 
@@ -280,7 +283,6 @@ void DeviceMemoryAllocator::allocate()
 		for(auto& buf : bufferRequirements_[entry.first]) {
 			auto alloc = memory->allocSpecified(buf.offset, buf.requirements.size(),
 				AllocationType::linear);
-			buf.entry->allocator_ = nullptr;
 			buf.entry->memory_ = memory.get();
 			buf.entry->allocation_ = alloc;
 
@@ -290,7 +292,6 @@ void DeviceMemoryAllocator::allocate()
 		//images
 		for(auto& img : imageRequirements_[entry.first]) {
 			auto alloc = memory->allocSpecified(img.offset, img.requirements.size(), img.type);
-			img.entry->allocator_ = nullptr;
 			img.entry->memory_ = memory.get();
 			img.entry->allocation_ = alloc;
 
@@ -307,6 +308,7 @@ void DeviceMemoryAllocator::allocate()
 
 bool DeviceMemoryAllocator::allocate(const Entry& entry)
 {
+	//TODO
 	allocate();
 	return true;
 
@@ -320,7 +322,6 @@ bool DeviceMemoryAllocator::allocate(const Entry& entry)
 	if(type != undef) {
 		auto mem = findMem(buf->requirements, AllocationType::linear, allocation);
 		if(mem) {
-			buf->entry->allocator_ = nullptr;
 			buf->entry->memory_ = mem;
 			buf->entry->allocation_ = allocation;
 
@@ -333,7 +334,6 @@ bool DeviceMemoryAllocator::allocate(const Entry& entry)
 
 		auto mem = findMem(img->requirements, AllocationType::linear, allocation);
 		if(mem) {
-			img->entry->allocator_ = nullptr;
 			img->entry->memory_ = mem;
 			img->entry->allocation_ = allocation;
 

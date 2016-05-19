@@ -258,7 +258,7 @@ std::unique_ptr<Work<std::uint8_t&>> Buffer::retrieve() const
 
 void Buffer::assureMemory() const
 {
-	memoryEntry_.allocate();
+	memoryEntry().allocate();
 }
 
 }

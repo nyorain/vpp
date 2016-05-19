@@ -22,7 +22,7 @@ public:
 	{
 	public:
 		Entry() = default;
-		Entry(DeviceMemory* memory, const Allocation& alloc);
+		Entry(DeviceMemory* memory, const Allocation& alloc); //XXX: needed? allowed? reasonable?
 		~Entry();
 
 		Entry(Entry&& other) noexcept;

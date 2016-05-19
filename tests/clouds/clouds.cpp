@@ -11,6 +11,7 @@ FragmentRenderer::FragmentRenderer(App& app)
 	initPipeline();
 
 	//it is used to write the descriptor set
+	auto& e = ubo_.memoryEntry();
 	ubo_.assureMemory();
 
 	writeDescriptorSets();
@@ -92,6 +93,8 @@ void FragmentRenderer::initDescriptorBuffers()
 	gfxInfo.usage(vk::BufferUsageFlagBits::UniformBuffer);
 
 	ubo_ = vpp::Buffer(device(), gfxInfo, vk::MemoryPropertyFlagBits::HostVisible);
+
+	auto& e = ubo_.memoryEntry();
 }
 
 void FragmentRenderer::updateUBO(const nytl::Vec2ui& mousePos)

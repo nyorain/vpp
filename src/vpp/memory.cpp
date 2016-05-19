@@ -67,7 +67,7 @@ void MemoryMap::flushRanges() const
 {
 	if(coherent())
 	{
-		std::cout << "vpp::MemoryMap::flushRanges: called but not needed, mem coherent";
+		std::cout << "vpp::MemoryMap::flushRanges: called but not needed, mem coherent\n";
 		return;
 	}
 
@@ -79,7 +79,7 @@ void MemoryMap::invalidateRanges() const
 {
 	if(coherent())
 	{
-		std::cout << "vpp::MemoryMap::invalidateRanges: called but not needed, mem coherent";
+		std::cout << "vpp::MemoryMap::invalidateRanges: called but not needed, mem coherent\n";
 		return;
 	}
 
@@ -143,7 +143,7 @@ void MemoryMapView::flushRanges() const
 {
 	if(coherent())
 	{
-		std::cout << "vpp::MemoryMapView::flushRanges: called but not needed, mem coherent";
+		std::cout << "vpp::MemoryMapView::flushRanges: called but not needed, mem coherent\n";
 		return;
 	}
 
@@ -155,7 +155,7 @@ void MemoryMapView::invalidateRanges() const
 {
 	if(coherent())
 	{
-		std::cout << "vpp::MemoryMapView::invalidateRanges: called but not needed, mem coherent";
+		std::cout << "vpp::MemoryMapView::invalidateRanges: called but not needed, mem coherent\n";
 		return;
 	}
 
