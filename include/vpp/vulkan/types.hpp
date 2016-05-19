@@ -1,3 +1,5 @@
+
+
 // Copyright(c) 2015-2016, NVIDIA CORPORATION. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,6 +29,7 @@
 // Forked and edited by nyorain. The given content is not equal to the original version.
 
 
+
 #pragma once
 #include <array>
 #include <cassert>
@@ -37,116 +40,89 @@
 
 namespace vk
 {
-  template <typename BitType, typename MaskType = uint32_t>
-  class Flags
-  {
-  public:
-    Flags()
-      : m_mask(0)
+
+
+template <typename BitType, typename MaskType = std::uint32_t>
+class Flags
+{
+public:
+	Flags() = default;
+	Flags(BitType bit) : m_mask(static_cast<MaskType>(bit)) {}
+	Flags(const Flags<BitType>& rhs) : m_mask(rhs.m_mask) {}
+
+	Flags<BitType> & operator=(const Flags<BitType>& rhs)
+	{
+		m_mask = rhs.m_mask;
+		return *this;
+	}
+
+	Flags<BitType> & operator|=(const Flags<BitType>& rhs)
+	{
+		m_mask |= rhs.m_mask;
+		return *this;
+	}
+
+    Flags<BitType> & operator&=(const Flags<BitType>& rhs)
     {
+    	m_mask &= rhs.m_mask;
+    	return *this;
     }
 
-    Flags(BitType bit)
-      : m_mask(static_cast<uint32_t>(bit))
+    Flags<BitType> & operator^=(const Flags<BitType>& rhs)
     {
+    	m_mask ^= rhs.m_mask;
+    	return *this;
     }
 
-    Flags(Flags<BitType> const& rhs)
-      : m_mask(rhs.m_mask)
+    Flags<BitType> operator|(const Flags<BitType>& rhs) const
     {
+    	Flags<BitType> result(*this);
+    	result |= rhs;
+    	return result;
     }
 
-    Flags<BitType> & operator=(Flags<BitType> const& rhs)
+    Flags<BitType> operator&(const Flags<BitType>& rhs) const
     {
-      m_mask = rhs.m_mask;
-      return *this;
+    	Flags<BitType> result(*this);
+    	result &= rhs;
+    	return result;
     }
 
-    Flags<BitType> & operator|=(Flags<BitType> const& rhs)
+    Flags<BitType> operator^(const Flags<BitType>& rhs) const
     {
-      m_mask |= rhs.m_mask;
-      return *this;
+    	Flags<BitType> result(*this);
+    	result ^= rhs;
+    	return result;
     }
 
-    Flags<BitType> & operator&=(Flags<BitType> const& rhs)
-    {
-      m_mask &= rhs.m_mask;
-      return *this;
-    }
+    operator bool() const { return (m_mask); }
+    bool operator!() const { return !(m_mask); }
+    bool operator==(const Flags<BitType>& rhs) const { return m_mask == rhs.m_mask; }
+    bool operator!=(Flags<BitType> const& rhs) const { return m_mask != rhs.m_mask; }
 
-    Flags<BitType> & operator^=(Flags<BitType> const& rhs)
-    {
-      m_mask ^= rhs.m_mask;
-      return *this;
-    }
+    explicit operator MaskType() const { return m_mask; } //explicit?
 
-    Flags<BitType> operator|(Flags<BitType> const& rhs) const
-    {
-      Flags<BitType> result(*this);
-      result |= rhs;
-      return result;
-    }
+	private:
+    	MaskType  m_mask;
+};
 
-    Flags<BitType> operator&(Flags<BitType> const& rhs) const
-    {
-      Flags<BitType> result(*this);
-      result &= rhs;
-      return result;
-    }
+template <typename BitType>
+Flags<BitType> operator|(BitType bit, Flags<BitType> const& flags)
+{
+	return flags | bit;
+}
 
-    Flags<BitType> operator^(Flags<BitType> const& rhs) const
-    {
-      Flags<BitType> result(*this);
-      result ^= rhs;
-      return result;
-    }
+template <typename BitType>
+Flags<BitType> operator&(BitType bit, Flags<BitType> const& flags)
+{
+	return flags & bit;
+}
 
-    bool operator!() const
-    {
-      return !m_mask;
-    }
-
-    bool operator==(Flags<BitType> const& rhs) const
-    {
-      return m_mask == rhs.m_mask;
-    }
-
-    bool operator!=(Flags<BitType> const& rhs) const
-    {
-      return m_mask != rhs.m_mask;
-    }
-
-    operator bool() const
-    {
-      return !!m_mask;
-    }
-
-    explicit operator MaskType() const
-    {
-        return m_mask;
-    }
-
-  private:
-    MaskType  m_mask;
-  };
-  
-  template <typename BitType>
-  Flags<BitType> operator|(BitType bit, Flags<BitType> const& flags)
-  {
-    return flags | bit;
-  }
-  
-  template <typename BitType>
-  Flags<BitType> operator&(BitType bit, Flags<BitType> const& flags)
-  {
-    return flags & bit;
-  }
-  
-  template <typename BitType>
-  Flags<BitType> operator^(BitType bit, Flags<BitType> const& flags)
-  {
-    return flags ^ bit;
-  }
+template <typename BitType>
+Flags<BitType> operator^(BitType bit, Flags<BitType> const& flags)
+{
+	return flags ^ bit;
+}
 
   typedef uint32_t SampleMask;
   typedef uint32_t Bool32;

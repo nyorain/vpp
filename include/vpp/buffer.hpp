@@ -61,6 +61,7 @@ public:
 	///buffer is really filled with the given data.
 	std::unique_ptr<Work<void>> fill(const std::vector<BufferData>& data) const;
 
+	//TODO: retrieve only specific range
 	///Retrives the data stored in the buffer.
 	///\return A Work object that is able to retrive an array of std::uint8_t values storing the data.
 	std::unique_ptr<Work<std::uint8_t&>> retrieve() const;

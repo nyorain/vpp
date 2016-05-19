@@ -1,3 +1,5 @@
+
+
 // Copyright(c) 2015-2016, NVIDIA CORPORATION. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -25,6 +27,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // Forked and edited by nyorain. The given content is not equal to the original version.
+
 
 
 #pragma once
