@@ -42,149 +42,125 @@
 
 #define VK_PROTOTYPES
 
-const std::string licenseHeader(
-    "// Copyright(c) 2015-2016, NVIDIA CORPORATION. All rights reserved.\n"
-    "//\n"
-    "// Redistribution and use in source and binary forms, with or without\n"
-    "// modification, are permitted provided that the following conditions\n"
-    "// are met:\n"
-    "//  * Redistributions of source code must retain the above copyright\n"
-    "//    notice, this list of conditions and the following disclaimer.\n"
-    "//  * Redistributions in binary form must reproduce the above copyright\n"
-    "//    notice, this list of conditions and the following disclaimer in the\n"
-    "//    documentation and/or other materials provided with the distribution.\n"
-    "//  * Neither the name of NVIDIA CORPORATION nor the names of its\n"
-    "//    contributors may be used to endorse or promote products derived\n"
-    "//    from this software without specific prior written permission.\n"
-    "//\n"
-    "// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY\n"
-    "// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\n"
-    "// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR\n"
-    "// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR\n"
-    "// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,\n"
-    "// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,\n"
-    "// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR\n"
-    "// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY\n"
-    "// OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n"
-    "// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE\n"
-    "// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n"
-    "//\n"
-    "// Forked and edited by nyorain. The given content is not equal to the original version.\n"
-    );
+const std::string licenseHeader =
+R"CODE(
 
-const std::string flagsHeader(
-    "  template <typename BitType, typename MaskType = uint32_t>\n"
-    "  class Flags\n"
-    "  {\n"
-    "  public:\n"
-    "    Flags()\n"
-    "      : m_mask(0)\n"
-    "    {\n"
-    "    }\n"
-    "\n"
-    "    Flags(BitType bit)\n"
-    "      : m_mask(static_cast<uint32_t>(bit))\n"
-    "    {\n"
-    "    }\n"
-    "\n"
-    "    Flags(Flags<BitType> const& rhs)\n"
-    "      : m_mask(rhs.m_mask)\n"
-    "    {\n"
-    "    }\n"
-    "\n"
-    "    Flags<BitType> & operator=(Flags<BitType> const& rhs)\n"
-    "    {\n"
-    "      m_mask = rhs.m_mask;\n"
-    "      return *this;\n"
-    "    }\n"
-    "\n"
-    "    Flags<BitType> & operator|=(Flags<BitType> const& rhs)\n"
-    "    {\n"
-    "      m_mask |= rhs.m_mask;\n"
-    "      return *this;\n"
-    "    }\n"
-    "\n"
-    "    Flags<BitType> & operator&=(Flags<BitType> const& rhs)\n"
-    "    {\n"
-    "      m_mask &= rhs.m_mask;\n"
-    "      return *this;\n"
-    "    }\n"
-    "\n"
-    "    Flags<BitType> & operator^=(Flags<BitType> const& rhs)\n"
-    "    {\n"
-    "      m_mask ^= rhs.m_mask;\n"
-    "      return *this;\n"
-    "    }\n"
-    "\n"
-    "    Flags<BitType> operator|(Flags<BitType> const& rhs) const\n"
-    "    {\n"
-    "      Flags<BitType> result(*this);\n"
-    "      result |= rhs;\n"
-    "      return result;\n"
-    "    }\n"
-    "\n"
-    "    Flags<BitType> operator&(Flags<BitType> const& rhs) const\n"
-    "    {\n"
-    "      Flags<BitType> result(*this);\n"
-    "      result &= rhs;\n"
-    "      return result;\n"
-    "    }\n"
-    "\n"
-    "    Flags<BitType> operator^(Flags<BitType> const& rhs) const\n"
-    "    {\n"
-    "      Flags<BitType> result(*this);\n"
-    "      result ^= rhs;\n"
-    "      return result;\n"
-    "    }\n"
-    "\n"
-    "    bool operator!() const\n"
-    "    {\n"
-    "      return !m_mask;\n"
-    "    }\n"
-    "\n"
-    "    bool operator==(Flags<BitType> const& rhs) const\n"
-    "    {\n"
-    "      return m_mask == rhs.m_mask;\n"
-    "    }\n"
-    "\n"
-    "    bool operator!=(Flags<BitType> const& rhs) const\n"
-    "    {\n"
-    "      return m_mask != rhs.m_mask;\n"
-    "    }\n"
-    "\n"
-    "    operator bool() const\n"
-    "    {\n"
-    "      return !!m_mask;\n"
-    "    }\n"
-    "\n"
-    "    explicit operator MaskType() const\n"
-    "    {\n"
-    "        return m_mask;\n"
-    "    }\n"
-    "\n"
-    "  private:\n"
-    "    MaskType  m_mask;\n"
-    "  };\n"
-    "  \n"
-    "  template <typename BitType>\n"
-    "  Flags<BitType> operator|(BitType bit, Flags<BitType> const& flags)\n"
-    "  {\n"
-    "    return flags | bit;\n"
-    "  }\n"
-    "  \n"
-    "  template <typename BitType>\n"
-    "  Flags<BitType> operator&(BitType bit, Flags<BitType> const& flags)\n"
-    "  {\n"
-    "    return flags & bit;\n"
-    "  }\n"
-    "  \n"
-    "  template <typename BitType>\n"
-    "  Flags<BitType> operator^(BitType bit, Flags<BitType> const& flags)\n"
-    "  {\n"
-    "    return flags ^ bit;\n"
-    "  }\n"
-    "\n"
-    );
+// Copyright(c) 2015-2016, NVIDIA CORPORATION. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//  * Neither the name of NVIDIA CORPORATION nor the names of its
+//    contributors may be used to endorse or promote products derived
+//    from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+// OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Forked and edited by nyorain. The given content is not equal to the original version.
+
+)CODE";
+
+const std::string flagsHeader =
+R"CODE(
+
+template <typename BitType, typename MaskType = std::uint32_t>
+class Flags
+{
+public:
+	Flags() = default;
+	Flags(BitType bit) : m_mask(static_cast<MaskType>(bit)) {}
+	Flags(const Flags<BitType>& rhs) : m_mask(rhs.m_mask) {}
+
+	Flags<BitType> & operator=(const Flags<BitType>& rhs)
+	{
+		m_mask = rhs.m_mask;
+		return *this;
+	}
+
+	Flags<BitType> & operator|=(const Flags<BitType>& rhs)
+	{
+		m_mask |= rhs.m_mask;
+		return *this;
+	}
+
+    Flags<BitType> & operator&=(const Flags<BitType>& rhs)
+    {
+    	m_mask &= rhs.m_mask;
+    	return *this;
+    }
+
+    Flags<BitType> & operator^=(const Flags<BitType>& rhs)
+    {
+    	m_mask ^= rhs.m_mask;
+    	return *this;
+    }
+
+    Flags<BitType> operator|(const Flags<BitType>& rhs) const
+    {
+    	Flags<BitType> result(*this);
+    	result |= rhs;
+    	return result;
+    }
+
+    Flags<BitType> operator&(const Flags<BitType>& rhs) const
+    {
+    	Flags<BitType> result(*this);
+    	result &= rhs;
+    	return result;
+    }
+
+    Flags<BitType> operator^(const Flags<BitType>& rhs) const
+    {
+    	Flags<BitType> result(*this);
+    	result ^= rhs;
+    	return result;
+    }
+
+    operator bool() const { return (m_mask); }
+    bool operator!() const { return !(m_mask); }
+    bool operator==(const Flags<BitType>& rhs) const { return m_mask == rhs.m_mask; }
+    bool operator!=(Flags<BitType> const& rhs) const { return m_mask != rhs.m_mask; }
+
+    explicit operator MaskType() const { return m_mask; } //explicit?
+
+	private:
+    	MaskType  m_mask;
+};
+
+template <typename BitType>
+Flags<BitType> operator|(BitType bit, Flags<BitType> const& flags)
+{
+	return flags | bit;
+}
+
+template <typename BitType>
+Flags<BitType> operator&(BitType bit, Flags<BitType> const& flags)
+{
+	return flags & bit;
+}
+
+template <typename BitType>
+Flags<BitType> operator^(BitType bit, Flags<BitType> const& flags)
+{
+	return flags ^ bit;
+}
+
+)CODE";
 
 // trim from end
 std::string trimEnd(std::string const& input)
