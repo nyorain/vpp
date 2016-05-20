@@ -58,10 +58,11 @@ void Image::assureMemory() const
 	memoryEntry_.allocate();
 }
 
-void Image::fill(const std::uint8_t& data, std::size_t size, vk::Format format,
-	const vk::Extent3D& extent) const
+std::unique_ptr<Work<void>> Image::fill(const std::uint8_t& data, std::size_t size,
+	vk::Format format, const vk::Extent3D& extent) const
 {
 	//TODO
+	return {};
 }
 
 //static convinience attachment instances

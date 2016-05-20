@@ -104,28 +104,15 @@ std::uint32_t Device::memoryTypeBits(vk::MemoryPropertyFlags mflags, std::uint32
 	return typeBits;
 }
 
-CommandBufferProvider& Device::commandBufferProvider() const
-{
-	return *cbProvider_;
-}
-
 void Device::finishSetup() const
 {
-}
-
-DeviceMemoryProvider& Device::deviceMemoryProvider() const
-{
-	return *dmProvider_;
+	submitManager().submit();
+	waitIdle();
 }
 
 DeviceMemoryAllocator& Device::deviceMemoryAllocator() const
 {
 	return deviceMemoryProvider().get();
-}
-
-SubmitManager& Device::submitManager() const
-{
-	return *submitManager_;
 }
 
 }

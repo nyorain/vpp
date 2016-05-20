@@ -9,6 +9,7 @@
 namespace vpp
 {
 
+//TODO: creation abstraction to easier create queues (just pass reqs, needed queues will be queryed)
 ///Vulkan Device.
 ///When a DeviceLost vulkan error occures, the program can try to create a new Device object for the
 ///same PhysicalDevice, if this fails again with the DeviceLost, the physical device is not longer
@@ -61,22 +62,22 @@ public:
 
 	///Returns a CommandBufferProvider that can be used to easily allocate a command buffer in the
 	///current thread.
-	CommandBufferProvider& commandBufferProvider() const;
+	CommandBufferProvider& commandBufferProvider() const { return *cbProvider_; }
+
+	///Returns a DeviceMemoryProvider that can be used to easily allocate vulkan device memory in the
+	///current thread.
+	DeviceMemoryProvider& deviceMemoryProvider() const { return *dmProvider_; }
+
+	///Returns the submit manager for this device.
+	SubmitManager& submitManager() const { return *submitManager_; }
+
+	TransferManager& transferManager() const { return *transferManager_; }
 
 	///Makes sure that all queues setup commandBuffers have been executed.
 	void finishSetup() const;
 
-	///Returns a DeviceMemoryProvider that can be used to easily allocate vulkan device memory in the
-	///current thread.
-	DeviceMemoryProvider& deviceMemoryProvider() const;
-
-	///Returns a deviceMemory allocator for the current thread.
+	///Returns a deviceMemory allocator for the calling thread.
 	DeviceMemoryAllocator& deviceMemoryAllocator() const;
-
-	///Returns the submit manager for this device.
-	SubmitManager& submitManager() const;
-
-	TransferManager& transferManager() const { return *transferManager_; }
 
 protected:
     vk::Instance instance_ {};
@@ -91,7 +92,7 @@ protected:
 	std::unique_ptr<CommandBufferProvider> cbProvider_;
 	std::unique_ptr<DeviceMemoryProvider> dmProvider_;
 	std::unique_ptr<SubmitManager> submitManager_;
-	std::unique_ptr<TransferManager> transferManager_; //todo: make threadsafe provider
+	std::unique_ptr<TransferManager> transferManager_;
 };
 
 }

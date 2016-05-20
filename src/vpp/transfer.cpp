@@ -5,7 +5,8 @@ namespace vpp
 {
 
 //TransferBuffer
-TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t size)
+TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t size, std::mutex& mtx)
+	: mutex_(mtx)
 {
 	vk::BufferCreateInfo info;
 	info.size(size);
@@ -16,7 +17,8 @@ TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t s
 
 TransferManager::TransferBuffer::~TransferBuffer()
 {
-	//todo: warn if allocation left?
+	auto rc = ranges_.size();
+	if(rc > 0) std::cerr << "vpp::TransferManager::~TransferBuffer: " << rc << " allocations left\n";
 }
 
 Allocation TransferManager::TransferBuffer::use(std::size_t size)
@@ -42,6 +44,7 @@ Allocation TransferManager::TransferBuffer::use(std::size_t size)
 
 bool TransferManager::TransferBuffer::release(const Allocation& alloc)
 {
+	std::lock_guard<std::mutex> guard(mutex_);
 	for(auto it = ranges_.begin(); it < ranges_.end(); ++it)
 	{
 		if(it->offset == alloc.offset && it->size == alloc.size)
@@ -90,6 +93,7 @@ TransferManager::TransferManager(const Device& dev) : Resource(dev)
 
 TransferRange TransferManager::buffer(std::size_t size)
 {
+	std::lock_guard<std::mutex> guard(mutex_);
 	for(auto& buffp : buffers_)
 	{
 		auto alloc = buffp->use(size);
@@ -97,12 +101,13 @@ TransferRange TransferManager::buffer(std::size_t size)
 	}
 
 	//Allocate new buffer
-	buffers_.emplace_back(new TransferBuffer(device(), size));
+	buffers_.emplace_back(new TransferBuffer(device(), size, mutex_));
 	return BufferRange(*buffers_.back(), buffers_.back()->use(size));
 }
 
 std::size_t TransferManager::totalSize() const
 {
+	std::lock_guard<std::mutex> guard(mutex_);
 	std::size_t ret {};
 	for(auto& bufp : buffers_) ret += bufp->buffer().memoryEntry().size();
 	return ret;
@@ -110,7 +115,7 @@ std::size_t TransferManager::totalSize() const
 
 std::size_t TransferManager::activeRanges() const
 {
-
+	std::lock_guard<std::mutex> guard(mutex_);
 	std::size_t ret {};
 	for(auto& bufp : buffers_) ret += bufp->rangesCount();
 	return ret;
@@ -118,11 +123,13 @@ std::size_t TransferManager::activeRanges() const
 
 void TransferManager::reserve(std::size_t size)
 {
-	buffers_.emplace_back(new TransferBuffer(device(), size));
+	std::lock_guard<std::mutex> guard(mutex_);
+	buffers_.emplace_back(new TransferBuffer(device(), size, mutex_));
 }
 
 void TransferManager::shrink()
 {
+	std::lock_guard<std::mutex> guard(mutex_);
 	for(auto it = buffers_.begin(); it < buffers_.end();)
 	{
 		if((*it)->rangesCount() == 0) it = buffers_.erase(it);
@@ -132,6 +139,7 @@ void TransferManager::shrink()
 
 void TransferManager::optimize()
 {
+	std::lock_guard<std::mutex> guard(mutex_);
 	std::size_t size;
 	for(auto it = buffers_.begin(); it < buffers_.end();)
 	{

@@ -7,35 +7,20 @@
 #include <vpp/utility/allocation.hpp>
 
 #include <memory>
+#include <mutex>
 
 namespace vpp
 {
 
 ///Provides transfer buffers to easily fill large device local buffers and images.
 ///Basically a pool of mappable vulkan buffers, which can be used for copying.
+///Can be used by multiple threads at the same time.
 class TransferManager : public Resource
 {
+protected:
+	class TransferBuffer;
+
 public:
-	///A vulkan buffer wrapper that can be used for multiple transferations at the same time.
-	class TransferBuffer : ResourceReference<TransferBuffer>
-	{
-	public:
-		TransferBuffer(const Device& dev, std::size_t size);
-		~TransferBuffer();
-
-		const Buffer& buffer() const { return buffer_; }
-
-		Allocation use(std::size_t size);
-		bool release(const Allocation& alloc);
-		std::size_t rangesCount() const { return ranges_.size(); }
-
-		const Buffer& resourceRef() const { return buffer_; }
-
-	protected:
-		Buffer buffer_;
-		std::vector<Allocation> ranges_;
-	};
-
 	///Represents a part of a transfer buffer which can be used for transerfering data to the gpu.
 	///The destructor does automatically release the used transfer buffer range.
 	class BufferRange : public ResourceReference<BufferRange>
@@ -78,7 +63,7 @@ public:
 	///Returns the amount of currently for transerfing used ranges.
 	std::size_t activeRanges() const;
 
-	///Reserves the amount of transfer buffer capacity
+	///Additionally reserves the amount of transfer buffer capacity
 	void reserve(std::size_t size);
 
 	///Releases all currently unused buffers.
@@ -88,8 +73,31 @@ public:
 	void optimize();
 
 protected:
+	class TransferBuffer : ResourceReference<TransferBuffer>
+	{
+	public:
+		TransferBuffer(const Device& dev, std::size_t size, std::mutex& mtx);
+		~TransferBuffer();
+
+		const Buffer& buffer() const { return buffer_; }
+
+		Allocation use(std::size_t size);
+		bool release(const Allocation& alloc);
+		std::size_t rangesCount() const { return ranges_.size(); }
+
+		const Buffer& resourceRef() const { return buffer_; }
+
+	protected:
+		Buffer buffer_;
+		std::vector<Allocation> ranges_;
+		std::mutex& mutex_;
+	};
+
+protected:
+	//transfer buffer pool
 	//must be a pointer for the BufferRange pointer member to stay valid.
 	std::vector<std::unique_ptr<TransferBuffer>> buffers_;
+	mutable std::mutex mutex_;
 };
 
 ///Convinient typedef for TransferManager::BufferRange
