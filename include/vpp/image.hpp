@@ -4,6 +4,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/allocator.hpp>
+#include <vpp/work.hpp>
 
 #include <memory>
 
@@ -29,13 +30,18 @@ public:
 	///host visible device memory heap and if the device memory was allocated.
 	MemoryMapView memoryMap() const;
 
+	//TODO: some functionality for layouts (storing the current layout reasonable?)
+
 	///Fills the image with the given data.
 	///Expects that the image was either created with the host visible memory flag or
 	///with the transfer dst flag.
-	void fill(const std::uint8_t& data, std::size_t size, vk::Format format,
+	std::unique_ptr<Work<void>> fill(const std::uint8_t& data, std::size_t size, vk::Format format,
 		const vk::Extent3D& extent) const;
 
+	std::unique_ptr<Work<std::uint8_t&>> retrive() const;
+
 	const MemoryEntry& memoryEntry() const { return memoryEntry_; }
+	std::size_t size() const { return memoryEntry().size(); }
 	const vk::Image& vkImage() const { return image_; }
 
 	const MemoryEntry& resourceRef() const { return memoryEntry(); }

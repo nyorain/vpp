@@ -194,13 +194,15 @@ void ParticleSystem::initParticleBuffer()
 	bufInfo.size(sizeof(Particle) * particles_.size());
 	bufInfo.usage(vk::BufferUsageFlagBits::VertexBuffer | vk::BufferUsageFlagBits::StorageBuffer);
 
-	particlesBuffer_ = vpp::Buffer(device(), bufInfo, vk::MemoryPropertyFlagBits::HostVisible);
+	particlesBuffer_ = vpp::Buffer(device(), bufInfo, vk::MemoryPropertyFlagBits::DeviceLocal);
 }
 
 void ParticleSystem::writeParticleBuffer()
 {
-	auto map = particlesBuffer_.memoryMap();
-	std::memcpy(map.ptr(), particles_.data(), sizeof(Particle) * particles_.size());
+	// auto map = particlesBuffer_.memoryMap();
+	// std::memcpy(map.ptr(), particles_.data(), sizeof(Particle) * particles_.size());
+	auto work = particlesBuffer_.fill({particles_});
+	work->finish();
 }
 
 void ParticleSystem::buildComputeBuffer()
@@ -229,7 +231,7 @@ void ParticleSystem::buildComputeBuffer()
 	vk::cmdBindPipeline(computeBuffer_, vk::PipelineBindPoint::Compute, computePipeline_.vkPipeline());
 	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::Compute,
 		computePipeline_.vkPipelineLayout(), 0, 1, &cd, 0, nullptr);
-	vk::cmdDispatch(computeBuffer_, particles_.size(), 1, 1);
+	vk::cmdDispatch(computeBuffer_, particles_.size() / 16, 1, 1);
 
 	vk::endCommandBuffer(computeBuffer_);
 }

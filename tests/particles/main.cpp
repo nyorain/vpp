@@ -156,7 +156,7 @@ int main()
 		app.rendererInfo.renderPass = &app.renderPass;
 		app.rendererInfo.staticAttachments = {vpp::ViewableImage::defaultDepth2D};
 
-		ParticleSystem particleSystem(app, 1024 * 1000);
+		ParticleSystem particleSystem(app, 1024 * 3000);
 		app.particleSystem = &particleSystem;
 
 		context.device().deviceMemoryAllocator().allocate();

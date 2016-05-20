@@ -46,7 +46,7 @@ layout (std430, binding = 0) buffer Pos
 	Particle particles[];
 };
 
-layout (local_size_x = 1) in;
+layout (local_size_x = 16) in;
 
 layout (binding = 1) uniform UBO
 {
@@ -83,8 +83,8 @@ void main()
 	vec3 destPos = vec3(ubo.attractorX, ubo.attractorY, 0.0);
 
     // Calculate new velocity depending on attraction point
-	if(ubo.attract != 0.0) vVel += attraction(vPos, destPos.xyz);
-	vVel *= 0.995;
+	if(ubo.attract != 0.0) vVel += ubo.deltaT * attraction(vPos, destPos.xyz) * 100;
+	vVel *= 1 - (0.05 * ubo.deltaT * 10);
 
     // Move by velocity
 	vPos += vVel * ubo.speed * ubo.deltaT * 10;
