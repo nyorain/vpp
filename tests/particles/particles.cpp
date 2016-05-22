@@ -21,7 +21,7 @@ ParticleSystem::ParticleSystem(App& app, std::size_t count)
 	initComputePipeline();
 
 	//allocator_.allocate();
-	device().deviceMemoryAllocator().allocate();
+	device().memoryAllocator().allocate();
 
 	writeDescriptorSets();
 	writeParticleBuffer();

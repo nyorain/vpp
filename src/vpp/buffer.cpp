@@ -13,7 +13,7 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPr
 	vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_, &reqs);
 
 	reqs.memoryTypeBits(dev.memoryTypeBits(mflags, reqs.memoryTypeBits()));
-	dev.deviceMemoryAllocator().request(buffer_, reqs, memoryEntry_);
+	dev.memoryAllocator().request(buffer_, reqs, memoryEntry_);
 }
 
 Buffer::Buffer(Buffer&& other) noexcept
@@ -113,15 +113,15 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bo
 			if(currentSize > 65536 || dstOffset % 4 || currentSize % 4) directUpdate = false;
 		}
 
+		//TODO: correct queue
+		auto cmdBuffer = device().commandProvider().get(0);
+		auto vkcmdb = cmdBuffer.vkCommandBuffer();
+
 		//use the vkCmdBufferUpdate command for small data with a matching size and offset
 		//only when requirements matched (directUpdate) and direct is preferred (prefdirect)
 		if(directUpdate && prefdirect)
 		{
 			//use the update buffer command
-			//TODO: correct queue
-			auto cmdBuffer = device().commandBufferProvider().get(0);
-			auto vkcmdb = cmdBuffer.vkCommandBuffer();
-
 			//the update data will be stored (memcpyd) here since it must be available when
 			//then command is called on device (AFTER recording)
 			std::vector<std::uint32_t> cpydata(totalSize / 4);
@@ -163,11 +163,6 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bo
 		}
 		else
 		{
-			//update the buffer manually via transferHeap
-			//TODO: correct queue
-			auto cmdBuffer = device().commandBufferProvider().get(0);
-			auto vkcmdb = cmdBuffer.vkCommandBuffer();
-
 			//data without gaps to fill transfer buffer
 			auto datacopy = data;
 			for(auto& entry : datacopy) entry.offset = 0;
@@ -265,7 +260,7 @@ std::unique_ptr<Work<std::uint8_t&>> Buffer::retrieve() const
 	else
 	{
 		//use transfer buffer
-		auto cmdBuffer = device().commandBufferProvider().get(0);
+		auto cmdBuffer = device().commandProvider().get(0);
 		auto vkcmdb = cmdBuffer.vkCommandBuffer();
 
 		//transfer buffer

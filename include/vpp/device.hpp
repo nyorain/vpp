@@ -62,35 +62,39 @@ public:
 
 	///Returns a CommandBufferProvider that can be used to easily allocate a command buffer in the
 	///current thread.
-	CommandBufferProvider& commandBufferProvider() const { return *cbProvider_; }
+	CommandProvider& commandProvider() const { return *commandProvider_; }
 
 	///Returns a DeviceMemoryProvider that can be used to easily allocate vulkan device memory in the
 	///current thread.
-	DeviceMemoryProvider& deviceMemoryProvider() const { return *dmProvider_; }
+	DeviceMemoryProvider& memoryProvider() const { return *memoryProvider_; }
 
 	///Returns the submit manager for this device.
 	SubmitManager& submitManager() const { return *submitManager_; }
 
+	///Return the default transferManager for this device.
 	TransferManager& transferManager() const { return *transferManager_; }
 
-	///Makes sure that all queues setup commandBuffers have been executed.
+	///Makes sure that all queued setup commandBuffers have been executed.
 	void finishSetup() const;
 
 	///Returns a deviceMemory allocator for the calling thread.
-	DeviceMemoryAllocator& deviceMemoryAllocator() const;
+	DeviceMemoryAllocator& memoryAllocator() const;
 
 protected:
     vk::Instance instance_ {};
     vk::PhysicalDevice physicalDevice_ {};
     vk::Device device_ {};
 
+	//all retrieved queues for the device
 	std::vector<Queue> queues_;
 
+	//stored props
 	vk::PhysicalDeviceMemoryProperties memoryProperties_ {};
 	vk::PhysicalDeviceProperties physicalDeviceProperties_ {};
 
-	std::unique_ptr<CommandBufferProvider> cbProvider_;
-	std::unique_ptr<DeviceMemoryProvider> dmProvider_;
+	//default provider and manager
+	std::unique_ptr<CommandProvider> commandProvider_;
+	std::unique_ptr<DeviceMemoryProvider> memoryProvider_;
 	std::unique_ptr<SubmitManager> submitManager_;
 	std::unique_ptr<TransferManager> transferManager_;
 };

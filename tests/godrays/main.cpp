@@ -165,7 +165,7 @@ int main()
 		vpp::SwapChainRenderer renderer(context.swapChain(), gRenderer, app.rendererInfo);
 		app.renderer = &renderer;
 
-		context.device().deviceMemoryAllocator().allocate();
+		context.device().memoryAllocator().allocate();
 
 		app.presentQueue = context.presentQueue().queue;
 

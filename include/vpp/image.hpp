@@ -11,6 +11,26 @@
 namespace vpp
 {
 
+//Todo: use base class
+///Base class for all memory resources, i.e. buffers and images.
+class MemoryResource : public ResourceReference<MemoryResource>
+{
+public:
+	void assureMemory() const;
+	MemoryMapView memoryMap() const;
+
+	bool mappable() const;
+
+	const MemoryEntry& memoryEntry() const { return memoryEntry_; }
+	std::size_t size() const { return memoryEntry().size(); }
+
+	const MemoryEntry& resourceRef() const { return memoryEntry(); }
+	friend void swap(MemoryResource& a, MemoryResource& b) noexcept;
+
+protected:
+	MemoryEntry memoryEntry_;
+};
+
 ///Represinting a vulkan image on a device and having its own memory allocation bound to it.
 class Image : public ResourceReference<Image>
 {
@@ -31,6 +51,11 @@ public:
 	MemoryMapView memoryMap() const;
 
 	//TODO: some functionality for layouts (storing the current layout reasonable?)
+	void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::ImageLayout oldlayout, vk::ImageLayout
+		newlayout) const;
+
+	std::unique_ptr<Work<void>> changeLayout(vk::ImageLayout oldlayout, vk::ImageLayout
+		newlayout) const;
 
 	///Fills the image with the given data.
 	///Expects that the image was either created with the host visible memory flag or

@@ -19,13 +19,14 @@ DeviceMemoryAllocator& DeviceMemoryProvider::get()
 }
 
 //CBProvider
-CommandBufferProvider::CommandBufferProvider(const Device& dev) : Resource(dev)
+CommandProvider::CommandProvider(const Device& dev) : Resource(dev)
 {
 }
 
-CommandBuffer CommandBufferProvider::get(std::uint32_t family,
+CommandBuffer CommandProvider::get(std::uint32_t family,
  	vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
 {
+	std::lock_guard<std::mutex> guard(mutex_);
 	auto& pools = commandPools_[std::this_thread::get_id()];
 	for(auto& pool : pools)
 	{
@@ -40,9 +41,10 @@ CommandBuffer CommandBufferProvider::get(std::uint32_t family,
 }
 
 
-std::vector<CommandBuffer> CommandBufferProvider::get(std::uint32_t family, unsigned int count,
+std::vector<CommandBuffer> CommandProvider::get(std::uint32_t family, unsigned int count,
 	vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
 {
+	std::lock_guard<std::mutex> guard(mutex_);
 	auto& pools = commandPools_[std::this_thread::get_id()];
 	for(auto& pool : pools)
 	{

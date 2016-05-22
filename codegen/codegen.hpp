@@ -9,7 +9,12 @@
 
 class Entry
 {
-	pugi::xml_node node_;
+public:
+	pugi::xml_node* node_ = nullptr;
+
+public:
+	Entry() = default;
+	Entry(pugi::xml_node& node) : node_(&node) {}
 };
 
 class Type : public Entry
@@ -24,12 +29,13 @@ public:
 	};
 
 public:
-	Category category;
-	std::string name;
+	Category category = Category::none;
+	std::string name {};
 
 public:
 	Type() = default;
-	Type(Category cat, const std::string& xname) : category(cat), name(xname) {}
+	Type(Category cat, const std::string& xname, pugi::xml_node& node)
+		: category(cat), name(xname), Entry(node) {}
 };
 
 class Enum : public Type
@@ -40,7 +46,7 @@ public:
 
 public:
 	Enum() = default;
-	Enum(const std::string& name) : Type(Category::enumeration, name) {};
+	Enum(const std::string& name, pugi::xml_node& node) : Type(Category::enumeration, name, node) {};
 };
 
 class Handle : public Type
@@ -51,7 +57,7 @@ public:
 
 public:
 	Handle() = default;
-	Handle(const std::string& name) : Type(Category::handle, name) {};
+	Handle(const std::string& name, pugi::xml_node& node) : Type(Category::handle, name, node) {};
 };
 
 struct QualifiedType
@@ -62,14 +68,20 @@ public:
 	unsigned int pointerlvl = 0;
 };
 
+struct Param
+{
+	QualifiedType type;
+	std::string name;
+};
+
 class Struct : public Type
 {
 public:
-	std::vector<std::pair<QualifiedType, std::string>> members;
+	std::vector<Param> members;
 	bool returnedonly = false;
 
 public:
-	Struct(const std::string& name) : Type(Category::structure, name) {}
+	Struct(const std::string& name, pugi::xml_node& node) : Type(Category::structure, name, node) {}
 };
 
 struct Command : public Entry
@@ -77,9 +89,11 @@ struct Command : public Entry
 public:
 	QualifiedType returnType;
 	std::string name;
-	std::vector<std::pair<QualifiedType, std::string>> params;
+	std::vector<Param> params;
 
 public:
+	Command() = default;
+	Command(pugi::xml_node& node) : Entry(node) {}
 };
 
 struct Bulk
@@ -113,7 +127,14 @@ public:
 	RegistryLoader(const std::string& xmlPath);
 	Registry parse();
 
+	void loadTypes(const pugi::xml_node& node);
+	void loadEnums(const pugi::xml_node& node);
+	void loadCommands(const pugi::xml_node& node);
+
+	Param parseParam(const pugi::xml_node& node);
+
 protected:
+	Registry registry_;
 	pugi::xml_document doc_;
 };
 

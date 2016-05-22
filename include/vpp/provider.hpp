@@ -13,6 +13,8 @@
 namespace vpp
 {
 
+//TODO: improve implementation critical sections
+
 ///Able to provide DeviceMemory for the calling thread.
 class DeviceMemoryProvider : public Resource
 {
@@ -29,13 +31,14 @@ protected:
 	std::mutex mutex_;
 };
 
+//TODO: allocate for more abstract given requirements
 //Able to efficiently provide commandBuffer of all types for all threads by holding an internal
 //pool of commandPools.
-class CommandBufferProvider : public Resource
+class CommandProvider : public Resource
 {
 public:
-	CommandBufferProvider(const Device& dev);
-	~CommandBufferProvider() = default;
+	CommandProvider(const Device& dev);
+	~CommandProvider() = default;
 
 	///Allocates a commandBuffer for the calling thread that matches the given requirements.
 	CommandBuffer get(std::uint32_t qfamily, vk::CommandPoolCreateFlags flags = {},

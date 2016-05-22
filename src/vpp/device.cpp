@@ -33,16 +33,18 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 	}
 
 	//setup provider and manager
-	cbProvider_.reset(new CommandBufferProvider(*this));
-	dmProvider_.reset(new DeviceMemoryProvider(*this));
+	commandProvider_.reset(new CommandProvider(*this));
+	memoryProvider_.reset(new DeviceMemoryProvider(*this));
 	submitManager_.reset(new SubmitManager(*this));
 	transferManager_.reset(new TransferManager(*this));
 }
 
 Device::~Device()
 {
-	cbProvider_.reset();
-	dmProvider_.reset();
+	transferManager_.reset();
+	submitManager_.reset();
+	memoryProvider_.reset();
+	commandProvider_.reset();
 
 	if(vkDevice()) vk::destroyDevice(device_, nullptr);
 }
@@ -110,9 +112,9 @@ void Device::finishSetup() const
 	waitIdle();
 }
 
-DeviceMemoryAllocator& Device::deviceMemoryAllocator() const
+DeviceMemoryAllocator& Device::memoryAllocator() const
 {
-	return deviceMemoryProvider().get();
+	return memoryProvider().get();
 }
 
 }

@@ -159,12 +159,12 @@ int main()
 		FragmentRenderer fragmentRenderer(app);
 		app.fragmentRenderer = &fragmentRenderer;
 
-		context.device().deviceMemoryAllocator().allocate();
+		context.device().memoryAllocator().allocate();
 
 		vpp::SwapChainRenderer renderer(context.swapChain(), fragmentRenderer, app.rendererInfo);
 		app.renderer = &renderer;
 
-		context.device().deviceMemoryAllocator().allocate();
+		context.device().memoryAllocator().allocate();
 
 		app.presentQueue = context.presentQueue().queue;
 

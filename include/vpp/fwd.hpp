@@ -29,12 +29,13 @@ class RenderPass;
 class RenderPassInstance;
 class Texture;
 class Allocator;
-class CommandBufferProvider;
+class CommandProvider;
 class DeviceMemoryProvider;
 class CommandPool;
 class CommandBuffer;
 class SubmitManager;
 class WorkBase;
+class WorkManager;
 class TransferManager;
 
 }
