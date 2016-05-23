@@ -1,3 +1,26 @@
+// Copyright © 2016 nyorain
+//
+// Permission is hereby granted, free of charge, to any person
+// obtaining a copy of this software and associated documentation
+// files (the “Software”), to deal in the Software without
+// restriction, including without limitation the rights to use,
+// copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the
+// Software is furnished to do so, subject to the following
+// conditions:
+//
+// The above copyright notice and this permission notice shall be
+// included in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+// OTHER DEALINGS IN THE SOFTWARE.
+
 #pragma once
 
 #include <vector>
@@ -46,13 +69,14 @@ public:
 public:
 	Type() = default;
 	Type(Category cat, const std::string& xname, const pugi::xml_node& node)
-		: category(cat), name(xname), Entry(node) {}
+		: Entry(node), category(cat), name(xname) {}
 };
 
 class Enum : public Type
 {
 public:
 	std::vector<std::pair<std::string, std::int64_t>> values;
+	int unusedStart = 0;
 	bool bitmask;
 
 public:
@@ -94,7 +118,7 @@ public:
 class Bitmask : public Type
 {
 public:
-	Enum* bits;
+	Enum* bits = nullptr;
 
 public:
 	Bitmask() = default;
@@ -120,6 +144,7 @@ public:
 	Type* type {};
 	bool constant = false;
 	unsigned int pointerlvl = 0;
+	std::vector<std::string> arraylvl;
 
 public:
 	std::string string() const;
@@ -190,20 +215,23 @@ struct Requirements
 	std::vector<Constant> extraConstants;
 };
 
+class Extension : public Entry
+{
+public:
+	Requirements reqs;
+	std::string protect;
+	std::string name;
+	int number;
+};
+
 class Feature : public Entry
 {
 public:
 	Requirements reqs;
 	std::string name;
 	std::string number;
-};
-
-class Extension : public Entry
-{
-public:
-	Requirements reqs;
-	std::string protect;
-	unsigned int id;
+	std::string api;
+	std::vector<Extension*> extensions;
 };
 
 class Registry
@@ -229,6 +257,8 @@ public:
 	Container<std::string> vendors;
 	Container<std::string> tags;
 
+	std::string copyright;
+
 public:
 	Type* findType(const std::string& name);
 	Struct* findStruct(const std::string& name);
@@ -238,6 +268,13 @@ public:
 	BaseType* findBaseType(const std::string& name);
 	Handle* findHandle(const std::string& name);
 	FuncPtr* findFuncPtr(const std::string& name);
+
+	Command* findCommand(const std::string& name);
+	Constant* findConstant(const std::string& name);
+
+	Feature* findFeatureByApi(const std::string& name);
+	Feature* findFeatureByName(const std::string& name);
+	Extension* findExtension(const std::string& name);
 };
 
 class RegistryLoader
@@ -250,7 +287,12 @@ public:
 	void loadEnums(const pugi::xml_node& node);
 	void loadCommands(const pugi::xml_node& node);
 
+	void loadFeature(const pugi::xml_node& node);
+	void loadExtension(const pugi::xml_node& node);
+
 	Requirements parseRequirements(const pugi::xml_node& node);
+	void parseTypeReqs(Type& type, Requirements& reqs);
+	void parseCommandReqs(Command& cmd, Requirements& reqs);
 
 	Param parseParam(const pugi::xml_node& node);
 
@@ -289,6 +331,7 @@ class CCOutputGenerator : public OutputGenerator
 public:
 	CCOutputGenerator(Registry& reg, const std::string& header, const std::string& fwd);
 	void generate();
+	void printReqs(Requirements& reqs);
 
 	std::string enumName(const Enum& e, const std::string& name, bool* bit = nullptr) const;
 	std::string typeName(const std::string& name) const;
@@ -296,4 +339,5 @@ public:
 protected:
 	std::ofstream header_;
 	std::ofstream fwd_;
+	Requirements fulfilled_;
 };

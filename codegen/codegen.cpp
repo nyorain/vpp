@@ -1,3 +1,61 @@
+//The below given string literal also defines the copyrights for this document
+
+constexpr const auto copyright = 1 + R"SRC(
+// Copyright © 2016 nyorain
+//
+// Permission is hereby granted, free of charge, to any person
+// obtaining a copy of this software and associated documentation
+// files (the “Software”), to deal in the Software without
+// restriction, including without limitation the rights to use,
+// copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the
+// Software is furnished to do so, subject to the following
+// conditions:
+//
+// The above copyright notice and this permission notice shall be
+// included in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+// OTHER DEALINGS IN THE SOFTWARE.
+
+// The implementation for the Flag tempalte class was taken from nvidias vkcpp project:
+// Changes were made to it, which are protected by the above given license.
+// link (May 2016): https://github.com/nvpro-pipeline/vkcpp
+// license:
+
+// Copyright(c) 2015-2016, NVIDIA CORPORATION. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//  * Neither the name of NVIDIA CORPORATION nor the names of its
+//    contributors may be used to endorse or promote products derived
+//    from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+// OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+)SRC";
+
 #include "codegen.hpp"
 #include <iostream>
 #include <algorithm>
@@ -15,6 +73,15 @@ Registry& RegistryLoader::parse()
 {
 	//registry
 	auto regNode = doc_.child("registry");
+
+	auto& cr = registry_.copyright;
+	cr = regNode.child_value("comment");
+	auto pos = cr.find('\n');
+	while(cr.find('\n', pos + 1) != std::string::npos) //exclude last newline
+	{
+		cr.insert(pos + 1, "// ");
+		pos = cr.find('\n', pos + 1);
+	}
 
 	//vendors
 	for(auto vendor : regNode.child("vendorids").children("vendorid"))
@@ -38,6 +105,16 @@ Registry& RegistryLoader::parse()
 	std::cout << "\tcommands:\n";
 	auto commands = regNode.child("commands");
 	loadCommands(commands);
+
+	//features
+	std::cout << "\tfeatures:\n";
+	for(auto feature : regNode.children("feature"))
+		loadFeature(feature);
+
+	//extensions
+	std::cout << "\textensions:\n";
+	for(auto extension : regNode.child("extensions").children("extension"))
+		loadExtension(extension);
 
 	return registry_;
 }
@@ -203,7 +280,7 @@ void RegistryLoader::loadTypes(const pugi::xml_node& node)
 	for(auto typeit : node.children("type"))
 	{
 		std::string category = typeit.attribute("category").as_string();
-		if(category == "struct")
+		if(category == "struct" || category == "union")
 		{
 			auto name = typeit.attribute("name").as_string();
 			auto s = registry_.findStruct(name);
@@ -248,13 +325,15 @@ void RegistryLoader::loadEnums(const pugi::xml_node& node)
 			if(!attrib) attrib = enumit.attribute("bitpos");
 
 			auto str = std::string(attrib.as_string());
-			if(str.size() > 1 && str.substr(0, 2) == "0x")
-				value.second = std::stoul(str, nullptr, 16);
-			else
-				value.second = attrib.as_llong();
+			if(str.size() > 1 && str.substr(0, 2) == "0x") value.second = std::stoul(str, nullptr, 16);
+			else value.second = attrib.as_llong();
 
 			ret.values.push_back(value);
 		}
+
+		auto unusedChild = node.child("unused");
+		if(unusedChild) ret.unusedStart = unusedChild.attribute("start").as_int();
+		else ret.unusedStart = ret.values.back().second;
 	}
 	else if(name == "API Constants")
 	{
@@ -291,45 +370,227 @@ void RegistryLoader::loadCommands(const pugi::xml_node& node)
 
 Param RegistryLoader::parseParam(const pugi::xml_node& node)
 {
-	bool isConst = false;
-	unsigned int pointerlvl = 0;
-
-	std::string type = "";
-	std::string name = "";
+	Param ret;
 
 	for(auto child : node)
 	{
 		std::string n = child.name();
-		if(n == "type") type = child.text().get();
-		if(n == "name") name = child.text().get();
+		if(n == "type") ret.type.type = registry_.findType(child.text().get());
+		if(n == "name") ret.name = child.text().get();
 		else
 		{
 			std::string txt = child.value();
-			pointerlvl += std::count(txt.begin(), txt.end(), '*');
-			if(txt.find("const") != std::string::npos) isConst = true;
+			ret.type.pointerlvl += std::count(txt.begin(), txt.end(), '*');
+			if(txt.find("const") != std::string::npos) ret.type.constant = true;
+
+			auto posbegin = txt.find("[");
+			auto posend = txt.find("]");
+			while(posbegin != std::string::npos && posend != std::string::npos)
+			{
+				auto arr = txt.substr(posbegin + 1, posend - 1);
+				ret.type.arraylvl.push_back(arr);
+
+				posbegin = txt.find("[", posend);
+				posend = txt.find("]", posend);
+			}
 		}
 	}
 
-	QualifiedType t;
-	t.type = registry_.findType(type);
-	t.constant = isConst;
-	t.pointerlvl = pointerlvl;
+	return ret;
+}
 
-	return {t, name};
+void RegistryLoader::loadFeature(const pugi::xml_node& node)
+{
+	Feature feature;
+	feature.reqs = parseRequirements(node);
+	feature.name = node.attribute("name").as_string();
+	feature.api = node.attribute("api").as_string();
+	feature.number = node.attribute("number").as_string();
+	registry_.features.push_back(feature);
+
+	std::cout << "\t\t" << feature.name << " " << feature.api << "\n";
+}
+
+void RegistryLoader::loadExtension(const pugi::xml_node& node)
+{
+	Extension extension;
+	extension.reqs = parseRequirements(node);
+	extension.number = node.attribute("number").as_int();
+	extension.name = node.attribute("name").as_string();
+	extension.protect = node.attribute("protect").as_string();
+	registry_.extensions.push_back(extension);
+
+	auto supportedAttrib = node.attribute("supported");
+	if(supportedAttrib)
+	{
+		std::string supported = supportedAttrib.as_string();
+		if(supported != "disabled")
+		{
+			auto feature = registry_.findFeatureByApi(supported);
+			if(feature) feature->extensions.push_back(&registry_.extensions.back());
+			else std::cout << "### couldnt find feature " << supported << "\n";
+		}
+	}
+
+	std::cout << "\t\t" << extension.name << "\n";
 }
 
 Requirements RegistryLoader::parseRequirements(const pugi::xml_node& node)
 {
-	for(auto& req : node.children("require"))
+	Requirements ret;
+
+	int number = 0;
+	auto numberAttrib = node.attribute("number");
+	if(numberAttrib) number = numberAttrib.as_int() - 1;
+
+	for(auto& require : node.children("require"))
 	{
-		
+		//types
+		for(auto& req : require.children("type"))
+		{
+			std::string name = req.name();
+			auto type = registry_.findType(req.attribute("name").as_string());
+			if(!type)
+			{
+				std::cout << "###couldnt find type " << req.attribute("name").as_string() << "\n";
+				continue;
+			}
+			parseTypeReqs(*type, ret);
+		}
+
+		//commands
+		for(auto& req : require.children("command"))
+		{
+			auto cmd = registry_.findCommand(req.attribute("name").as_string());
+			if(!cmd)
+			{
+				std::cout << "###couldnt find cmd " << req.attribute("name").as_string() << "\n";
+				continue;
+			}
+			parseCommandReqs(*cmd, ret);
+		}
+
+		//enums
+		for(auto& req : require.children("enum"))
+		{
+
+			auto enumName = req.attribute("name").as_string();
+			auto extAttrib = req.attribute("extends");
+			if(!extAttrib)
+			{
+				auto valueAttrib = req.attribute("value");
+				if(valueAttrib)
+				{
+					Constant constant(req);
+					constant.name = req.attribute("name").as_string();
+					constant.value = valueAttrib.as_string();
+					ret.extraConstants.push_back(constant);
+				}
+				else
+				{
+					auto constant = registry_.findConstant(enumName);
+					if(!constant)
+					{
+						std::cout << "### couldnt find constant " << enumName << "\n";
+						continue;
+					}
+					ret.constants.push_back(constant);
+				}
+			}
+			else
+			{
+				std::string dir = "+";
+				auto dirAttrib = req.attribute("dir");
+				if(dirAttrib) dir = dirAttrib.as_string();
+
+				auto offset = req.attribute("offset").as_llong();
+				offset += number * 1000; //extension number queried in the beginning
+
+				auto extEnum = registry_.findEnum(extAttrib.as_string());
+				if(!extEnum)
+				{
+					std::cout << "### couldnt find enum " << extEnum << "\n";
+					continue;
+				}
+
+				std::int64_t value = 0;
+				if(dir == "+") value = 1000000000 + offset;
+				else if(dir == "-") value = -1000000000 - offset;
+
+				auto v = std::make_pair(req.attribute("name").as_string(), value);
+				extEnum->values.push_back(v);
+			}
+		}
 	}
+
+	return ret;
+}
+
+void RegistryLoader::parseTypeReqs(Type& type, Requirements& reqs)
+{
+	//check it is not already parsed
+	for(auto& t : reqs.types)
+		if(t->name == type.name) return;
+
+	if(type.category == Type::Category::structure)
+	{
+		auto& s = static_cast<Struct&>(type);
+		for(auto& member : s.members)
+			if(member.type.type) parseTypeReqs(*member.type.type, reqs);
+	}
+	else if(type.category == Type::Category::funcptr)
+	{
+		auto& ptr = static_cast<FuncPtr&>(type);
+		for(auto& param : ptr.signature.params)
+			if(param.type.type) parseTypeReqs(*param.type.type, reqs);
+	}
+	else if(type.category == Type::Category::bitmask)
+	{
+		auto& mask = static_cast<Bitmask&>(type);
+		if(mask.bits) parseTypeReqs(*mask.bits, reqs);
+	}
+
+	reqs.types.push_back(&type);
+}
+
+void RegistryLoader::parseCommandReqs(Command& cmd, Requirements& reqs)
+{
+	for(auto& param : cmd.signature.params)
+		parseTypeReqs(*param.type.type, reqs);
+
+	parseTypeReqs(*cmd.signature.returnType.type, reqs);
+
+	reqs.commands.push_back(&cmd);
 }
 
 
-
-
 //registry
+Feature* Registry::findFeatureByName(const std::string& name)
+{
+	for(auto& c : features) if(c.name == name) return &c;
+	return nullptr;
+}
+Feature* Registry::findFeatureByApi(const std::string& name)
+{
+	for(auto& c : features) if(c.api == name) return &c;
+	return nullptr;
+}
+Extension* Registry::findExtension(const std::string& name)
+{
+	for(auto& c : extensions) if(c.name == name) return &c;
+	return nullptr;
+}
+Constant* Registry::findConstant(const std::string& name)
+{
+	for(auto& c : constants) if(c.name == name) return &c;
+	return nullptr;
+}
+Command* Registry::findCommand(const std::string& name)
+{
+	for(auto& c : commands) if(c.name == name) return &c;
+	return nullptr;
+}
+
 Enum* Registry::findEnum(const std::string& name)
 {
 	for(auto& e : enums) if(e.name == name) return &e;
@@ -593,7 +854,11 @@ void CCOutputGenerator::generate()
 {
 	//prototype file
 	auto fwdHeader =
-R"SRC(#pragma once
+R"SRC(
+//Automaitcally generated forward header file for the vulkan api for the nyorain/vpp library
+//Conatains forward declarations for all vulkan types. Do not edit manually.
+
+#pragma once
 
 #include <vulkan/vulkan.h>
 #include <cstdint>
@@ -601,13 +866,105 @@ R"SRC(#pragma once
 namespace vk
 {
 
+enum class DummyEnum {};
+
+template <typename BitType, typename MaskType = std::uint32_t>
+class Flags
+{
+public:
+	Flags() = default;
+	Flags(BitType bit) : m_mask(static_cast<MaskType>(bit)) {}
+	Flags(const Flags<BitType>& rhs) : m_mask(rhs.m_mask) {}
+
+	Flags<BitType> & operator=(const Flags<BitType>& rhs)
+	{
+		m_mask = rhs.m_mask;
+		return *this;
+	}
+
+	Flags<BitType> & operator|=(const Flags<BitType>& rhs)
+	{
+		m_mask |= rhs.m_mask;
+		return *this;
+	}
+
+    Flags<BitType> & operator&=(const Flags<BitType>& rhs)
+    {
+    	m_mask &= rhs.m_mask;
+    	return *this;
+    }
+
+    Flags<BitType> & operator^=(const Flags<BitType>& rhs)
+    {
+    	m_mask ^= rhs.m_mask;
+    	return *this;
+    }
+
+    Flags<BitType> operator|(const Flags<BitType>& rhs) const
+    {
+    	Flags<BitType> result(*this);
+    	result |= rhs;
+    	return result;
+    }
+
+    Flags<BitType> operator&(const Flags<BitType>& rhs) const
+    {
+    	Flags<BitType> result(*this);
+    	result &= rhs;
+    	return result;
+    }
+
+    Flags<BitType> operator^(const Flags<BitType>& rhs) const
+    {
+    	Flags<BitType> result(*this);
+    	result ^= rhs;
+    	return result;
+    }
+
+    operator bool() const { return (m_mask); }
+    bool operator!() const { return !(m_mask); }
+    bool operator==(const Flags<BitType>& rhs) const { return m_mask == rhs.m_mask; }
+    bool operator!=(Flags<BitType> const& rhs) const { return m_mask != rhs.m_mask; }
+
+    explicit operator MaskType() const { return m_mask; } //explicit?
+
+	private:
+    	MaskType  m_mask;
+};
+
+template <typename BitType>
+Flags<BitType> operator|(BitType bit, Flags<BitType> const& flags)
+{
+	return flags | bit;
+}
+
+template <typename BitType>
+Flags<BitType> operator&(BitType bit, Flags<BitType> const& flags)
+{
+	return flags & bit;
+}
+
+template <typename BitType>
+Flags<BitType> operator^(BitType bit, Flags<BitType> const& flags)
+{
+	return flags ^ bit;
+}
+
 )SRC";
 
+	fwd_ << copyright;
+	fwd_ << "\n//The specification (vk.xml) itself is protected by the following license:\n";
+	fwd_ << registry().copyright;
 	fwd_ << fwdHeader;
 
 	//header file
 	auto headerHeader =
-R"SRC(#pragma once
+R"SRC(
+//Automaitcally generated header file for the vulkan api for the nyorain/vpp library
+//Conatains all structure and enum declarations as well as command wrappers.
+//Do not edit manually.
+
+#pragma once
 
 #include "fwd.hpp"
 
@@ -616,121 +973,275 @@ namespace vk
 
 )SRC";
 
+	header_ << copyright;
+	header_ << "\n//The specification (vk.xml) itself is protected by the following license:\n";
+	header_ << registry().copyright;
 	header_ << headerHeader;
 
-	//handle
-	std::cout << "\tOutputting " << registry().handles.size() << " handles\n";
-	for(auto& type : registry().handles)
-	{
-		auto name = removeVkPrefix(type.name, nullptr);
 
+	//default vulkan feature
+	auto& feature = *registry().findFeatureByApi("vulkan");
+	auto& reqs = feature.reqs;
+
+	printReqs(reqs);
+
+	//extensions
+	for(auto& ext : registry().extensions)
+	{
+		if(!ext.protect.empty())
+		{
+			fwd_ << "#ifdef " << ext.protect << "\n\n";
+			header_ << "#ifdef " << ext.protect << "\n\n";
+		}
+
+		printReqs(ext.reqs);
+
+		if(!ext.protect.empty())
+		{
+			fwd_ << "#endif //" << ext.protect << "\n\n";
+			header_ << "#endif //" << ext.protect << "\n\n";
+		}
+	}
+
+	//end
+	fwd_ << "\n}";
+	header_ << "\n}";
+}
+
+void CCOutputGenerator::printReqs(Requirements& reqs)
+{
+	//handles
+	auto count = 0u;
+	for(auto* typeit : reqs.types)
+	{
+		if(typeit->category != Type::Category::handle) continue;
+
+		auto it = std::find(fulfilled_.types.begin(), fulfilled_.types.end(), typeit);
+		if(it != fulfilled_.types.end()) continue;
+
+		auto& type = static_cast<Handle&>(*typeit);
+		count++;
+
+		//fwd
+		auto name = removeVkPrefix(type.name, nullptr);
 		fwd_ << "using " << name << " = " << type.name << ";\n";
 	}
+	if(count > 0) std::cout << "\tOutputted " << count << " handles\n";
+	if(count > 0) fwd_ << "\n";
 
-	fwd_ << "\n\n";
-	header_ << "\n\n";
-
-	//typedefs
-	std::cout << "\tOutputting " << registry().baseTypes.size() << " typedefs\n";
-	for(auto& type : registry().baseTypes)
+	//basetypes
+	count = 0u;
+	for(auto* typeit : reqs.types)
 	{
-		fwd_ << "using " << type.name << " = " << type.original->name << ";\n";
+		if(typeit->category != Type::Category::basetype) continue;
+
+		auto it = std::find(fulfilled_.types.begin(), fulfilled_.types.end(), typeit);
+		if(it != fulfilled_.types.end()) continue;
+
+		auto& type = static_cast<BaseType&>(*typeit);
+		count++;
+
+		if(type.name == "VkFlags") continue;
+
+		//fwd
+		auto name = removeVkPrefix(type.name, nullptr);
+		fwd_ << "using " << name << " = " << type.original->name << ";\n";
 	}
 
-	fwd_ << "\n\n";
-	header_ << "\n\n";
+	if(count > 0) std::cout << "\tOutputted " << count << " typedefs\n";
+	if(count > 0) fwd_ << "\n";
 
 	//enums
-	std::cout << "\tOutputting " << registry().enums.size() << " enums\n";
-	for(auto& type : registry().enums)
+	count = 0u;
+	for(auto* typeit : reqs.types)
 	{
-		auto name = removeVkPrefix(type.name, nullptr);
+		if(typeit->category != Type::Category::enumeration) continue;
 
-		//output enum prototypes
+		auto it = std::find(fulfilled_.types.begin(), fulfilled_.types.end(), typeit);
+		if(it != fulfilled_.types.end()) continue;
+
+		auto& type = static_cast<Enum&>(*typeit);
+		count++;
+
+		auto name = removeVkPrefix(type.name, nullptr);
 		fwd_ << "enum class " << name << " : std::int32_t;\n";
 
 		//header
 		header_ << "enum class " << name << " : std::int32_t\n{\n";
+		auto sepr = "";
 		for(auto& value : type.values)
 		{
 			bool bit;
 			auto n = enumName(type, value.first, &bit);
-
-			header_ << "\t" << n << " = ";
-
-			if(bit) header_ << "(1 << " << value.second << "),\n";
-			else header_ << value.second << ",\n";
+			header_ << sepr << "\t" << n << " = ";
+			if(bit) header_ << "(1 << " << value.second << ")";
+			else header_ << value.second;
+			sepr = ",\n";
 		}
 
 		header_ << "};\n\n";
 	}
 
-	fwd_ << "\n\n";
-	header_ << "\n\n";
+	if(count > 0) std::cout << "\tOutputted " << count << " enums\n";
+	if(count > 0) fwd_ << "\n";
+	if(count > 0) header_ << "\n";
+
+	//bitmasks
+	count = 0u;
+	for(auto* typeit : reqs.types)
+	{
+		if(typeit->category != Type::Category::bitmask) continue;
+
+		auto it = std::find(fulfilled_.types.begin(), fulfilled_.types.end(), typeit);
+		if(it != fulfilled_.types.end()) continue;
+
+		auto& type = static_cast<Bitmask&>(*typeit);
+		count++;
+
+		auto name = removeVkPrefix(type.name, nullptr);
+
+		std::string enumName;
+		if(!type.bits) enumName = "DummyEnum";
+		else enumName = removeVkPrefix(type.bits->name, nullptr);
+
+		fwd_ << "using " << name << " = Flags<" << enumName << ">;\n";
+	}
+
+	if(count > 0) std::cout << "\tOutputted " << count << " bitmasks\n";
+	if(count > 0) fwd_ << "\n";
 
 	//structs
-	std::cout << "\tOutputting " << registry().structs.size() << " structs\n";
-	for(auto& type : registry().structs)
+	count = 0u;
+	for(auto* typeit : reqs.types)
 	{
+		if(typeit->category != Type::Category::structure) continue;
+
+		auto it = std::find(fulfilled_.types.begin(), fulfilled_.types.end(), typeit);
+		if(it != fulfilled_.types.end()) continue;
+
+		auto& type = static_cast<Struct&>(*typeit);
+		count++;
+
 		auto name = removeVkPrefix(type.name, nullptr);
+		auto nameFirstLower = name;
+		nameFirstLower[0] = std::tolower(nameFirstLower[0], std::locale());
 
 		std::string metaType = "struct";
 		if(type.isUnion) metaType = "union";
 
-		//fwd
 		fwd_ << metaType << " " << name << ";\n";
-
-		//header
 		header_ << metaType << " " << name << "\n{\n";
 
 		bool unionInit = false;
 		for(auto& member : type.members)
 		{
 			std::string init = "";
-			if(member.name == "sType") init = "StructureType::" + name;
+			if(member.name == "sType") init = "StructureType::" + nameFirstLower;
 			header_ << "\t" << member.type.typestring(*this) << " " << member.name;
-			if(!type.isUnion || unionInit) header_ << " {" << init << "}";
+			for(auto& lvl : member.type.arraylvl) header_ << "[" << lvl << "]";
+			if(!type.isUnion || !unionInit) header_ << " {" << init << "}";
 
 			unionInit = true;
 			header_ << ";\n";
 		}
 
-		header_ << "};\n\n";
+		header_ << "\n\toperator const " << type.name << "&() const { return reinterpret_cast<const "
+				<< type.name << "&>(*this); }\n";
+
+		header_ << "};\n";
 	}
 
-	fwd_ << "\n\n";
-	header_ << "\n\n";
+	if(count > 0) std::cout << "\tOutputted " << count << " structs\n";
+	if(count > 0) fwd_ << "\n";
+	if(count > 0) header_ << "\n";
+
+	//funcptrs
+	/*
+	count = 0u;
+	for(auto* typeit : reqs.types)
+	{
+		if(typeit->category != Type::Category::funcptr) continue;
+
+		auto it = std::find(fulfilled_.types.begin(), fulfilled_.types.end(), typeit);
+		if(it != fulfilled_.types.end()) continue;
+
+		auto it = std::find(fulfilled_.types.begin(), fulfilled_.types.end(), typeit);
+		if(it != fulfilled_.types.end()) continue;
+
+		auto& type = static_cast<FuncPtr&>(*typeit);
+		count++;
+
+		fwd_ << "Funcptr dummy for " << type.name << " \n";
+	}
+
+	if(count > 0) std::cout << "\tOutputted " << count << " funcptrs\n";
+	if(count > 0) fwd_ << "\n";
+	*/
 
 	//commands
-	std::cout << "\tOutputting " << registry().commands.size() << " commands\n";
-	for(auto& cmd : registry().commands)
+	count = 0u;
+	for(auto* cmdit : reqs.commands)
 	{
+		auto it = std::find(fulfilled_.commands.begin(), fulfilled_.commands.end(), cmdit);
+		if(it != fulfilled_.commands.end()) continue;
+
+		auto& cmd = *cmdit;
+		count++;
+
 		auto name = removeVkPrefix(cmd.name, nullptr);
 		name[0] = std::tolower(name[0], std::locale());
 
-		header_ << cmd.signature.returnType.string() << " " << name << "(";
+		header_ << cmd.signature.returnType.typestring(*this) << " " << name << "(";
 
 		auto sepr = "";
 		for(auto& param : cmd.signature.params)
 		{
 			header_ << sepr << param.type.typestring(*this) << " " << param.name;
+			for(auto& lvl : param.type.arraylvl) header_ << "[" << lvl << "]";
 			sepr = ", ";
 		}
 
-		header_ << ")\n{\n\t" << cmd.name << "(";
+		std::string returnString = "";
+		std::string returnStringEnd = "";
+		if(cmd.signature.returnType.type->name != "void" || cmd.signature.returnType.pointerlvl > 0)
+		{
+			returnString = "return static_cast<" + cmd.signature.returnType.typestring(*this) + ">(";
+			returnStringEnd = ")";
+		}
+
+		header_ << ")\n{\n\t" << returnString << cmd.name << "(";
 		sepr = "";
 		for(auto& param : cmd.signature.params)
 		{
-			header_ << sepr << param.name;
+			if(param.type.pointerlvl > 0)
+			{
+				header_ << sepr << "reinterpret_cast<" << param.type.string() << ">("
+						<< param.name << ")";
+			}
+			else if(param.type.type->category == Type::Category::enumeration ||
+				param.type.type->category == Type::Category::bitmask)
+			{
+				header_ << sepr << "static_cast<" << param.type.string() << ">("
+						<< param.name << ")";
+			}
+			else header_ << sepr << param.name;
 			sepr = ", ";
 		}
 
-		header_ << ");\n}\n";
+		header_ << ")" << returnStringEnd << ";\n}\n";
 	}
 
-	//end
-	fwd_ << "\n}";
-	header_ << "\n}";
+	if(count > 0) std::cout << "\tOutputted " << count << " commands\n";
+	if(count > 0) header_ << "\n";
+
+
+	//insert printed reqs
+	fulfilled_.commands.insert(fulfilled_.commands.end(), reqs.commands.begin(), reqs.commands.end());
+	fulfilled_.types.insert(fulfilled_.types.end(), reqs.types.begin(), reqs.types.end());
+	fulfilled_.constants.insert(fulfilled_.constants.end(), reqs.constants.begin(),
+		reqs.constants.end());
+	fulfilled_.extraConstants.insert(fulfilled_.extraConstants.end(), reqs.extraConstants.begin(),
+		reqs.extraConstants.end());
 }
 
 std::string CCOutputGenerator::enumName(const Enum& e, const std::string& name, bool* bit) const
