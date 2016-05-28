@@ -26,6 +26,7 @@
 #include <iostream>
 #include <algorithm>
 #include <string>
+#include <cstring>
 #include <locale>
 
 RegistryLoader::RegistryLoader(const std::string& xmlPath)
@@ -337,6 +338,9 @@ void RegistryLoader::loadCommands(const pugi::xml_node& node)
 Param RegistryLoader::parseParam(const pugi::xml_node& node)
 {
 	Param ret;
+
+	auto optAttrib = node.attribute("optional");
+	if(std::strcmp(optAttrib.as_string(), "true") == 0) ret.optional = true;
 
 	auto currChild = pugi::xml_node{};
 	for(auto child : node)

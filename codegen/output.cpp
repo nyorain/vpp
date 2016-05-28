@@ -162,20 +162,6 @@ void OutputGenerator::camelCaseip(std::string& string, bool firstupper) const
 		if(pos < string.size()) string[pos] = std::toupper(string[pos], std::locale());
 	}
 
-	auto next = false;
-	for(auto& c : string)
-	{
-		if(std::isdigit(c, std::locale()))
-		{
-			next = true;
-		}
-		else if(next)
-		{
-			next = false;
-			c = std::toupper(c, std::locale());
-		}
-	}
-
 	if(firstupper) string[0] = std::toupper(string[0], std::locale());
 	else string[0] = std::tolower(string[0], std::locale());
 }
@@ -720,13 +706,19 @@ void CCOutputGenerator::printStruct(const Struct& type)
 	{
 		structs_ << "\n\t" << name << "(" << paramList << ")";
 		if(!initList.empty()) structs_ << " : " << initList;
-		structs_ << " {}";
+		structs_ << " {}\n";
 	}
 
-	//conversion operator
-	structs_ << "\n\toperator const " << type.name << "&() const { return reinterpret_cast<const "
+	//explicit conversion function
+	structs_ << "\n\tconst " << type.name << "& vkHandle() const { return reinterpret_cast<const "
 			<< type.name << "&>(*this); }\n";
 
+	structs_ << "\t" << type.name << "& vkHandle() { return reinterpret_cast<"
+			<< type.name << "&>(*this); }\n";
+
+	//conversion operator
+	structs_ << "\n\toperator const " << type.name << "&() const { return vkHandle(); };\n";
+	structs_ << "\toperator " << type.name << "&() { return vkHandle(); };\n";
 	structs_ << "};\n";
 }
 

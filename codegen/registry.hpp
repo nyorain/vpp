@@ -151,6 +151,7 @@ struct Param
 {
 	QualifiedType type;
 	std::string name;
+	bool optional = false;
 };
 
 class Struct : public Type
