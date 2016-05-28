@@ -2,8 +2,7 @@ add_executable(vkGenerator
 	output.cpp
 	registry.cpp
 	main.cpp
-	pugixml/pugixml.cpp
-)
+	pugixml/pugixml.cpp)
 
 target_include_directories(vkGenerator PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -32,6 +31,8 @@ set(outputs
 	"${CMAKE_SOURCE_DIR}/include/vpp/vulkan/vulkan.hpp"
 	"${CMAKE_SOURCE_DIR}/include/vpp/vulkan/call.hpp"
 	"${CMAKE_SOURCE_DIR}/include/vpp/vulkan/enums.hpp"
+	"${CMAKE_SOURCE_DIR}/include/vpp/vulkan/fwd.hpp"
+	"${CMAKE_SOURCE_DIR}/include/vpp/vulkan/flags.hpp"
 	"${CMAKE_SOURCE_DIR}/include/vpp/vulkan/functions.hpp"
 	"${CMAKE_SOURCE_DIR}/include/vpp/vulkan/structs.hpp")
 
@@ -43,10 +44,15 @@ add_custom_command(
 		"${CMAKE_SOURCE_DIR}/include/vpp/vulkan"
 	DEPENDS
 		"${CMAKE_CURRENT_SOURCE_DIR}/output/vulkan.hpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/output/enums.hpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/output/fwd.hpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/output/structs.hpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/output/functions.hpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/output/flags.hpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/output/call.hpp"
 	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 	COMMENT "copying vkcpp headers")
 
-add_custom_target(VkHeader ALL
+add_custom_target(vkHeaders ALL
 	COMMENT "Generating vulkan headers"
-	DEPENDS "${CMAKE_SOURCE_DIR}/include/vpp/vulkan/vulkan.hpp")
+	DEPENDS ${outputs})

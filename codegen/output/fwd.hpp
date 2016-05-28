@@ -63,6 +63,7 @@
 
 #include <vulkan/vulkan.h>
 #include <cstdint>
+
 namespace vk
 {
 
@@ -75,6 +76,13 @@ constexpr auto wholeSize = (~0ULL);
 constexpr auto attachmentUnused = (~0U);
 constexpr auto queueFamilyIgnored = (~0U);
 constexpr auto subpassExternal = (~0U);
+constexpr auto maxPhysicalDeviceNameSize = 256;
+constexpr auto uuidSize = 16;
+constexpr auto maxMemoryTypes = 32;
+constexpr auto maxMemoryHeaps = 16;
+constexpr auto maxExtensionNameSize = 256;
+constexpr auto maxExtensionNameSize = 256;
+constexpr auto maxDescriptionSize = 256;
 
 using Instance = VkInstance;
 using PhysicalDevice = VkPhysicalDevice;
@@ -482,7 +490,7 @@ using DebugReportFlagsEXT = Flags<DebugReportBitsEXT>;
 
 struct DebugReportCallbackCreateInfoEXT;
 
-using PfnDebugReportCallbackEXT = bool(*)(DebugReportFlagsEXT flags, DebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData);
+using PfnDebugReportCallbackEXT = Bool32(*)(DebugReportFlagsEXT flags, DebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData);
 
 constexpr auto nvGlslShaderSpecVersion = 1;
 constexpr auto nvGlslShaderExtensionName = "VK_NV_glsl_shader";

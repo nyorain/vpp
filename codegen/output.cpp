@@ -355,8 +355,6 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 
 		//fwd
 		auto name = typeName(type);
-		if(type.name == "VkBool32") name = "Bool32"; //typeName functions makes Bool32 to bool
-
 		fwd_ << "using " << name << " = " << type.original->name << ";\n";
 	}
 
@@ -395,7 +393,10 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 			sepr = ",\n";
 		}
 
-		enums_ << "\n};\n\n";
+		enums_ << "\n};\n";
+
+		if(type.bitmask) enums_<< "VPP_BITMASK_OPS(" << name << ")\n";
+		enums_ << "\n";
 	}
 
 	if(count > 0) std::cout << "\tOutputted " << count << " enums\n";
@@ -439,36 +440,11 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		auto& type = static_cast<Struct&>(*typeit);
 		count++;
 
-		auto name = typeName(type);
-		auto nameFirstLower = name;
-		nameFirstLower[0] = std::tolower(nameFirstLower[0], std::locale());
-
-		std::string metaType = "struct";
-		if(type.isUnion) metaType = "union";
-
 		assureGuard(fwd_, fwdGuard, guard);
 		assureGuard(structs_, structGuard, guard);
 
-		fwd_ << metaType << " " << name << ";\n";
-		structs_ << metaType << " " << name << "\n{\n";
+		printStruct(type);
 
-		bool unionInit = false;
-		for(auto& member : type.members)
-		{
-			std::string init = "";
-			if(member.name == "sType") init = "StructureType::" + nameFirstLower;
-			structs_ << "\t" << typeName(member.type) << " " << member.name;
-			for(auto& lvl : member.type.arraylvl) structs_ << "[" << lvl << "]";
-			if(!type.isUnion || !unionInit) structs_ << " {" << init << "}";
-
-			unionInit = true;
-			structs_ << ";\n";
-		}
-
-		structs_ << "\n\toperator const " << type.name << "&() const { return reinterpret_cast<const "
-				<< type.name << "&>(*this); }\n";
-
-		structs_ << "};\n";
 	}
 
 	if(count > 0) std::cout << "\tOutputted " << count << " structs\n";
@@ -526,8 +502,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		auto sepr = "";
 		for(auto& param : cmd.signature.params)
 		{
-			functions_ << sepr << typeName(param.type) << " " << param.name;
-			for(auto& lvl : param.type.arraylvl) functions_ << "[" << lvl << "]";
+			functions_ << sepr << paramName(param);
 			sepr = ", ";
 		}
 
@@ -599,6 +574,7 @@ std::string CCOutputGenerator::enumName(const Enum& e, const std::string& name, 
 	auto ret = removeVkPrefix(name, nullptr);
 	camelCaseip(ret);
 
+
 	//prefixes and suffixes
 	auto removePrefix = 0u;
 	auto removeSuffix = 0u;
@@ -615,19 +591,30 @@ std::string CCOutputGenerator::enumName(const Enum& e, const std::string& name, 
 		std::string ext;
 		removeExtSuffix(e.name, &ext);
 
-		removePrefix = e.name.size() - (2 + 8 + ext.size()); //2: vk 8: FlagBits
-		removeSuffix = ext.size();
+		//basically find the prefix enum name and enum value name share and remove it
+		//from the enum value name (means incerase removePrefix)
+		auto fename = tolower(typeName(e)); //fixed enum name
+		if(fename.substr(fename.size() - 4) == "bits") fename = fename.substr(0, fename.size() - 4);
 
-		if(ret.substr(ret.size() - 3) == "Bit")
-		{
-			if(bit) *bit = true;
-			removeSuffix += 3;
-		}
+		auto fname = tolower(ret); //fixed name
+
+		auto s = 0u;
+		while(fename.size() > s && fname.size() > s && fename[s] == fname[s]) ++s;
+
+		removePrefix = s;
+		removeSuffix = ext.size();
 	}
 
 	ret = ret.substr(removePrefix);
 	ret = ret.substr(0, ret.size() - removeSuffix);
 	ret[0] = tolower(ret[0], std::locale());
+
+	//remove "Bit" from bitmask enums
+	if(e.bitmask && ret.substr(ret.size() - 3) == "Bit")
+	{
+		if(bit) *bit = true;
+		ret = ret.substr(0, ret.size() - 3);
+	}
 
 	//'e' prefix if it is a number
 	if(std::isdigit(ret[0], std::locale())) ret.insert(0, 1, 'e');
@@ -669,10 +656,6 @@ std::string CCOutputGenerator::typeName(const Type& type) const
 		ret.erase(0, 6); //PFN_vk
 		ret.insert(0, "Pfn");
 	}
-	else if(type.name == "VkBool32")
-	{
-		return "bool";
-	}
 
 	return ret;
 }
@@ -691,5 +674,80 @@ std::string CCOutputGenerator::constantName(const Constant& c) const
 {
 	auto ret = removeVkPrefix(c.name, nullptr);
 	camelCaseip(ret);
+	return ret;
+}
+
+void CCOutputGenerator::printStruct(const Struct& type)
+{
+	auto name = typeName(type);
+	auto nameFirstLower = name;
+	nameFirstLower[0] = std::tolower(nameFirstLower[0], std::locale());
+
+	std::string metaType = "struct";
+	if(type.isUnion) metaType = "union";
+
+	fwd_ << metaType << " " << name << ";\n";
+	structs_ << metaType << " " << name << "\n{\n";
+
+	bool unionInit = false;
+	auto sepr = "";
+	std::string paramList;
+	std::string initList;
+	for(auto& member : type.members)
+	{
+		auto mtype = typeName(member.type);
+		auto mname = member.name;
+
+		//member declaration
+		std::string init = "";
+		if(member.name == "sType") init = "StructureType::" + nameFirstLower;
+		structs_ << "\t" << paramName(member);
+		if(!type.isUnion || !unionInit) structs_ << " {" << init << "}";
+
+		unionInit = true;
+		structs_ << ";\n";
+
+		if(member.name == "sType" || member.name == "pNext") continue;
+
+		paramList += sepr + mtype + " x" + mname + " = {}"; //ctor params
+		initList += sepr + mname + "(x" + mname + ")"; //initializer
+
+		sepr = ", ";
+	}
+
+	//init ctor
+	if(!type.returnedonly)
+	{
+		structs_ << "\n\t" << name << "(" << paramList << ")";
+		if(!initList.empty()) structs_ << " : " << initList;
+		structs_ << " {}";
+	}
+
+	//conversion operator
+	structs_ << "\n\toperator const " << type.name << "&() const { return reinterpret_cast<const "
+			<< type.name << "&>(*this); }\n";
+
+	structs_ << "};\n";
+}
+
+std::string CCOutputGenerator::paramName(const Param& param) const
+{
+	std::string ret = typeName(param.type);
+	ret += " " + param.name;
+
+	for(auto& lvl : param.type.arraylvl)
+	{
+		std::string lvlName = lvl;
+
+		auto pos = lvl.find("VK");
+		if(pos != std::string::npos)
+		{
+			removeVkPrefix(lvlName);
+			camelCaseip(lvlName);
+		}
+
+		ret += "[" + lvlName + "]";
+	}
+
 	return ret;
 }

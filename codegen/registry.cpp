@@ -338,27 +338,59 @@ Param RegistryLoader::parseParam(const pugi::xml_node& node)
 {
 	Param ret;
 
+	auto currChild = pugi::xml_node{};
 	for(auto child : node)
 	{
+		currChild = child;
 		std::string n = child.name();
-		if(n == "type") ret.type.type = registry_.findType(child.text().get());
-		if(n == "name") ret.name = child.text().get();
+		if(n == "type")
+		{
+			ret.type.type = registry_.findType(child.text().get());
+		}
+		if(n == "name")
+		{
+			ret.name = child.text().get();
+			break;
+		}
 		else
 		{
 			std::string txt = child.value();
 			ret.type.pointerlvl += std::count(txt.begin(), txt.end(), '*');
 			if(txt.find("const") != std::string::npos) ret.type.constant = true;
+		}
+	}
 
-			auto posbegin = txt.find("[");
-			auto posend = txt.find("]");
-			while(posbegin != std::string::npos && posend != std::string::npos)
+	//TODO: integrate this in loop above?
+	auto child = currChild;
+	bool bracketOpen = false;
+	while((child = child.next_sibling()))
+	{
+		std::string txt = child.text().get();
+		while(!txt.empty())
+		{
+			if(!bracketOpen)
 			{
-				auto arr = txt.substr(posbegin + 1, posend - 1);
-				ret.type.arraylvl.push_back(arr);
-
-				posbegin = txt.find("[", posend);
-				posend = txt.find("]", posend);
+				auto pos = txt.find('[');
+				if(pos != std::string::npos)
+				{
+					bracketOpen = true;
+					if(txt.size() > pos + 1) txt = txt.substr(pos + 1);
+					else break;
+				}
+				else break;
 			}
+
+			auto pos = txt.find(']');
+			if(txt.empty()) break;
+			if(pos != 0) ret.type.arraylvl.push_back(txt.substr(0, pos));
+
+			if(pos != std::string::npos)
+			{
+				bracketOpen = false;
+				if(txt.size() > pos + 1) txt = txt.substr(pos + 1);
+				else break;
+			}
+			else break;
 		}
 	}
 
@@ -502,13 +534,13 @@ void RegistryLoader::parseTypeReqs(Type& type, Requirements& reqs)
 	{
 		auto& s = static_cast<Struct&>(type);
 		for(auto& member : s.members)
-			if(member.type.type) parseTypeReqs(*member.type.type, reqs);
+			parseTypeReqs(member.type, reqs);
 	}
 	else if(type.category == Type::Category::funcptr)
 	{
 		auto& ptr = static_cast<FuncPtr&>(type);
 		for(auto& param : ptr.signature.params)
-			if(param.type.type) parseTypeReqs(*param.type.type, reqs);
+			parseTypeReqs(param.type, reqs);
 	}
 	else if(type.category == Type::Category::bitmask)
 	{
@@ -517,6 +549,17 @@ void RegistryLoader::parseTypeReqs(Type& type, Requirements& reqs)
 	}
 
 	reqs.types.push_back(&type);
+}
+
+void RegistryLoader::parseTypeReqs(QualifiedType& type, Requirements& reqs)
+{
+	for(auto& arrLvl : type.arraylvl)
+	{
+		auto constant = registry_.findConstant(arrLvl);
+		if(constant) reqs.constants.push_back(constant);
+	}
+
+	if(type.type) parseTypeReqs(*type.type, reqs);
 }
 
 void RegistryLoader::parseCommandReqs(Command& cmd, Requirements& reqs)

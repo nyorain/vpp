@@ -27,11 +27,13 @@
 #include <fstream>
 
 class Registry;
+class Param;
 class Type;
 class QualifiedType;
 class Enum;
 class Constant;
 class Requirements;
+class Struct;
 
 class OutputGenerator
 {
@@ -69,11 +71,13 @@ public:
 	CCOutputGenerator(Registry& reg, const CCOutputGeneratorSettings& settings = {});
 	void generate();
 	void printReqs(Requirements& reqs, const Requirements& fulfilled, const std::string& guard = "");
+	void printStruct(const Struct& type);
 
 	std::string enumName(const Enum& e, const std::string& name, bool* bit = nullptr) const;
 	std::string constantName(const Constant& c) const;
 	std::string typeName(const Type& type) const;
 	std::string typeName(const QualifiedType& type) const;
+	std::string paramName(const Param& param) const;
 
 	void outputAll(const std::string& output);
 	void outputAllHeader(const std::string& output);

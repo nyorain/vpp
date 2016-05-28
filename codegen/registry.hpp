@@ -292,6 +292,7 @@ public:
 
 	Requirements parseRequirements(const pugi::xml_node& node);
 	void parseTypeReqs(Type& type, Requirements& reqs);
+	void parseTypeReqs(QualifiedType& type, Requirements& reqs);
 	void parseCommandReqs(Command& cmd, Requirements& reqs);
 
 	Param parseParam(const pugi::xml_node& node);

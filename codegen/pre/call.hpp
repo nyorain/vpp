@@ -116,8 +116,8 @@ inline vk::Result checkResultWarn(vk::Result result, const char* function, const
 #endif
 
 //call warn and throw macros
-#define VPP_CALL_W(x) ::vk::call::checkResultWarn(static_cast<vk::Result>(x), VPP_FUNC_NAME, ##x)
-#define VPP_CALL_T(x) ::vk::call::checkResultThrow(static_cast<vk::Result>(x), VPP_FUNC_NAME, ##x)
+#define VPP_CALL_W(x) ::vk::call::checkResultWarn(static_cast<vk::Result>(x), VPP_FUNC_NAME, #x)
+#define VPP_CALL_T(x) ::vk::call::checkResultThrow(static_cast<vk::Result>(x), VPP_FUNC_NAME, #x)
 
 //default selection
 #if !defined(VPP_CALL_THROW) && !defined(VPP_CALL_WARN) && !defined(VPP_CALL_NOCHECK)

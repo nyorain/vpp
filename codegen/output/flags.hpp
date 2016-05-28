@@ -61,8 +61,8 @@ template <typename T> Flags<T> operator^(T bit, const Flags<T>& flags) { return 
 
 }
 
-#define VK_GEN_MAKE_FLAGS(T) \
-	inline vk::Flags<T> operator|(T a, T b) { return nytl::Flags<T>(a) | b; } \
-	inline vk::Flags<T> operator&(T a, T b) { return nytl::Flags<T>(a) & b; } \
-	inline vk::Flags<T> operator^(T a, T b) { return nytl::Flags<T>(a) ^ b; } \
-	inline vk::Flags<T> operator~(T bit) { return nytl::Flags<T>(false, bit); }
+#define VPP_BITMASK_OPS(T) \
+	inline vk::Flags<T> operator|(T a, T b) { return vk::Flags<T>(a) | b; } \
+	inline vk::Flags<T> operator&(T a, T b) { return vk::Flags<T>(a) & b; } \
+	inline vk::Flags<T> operator^(T a, T b) { return vk::Flags<T>(a) ^ b; } \
+	inline vk::Flags<T> operator~(T bit) { return vk::Flags<T>(false, bit); }

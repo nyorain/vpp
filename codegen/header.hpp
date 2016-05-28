@@ -3,6 +3,7 @@ const auto constexpr fwdHeader = 1 + R"SRC(
 
 #include <vulkan/vulkan.h>
 #include <cstdint>
+
 )SRC";
 
 
@@ -11,15 +12,18 @@ const auto constexpr mainHeader = 1 + R"SRC(
 #include "enums.hpp"
 #include "structs.hpp"
 #include "functions.hpp"
+
 )SRC";
 
 const auto constexpr structsHeader = 1 + R"SRC(
 #include "fwd.hpp"
 #include "enums.hpp"
+
 )SRC";
 
 const auto constexpr enumsHeader = 1 + R"SRC(
 #include "fwd.hpp"
+
 )SRC";
 
 const auto constexpr functionsHeader = 1 + R"SRC(
@@ -27,6 +31,7 @@ const auto constexpr functionsHeader = 1 + R"SRC(
 #include "enums.hpp"
 #include "structs.hpp"
 #include "call.hpp"
+
 )SRC";
 
 constexpr const char* keywords[]= {"alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand",
