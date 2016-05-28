@@ -1,5 +1,3 @@
-// The MIT License
-//
 // Copyright © 2016 nyorain
 //
 // Permission is hereby granted, free of charge, to any person
@@ -57,7 +55,7 @@
 //The specification (vk.xml) itself is protected by the following license:
 
 // Copyright (c) 2015-2016 The Khronos Group Inc.
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and/or associated documentation files (the
 // "Materials"), to deal in the Materials without restriction, including
@@ -65,10 +63,10 @@
 // distribute, sublicense, and/or sell copies of the Materials, and to
 // permit persons to whom the Materials are furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included
 // in all copies or substantial portions of the Materials.
-// 
+//
 // THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -76,9 +74,9 @@
 // CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
-// 
+//
 // ------------------------------------------------------------------------
-// 
+//
 // This file, vk.xml, is the Vulkan API Registry. It is a critically important
 // and normative part of the Vulkan Specification, including a canonical
 // machine-readable definition of the API, parameter and member validation
@@ -86,7 +84,7 @@
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
 // maintained in the master branch of the Khronos Vulkan Github project.
-    
+
 //Automaitcally generated header file for the vulkan api for the nyorain/vpp library
 //Conatains all structure and enum declarations as well as command wrappers.
 //Do not edit manually.
@@ -100,8 +98,7 @@ namespace vk
 
 enum class PipelineCacheHeaderVersion : std::int32_t
 {
-	one = 1,
-};
+	one = 1};
 
 enum class StructureType : std::int32_t
 {
@@ -169,8 +166,7 @@ enum class StructureType : std::int32_t
 	pipelineRasterizationStateRasterizationOrderAMD = 1000018000,
 	debugMarkerObjectNameInfoEXT = 1000022000,
 	debugMarkerObjectTagInfoEXT = 1000022001,
-	debugMarkerMarkerInfoEXT = 1000022002,
-};
+	debugMarkerMarkerInfoEXT = 1000022002};
 
 enum class SystemAllocationScope : std::int32_t
 {
@@ -178,13 +174,11 @@ enum class SystemAllocationScope : std::int32_t
 	object = 1,
 	cache = 2,
 	device = 3,
-	instance = 4,
-};
+	instance = 4};
 
 enum class InternalAllocationType : std::int32_t
 {
-	executable = 0,
-};
+	executable = 0};
 
 enum class Result : std::int32_t
 {
@@ -212,8 +206,7 @@ enum class Result : std::int32_t
 	errorIncompatibleDisplayKHR = -1000003001,
 	errorValidationFailedEXT = -1000011001,
 	errorInvalidShaderNV = -1000012000,
-	nvExtension1Error = -1000013000,
-};
+	nvExtension1Error = -1000013000};
 
 enum class Format : std::int32_t
 {
@@ -401,10 +394,9 @@ enum class Format : std::int32_t
 	astc12X10UnormBlock = 181,
 	astc12X10SrgbBlock = 182,
 	astc12X12UnormBlock = 183,
-	astc12X12SrgbBlock = 184,
-};
+	astc12X12SrgbBlock = 184};
 
-enum class FormatFeatureFlagBits : std::int32_t
+enum class FormatFeatureBits : std::int32_t
 {
 	sampledImage = (1 << 0),
 	storageImage = (1 << 1),
@@ -419,23 +411,20 @@ enum class FormatFeatureFlagBits : std::int32_t
 	blitSrc = (1 << 10),
 	blitDst = (1 << 11),
 	sampledImageFilterLinear = (1 << 12),
-	sampledImageFilterCubicBitIMG = 1000015000,
-};
+	sampledImageFilterCubicBitIMG = 1000015000};
 
 enum class ImageType : std::int32_t
 {
 	e1D = 0,
 	e2D = 1,
-	e3D = 2,
-};
+	e3D = 2};
 
 enum class ImageTiling : std::int32_t
 {
 	optimal = 0,
-	linear = 1,
-};
+	linear = 1};
 
-enum class ImageUsageFlagBits : std::int32_t
+enum class ImageUsageBits : std::int32_t
 {
 	transferSrc = (1 << 0),
 	transferDst = (1 << 1),
@@ -444,19 +433,17 @@ enum class ImageUsageFlagBits : std::int32_t
 	colorAttachment = (1 << 4),
 	depthStencilAttachment = (1 << 5),
 	transientAttachment = (1 << 6),
-	inputAttachment = (1 << 7),
-};
+	inputAttachment = (1 << 7)};
 
-enum class ImageCreateFlagBits : std::int32_t
+enum class ImageCreateBits : std::int32_t
 {
 	sparseBinding = (1 << 0),
 	sparseResidency = (1 << 1),
 	sparseAliased = (1 << 2),
 	mutableFormat = (1 << 3),
-	cubeCompatible = (1 << 4),
-};
+	cubeCompatible = (1 << 4)};
 
-enum class SampleCountFlagBits : std::int32_t
+enum class SampleCountBits : std::int32_t
 {
 	e1 = (1 << 0),
 	e2 = (1 << 1),
@@ -464,8 +451,7 @@ enum class SampleCountFlagBits : std::int32_t
 	e8 = (1 << 3),
 	e16 = (1 << 4),
 	e32 = (1 << 5),
-	e64 = (1 << 6),
-};
+	e64 = (1 << 6)};
 
 enum class PhysicalDeviceType : std::int32_t
 {
@@ -473,32 +459,28 @@ enum class PhysicalDeviceType : std::int32_t
 	integratedGpu = 1,
 	discreteGpu = 2,
 	virtualGpu = 3,
-	cpu = 4,
-};
+	cpu = 4};
 
-enum class QueueFlagBits : std::int32_t
+enum class QueueBits : std::int32_t
 {
 	graphics = (1 << 0),
 	compute = (1 << 1),
 	transfer = (1 << 2),
-	sparseBinding = (1 << 3),
-};
+	sparseBinding = (1 << 3)};
 
-enum class MemoryPropertyFlagBits : std::int32_t
+enum class MemoryPropertyBits : std::int32_t
 {
 	deviceLocal = (1 << 0),
 	hostVisible = (1 << 1),
 	hostCoherent = (1 << 2),
 	hostCached = (1 << 3),
-	lazilyAllocated = (1 << 4),
-};
+	lazilyAllocated = (1 << 4)};
 
-enum class MemoryHeapFlagBits : std::int32_t
+enum class MemoryHeapBits : std::int32_t
 {
-	deviceLocal = (1 << 0),
-};
+	deviceLocal = (1 << 0)};
 
-enum class PipelineStageFlagBits : std::int32_t
+enum class PipelineStageBits : std::int32_t
 {
 	topOfPipe = (1 << 0),
 	drawIndirect = (1 << 1),
@@ -516,42 +498,36 @@ enum class PipelineStageFlagBits : std::int32_t
 	bottomOfPipe = (1 << 13),
 	host = (1 << 14),
 	allGraphics = (1 << 15),
-	allCommands = (1 << 16),
-};
+	allCommands = (1 << 16)};
 
-enum class ImageAspectFlagBits : std::int32_t
+enum class ImageAspectBits : std::int32_t
 {
 	color = (1 << 0),
 	depth = (1 << 1),
 	stencil = (1 << 2),
-	metadata = (1 << 3),
-};
+	metadata = (1 << 3)};
 
-enum class SparseImageFormatFlagBits : std::int32_t
+enum class SparseImageFormatBits : std::int32_t
 {
 	singleMiptail = (1 << 0),
 	alignedMipSize = (1 << 1),
-	nonstandardBlockSize = (1 << 2),
-};
+	nonstandardBlockSize = (1 << 2)};
 
-enum class SparseMemoryBindFlagBits : std::int32_t
+enum class SparseMemoryBindBits : std::int32_t
 {
-	metadata = (1 << 0),
-};
+	metadata = (1 << 0)};
 
-enum class FenceCreateFlagBits : std::int32_t
+enum class FenceCreateBits : std::int32_t
 {
-	signaled = (1 << 0),
-};
+	signaled = (1 << 0)};
 
 enum class QueryType : std::int32_t
 {
 	occlusion = 0,
 	pipelineStatistics = 1,
-	timestamp = 2,
-};
+	timestamp = 2};
 
-enum class QueryPipelineStatisticFlagBits : std::int32_t
+enum class QueryPipelineStatisticBits : std::int32_t
 {
 	inputAssemblyVertices = (1 << 0),
 	inputAssemblyPrimitives = (1 << 1),
@@ -563,25 +539,22 @@ enum class QueryPipelineStatisticFlagBits : std::int32_t
 	fragmentShaderInvocations = (1 << 7),
 	tessellationControlShaderPatches = (1 << 8),
 	tessellationEvaluationShaderInvocations = (1 << 9),
-	computeShaderInvocations = (1 << 10),
-};
+	computeShaderInvocations = (1 << 10)};
 
-enum class QueryResultFlagBits : std::int32_t
+enum class QueryResultBits : std::int32_t
 {
 	e64 = (1 << 0),
 	wait = (1 << 1),
 	withAvailability = (1 << 2),
-	partial = (1 << 3),
-};
+	partial = (1 << 3)};
 
-enum class BufferCreateFlagBits : std::int32_t
+enum class BufferCreateBits : std::int32_t
 {
 	sparseBinding = (1 << 0),
 	sparseResidency = (1 << 1),
-	sparseAliased = (1 << 2),
-};
+	sparseAliased = (1 << 2)};
 
-enum class BufferUsageFlagBits : std::int32_t
+enum class BufferUsageBits : std::int32_t
 {
 	transferSrc = (1 << 0),
 	transferDst = (1 << 1),
@@ -591,14 +564,12 @@ enum class BufferUsageFlagBits : std::int32_t
 	storageBuffer = (1 << 5),
 	indexBuffer = (1 << 6),
 	vertexBuffer = (1 << 7),
-	indirectBuffer = (1 << 8),
-};
+	indirectBuffer = (1 << 8)};
 
 enum class SharingMode : std::int32_t
 {
 	exclusive = 0,
-	concurrent = 1,
-};
+	concurrent = 1};
 
 enum class ImageLayout : std::int32_t
 {
@@ -611,8 +582,7 @@ enum class ImageLayout : std::int32_t
 	transferSrcOptimal = 6,
 	transferDstOptimal = 7,
 	preinitialized = 8,
-	presentSrcKHR = 1000001002,
-};
+	presentSrcKHR = 1000001002};
 
 enum class ImageViewType : std::int32_t
 {
@@ -622,8 +592,7 @@ enum class ImageViewType : std::int32_t
 	cube = 3,
 	e1DArray = 4,
 	e2DArray = 5,
-	cubeArray = 6,
-};
+	cubeArray = 6};
 
 enum class ComponentSwizzle : std::int32_t
 {
@@ -633,17 +602,15 @@ enum class ComponentSwizzle : std::int32_t
 	r = 3,
 	g = 4,
 	b = 5,
-	a = 6,
-};
+	a = 6};
 
-enum class PipelineCreateFlagBits : std::int32_t
+enum class PipelineCreateBits : std::int32_t
 {
 	disableOptimization = (1 << 0),
 	allowDerivatives = (1 << 1),
-	derivative = (1 << 2),
-};
+	derivative = (1 << 2)};
 
-enum class ShaderStageFlagBits : std::int32_t
+enum class ShaderStageBits : std::int32_t
 {
 	vertex = (1 << 0),
 	tessellationControl = (1 << 1),
@@ -652,14 +619,12 @@ enum class ShaderStageFlagBits : std::int32_t
 	fragment = (1 << 4),
 	compute = (1 << 5),
 	allGraphics = 31,
-	all = 2147483647,
-};
+	all = 2147483647};
 
 enum class VertexInputRate : std::int32_t
 {
 	vertex = 0,
-	instance = 1,
-};
+	instance = 1};
 
 enum class PrimitiveTopology : std::int32_t
 {
@@ -673,29 +638,25 @@ enum class PrimitiveTopology : std::int32_t
 	lineStripWithAdjacency = 7,
 	triangleListWithAdjacency = 8,
 	triangleStripWithAdjacency = 9,
-	patchList = 10,
-};
+	patchList = 10};
 
 enum class PolygonMode : std::int32_t
 {
 	fill = 0,
 	line = 1,
-	point = 2,
-};
+	point = 2};
 
-enum class CullModeFlagBits : std::int32_t
+enum class CullModeBits : std::int32_t
 {
 	none = 0,
 	front = (1 << 0),
 	back = (1 << 1),
-	frontAndBack = 3,
-};
+	frontAndBack = 3};
 
 enum class FrontFace : std::int32_t
 {
 	counterClockwise = 0,
-	clockwise = 1,
-};
+	clockwise = 1};
 
 enum class CompareOp : std::int32_t
 {
@@ -706,8 +667,7 @@ enum class CompareOp : std::int32_t
 	greater = 4,
 	notEqual = 5,
 	greaterOrEqual = 6,
-	always = 7,
-};
+	always = 7};
 
 enum class StencilOp : std::int32_t
 {
@@ -718,8 +678,7 @@ enum class StencilOp : std::int32_t
 	decrementAndClamp = 4,
 	invert = 5,
 	incrementAndWrap = 6,
-	decrementAndWrap = 7,
-};
+	decrementAndWrap = 7};
 
 enum class LogicOp : std::int32_t
 {
@@ -738,8 +697,7 @@ enum class LogicOp : std::int32_t
 	copyInverted = 12,
 	orInverted = 13,
 	nand = 14,
-	set = 15,
-};
+	set = 15};
 
 enum class BlendFactor : std::int32_t
 {
@@ -761,8 +719,7 @@ enum class BlendFactor : std::int32_t
 	src1Color = 15,
 	oneMinusSrc1Color = 16,
 	src1Alpha = 17,
-	oneMinusSrc1Alpha = 18,
-};
+	oneMinusSrc1Alpha = 18};
 
 enum class BlendOp : std::int32_t
 {
@@ -770,16 +727,14 @@ enum class BlendOp : std::int32_t
 	subtract = 1,
 	reverseSubtract = 2,
 	min = 3,
-	max = 4,
-};
+	max = 4};
 
-enum class ColorComponentFlagBits : std::int32_t
+enum class ColorComponentBits : std::int32_t
 {
 	r = (1 << 0),
 	g = (1 << 1),
 	b = (1 << 2),
-	a = (1 << 3),
-};
+	a = (1 << 3)};
 
 enum class DynamicState : std::int32_t
 {
@@ -791,21 +746,18 @@ enum class DynamicState : std::int32_t
 	depthBounds = 5,
 	stencilCompareMask = 6,
 	stencilWriteMask = 7,
-	stencilReference = 8,
-};
+	stencilReference = 8};
 
 enum class Filter : std::int32_t
 {
 	nearest = 0,
 	linear = 1,
-	cubicIMG = 1000015000,
-};
+	cubicIMG = 1000015000};
 
 enum class SamplerMipmapMode : std::int32_t
 {
 	nearest = 0,
-	linear = 1,
-};
+	linear = 1};
 
 enum class SamplerAddressMode : std::int32_t
 {
@@ -813,8 +765,7 @@ enum class SamplerAddressMode : std::int32_t
 	mirroredRepeat = 1,
 	clampToEdge = 2,
 	clampToBorder = 3,
-	mirrorClampToEdge = 1000014000,
-};
+	mirrorClampToEdge = 1000014000};
 
 enum class BorderColor : std::int32_t
 {
@@ -823,8 +774,7 @@ enum class BorderColor : std::int32_t
 	floatOpaqueBlack = 2,
 	intOpaqueBlack = 3,
 	floatOpaqueWhite = 4,
-	intOpaqueWhite = 5,
-};
+	intOpaqueWhite = 5};
 
 enum class DescriptorType : std::int32_t
 {
@@ -838,39 +788,33 @@ enum class DescriptorType : std::int32_t
 	storageBuffer = 7,
 	uniformBufferDynamic = 8,
 	storageBufferDynamic = 9,
-	inputAttachment = 10,
-};
+	inputAttachment = 10};
 
-enum class DescriptorPoolCreateFlagBits : std::int32_t
+enum class DescriptorPoolCreateBits : std::int32_t
 {
-	freeDescriptorSet = (1 << 0),
-};
+	freeDescriptorSet = (1 << 0)};
 
-enum class AttachmentDescriptionFlagBits : std::int32_t
+enum class AttachmentDescriptionBits : std::int32_t
 {
-	mayAlias = (1 << 0),
-};
+	mayAlias = (1 << 0)};
 
 enum class AttachmentLoadOp : std::int32_t
 {
 	load = 0,
 	clear = 1,
-	dontCare = 2,
-};
+	dontCare = 2};
 
 enum class AttachmentStoreOp : std::int32_t
 {
 	store = 0,
-	dontCare = 1,
-};
+	dontCare = 1};
 
 enum class PipelineBindPoint : std::int32_t
 {
 	graphics = 0,
-	compute = 1,
-};
+	compute = 1};
 
-enum class AccessFlagBits : std::int32_t
+enum class AccessBits : std::int32_t
 {
 	indirectCommandRead = (1 << 0),
 	indexRead = (1 << 1),
@@ -888,66 +832,55 @@ enum class AccessFlagBits : std::int32_t
 	hostRead = (1 << 13),
 	hostWrite = (1 << 14),
 	memoryRead = (1 << 15),
-	memoryWrite = (1 << 16),
-};
+	memoryWrite = (1 << 16)};
 
-enum class DependencyFlagBits : std::int32_t
+enum class DependencyBits : std::int32_t
 {
-	byRegion = (1 << 0),
-};
+	byRegion = (1 << 0)};
 
-enum class CommandPoolCreateFlagBits : std::int32_t
+enum class CommandPoolCreateBits : std::int32_t
 {
 	transient = (1 << 0),
-	resetCommandBuffer = (1 << 1),
-};
+	resetCommandBuffer = (1 << 1)};
 
-enum class CommandPoolResetFlagBits : std::int32_t
+enum class CommandPoolResetBits : std::int32_t
 {
-	releaseResources = (1 << 0),
-};
+	releaseResources = (1 << 0)};
 
 enum class CommandBufferLevel : std::int32_t
 {
 	primary = 0,
-	secondary = 1,
-};
+	secondary = 1};
 
-enum class CommandBufferUsageFlagBits : std::int32_t
+enum class CommandBufferUsageBits : std::int32_t
 {
 	oneTimeSubmit = (1 << 0),
 	renderPassContinue = (1 << 1),
-	simultaneousUse = (1 << 2),
-};
+	simultaneousUse = (1 << 2)};
 
-enum class QueryControlFlagBits : std::int32_t
+enum class QueryControlBits : std::int32_t
 {
-	precise = (1 << 0),
-};
+	precise = (1 << 0)};
 
-enum class CommandBufferResetFlagBits : std::int32_t
+enum class CommandBufferResetBits : std::int32_t
 {
-	releaseResources = (1 << 0),
-};
+	releaseResources = (1 << 0)};
 
-enum class StencilFaceFlagBits : std::int32_t
+enum class StencilFaceBits : std::int32_t
 {
 	front = (1 << 0),
 	back = (1 << 1),
-	tAndBack = 3,
-};
+	tAndBack = 3};
 
 enum class IndexType : std::int32_t
 {
 	uint16 = 0,
-	uint32 = 1,
-};
+	uint32 = 1};
 
 enum class SubpassContents : std::int32_t
 {
 	Einline = 0,
-	secondaryCommandBuffers = 1,
-};
+	secondaryCommandBuffers = 1};
 
 
 struct ApplicationInfo
@@ -1488,7 +1421,7 @@ struct ImageCreateInfo
 	Extent3D extent {};
 	uint32_t mipLevels {};
 	uint32_t arrayLayers {};
-	SampleCountFlagBits samples {};
+	SampleCountBits samples {};
 	ImageTiling tiling {};
 	ImageUsageFlags usage {};
 	SharingMode sharingMode {};
@@ -1582,7 +1515,7 @@ struct PipelineShaderStageCreateInfo
 	StructureType sType {StructureType::pipelineShaderStageCreateInfo};
 	const void* pNext {};
 	PipelineShaderStageCreateFlags flags {};
-	ShaderStageFlagBits stage {};
+	ShaderStageBits stage {};
 	ShaderModule module {};
 	const char* pName {};
 	const SpecializationInfo* pSpecializationInfo {};
@@ -1704,7 +1637,7 @@ struct PipelineMultisampleStateCreateInfo
 	StructureType sType {StructureType::pipelineMultisampleStateCreateInfo};
 	const void* pNext {};
 	PipelineMultisampleStateCreateFlags flags {};
-	SampleCountFlagBits rasterizationSamples {};
+	SampleCountBits rasterizationSamples {};
 	Bool32 sampleShadingEnable {};
 	float minSampleShading {};
 	const SampleMask* pSampleMask {};
@@ -1968,7 +1901,7 @@ struct AttachmentDescription
 {
 	AttachmentDescriptionFlags flags {};
 	Format format {};
-	SampleCountFlagBits samples {};
+	SampleCountBits samples {};
 	AttachmentLoadOp loadOp {};
 	AttachmentStoreOp storeOp {};
 	AttachmentLoadOp stencilLoadOp {};
@@ -2372,7 +2305,7 @@ void getImageSparseMemoryRequirements(Device device, Image image, uint32_t* pSpa
 {
 	vkGetImageSparseMemoryRequirements(device, image, reinterpret_cast<uint32_t*>(pSparseMemoryRequirementCount), reinterpret_cast<VkSparseImageMemoryRequirements*>(pSparseMemoryRequirements));
 }
-void getPhysicalDeviceSparseImageFormatProperties(PhysicalDevice physicalDevice, Format format, ImageType type, SampleCountFlagBits samples, ImageUsageFlags usage, ImageTiling tiling, uint32_t* pPropertyCount, SparseImageFormatProperties* pProperties)
+void getPhysicalDeviceSparseImageFormatProperties(PhysicalDevice physicalDevice, Format format, ImageType type, SampleCountBits samples, ImageUsageFlags usage, ImageTiling tiling, uint32_t* pPropertyCount, SparseImageFormatProperties* pProperties)
 {
 	vkGetPhysicalDeviceSparseImageFormatProperties(physicalDevice, static_cast<VkFormat>(format), static_cast<VkImageType>(type), static_cast<VkSampleCountFlagBits>(samples), static_cast<VkImageUsageFlags>(usage), static_cast<VkImageTiling>(tiling), reinterpret_cast<uint32_t*>(pPropertyCount), reinterpret_cast<VkSparseImageFormatProperties*>(pProperties));
 }
@@ -2760,7 +2693,7 @@ void cmdResetQueryPool(CommandBuffer commandBuffer, QueryPool queryPool, uint32_
 {
 	vkCmdResetQueryPool(commandBuffer, queryPool, firstQuery, queryCount);
 }
-void cmdWriteTimestamp(CommandBuffer commandBuffer, PipelineStageFlagBits pipelineStage, QueryPool queryPool, uint32_t query)
+void cmdWriteTimestamp(CommandBuffer commandBuffer, PipelineStageBits pipelineStage, QueryPool queryPool, uint32_t query)
 {
 	vkCmdWriteTimestamp(commandBuffer, static_cast<VkPipelineStageFlagBits>(pipelineStage), queryPool, query);
 }
@@ -2789,7 +2722,7 @@ void cmdExecuteCommands(CommandBuffer commandBuffer, uint32_t commandBufferCount
 	vkCmdExecuteCommands(commandBuffer, commandBufferCount, reinterpret_cast<const VkCommandBuffer*>(pCommandBuffers));
 }
 
-enum class SurfaceTransformFlagBitsKHR : std::int32_t
+enum class SurfaceTransformBitsKHR : std::int32_t
 {
 	identityBit = 0,
 	rotate90Bit = 1,
@@ -2799,29 +2732,25 @@ enum class SurfaceTransformFlagBitsKHR : std::int32_t
 	horizontalMirrorRotate90Bit = 5,
 	horizontalMirrorRotate180Bit = 6,
 	horizontalMirrorRotate270Bit = 7,
-	inheritBit = 8,
-};
+	inheritBit = 8};
 
-enum class CompositeAlphaFlagBitsKHR : std::int32_t
+enum class CompositeAlphaBitsKHR : std::int32_t
 {
 	opaqueBit = 0,
 	preMultipliedBit = 1,
 	postMultipliedBit = 2,
-	inheritBit = 3,
-};
+	inheritBit = 3};
 
 enum class ColorSpaceKHR : std::int32_t
 {
-	srgbNonlinear = 0,
-};
+	srgbNonlinear = 0};
 
 enum class PresentModeKHR : std::int32_t
 {
 	immediate = 0,
 	mailbox = 1,
 	fifo = 2,
-	fifoRelaxed = 3,
-};
+	fifoRelaxed = 3};
 
 
 struct SurfaceCapabilitiesKHR
@@ -2833,7 +2762,7 @@ struct SurfaceCapabilitiesKHR
 	Extent2D maxImageExtent {};
 	uint32_t maxImageArrayLayers {};
 	SurfaceTransformFlagsKHR supportedTransforms {};
-	SurfaceTransformFlagBitsKHR currentTransform {};
+	SurfaceTransformBitsKHR currentTransform {};
 	CompositeAlphaFlagsKHR supportedCompositeAlpha {};
 	ImageUsageFlags supportedUsageFlags {};
 
@@ -2883,8 +2812,8 @@ struct SwapchainCreateInfoKHR
 	SharingMode imageSharingMode {};
 	uint32_t queueFamilyIndexCount {};
 	const uint32_t* pQueueFamilyIndices {};
-	SurfaceTransformFlagBitsKHR preTransform {};
-	CompositeAlphaFlagBitsKHR compositeAlpha {};
+	SurfaceTransformBitsKHR preTransform {};
+	CompositeAlphaBitsKHR compositeAlpha {};
 	PresentModeKHR presentMode {};
 	Bool32 clipped {};
 	SwapchainKHR oldSwapchain {};
@@ -2926,13 +2855,12 @@ Result queuePresentKHR(Queue queue, const PresentInfoKHR* pPresentInfo)
 	return static_cast<Result>(vkQueuePresentKHR(queue, reinterpret_cast<const VkPresentInfoKHR*>(pPresentInfo)));
 }
 
-enum class DisplayPlaneAlphaFlagBitsKHR : std::int32_t
+enum class DisplayPlaneAlphaBitsKHR : std::int32_t
 {
 	opaqueBit = 0,
 	globalBit = 1,
 	perPixelBit = 2,
-	perPixelPremultipliedBit = 3,
-};
+	perPixelPremultipliedBit = 3};
 
 
 struct DisplayPropertiesKHR
@@ -2999,9 +2927,9 @@ struct DisplaySurfaceCreateInfoKHR
 	DisplayModeKHR displayMode {};
 	uint32_t planeIndex {};
 	uint32_t planeStackIndex {};
-	SurfaceTransformFlagBitsKHR transform {};
+	SurfaceTransformBitsKHR transform {};
 	float globalAlpha {};
-	DisplayPlaneAlphaFlagBitsKHR alphaMode {};
+	DisplayPlaneAlphaBitsKHR alphaMode {};
 	Extent2D imageExtent {};
 
 	operator const VkDisplaySurfaceCreateInfoKHR&() const { return reinterpret_cast<const VkDisplaySurfaceCreateInfoKHR&>(*this); }
@@ -3221,23 +3149,20 @@ enum class DebugReportObjectTypeEXT : std::int32_t
 	commandPool = 25,
 	surfaceKHR = 26,
 	swapchainKHR = 27,
-	debugReport = 28,
-};
+	debugReport = 28};
 
 enum class DebugReportErrorEXT : std::int32_t
 {
 	none = 0,
-	callbackRef = 1,
-};
+	callbackRef = 1};
 
-enum class DebugReportFlagBitsEXT : std::int32_t
+enum class DebugReportBitsEXT : std::int32_t
 {
 	informationBit = 0,
 	warningBit = 1,
 	performanceWarningBit = 2,
 	errorBit = 3,
-	debugBit = 4,
-};
+	debugBit = 4};
 
 
 struct DebugReportCallbackCreateInfoEXT
@@ -3267,8 +3192,7 @@ void debugReportMessageEXT(Instance instance, DebugReportFlagsEXT flags, DebugRe
 enum class RasterizationOrderAMD : std::int32_t
 {
 	strict = 0,
-	relaxed = 1,
-};
+	relaxed = 1};
 
 
 struct PipelineRasterizationStateRasterizationOrderAMD

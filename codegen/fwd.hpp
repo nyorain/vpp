@@ -1,5 +1,3 @@
-// The MIT License
-//
 // Copyright © 2016 nyorain
 //
 // Permission is hereby granted, free of charge, to any person
@@ -57,7 +55,7 @@
 //The specification (vk.xml) itself is protected by the following license:
 
 // Copyright (c) 2015-2016 The Khronos Group Inc.
-//
+// 
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and/or associated documentation files (the
 // "Materials"), to deal in the Materials without restriction, including
@@ -65,10 +63,10 @@
 // distribute, sublicense, and/or sell copies of the Materials, and to
 // permit persons to whom the Materials are furnished to do so, subject to
 // the following conditions:
-//
+// 
 // The above copyright notice and this permission notice shall be included
 // in all copies or substantial portions of the Materials.
-//
+// 
 // THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -76,9 +74,9 @@
 // CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
-//
+// 
 // ------------------------------------------------------------------------
-//
+// 
 // This file, vk.xml, is the Vulkan API Registry. It is a critically important
 // and normative part of the Vulkan Specification, including a canonical
 // machine-readable definition of the API, parameter and member validation
@@ -86,7 +84,7 @@
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
 // maintained in the master branch of the Khronos Vulkan Github project.
-
+    
 //Automaitcally generated forward header file for the vulkan api for the nyorain/vpp library
 //Conatains forward declarations for all vulkan types. Do not edit manually.
 
@@ -218,124 +216,124 @@ enum class SystemAllocationScope : std::int32_t;
 enum class InternalAllocationType : std::int32_t;
 enum class Result : std::int32_t;
 enum class Format : std::int32_t;
-enum class FormatFeatureFlagBits : std::int32_t;
+enum class FormatFeatureBits : std::int32_t;
 enum class ImageType : std::int32_t;
 enum class ImageTiling : std::int32_t;
-enum class ImageUsageFlagBits : std::int32_t;
-enum class ImageCreateFlagBits : std::int32_t;
-enum class SampleCountFlagBits : std::int32_t;
+enum class ImageUsageBits : std::int32_t;
+enum class ImageCreateBits : std::int32_t;
+enum class SampleCountBits : std::int32_t;
 enum class PhysicalDeviceType : std::int32_t;
-enum class QueueFlagBits : std::int32_t;
-enum class MemoryPropertyFlagBits : std::int32_t;
-enum class MemoryHeapFlagBits : std::int32_t;
-enum class PipelineStageFlagBits : std::int32_t;
-enum class ImageAspectFlagBits : std::int32_t;
-enum class SparseImageFormatFlagBits : std::int32_t;
-enum class SparseMemoryBindFlagBits : std::int32_t;
-enum class FenceCreateFlagBits : std::int32_t;
+enum class QueueBits : std::int32_t;
+enum class MemoryPropertyBits : std::int32_t;
+enum class MemoryHeapBits : std::int32_t;
+enum class PipelineStageBits : std::int32_t;
+enum class ImageAspectBits : std::int32_t;
+enum class SparseImageFormatBits : std::int32_t;
+enum class SparseMemoryBindBits : std::int32_t;
+enum class FenceCreateBits : std::int32_t;
 enum class QueryType : std::int32_t;
-enum class QueryPipelineStatisticFlagBits : std::int32_t;
-enum class QueryResultFlagBits : std::int32_t;
-enum class BufferCreateFlagBits : std::int32_t;
-enum class BufferUsageFlagBits : std::int32_t;
+enum class QueryPipelineStatisticBits : std::int32_t;
+enum class QueryResultBits : std::int32_t;
+enum class BufferCreateBits : std::int32_t;
+enum class BufferUsageBits : std::int32_t;
 enum class SharingMode : std::int32_t;
 enum class ImageLayout : std::int32_t;
 enum class ImageViewType : std::int32_t;
 enum class ComponentSwizzle : std::int32_t;
-enum class PipelineCreateFlagBits : std::int32_t;
-enum class ShaderStageFlagBits : std::int32_t;
+enum class PipelineCreateBits : std::int32_t;
+enum class ShaderStageBits : std::int32_t;
 enum class VertexInputRate : std::int32_t;
 enum class PrimitiveTopology : std::int32_t;
 enum class PolygonMode : std::int32_t;
-enum class CullModeFlagBits : std::int32_t;
+enum class CullModeBits : std::int32_t;
 enum class FrontFace : std::int32_t;
 enum class CompareOp : std::int32_t;
 enum class StencilOp : std::int32_t;
 enum class LogicOp : std::int32_t;
 enum class BlendFactor : std::int32_t;
 enum class BlendOp : std::int32_t;
-enum class ColorComponentFlagBits : std::int32_t;
+enum class ColorComponentBits : std::int32_t;
 enum class DynamicState : std::int32_t;
 enum class Filter : std::int32_t;
 enum class SamplerMipmapMode : std::int32_t;
 enum class SamplerAddressMode : std::int32_t;
 enum class BorderColor : std::int32_t;
 enum class DescriptorType : std::int32_t;
-enum class DescriptorPoolCreateFlagBits : std::int32_t;
-enum class AttachmentDescriptionFlagBits : std::int32_t;
+enum class DescriptorPoolCreateBits : std::int32_t;
+enum class AttachmentDescriptionBits : std::int32_t;
 enum class AttachmentLoadOp : std::int32_t;
 enum class AttachmentStoreOp : std::int32_t;
 enum class PipelineBindPoint : std::int32_t;
-enum class AccessFlagBits : std::int32_t;
-enum class DependencyFlagBits : std::int32_t;
-enum class CommandPoolCreateFlagBits : std::int32_t;
-enum class CommandPoolResetFlagBits : std::int32_t;
+enum class AccessBits : std::int32_t;
+enum class DependencyBits : std::int32_t;
+enum class CommandPoolCreateBits : std::int32_t;
+enum class CommandPoolResetBits : std::int32_t;
 enum class CommandBufferLevel : std::int32_t;
-enum class CommandBufferUsageFlagBits : std::int32_t;
-enum class QueryControlFlagBits : std::int32_t;
-enum class CommandBufferResetFlagBits : std::int32_t;
-enum class StencilFaceFlagBits : std::int32_t;
+enum class CommandBufferUsageBits : std::int32_t;
+enum class QueryControlBits : std::int32_t;
+enum class CommandBufferResetBits : std::int32_t;
+enum class StencilFaceBits : std::int32_t;
 enum class IndexType : std::int32_t;
 enum class SubpassContents : std::int32_t;
 
 using InstanceCreateFlags = Flags<DummyEnum>;
-using FormatFeatureFlags = Flags<FormatFeatureFlagBits>;
-using ImageUsageFlags = Flags<ImageUsageFlagBits>;
-using ImageCreateFlags = Flags<ImageCreateFlagBits>;
-using SampleCountFlags = Flags<SampleCountFlagBits>;
-using QueueFlags = Flags<QueueFlagBits>;
-using MemoryPropertyFlags = Flags<MemoryPropertyFlagBits>;
-using MemoryHeapFlags = Flags<MemoryHeapFlagBits>;
+using FormatFeatureFlags = Flags<FormatFeatureBits>;
+using ImageUsageFlags = Flags<ImageUsageBits>;
+using ImageCreateFlags = Flags<ImageCreateBits>;
+using SampleCountFlags = Flags<SampleCountBits>;
+using QueueFlags = Flags<QueueBits>;
+using MemoryPropertyFlags = Flags<MemoryPropertyBits>;
+using MemoryHeapFlags = Flags<MemoryHeapBits>;
 using DeviceCreateFlags = Flags<DummyEnum>;
 using DeviceQueueCreateFlags = Flags<DummyEnum>;
-using PipelineStageFlags = Flags<PipelineStageFlagBits>;
+using PipelineStageFlags = Flags<PipelineStageBits>;
 using MemoryMapFlags = Flags<DummyEnum>;
-using ImageAspectFlags = Flags<ImageAspectFlagBits>;
-using SparseImageFormatFlags = Flags<SparseImageFormatFlagBits>;
-using SparseMemoryBindFlags = Flags<SparseMemoryBindFlagBits>;
-using FenceCreateFlags = Flags<FenceCreateFlagBits>;
+using ImageAspectFlags = Flags<ImageAspectBits>;
+using SparseImageFormatFlags = Flags<SparseImageFormatBits>;
+using SparseMemoryBindFlags = Flags<SparseMemoryBindBits>;
+using FenceCreateFlags = Flags<FenceCreateBits>;
 using SemaphoreCreateFlags = Flags<DummyEnum>;
 using EventCreateFlags = Flags<DummyEnum>;
 using QueryPoolCreateFlags = Flags<DummyEnum>;
-using QueryPipelineStatisticFlags = Flags<QueryPipelineStatisticFlagBits>;
-using QueryResultFlags = Flags<QueryResultFlagBits>;
-using BufferCreateFlags = Flags<BufferCreateFlagBits>;
-using BufferUsageFlags = Flags<BufferUsageFlagBits>;
+using QueryPipelineStatisticFlags = Flags<QueryPipelineStatisticBits>;
+using QueryResultFlags = Flags<QueryResultBits>;
+using BufferCreateFlags = Flags<BufferCreateBits>;
+using BufferUsageFlags = Flags<BufferUsageBits>;
 using BufferViewCreateFlags = Flags<DummyEnum>;
 using ImageViewCreateFlags = Flags<DummyEnum>;
 using ShaderModuleCreateFlags = Flags<DummyEnum>;
 using PipelineCacheCreateFlags = Flags<DummyEnum>;
-using PipelineCreateFlags = Flags<PipelineCreateFlagBits>;
+using PipelineCreateFlags = Flags<PipelineCreateBits>;
 using PipelineShaderStageCreateFlags = Flags<DummyEnum>;
 using PipelineVertexInputStateCreateFlags = Flags<DummyEnum>;
 using PipelineInputAssemblyStateCreateFlags = Flags<DummyEnum>;
 using PipelineTessellationStateCreateFlags = Flags<DummyEnum>;
 using PipelineViewportStateCreateFlags = Flags<DummyEnum>;
 using PipelineRasterizationStateCreateFlags = Flags<DummyEnum>;
-using CullModeFlags = Flags<CullModeFlagBits>;
+using CullModeFlags = Flags<CullModeBits>;
 using PipelineMultisampleStateCreateFlags = Flags<DummyEnum>;
 using PipelineDepthStencilStateCreateFlags = Flags<DummyEnum>;
 using PipelineColorBlendStateCreateFlags = Flags<DummyEnum>;
-using ColorComponentFlags = Flags<ColorComponentFlagBits>;
+using ColorComponentFlags = Flags<ColorComponentBits>;
 using PipelineDynamicStateCreateFlags = Flags<DummyEnum>;
 using PipelineLayoutCreateFlags = Flags<DummyEnum>;
-using ShaderStageFlags = Flags<ShaderStageFlagBits>;
+using ShaderStageFlags = Flags<ShaderStageBits>;
 using SamplerCreateFlags = Flags<DummyEnum>;
 using DescriptorSetLayoutCreateFlags = Flags<DummyEnum>;
-using DescriptorPoolCreateFlags = Flags<DescriptorPoolCreateFlagBits>;
+using DescriptorPoolCreateFlags = Flags<DescriptorPoolCreateBits>;
 using DescriptorPoolResetFlags = Flags<DummyEnum>;
 using FramebufferCreateFlags = Flags<DummyEnum>;
 using RenderPassCreateFlags = Flags<DummyEnum>;
-using AttachmentDescriptionFlags = Flags<AttachmentDescriptionFlagBits>;
+using AttachmentDescriptionFlags = Flags<AttachmentDescriptionBits>;
 using SubpassDescriptionFlags = Flags<DummyEnum>;
-using AccessFlags = Flags<AccessFlagBits>;
-using DependencyFlags = Flags<DependencyFlagBits>;
-using CommandPoolCreateFlags = Flags<CommandPoolCreateFlagBits>;
-using CommandPoolResetFlags = Flags<CommandPoolResetFlagBits>;
-using CommandBufferUsageFlags = Flags<CommandBufferUsageFlagBits>;
-using QueryControlFlags = Flags<QueryControlFlagBits>;
-using CommandBufferResetFlags = Flags<CommandBufferResetFlagBits>;
-using StencilFaceFlags = Flags<StencilFaceFlagBits>;
+using AccessFlags = Flags<AccessBits>;
+using DependencyFlags = Flags<DependencyBits>;
+using CommandPoolCreateFlags = Flags<CommandPoolCreateBits>;
+using CommandPoolResetFlags = Flags<CommandPoolResetBits>;
+using CommandBufferUsageFlags = Flags<CommandBufferUsageBits>;
+using QueryControlFlags = Flags<QueryControlBits>;
+using CommandBufferResetFlags = Flags<CommandBufferResetBits>;
+using StencilFaceFlags = Flags<StencilFaceBits>;
 
 struct ApplicationInfo;
 struct InstanceCreateInfo;
@@ -447,13 +445,13 @@ struct DrawIndirectCommand;
 
 using SurfaceKHR = VkSurfaceKHR;
 
-enum class SurfaceTransformFlagBitsKHR : std::int32_t;
-enum class CompositeAlphaFlagBitsKHR : std::int32_t;
+enum class SurfaceTransformBitsKHR : std::int32_t;
+enum class CompositeAlphaBitsKHR : std::int32_t;
 enum class ColorSpaceKHR : std::int32_t;
 enum class PresentModeKHR : std::int32_t;
 
-using SurfaceTransformFlagsKHR = Flags<SurfaceTransformFlagBitsKHR>;
-using CompositeAlphaFlagsKHR = Flags<CompositeAlphaFlagBitsKHR>;
+using SurfaceTransformFlagsKHR = Flags<SurfaceTransformBitsKHR>;
+using CompositeAlphaFlagsKHR = Flags<CompositeAlphaBitsKHR>;
 
 struct SurfaceCapabilitiesKHR;
 struct SurfaceFormatKHR;
@@ -468,9 +466,9 @@ struct PresentInfoKHR;
 using DisplayKHR = VkDisplayKHR;
 using DisplayModeKHR = VkDisplayModeKHR;
 
-enum class DisplayPlaneAlphaFlagBitsKHR : std::int32_t;
+enum class DisplayPlaneAlphaBitsKHR : std::int32_t;
 
-using DisplayPlaneAlphaFlagsKHR = Flags<DisplayPlaneAlphaFlagBitsKHR>;
+using DisplayPlaneAlphaFlagsKHR = Flags<DisplayPlaneAlphaBitsKHR>;
 using DisplayModeCreateFlagsKHR = Flags<DummyEnum>;
 using DisplaySurfaceCreateFlagsKHR = Flags<DummyEnum>;
 
@@ -536,9 +534,9 @@ using DebugReportCallbackEXT = VkDebugReportCallbackEXT;
 
 enum class DebugReportObjectTypeEXT : std::int32_t;
 enum class DebugReportErrorEXT : std::int32_t;
-enum class DebugReportFlagBitsEXT : std::int32_t;
+enum class DebugReportBitsEXT : std::int32_t;
 
-using DebugReportFlagsEXT = Flags<DebugReportFlagBitsEXT>;
+using DebugReportFlagsEXT = Flags<DebugReportBitsEXT>;
 
 struct DebugReportCallbackCreateInfoEXT;
 
