@@ -1,4 +1,6 @@
 #include <vpp/memory.hpp>
+#include <vpp/vk.hpp>
+
 #include <iostream>
 #include <algorithm>
 
@@ -58,6 +60,11 @@ void swap(MemoryMap& a, MemoryMap& b) noexcept
 	swap(a.views_, b.views_);
 }
 
+vk::MappedMemoryRange MemoryMap::mappedMemoryRange() const
+{
+	return {vkMemory(), offset(), size()};
+}
+
 const vk::DeviceMemory& MemoryMap::vkMemory() const
 {
 	return memory_->vkDeviceMemory();
@@ -89,15 +96,12 @@ void MemoryMap::invalidateRanges() const
 
 bool MemoryMap::coherent() const
 {
-	return memory().propertyFlags() & vk::MemoryPropertyFlagBits::HostCoherent;
+	return memory().propertyFlags() & vk::MemoryPropertyBits::hostCoherent;
 }
 
 void MemoryMap::unmap()
 {
-	if(memory_ && vkMemory() && ptr() && size())
-	{
-		vk::unmapMemory(memory().vkDevice(), vkMemory());
-	}
+	if(memory_ && vkMemory() && ptr() && size()) vk::unmapMemory(memory().vkDevice(), vkMemory());
 
 	memory_ = nullptr;
 	allocation_ = {};
@@ -139,13 +143,14 @@ MemoryMapView& MemoryMapView::operator=(MemoryMapView other) noexcept
 	return *this;
 }
 
+vk::MappedMemoryRange MemoryMapView::mappedMemoryRange() const
+{
+	return {vkMemory(), offset(), size()};
+}
+
 void MemoryMapView::flushRanges() const
 {
-	if(coherent())
-	{
-		std::cout << "vpp::MemoryMapView::flushRanges: called but not needed, mem coherent\n";
-		return;
-	}
+	if(coherent()) return;
 
 	auto range = mappedMemoryRange();
 	vk::flushMappedMemoryRanges(vkDevice(), 1, &range);
@@ -153,11 +158,7 @@ void MemoryMapView::flushRanges() const
 
 void MemoryMapView::invalidateRanges() const
 {
-	if(coherent())
-	{
-		std::cout << "vpp::MemoryMapView::invalidateRanges: called but not needed, mem coherent\n";
-		return;
-	}
+	if(coherent()) return;
 
 	auto range = mappedMemoryRange();
 	vk::invalidateMappedMemoryRanges(vkDevice(), 1, &range);
@@ -170,7 +171,7 @@ std::uint8_t* MemoryMapView::ptr() const
 
 bool MemoryMapView::coherent() const
 {
-	return memory().propertyFlags() & vk::MemoryPropertyFlagBits::HostCoherent;
+	return memory().propertyFlags() & vk::MemoryPropertyBits::hostCoherent;
 }
 
 void swap(MemoryMapView& a, MemoryMapView& b) noexcept
@@ -185,9 +186,9 @@ void swap(MemoryMapView& a, MemoryMapView& b) noexcept
 DeviceMemory::DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info)
 	: Resource(dev)
 {
-	typeIndex_ = info.memoryTypeIndex();
-	size_ = info.allocationSize();
-	flags_ = dev.memoryProperties().memoryTypes()[typeIndex_].propertyFlags();
+	typeIndex_ = info.memoryTypeIndex;
+	size_ = info.allocationSize;
+	flags_ = dev.memoryProperties().memoryTypes[typeIndex_].propertyFlags;
 
 	vk::allocateMemory(vkDevice(), &info, nullptr, &memory_);
 }

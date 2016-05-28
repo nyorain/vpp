@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vpp/vk.hpp>
+#include <vpp/fwd.hpp>
 #include <vpp/allocator.hpp>
 #include <vpp/commandBuffer.hpp>
 
@@ -13,7 +13,7 @@
 namespace vpp
 {
 
-//TODO: improve implementation critical sections
+//TODO: improve implementation critical sections (?)
 
 ///Able to provide DeviceMemory for the calling thread.
 class DeviceMemoryProvider : public Resource
@@ -42,7 +42,7 @@ public:
 
 	///Allocates a commandBuffer for the calling thread that matches the given requirements.
 	CommandBuffer get(std::uint32_t qfamily, vk::CommandPoolCreateFlags flags = {},
-		vk::CommandBufferLevel lvl = vk::CommandBufferLevel::Primary);
+		vk::CommandBufferLevel lvl = fwd::commandBufferLevelPrimary);
 
 	///Allocates a commandBuffer that matches the given flags.
 	// CommandBuffer get(vk::QueueFlags qflags, vk::CommandPoolCreateFlags flags = {},
@@ -52,7 +52,7 @@ public:
 	///Might be more efficient than multiple calls to get.
 	std::vector<CommandBuffer> get(std::uint32_t qfamily, unsigned int count,
 		vk::CommandPoolCreateFlags flags = {},
-		vk::CommandBufferLevel lvl = vk::CommandBufferLevel::Primary);
+		vk::CommandBufferLevel lvl = fwd::commandBufferLevelPrimary);
 
 protected:
 	std::map<std::thread::id, std::vector<CommandPool>> commandPools_;

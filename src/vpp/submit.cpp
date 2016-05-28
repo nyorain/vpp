@@ -1,9 +1,25 @@
 #include <vpp/submit.hpp>
+#include <vpp/vk.hpp>
 #include <algorithm>
 
 namespace vpp
 {
 
+///CommandSubmission declaration
+class CommandSubmission : public Resource
+{
+public:
+	vk::Queue queue;
+	vk::SubmitInfo info;
+	vk::Fence fence {};
+	bool completed {}; //fence status cache
+
+public:
+	using Resource::Resource;
+	~CommandSubmission();
+};
+
+//lock typedef for easier lock_guard using
 using Lock = std::lock_guard<std::mutex>;
 
 //CommandSubmission
@@ -20,8 +36,8 @@ void CommandExecutionState::submit()
 
 void CommandExecutionState::wait(std::uint64_t timeout)
 {
-	if(submission_->fence) vk::waitForFences(vkDevice(), 1, &submission_->fence, 0, timeout);
-	//else warning?
+	if(!submission_->fence) submit();
+	vk::waitForFences(vkDevice(), 1, &submission_->fence, 0, timeout);
 }
 
 bool CommandExecutionState::submitted() const
@@ -35,9 +51,14 @@ bool CommandExecutionState::completed() const
 	if(submission_->completed) return true;
 
 	auto result = vk::getFenceStatus(vkDevice(), submission_->fence);
-	if(result == vk::Result::Success) submission_->completed = true;
+	if(result == vk::Result::success) submission_->completed = true;
 
 	return submission_->completed;
+}
+
+const Resource& CommandExecutionState::resourceRef() const
+{
+	return *submission_;
 }
 
 //SubmitManager
@@ -96,7 +117,7 @@ void SubmitManager::submit(const CommandSubmissionPtr& ptr)
 		}
 	}
 
-	//todo: warn?
+	std::cerr << "vpp::SubmitManager::submit: could not find the given commandSubmission\n";
 }
 
 }

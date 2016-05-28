@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/vk.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/buffer.hpp>
 #include <vpp/utility/allocation.hpp>

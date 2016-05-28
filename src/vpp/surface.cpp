@@ -1,53 +1,39 @@
 #include <vpp/surface.hpp>
+#include <vpp/vk.hpp>
 #include <vpp/procAddr.hpp>
 
 namespace vpp
 {
 
-Surface::Surface(vk::Instance instance)
+Surface::Surface(vk::Instance instance, vk::SurfaceKHR surface)
+	: instance_(instance), surface_(surface)
 {
-    init(instance);
-}
-
-Surface::Surface(vk::Instance instance, vk::SurfaceKHR surface) : Surface(instance)
-{
-    surface_ = surface;
 }
 
 Surface::~Surface()
 {
-	destroy();
+    if(vkInstance() && vkSurface()) vk::destroySurfaceKHR(vkInstance(), vkSurface(), nullptr);
+    surface_ = {};
 }
 
 Surface::Surface(Surface&& other) noexcept
 {
-	this->swap(other);
+	swap(*this, other);
 }
 
 Surface& Surface::operator=(Surface&& other) noexcept
 {
-	Surface swapper(std::move(other));
-	this->swap(swapper);
+	this->~Surface();
+	swap(*this, other);
 	return *this;
 }
 
-void Surface::swap(Surface& other) noexcept
+void swap(Surface& a, Surface& b) noexcept
 {
 	using std::swap;
 
-	std::swap(instance_, other.instance_);
-	std::swap(surface_, other.surface_);
-}
-
-void Surface::init(vk::Instance instance)
-{
-    instance_ = instance;
-}
-
-void Surface::destroy()
-{
-    if(vkInstance() && vkSurface()) vk::destroySurfaceKHR(vkInstance(), vkSurface(), nullptr);
-    surface_ = {};
+	std::swap(a.instance_, b.instance_);
+	std::swap(a.surface_, b.surface_);
 }
 
 bool Surface::queueFamilySupported(vk::PhysicalDevice phdev, std::uint32_t qFamiliyIndex) const

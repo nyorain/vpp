@@ -63,6 +63,7 @@
 #include "enums.hpp"
 #include "structs.hpp"
 #include "call.hpp"
+
 namespace vk
 {
 
@@ -222,7 +223,7 @@ Result getFenceStatus(Device device, Fence fence)
 {
 	return VPP_CALL(static_cast<Result>(vkGetFenceStatus(device, fence)));
 }
-Result waitForFences(Device device, uint32_t fenceCount, const Fence* pFences, bool waitAll, uint64_t timeout)
+Result waitForFences(Device device, uint32_t fenceCount, const Fence* pFences, Bool32 waitAll, uint64_t timeout)
 {
 	return VPP_CALL(static_cast<Result>(vkWaitForFences(device, fenceCount, reinterpret_cast<const VkFence*>(pFences), waitAll, timeout)));
 }
@@ -619,7 +620,7 @@ void destroySurfaceKHR(Instance instance, SurfaceKHR surface, const AllocationCa
 {
 	vkDestroySurfaceKHR(instance, surface, reinterpret_cast<const VkAllocationCallbacks*>(pAllocator));
 }
-Result getPhysicalDeviceSurfaceSupportKHR(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, SurfaceKHR surface, bool* pSupported)
+Result getPhysicalDeviceSurfaceSupportKHR(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, SurfaceKHR surface, Bool32* pSupported)
 {
 	return VPP_CALL(static_cast<Result>(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamilyIndex, surface, reinterpret_cast<VkBool32*>(pSupported))));
 }
@@ -697,9 +698,9 @@ Result createXlibSurfaceKHR(Instance instance, const XlibSurfaceCreateInfoKHR* p
 {
 	return VPP_CALL(static_cast<Result>(vkCreateXlibSurfaceKHR(instance, reinterpret_cast<const VkXlibSurfaceCreateInfoKHR*>(pCreateInfo), reinterpret_cast<const VkAllocationCallbacks*>(pAllocator), reinterpret_cast<VkSurfaceKHR*>(pSurface))));
 }
-bool getPhysicalDeviceXlibPresentationSupportKHR(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, Display* dpy, VisualID visualID)
+Bool32 getPhysicalDeviceXlibPresentationSupportKHR(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, Display* dpy, VisualID visualID)
 {
-	return static_cast<bool>(vkGetPhysicalDeviceXlibPresentationSupportKHR(physicalDevice, queueFamilyIndex, reinterpret_cast<Display*>(dpy), visualID));
+	return static_cast<Bool32>(vkGetPhysicalDeviceXlibPresentationSupportKHR(physicalDevice, queueFamilyIndex, reinterpret_cast<Display*>(dpy), visualID));
 }
 
 #endif //VK_USE_PLATFORM_XLIB_KHR
@@ -710,9 +711,9 @@ Result createXcbSurfaceKHR(Instance instance, const XcbSurfaceCreateInfoKHR* pCr
 {
 	return VPP_CALL(static_cast<Result>(vkCreateXcbSurfaceKHR(instance, reinterpret_cast<const VkXcbSurfaceCreateInfoKHR*>(pCreateInfo), reinterpret_cast<const VkAllocationCallbacks*>(pAllocator), reinterpret_cast<VkSurfaceKHR*>(pSurface))));
 }
-bool getPhysicalDeviceXcbPresentationSupportKHR(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, xcb_connection_t* connection, xcb_visualid_t visual_id)
+Bool32 getPhysicalDeviceXcbPresentationSupportKHR(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, xcb_connection_t* connection, xcb_visualid_t visual_id)
 {
-	return static_cast<bool>(vkGetPhysicalDeviceXcbPresentationSupportKHR(physicalDevice, queueFamilyIndex, reinterpret_cast<xcb_connection_t*>(connection), visual_id));
+	return static_cast<Bool32>(vkGetPhysicalDeviceXcbPresentationSupportKHR(physicalDevice, queueFamilyIndex, reinterpret_cast<xcb_connection_t*>(connection), visual_id));
 }
 
 #endif //VK_USE_PLATFORM_XCB_KHR
@@ -723,9 +724,9 @@ Result createWaylandSurfaceKHR(Instance instance, const WaylandSurfaceCreateInfo
 {
 	return VPP_CALL(static_cast<Result>(vkCreateWaylandSurfaceKHR(instance, reinterpret_cast<const VkWaylandSurfaceCreateInfoKHR*>(pCreateInfo), reinterpret_cast<const VkAllocationCallbacks*>(pAllocator), reinterpret_cast<VkSurfaceKHR*>(pSurface))));
 }
-bool getPhysicalDeviceWaylandPresentationSupportKHR(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, wl_display* display)
+Bool32 getPhysicalDeviceWaylandPresentationSupportKHR(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, wl_display* display)
 {
-	return static_cast<bool>(vkGetPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, queueFamilyIndex, reinterpret_cast<wl_display*>(display)));
+	return static_cast<Bool32>(vkGetPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, queueFamilyIndex, reinterpret_cast<wl_display*>(display)));
 }
 
 #endif //VK_USE_PLATFORM_WAYLAND_KHR
@@ -736,9 +737,9 @@ Result createMirSurfaceKHR(Instance instance, const MirSurfaceCreateInfoKHR* pCr
 {
 	return VPP_CALL(static_cast<Result>(vkCreateMirSurfaceKHR(instance, reinterpret_cast<const VkMirSurfaceCreateInfoKHR*>(pCreateInfo), reinterpret_cast<const VkAllocationCallbacks*>(pAllocator), reinterpret_cast<VkSurfaceKHR*>(pSurface))));
 }
-bool getPhysicalDeviceMirPresentationSupportKHR(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, MirConnection* connection)
+Bool32 getPhysicalDeviceMirPresentationSupportKHR(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, MirConnection* connection)
 {
-	return static_cast<bool>(vkGetPhysicalDeviceMirPresentationSupportKHR(physicalDevice, queueFamilyIndex, reinterpret_cast<MirConnection*>(connection)));
+	return static_cast<Bool32>(vkGetPhysicalDeviceMirPresentationSupportKHR(physicalDevice, queueFamilyIndex, reinterpret_cast<MirConnection*>(connection)));
 }
 
 #endif //VK_USE_PLATFORM_MIR_KHR
@@ -758,9 +759,9 @@ Result createWin32SurfaceKHR(Instance instance, const Win32SurfaceCreateInfoKHR*
 {
 	return VPP_CALL(static_cast<Result>(vkCreateWin32SurfaceKHR(instance, reinterpret_cast<const VkWin32SurfaceCreateInfoKHR*>(pCreateInfo), reinterpret_cast<const VkAllocationCallbacks*>(pAllocator), reinterpret_cast<VkSurfaceKHR*>(pSurface))));
 }
-bool getPhysicalDeviceWin32PresentationSupportKHR(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex)
+Bool32 getPhysicalDeviceWin32PresentationSupportKHR(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex)
 {
-	return static_cast<bool>(vkGetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, queueFamilyIndex));
+	return static_cast<Bool32>(vkGetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, queueFamilyIndex));
 }
 
 #endif //VK_USE_PLATFORM_WIN32_KHR

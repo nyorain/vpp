@@ -16,6 +16,7 @@ namespace vpp
 //e.g. CommandBuffers must be destroyed in the same thread as they were constructed.
 
 class CommandPool;
+namespace fwd{ extern vk::CommandBufferLevel commandBufferLevelPrimary; }
 
 ///XXX: this class really needed?
 //CommandBuffer
@@ -59,8 +60,8 @@ public:
 	void swap(CommandPool& other) noexcept;
 
 	std::vector<CommandBuffer> allocate(std::size_t count,
-		vk::CommandBufferLevel lvl = vk::CommandBufferLevel::Primary);
-	CommandBuffer allocate(vk::CommandBufferLevel lvl = vk::CommandBufferLevel::Primary);
+		vk::CommandBufferLevel lvl = fwd::commandBufferLevelPrimary);
+	CommandBuffer allocate(vk::CommandBufferLevel lvl = fwd::commandBufferLevelPrimary);
 
 	void reset(vk::CommandPoolResetFlags flags) const;
 

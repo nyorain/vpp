@@ -1,11 +1,14 @@
 #pragma once
 
+#include <vpp/vulkan/fwd.hpp>
+
 namespace vpp
 {
 
 class Context;
 class Device;
 class Resource;
+class Queue;
 class Surface;
 class SwapChain;
 class RendererBuilder;

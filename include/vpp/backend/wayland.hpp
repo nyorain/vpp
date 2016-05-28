@@ -10,6 +10,7 @@
 namespace vpp
 {
 
+///Surface class for the wayland wsi backend.
 class WaylandSurface : public Surface
 {
 protected:
@@ -18,6 +19,18 @@ protected:
 public:
     WaylandSurface(vk::Instance instance, wl_display& display, wl_surface& surface);
     virtual ~WaylandSurface();
+};
+
+///Context class for the wayland wsi backend.
+class WaylandContext : public Context
+{
+public:
+	WaylandContext() = default;
+	WaylandContext(const CreateInfo& info, wl_display& display, wl_surface& surface);
+	virtual ~WaylandContext();
+
+protected:
+	WaylandSurface surface_;
 };
 
 }

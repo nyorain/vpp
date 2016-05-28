@@ -11,24 +11,21 @@
 namespace vpp
 {
 
-//Surface
+///Surface class for the windows wsi backend.
 class Win32Surface : public Surface
 {
-protected:
-    void initSurface(HINSTANCE hinstance, HWND hwnd);
-
 public:
 	Win32Surface() = default;
 	Win32Surface(vk::Instance instance, HWND hwnds);
     Win32Surface(vk::Instance instance, HINSTANCE hinstance, HWND hwnd);
+
+protected:
+    void initSurface(HINSTANCE hinstance, HWND hwnd);
 };
 
-//Context
+///Context class for the windows wsi backend.
 class Win32Context : public Context
 {
-protected:
-	Win32Surface surface_;
-
 public:
 	Win32Context() = default;
 	Win32Context(const CreateInfo& info, HWND hwnds);
@@ -36,6 +33,9 @@ public:
 	virtual ~Win32Context();
 
 	virtual const Surface& surface() const override { return surface_; }
+
+protected:
+	Win32Surface surface_;
 };
 
 }

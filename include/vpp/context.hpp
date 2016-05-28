@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/device.hpp>
 #include <vpp/swapChain.hpp>
@@ -13,6 +12,7 @@ namespace vpp
 {
 
 class DebugCallback;
+namespace fwd { vk::DebugReportFlagsEXT defaultDebugFlags; }
 
 //TODO: correct graphics/compute/present queue support
 //Context
@@ -22,8 +22,7 @@ public:
 	struct CreateInfo
 	{
 		vk::Extent2D size {800, 500};
-		vk::DebugReportFlagsEXT debugFlags = vk::DebugReportFlagBitsEXT::ErrorEXT |
-			vk::DebugReportFlagBitsEXT::WarningEXT;
+		vk::DebugReportFlagsEXT debugFlags = fwd::defaultDebugFlags;
 
 		std::vector<const char*> instanceExtensions;
 		std::vector<const char*> deviceExtensions;

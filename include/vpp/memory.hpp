@@ -29,11 +29,12 @@ public:
 	void remap(const Allocation& allocation);
 
 	///Makes sure the mapped data is visibile on the device.
-	///Not needed when memory is coherent, look at vkFlushMappedMemoryRanges.
+	///If memory is coherent, this function will have no effect.
 	void flushRanges() const;
 
 	///Reloads the device memory into mapped memory, i.e. makes sure writes by the device
-	//are made visible. Not needed when memory is coherent, look at vkInvalidateMappedMemoryRanges.
+	///are made visible.
+	///If the memory is coherent, this function will have no effect.
 	void invalidateRanges() const;
 
 	const vk::DeviceMemory& vkMemory() const;
@@ -42,9 +43,9 @@ public:
 	std::size_t size() const { return allocation().size; }
 	std::uint8_t* ptr() const { return static_cast<std::uint8_t*>(ptr_); }
 	const DeviceMemory& memory() const { return *memory_; }
-	bool coherent() const; 
+	bool coherent() const;
 
-	vk::MappedMemoryRange mappedMemoryRange() const { return {vkMemory(), offset(), size()}; };
+	vk::MappedMemoryRange mappedMemoryRange() const;
 
 	const DeviceMemory& resourceRef() const { return *memory_; }
 	friend void swap(MemoryMap& a, MemoryMap& b) noexcept;
@@ -95,7 +96,7 @@ public:
 	std::uint8_t* ptr() const;
 	bool coherent() const;
 
-	vk::MappedMemoryRange mappedMemoryRange() const { return {vkMemory(), offset(), size()}; };
+	vk::MappedMemoryRange mappedMemoryRange() const;
 
 	const MemoryMap& resourceRef() const { return *memoryMap_; }
 	friend void swap(MemoryMapView& a, MemoryMapView& b) noexcept;

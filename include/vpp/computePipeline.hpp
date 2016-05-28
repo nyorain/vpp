@@ -1,10 +1,11 @@
 #pragma once
 
-#include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/shader.hpp>
 #include <vpp/pipeline.hpp>
+
+#include <vector>
 
 namespace vpp
 {
@@ -24,9 +25,8 @@ public:
 	ComputePipeline(const Device& dev, const CreateInfo& createInfo);
 	~ComputePipeline() = default;
 
-	ComputePipeline(ComputePipeline&& other) noexcept : Pipeline(std::move(other)) {}
-	ComputePipeline& operator=(ComputePipeline&& other) noexcept
-		{ Pipeline::operator=(std::move(other)); return *this; }
+	ComputePipeline(ComputePipeline&& other) noexcept;
+	ComputePipeline& operator=(ComputePipeline&& other) noexcept;
 
 	void init(const Device& dev, const CreateInfo& createInfo);
 };

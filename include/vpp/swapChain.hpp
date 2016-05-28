@@ -21,27 +21,6 @@ public:
         vk::ImageView imageView;
     };
 
-protected:
-    vk::SwapchainKHR swapChain_ {};
-    vk::Format format_;
-    vk::ColorSpaceKHR colorSpace_;
-	vk::Extent2D size_;
-
-	vk::SurfaceKHR surface_ {};
-	std::vector<Buffer> buffers_;
-
-protected:
-    void init(const Device& context, vk::SurfaceKHR surface, const vk::Extent2D& size);
-
-	void initSwapChain();
-    void queryFormats();
-    Buffer createBuffer(VkImage image) const;
-    VkSwapchainCreateInfoKHR swapChainCreateInfo();
-
-	void destroy();
-	void destroyBuffers();
-	void destroySwapchain();
-
 public:
 	SwapChain() = default;
     SwapChain(const Device& device, const Surface& surface, const vk::Extent2D& size = {});
@@ -51,7 +30,13 @@ public:
 	SwapChain(SwapChain&& other) noexcept;
 	SwapChain& operator=(SwapChain&& other) noexcept;
 
+	///Resizes the swapchain to the given size. Should be called if the native window of the
+	///underlaying surface handle changes it size to make sure the swapchain fills the
+	///whole window. May invalidate all images and imageViews retrived before the resize.
 	void resize(const vk::Extent2D& size);
+
+    unsigned int acquireNextImage(vk::Semaphore presentComplete) const;
+    void present(vk::Queue queue, unsigned int currentBuffer) const;
 
     vk::SwapchainKHR vkSwapChain() const { return swapChain_; }
 	vk::SurfaceKHR vkSurface() const { return surface_; }
@@ -61,10 +46,22 @@ public:
 	const vk::Extent2D& size() const { return size_; }
     const std::vector<Buffer>& buffers() const { return buffers_; }
 
-    unsigned int acquireNextImage(vk::Semaphore presentComplete) const;
-    void present(vk::Queue queue, unsigned int currentBuffer) const;
+	friend void swap(SwapChain& a, SwapChain& b) noexcept;
 
-	void swap(SwapChain& other) noexcept;
+protected:
+	void initSwapChain();
+    void queryFormats();
+    vk::SwapchainCreateInfoKHR swapChainCreateInfo();
+	void destroyBuffers();
+
+protected:
+    vk::SwapchainKHR swapChain_ {};
+    vk::Format format_;
+    vk::ColorSpaceKHR colorSpace_;
+	vk::Extent2D size_;
+
+	vk::SurfaceKHR surface_ {};
+	std::vector<Buffer> buffers_;
 };
 
 }

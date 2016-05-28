@@ -1,10 +1,10 @@
 #pragma once
 
-#include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/utility/nonCopyable.hpp>
 
 #include <memory>
+#include <vector>
 
 namespace vpp
 {
@@ -19,15 +19,6 @@ namespace vpp
 class Device : public NonMoveable
 {
 public:
-	struct Queue
-	{
-		vk::Queue queue;
-		vk::QueueFamilyProperties properties;
-		unsigned int family;
-		unsigned int id;
-	};
-
-public:
 	Device();
     Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info);
     ~Device();
@@ -40,7 +31,7 @@ public:
     void waitIdle() const;
 
 	///Returns all available queues for the created device.
-	const std::vector<Queue>& queues() const { return queues_; }
+	const std::vector<Queue>& queues() const;
 
 	///Returns a queue for the given family or nullptr if there is none.
 	const Queue* queue(std::uint32_t family) const;
@@ -51,8 +42,8 @@ public:
 	///Returns a queue that matches the given flags or nullptr if there is none.
 	const Queue* queue(vk::QueueFlags flags) const;
 
-	const vk::PhysicalDeviceMemoryProperties& memoryProperties() const { return memoryProperties_; }
-	const vk::PhysicalDeviceProperties& properties() const { return physicalDeviceProperties_; }
+	const vk::PhysicalDeviceMemoryProperties& memoryProperties() const;
+	const vk::PhysicalDeviceProperties& properties() const;
 
 	///Returns the first memoryType for the given memoryTypeBits and flags or -1 if there is none.
 	int memoryType(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits = ~0u) const;
@@ -62,17 +53,17 @@ public:
 
 	///Returns a CommandBufferProvider that can be used to easily allocate a command buffer in the
 	///current thread.
-	CommandProvider& commandProvider() const { return *commandProvider_; }
+	CommandProvider& commandProvider() const;
 
 	///Returns a DeviceMemoryProvider that can be used to easily allocate vulkan device memory in the
 	///current thread.
-	DeviceMemoryProvider& memoryProvider() const { return *memoryProvider_; }
+	DeviceMemoryProvider& memoryProvider() const;
 
 	///Returns the submit manager for this device.
-	SubmitManager& submitManager() const { return *submitManager_; }
+	SubmitManager& submitManager() const;
 
 	///Return the default transferManager for this device.
-	TransferManager& transferManager() const { return *transferManager_; }
+	TransferManager& transferManager() const;
 
 	///Makes sure that all queued setup commandBuffers have been executed.
 	void finishSetup() const;
@@ -86,6 +77,7 @@ protected:
     vk::Device device_ {};
 
 	//all retrieved queues for the device
+	/*
 	std::vector<Queue> queues_;
 
 	//stored props
@@ -97,6 +89,10 @@ protected:
 	std::unique_ptr<DeviceMemoryProvider> memoryProvider_;
 	std::unique_ptr<SubmitManager> submitManager_;
 	std::unique_ptr<TransferManager> transferManager_;
+	*/
+
+	struct Impl;
+	std::unique_ptr<Impl> impl_;
 };
 
 }

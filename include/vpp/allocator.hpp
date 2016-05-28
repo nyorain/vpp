@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/memory.hpp>
@@ -75,8 +74,7 @@ public:
 
 	///Requests memory for the given vulkan buffer and stores a (pending) reference to it into
 	///the given entry.
-	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
-		Entry& entry);
+	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs, Entry& entry);
 
 	///Requests memory for the given vulkan image and stores a (pending) reference to it into
 	///the given entry. It additionally requires the tiling of the image to fulfill vulkans
@@ -90,7 +88,7 @@ public:
 
 	///This function will be called when a stored entry is moved.
 	///Will return false if the given entry is not found.
-	bool moveEntry(Entry& oldOne, Entry& newOne);
+	bool moveEntry(const Entry& oldOne, const Entry& newOne);
 
 	///Allocates and associated device memory for all pending requests.
 	void allocate();

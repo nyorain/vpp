@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/device.hpp>
 #include <vpp/resource.hpp>
@@ -8,7 +7,7 @@
 
 namespace vpp
 {
-	
+
 ///Vulkan Framebuffer.
 class Framebuffer : public Resource
 {

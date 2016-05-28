@@ -1,4 +1,5 @@
 #include <vpp/swapChain.hpp>
+#include <vpp/vk.hpp>
 #include <vpp/procAddr.hpp>
 #include <vpp/surface.hpp>
 #include <vpp/vulkan/vulkan.hpp>
@@ -13,45 +14,8 @@ SwapChain::SwapChain(const Device& device, const Surface& surface, const vk::Ext
 }
 
 SwapChain::SwapChain(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& size)
+	: Resource(device), surface_(surface), size_(size)
 {
-    init(device, surface, size);
-}
-
-SwapChain::~SwapChain()
-{
-	destroy();
-}
-
-SwapChain::SwapChain(SwapChain&& other) noexcept
-{
-	this->swap(other);
-}
-
-SwapChain& SwapChain::operator=(SwapChain&& other) noexcept
-{
-	SwapChain swapper(std::move(other));
-	this->swap(swapper);
-	return *this;
-}
-
-void SwapChain::swap(SwapChain& other) noexcept
-{
-	using std::swap;
-
-	swap(other.swapChain_, swapChain_);
-	swap(other.buffers_, buffers_);
-	swap(format_, other.format_);
-	swap(colorSpace_, other.colorSpace_);
-	swap(size_, other.size_);
-	swap(surface_, other.surface_);
-
-	swap(device_, other.device_);
-}
-
-void SwapChain::init(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& size)
-{
-    Resource::init(device);
-
     surface_ = surface;
 	size_ = size;
 
@@ -59,10 +23,39 @@ void SwapChain::init(const Device& device, vk::SurfaceKHR surface, const vk::Ext
 	initSwapChain();
 }
 
-void SwapChain::destroy()
+SwapChain::~SwapChain()
 {
-	destroyBuffers();
-	destroySwapchain();
+
+	if(!vkSwapChain()) return;
+
+	VPP_LOAD_DEVICE_PROC(vkDevice(), DestroySwapchainKHR);
+    fpDestroySwapchainKHR(vkDevice(), vkSwapChain(), nullptr);
+	swapChain_ = {};
+}
+
+SwapChain::SwapChain(SwapChain&& other) noexcept
+{
+	swap(*this, other);
+}
+
+SwapChain& SwapChain::operator=(SwapChain&& other) noexcept
+{
+	this->~SwapChain();
+	swap(*this, other);
+	return *this;
+}
+
+void swap(SwapChain& a, SwapChain& b) noexcept
+{
+	using std::swap;
+
+	swap(a.swapChain_, b.swapChain_);
+	swap(a.buffers_, b.buffers_);
+	swap(a.format_, b.format_);
+	swap(a.colorSpace_, b.colorSpace_);
+	swap(a.size_, b.size_);
+	swap(a.surface_, b.surface_);
+	swap(a.device_, b.device_);
 }
 
 void SwapChain::destroyBuffers()
@@ -71,28 +64,22 @@ void SwapChain::destroyBuffers()
     buffers_.clear();
 }
 
-void SwapChain::destroySwapchain()
-{
-	if(!vkSwapChain()) return;
-
-	VPP_LOAD_DEVICE_PROC(vkDevice(), DestroySwapchainKHR);
-    fpDestroySwapchainKHR(vkDevice(), vkSwapChain(), nullptr);
-	swapChain_ = {};
-}
-
 void SwapChain::initSwapChain()
 {
 	VPP_LOAD_DEVICE_PROC(vkDevice(), CreateSwapchainKHR);
 	VPP_LOAD_DEVICE_PROC(vkDevice(), GetSwapchainImagesKHR);
 	VPP_LOAD_DEVICE_PROC(vkDevice(), DestroySwapchainKHR);
 
-	destroyBuffers(); //swapChain will be destroyed later, used for oldSwapchain
+	//destory just the buffers, not the swapchain (if there is any)
+	destroyBuffers();
 
-    //create swapChain
+    //(re)create swapChain
+	//if there is already a swapChain it will be passed as the old swapchain parameter
 	auto oldSwapchain = vkSwapChain();
 
+	//create info from seperate function since it requires a lot of querying
     auto createInfo = swapChainCreateInfo();
-    fpCreateSwapchainKHR(vkDevice(), &createInfo, nullptr, &swapChain_);
+    fpCreateSwapchainKHR(vkDevice(), &createInfo.vkHandle(), nullptr, &swapChain_);
 
 	if(oldSwapchain)
 	{
@@ -100,15 +87,42 @@ void SwapChain::initSwapChain()
 		oldSwapchain = 0;
 	}
 
-    //create buffers
+    //new buffers
+	//get swapchain images
     std::uint32_t count;
     fpGetSwapchainImagesKHR(vkDevice(), vkSwapChain(), &count, nullptr);
 
     std::vector<VkImage> imgs(count);
     fpGetSwapchainImagesKHR(vkDevice(), vkSwapChain(), &count, imgs.data());
 
+	//create imageviews and insert buffers
     buffers_.reserve(count);
-    for(auto& img : imgs) buffers_.push_back(createBuffer(img));
+    for(auto& img : imgs)
+	{
+		vk::ComponentMapping components(
+			vk::ComponentSwizzle::r,
+			vk::ComponentSwizzle::g,
+			vk::ComponentSwizzle::b,
+			vk::ComponentSwizzle::a
+		);
+
+		vk::ImageSubresourceRange range{};
+		range.aspectMask = vk::ImageAspectBits::color;
+		range.levelCount = 1;
+		range.layerCount = 1;
+
+		vk::ImageViewCreateInfo info{};
+		info.format = format();
+		info.subresourceRange = range;
+		info.viewType = vk::ImageViewType::e2d;
+		info.components = components;
+		info.image = img;
+
+	    VkImageView view;
+	    vk::createImageView(vkDevice(), &info, nullptr, &view);
+
+		buffers_.push_back({img, view});
+	}
 }
 
 void SwapChain::resize(const vk::Extent2D& size)
@@ -125,56 +139,26 @@ void SwapChain::queryFormats()
     uint32_t count;
     fpGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(), vkSurface(), &count, nullptr);
 
-	if(!count)
-	{
-		throw std::runtime_error("SwapChain::queryFormats: Surface has no valid formats.");
-	}
+	if(!count) throw std::runtime_error("SwapChain::queryFormats: Surface has no valid formats.");
 
     std::vector<vk::SurfaceFormatKHR> formats(count);
     fpGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(), vkSurface(), &count,
 		reinterpret_cast<VkSurfaceFormatKHR*>(formats.data()));
 
-	//choose best one
-    if(formats.size() == 1 && formats[0].format() == vk::Format::Undefined)
+    if(formats.size() == 1 && formats[0].format == vk::Format::undefined)
 	{
-		format_ = vk::Format::B8G8R8A8Unorm; //no preferred format from surface
+		format_ = vk::Format::b8g8r8a8Unorm; //no preferred format from surface
 	}
 	else
 	{
-		format_ = formats[0].format();
+		//TODO: more advanced quering which format to choose
+		format_ = formats[0].format;
 	}
 
-	colorSpace_ = formats[0].colorSpace();
+	colorSpace_ = formats[0].colorSpace;
 }
 
-SwapChain::Buffer SwapChain::createBuffer(VkImage img) const
-{
-	vk::ComponentMapping components(
-		vk::ComponentSwizzle::R,
-		vk::ComponentSwizzle::G,
-		vk::ComponentSwizzle::B,
-		vk::ComponentSwizzle::A
-	);
-
-	vk::ImageSubresourceRange range{};
-	range.aspectMask(vk::ImageAspectFlagBits::Color);
-	range.levelCount(1);
-	range.layerCount(1);
-
-	vk::ImageViewCreateInfo info{};
-	info.format(format());
-	info.subresourceRange(range);
-	info.viewType(vk::ImageViewType::e2D);
-	info.components(components);
-	info.image(img);
-
-    VkImageView view;
-    vk::createImageView(vkDevice(), &info, nullptr, &view);
-
-    return {img, view};
-}
-
-VkSwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
+vk::SwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
 {
 	VPP_LOAD_INSTANCE_PROC(vkInstance(), GetPhysicalDeviceSurfacePresentModesKHR);
 	VPP_LOAD_INSTANCE_PROC(vkInstance(), GetPhysicalDeviceSurfaceCapabilitiesKHR);
@@ -187,17 +171,17 @@ VkSwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
     fpGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(), vkSurface(), &count,
 		reinterpret_cast<VkPresentModeKHR*>(presentModes.data()));
 
-    vk::PresentModeKHR presentMode = vk::PresentModeKHR::FifoKHR;
+    auto presentMode = vk::PresentModeKHR::fifo;
     for(auto& mode : presentModes)
     {
-        if(mode == vk::PresentModeKHR::MailboxKHR)
+        if(mode == vk::PresentModeKHR::mailbox)
         {
-            presentMode = vk::PresentModeKHR::MailboxKHR;
+            presentMode = mode;
             break;
         }
-        else if(mode == vk::PresentModeKHR::ImmediateKHR)
+        else if(mode == vk::PresentModeKHR::immediate)
         {
-            presentMode = vk::PresentModeKHR::ImmediateKHR;
+            presentMode = mode;
         }
     }
 
@@ -206,35 +190,35 @@ VkSwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
 	fpGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(), vkSurface(), &surfCaps.vkHandle());
 
     //size
-    if(surfCaps.currentExtent().width() > 1)
-        size_ = surfCaps.currentExtent();
+    if(surfCaps.currentExtent.width > 1)
+        size_ = surfCaps.currentExtent;
 
     //number of images
-    std::uint32_t imagesCount = surfCaps.minImageCount() + 1;
-    if((surfCaps.maxImageCount() > 0) && (imagesCount > surfCaps.maxImageCount()))
-        imagesCount = surfCaps.maxImageCount();
+    std::uint32_t imagesCount = surfCaps.minImageCount + 1;
+    if((surfCaps.maxImageCount > 0) && (imagesCount > surfCaps.maxImageCount))
+        imagesCount = surfCaps.maxImageCount;
 
     //transform
-    auto preTransform = surfCaps.currentTransform();
-    if (surfCaps.supportedTransforms() & vk::SurfaceTransformFlagBitsKHR::IdentityKHR)
-        preTransform = vk::SurfaceTransformFlagBitsKHR::IdentityKHR;
+    auto preTransform = surfCaps.currentTransform;
+    if (surfCaps.supportedTransforms & vk::SurfaceTransformBitsKHR::identity)
+        preTransform = vk::SurfaceTransformBitsKHR::identity;
 
 	//createInfo
-    vk::SwapchainCreateInfoKHR ret{};
-    ret.surface(vkSurface());
-    ret.minImageCount(imagesCount);
-    ret.imageExtent(size_);
-    ret.imageUsage(vk::ImageUsageFlagBits::ColorAttachment);
-    ret.preTransform(preTransform);
-    ret.imageArrayLayers(1);
-    ret.queueFamilyIndexCount(0);
-    ret.pQueueFamilyIndices(nullptr);
-    ret.clipped(true);
-	ret.oldSwapchain(vkSwapChain());
-    ret.compositeAlpha(vk::CompositeAlphaFlagBitsKHR::OpaqueKHR);
-    ret.imageFormat(format());
-    ret.imageColorSpace(colorSpace());
-    ret.presentMode(presentMode);
+    vk::SwapchainCreateInfoKHR ret;
+    ret.surface = vkSurface();
+    ret.minImageCount = imagesCount;
+    ret.imageExtent = size_;
+    ret.imageUsage = vk::ImageUsageBits::colorAttachment;
+    ret.preTransform = preTransform;
+    ret.imageArrayLayers = 1;
+    ret.queueFamilyIndexCount = 0;
+    ret.pQueueFamilyIndices = nullptr;
+    ret.clipped = true;
+	ret.oldSwapchain = vkSwapChain();
+    ret.compositeAlpha = vk::CompositeAlphaBitsKHR::opaque;
+    ret.imageFormat = format();
+    ret.imageColorSpace = colorSpace();
+    ret.presentMode = presentMode;
 
     return ret;
 }
@@ -253,9 +237,9 @@ void SwapChain::present(vk::Queue queue, std::uint32_t currentBuffer) const
 	VPP_LOAD_DEVICE_PROC(vkDevice(), QueuePresentKHR);
 
     vk::PresentInfoKHR presentInfo {};
-    presentInfo.swapchainCount(1);
-    presentInfo.pSwapchains(&swapChain_);
-    presentInfo.pImageIndices(&currentBuffer);
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &swapChain_;
+    presentInfo.pImageIndices = &currentBuffer;
 
     fpQueuePresentKHR(queue, &presentInfo.vkHandle());
 }

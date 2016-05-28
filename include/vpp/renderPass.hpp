@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 
@@ -13,20 +12,6 @@ namespace vpp
 ///Stores its description information.
 class RenderPass : public Resource
 {
-protected:
-	vk::RenderPass renderPass_ {};
-
-	std::vector<vk::AttachmentDescription> attachments_;
-	std::vector<vk::SubpassDescription> subpasses_;
-	std::vector<vk::SubpassDependency> dependencies_;
-	std::vector<vk::AttachmentReference> references_;
-
-protected:
-	void init(const Device& dev, const vk::RenderPassCreateInfo& info);
-	void initInfos(const vk::RenderPassCreateInfo& info);
-
-	void destroy();
-
 public:
 	RenderPass() = default;
 	RenderPass(const Device& dev, const vk::RenderPassCreateInfo& info);
@@ -36,14 +21,25 @@ public:
 	RenderPass(RenderPass&& other) noexcept;
 	RenderPass& operator=(RenderPass&& other) noexcept;
 
-	void swap(RenderPass& other) noexcept;
-
-	vk::RenderPass vkRenderPass() const { return renderPass_; }
-
 	const std::vector<vk::AttachmentDescription>& attachments() const { return attachments_; }
 	const std::vector<vk::SubpassDependency>& dependencies() const { return dependencies_; }
 	const std::vector<vk::SubpassDescription>& subpasses() const { return subpasses_; }
 	const std::vector<vk::AttachmentReference>& references() const { return references_; }
+
+	vk::RenderPass vkRenderPass() const { return renderPass_; }
+
+	friend void swap(RenderPass& a, RenderPass& b) noexcept;
+
+protected:
+	void initInfos(const vk::RenderPassCreateInfo& info);
+
+protected:
+	vk::RenderPass renderPass_ {};
+
+	std::vector<vk::AttachmentDescription> attachments_;
+	std::vector<vk::SubpassDescription> subpasses_;
+	std::vector<vk::SubpassDependency> dependencies_;
+	std::vector<vk::AttachmentReference> references_;
 };
 
 ///Vulkan RenderPass Instance, i.e. a commandbuffer recording session during a render pass.
@@ -68,6 +64,5 @@ public:
 	unsigned int currentSubpass() const { return currentSubpass_; }
 	void nextSubpass();
 };
-
 
 }

@@ -172,7 +172,7 @@ bool DeviceMemoryAllocator::removeRequest(const Entry& entry)
 	return false;
 }
 
-bool DeviceMemoryAllocator::moveEntry(Entry& oldOne, Entry& newOne)
+bool DeviceMemoryAllocator::moveEntry(const Entry& oldOne, const Entry& newOne)
 {
 	//check buffer
 	for(auto& reqs : bufferRequirements_) {

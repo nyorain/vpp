@@ -2,7 +2,8 @@
 
 #include <string>
 #include <fstream>
-#include <vector>
+#include <cmath>
+#include <cstring>
 
 namespace vpp
 {
@@ -11,7 +12,7 @@ namespace vpp
 namespace
 {
 
-std::vector<char> readFile(const std::string& filename, bool binary)
+std::vector<std::uint32_t> readFile(const std::string& filename, bool binary)
 {
 	 auto openmode = std::ios::ate;
 	 if(binary) openmode |= std::ios::binary;
@@ -26,8 +27,9 @@ std::vector<char> readFile(const std::string& filename, bool binary)
 	auto size = ifs.tellg();
 	ifs.seekg(0, std::ios::beg);
 
-	std::vector<char> buffer(size);
-	if(!ifs.read(buffer.data(), size))
+	std::vector<std::uint32_t> buffer(std::ceil(size / 4));
+	auto data = reinterpret_cast<char*>(buffer.data());
+	if(!ifs.read(data, size))
 	{
 		std::cerr << "vpp::readFile: failed to read " << filename << ", " << strerror(errno) << "\n";
 		return {};
@@ -51,63 +53,45 @@ vk::ShaderModule ShaderStage::loadModule(vk::Device device, const std::string& f
 	}
 
 	vk::ShaderModuleCreateInfo moduleCreateInfo;
-	moduleCreateInfo.codeSize(code.size());
-	moduleCreateInfo.pCode(reinterpret_cast<std::uint32_t*>(code.data()));
+	moduleCreateInfo.codeSize = code.size();
+	moduleCreateInfo.pCode = code.data();
 
 	vk::createShaderModule(device, &moduleCreateInfo, nullptr, &module);
 	return module;
 }
 
 //stage
-ShaderStage::ShaderStage(const Device& device, const CreateInfo& info)
+ShaderStage::ShaderStage(const Device& device, const CreateInfo& info) : Resource(device)
 {
-	init(device, info);
+	stageInfo_.stage = info.stage;
+	stageInfo_.pSpecializationInfo = info.specializationInfo;
+	stageInfo_.pName = info.entry.c_str();
+	stageInfo_.module = loadModule(vkDevice(), info.filename);
 }
 
 ShaderStage::~ShaderStage()
 {
-	destroy();
+	if(stageInfo_.module) vk::destroyShaderModule(vkDevice(), stageInfo_.module, nullptr);
+	stageInfo_ = {};
 }
 
 ShaderStage::ShaderStage(ShaderStage&& other) noexcept
 {
-	using std::swap;
-
-	swap(device_, other.device_);
-	swap(stageInfo_, other.stageInfo_);
+	swap(*this, other);
 }
 
 ShaderStage& ShaderStage::operator=(ShaderStage&& other) noexcept
 {
-	destroy();
-
-	using std::swap;
-
-	swap(device_, other.device_);
-	swap(stageInfo_, other.stageInfo_);
-
+	this->~ShaderStage();
+	swap(*this, other);
 	return *this;
 }
 
-void ShaderStage::init(const Device& device, const CreateInfo& info)
+void swap(ShaderStage& a, ShaderStage& b) noexcept
 {
-	destroy();
-	Resource::init(device);
-
-	stageInfo_.stage(info.stage);
-	stageInfo_.pSpecializationInfo(info.specializationInfo);
-	stageInfo_.pName(info.entry.c_str());
-	stageInfo_.module(loadModule(vkDevice(), info.filename));
-}
-
-void ShaderStage::destroy()
-{
-	if(stageInfo_.module())
-	{
-		vk::destroyShaderModule(vkDevice(), stageInfo_.module(), nullptr);
-	}
-
-	stageInfo_ = vk::PipelineShaderStageCreateInfo {};
+	using std::swap;
+	swap(a.device_, b.device_);
+	swap(a.stageInfo_, b.stageInfo_);
 }
 
 //shader class
@@ -115,17 +99,6 @@ ShaderProgram::ShaderProgram(const Device& device, const std::vector<ShaderStage
 	: Resource(device)
 {
 	addStages(infos);
-}
-
-void ShaderProgram::init(const Device& device, const std::vector<ShaderStage::CreateInfo>& infos)
-{
-	Resource::init(device);
-	addStages(infos);
-}
-
-void ShaderProgram::destroy()
-{
-	stages_.clear();
 }
 
 void ShaderProgram::addStage(const ShaderStage::CreateInfo& createInfo)

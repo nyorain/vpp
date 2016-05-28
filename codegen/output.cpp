@@ -612,7 +612,7 @@ std::string CCOutputGenerator::enumName(const Enum& e, const std::string& name, 
 		if(std::string(word) == ret)
 		{
 			ret.insert(0, 1, 'e');
-			ret[0] = std::toupper(ret[0], std::locale());
+			ret[1] = std::toupper(ret[1], std::locale());
 			break;
 		}
 	}

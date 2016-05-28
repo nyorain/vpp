@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include <vpp/fwd.hpp>
 
 #include <iostream>
 #include <stdexcept>
@@ -19,7 +19,7 @@ namespace detail
 }
 
 
-inline PFN_vkVoidFunction instanceProc(VkInstance instance, const std::string& name)
+inline vk::PfnVoidFunction instanceProc(VkInstance instance, const std::string& name)
 {
     auto it = detail::instanceProcs[instance].find(name);
     if(it == detail::instanceProcs[instance].cend())
@@ -37,7 +37,7 @@ inline PFN_vkVoidFunction instanceProc(VkInstance instance, const std::string& n
     return it->second;
 }
 
-inline PFN_vkVoidFunction deviceProc(VkDevice device, const std::string& name)
+inline vk::PfnVoidFunction deviceProc(VkDevice device, const std::string& name)
 {
     auto it = detail::deviceProcs[device].find(name);
     if(it == detail::deviceProcs[device].cend())

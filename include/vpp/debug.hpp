@@ -1,14 +1,14 @@
 #pragma once
 
-#include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
+#include <vector>
 
 namespace vpp
 {
 
 //flags
 /*
-vk::DebugReportFlagBitsEXT::ErrorEXT 
+vk::DebugReportFlagBitsEXT::ErrorEXT
 vk::DebugReportFlagBitsEXT::WarningEXT
 vk::DebugReportFlagBitsEXT::InformationEXT
 vk::DebugReportFlagBitsEXT::DebugEXT

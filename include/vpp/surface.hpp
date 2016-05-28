@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vpp/vk.hpp>
+#include <vpp/fwd.hpp>
 
 #include <vector>
 #include <string>
@@ -9,21 +9,15 @@
 namespace vpp
 {
 
+///Base class for vulkan surfaces.
+///The different backend have their own surface classes derived from this one.
+///There is only a vulkan instance needed to create a Surface, so it is not considered a
+///Resource class.
 class Surface
 {
-protected:
-    vk::Instance instance_ {};
-    vk::SurfaceKHR surface_ {};
-
-protected:
-	Surface() = default;
-    Surface(vk::Instance instance);
-
-    void init(vk::Instance instance);
-    void destroy();
-
 public:
-    Surface(VkInstance instance, VkSurfaceKHR surface);
+	Surface() = default;
+    Surface(vk::Instance instance, vk::SurfaceKHR surface);
     virtual ~Surface();
 
 	Surface(Surface&& other) noexcept;
@@ -32,14 +26,21 @@ public:
     vk::Instance vkInstance() const { return instance_; }
     vk::SurfaceKHR vkSurface() const { return surface_; }
 
+	///Returns whether the surface suppports the given queue family.
     bool queueFamilySupported(vk::PhysicalDevice phdev, std::uint32_t qFamiliyIndex) const;
+
+	///Returns all supported queue families.
     std::vector<std::uint32_t> supportedQueueFamilies(vk::PhysicalDevice phdev) const;
 
     vk::SurfaceCapabilitiesKHR capabilities(vk::PhysicalDevice phdev) const;
     std::vector<vk::SurfaceFormatKHR> formats(vk::PhysicalDevice phdev) const;
     std::vector<vk::PresentModeKHR> presentModes(vk::PhysicalDevice phdev) const;
 
-	void swap(Surface& other) noexcept;
+	friend void swap(Surface& a, Surface& b) noexcept;
+
+protected:
+    vk::Instance instance_ {};
+    vk::SurfaceKHR surface_ {};
 };
 
 }

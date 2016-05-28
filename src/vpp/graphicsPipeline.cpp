@@ -1,7 +1,10 @@
 #include <vpp/graphicsPipeline.hpp>
+#include <vpp/vk.hpp>
 #include <vpp/context.hpp>
 #include <vpp/shader.hpp>
 #include <vpp/buffer.hpp>
+
+#include <utility>
 
 namespace vpp
 {
@@ -11,13 +14,12 @@ GraphicsPipeline::StatesCreateInfo::StatesCreateInfo(const vk::Viewport& viewpor
 {
 	//needed data
 	blendAttachments_.emplace_back();
-	blendAttachments_.back().blendEnable(false);
-	blendAttachments_.back().colorWriteMask(
-		vk::ColorComponentFlagBits::R |
-		vk::ColorComponentFlagBits::G |
-		vk::ColorComponentFlagBits::B |
-		vk::ColorComponentFlagBits::A
-	);
+	blendAttachments_.back().blendEnable = false;
+	blendAttachments_.back().colorWriteMask =
+		vk::ColorComponentBits::r |
+		vk::ColorComponentBits::g |
+		vk::ColorComponentBits::b |
+		vk::ColorComponentBits::a;
 
 	viewports_.emplace_back(viewportinfo);
 
@@ -64,12 +66,6 @@ GraphicsPipeline::StatesCreateInfo::StatesCreateInfo(const vk::Viewport& viewpor
 //pipeline
 GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& createInfo)
 {
-	init(device, createInfo);
-}
-
-void GraphicsPipeline::init(const Device& device, const CreateInfo& createInfo)
-{
-	destroy();
 	Pipeline::init(device);
 
 	//vertexInfo
@@ -150,6 +146,16 @@ void GraphicsPipeline::init(const Device& device, const CreateInfo& createInfo)
 	pipelineInfo.pTessellationState(nullptr);
 
 	vk::createGraphicsPipelines(vkDevice(), 0, 1, &pipelineInfo, nullptr, &pipeline_);
+}
+
+GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other) noexcept : Pipeline(std::move(other))
+{
+}
+
+GraphicsPipeline& GraphicsPipeline::operator=(GraphicsPipeline&& other) noexcept
+{
+	Pipeline::operator=(std::move(other));
+	return *this;
 }
 
 }

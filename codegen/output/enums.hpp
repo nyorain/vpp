@@ -709,13 +709,13 @@ enum class StencilOp : std::int32_t
 enum class LogicOp : std::int32_t
 {
 	clear = 0,
-	Eand = 1,
+	eAnd = 1,
 	andReverse = 2,
 	copy = 3,
 	andInverted = 4,
 	noOp = 5,
-	Exor = 6,
-	Eor = 7,
+	eXor = 6,
+	eOr = 7,
 	nor = 8,
 	equivalent = 9,
 	invert = 10,
@@ -941,7 +941,7 @@ enum class IndexType : std::int32_t
 
 enum class SubpassContents : std::int32_t
 {
-	Einline = 0,
+	eInline = 0,
 	secondaryCommandBuffers = 1
 };
 

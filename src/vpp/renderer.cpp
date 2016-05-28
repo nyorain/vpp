@@ -1,6 +1,8 @@
 #include <vpp/renderer.hpp>
+#include <vpp/vk.hpp>
 #include <vpp/swapChain.hpp>
 #include <vpp/surface.hpp>
+#include <vpp/queue.hpp>
 
 #include <stdexcept>
 
@@ -234,11 +236,11 @@ void SwapChainRenderer::render()
 	submitInfo.commandBufferCount(1);
 	submitInfo.pCommandBuffers(&renderBuffers_[currentBuffer].commandBuffer);
 
-	vk::queueSubmit(vkQueue(), 1, &submitInfo, 0);
-    swapChain().present(vkQueue(), currentBuffer);
+	vk::queueSubmit(info_.queue->vkQueue(), 1, &submitInfo, 0);
+    swapChain().present(info_.queue->vkQueue(), currentBuffer);
 
     vk::destroySemaphore(vkDevice(), presentComplete, nullptr);
-	vk::queueWaitIdle(vkQueue());
+	vk::queueWaitIdle(info_.queue->vkQueue());
 }
 
 }

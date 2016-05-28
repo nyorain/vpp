@@ -14,18 +14,7 @@ namespace vpp
 ///A submission for executing work on the device.
 ///If the submission was not yet submitted the fence member is 0.
 ///Internally used by CommandExecutionState and SubmitManager.
-class CommandSubmission : public Resource
-{
-public:
-	vk::Queue queue;
-	vk::SubmitInfo info;
-	vk::Fence fence {};
-	bool completed {}; //fence status cache
-
-public:
-	using Resource::Resource;
-	~CommandSubmission();
-};
+class CommandSubmission;
 
 ///Typedef for a shared Submission ptr, since this class is ususally used as shared ptr.
 using CommandSubmissionPtr = std::shared_ptr<CommandSubmission>;
@@ -54,7 +43,7 @@ public:
 	///Returns whether execution of the associated commands have been finished.
 	bool completed() const;
 
-	const Resource& resourceRef() const { return *submission_; }
+	const Resource& resourceRef() const;
 
 protected:
 	CommandSubmissionPtr submission_;

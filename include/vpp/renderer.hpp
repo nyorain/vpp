@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/framebuffer.hpp>
@@ -39,7 +38,7 @@ public:
 	struct CreateInfo
 	{
 		const RenderPass* renderPass = nullptr;
-		Device::Queue queue {};
+		Queue* queue {};
 		std::vector<ViewableImage::CreateInfo> staticAttachments;
 	};
 
@@ -72,7 +71,6 @@ public:
 
 	vk::CommandPool vkCommandPool() const { return commandPool_; }
 	vk::RenderPass vkRenderPass() const { return renderPass().vkRenderPass(); }
-	vk::Queue vkQueue()	const { return info().queue.queue; }
 
 	void destroy();
 	friend void swap(SwapChainRenderer& a, SwapChainRenderer& b) noexcept;

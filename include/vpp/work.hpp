@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/vk.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/submit.hpp>
 #include <vpp/commandBuffer.hpp>

@@ -1,4 +1,5 @@
 #include <vpp/pipeline.hpp>
+#include <vpp/vk.hpp>
 
 namespace vpp
 {
@@ -85,14 +86,15 @@ DescriptorSet::DescriptorSet(DescriptorSet&& other) noexcept
 
 DescriptorSet& DescriptorSet::operator=(DescriptorSet&& other) noexcept
 {
-	destroy();
+	this->~DescriptorSet();
 	this->swap(other);
 	return *this;
 }
 
 DescriptorSet::~DescriptorSet()
 {
-	destroy();
+	layout_ = nullptr;
+	descriptorSet_ = {};
 }
 
 void DescriptorSet::swap(DescriptorSet& other) noexcept
@@ -104,39 +106,16 @@ void DescriptorSet::swap(DescriptorSet& other) noexcept
 	swap(device_, other.device_);
 }
 
-void DescriptorSet::destroy()
-{
-	//what to do here? check if it can be freed?
-
-	layout_ = nullptr;
-	descriptorSet_ = {};
-}
-
-
-void DescriptorSet::writeImages(std::size_t binding,
-	const std::vector<vk::DescriptorImageInfo>& updates) const
-{
-
-}
-void DescriptorSet::writeBuffers(std::size_t binding,
-	const std::vector<vk::DescriptorBufferInfo>& updates, vk::DescriptorType type) const
-{
-	vk::WriteDescriptorSet writeDescriptorSet;
-	writeDescriptorSet.dstSet(descriptorSet_);
-	writeDescriptorSet.descriptorCount(updates.size());
-	writeDescriptorSet.descriptorType(type);
-	writeDescriptorSet.pBufferInfo(updates.data());
-	writeDescriptorSet.dstBinding(binding);
-
-	vk::updateDescriptorSets(vkDevice(), 1, &writeDescriptorSet, 0, nullptr);
-}
-
-void DescriptorSet::writeBufferViews(std::size_t binding,
-	const std::vector<vk::BufferView>& updates) const
+void DescriptorSet::update(const std::vector<vk::WriteDescriptorSet>& writes,
+	const std::vector<vk::CopyDescriptorSets>& copies)
 {
 
 }
 
+void DescriptorSet::update(const std::vector<vk::CopyDescriptorSets>& copies)
+{
+
+}
 
 //Pipeline
 Pipeline::Pipeline(const Device& dev) : Resource(dev)

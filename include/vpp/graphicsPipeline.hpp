@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/memory.hpp>
@@ -8,6 +7,7 @@
 #include <vpp/pipeline.hpp>
 
 #include <memory>
+#include <vector>
 
 namespace vpp
 {
@@ -55,11 +55,8 @@ public:
 	GraphicsPipeline(const Device& device, const CreateInfo& createInfo);
 	~GraphicsPipeline() = default;
 
-	GraphicsPipeline(GraphicsPipeline&& other) noexcept : Pipeline(std::move(other)) {}
-	GraphicsPipeline& operator=(GraphicsPipeline&& other) noexcept
-		{ Pipeline::operator=(std::move(other)); return *this; }
-
-	void init(const Device& context, const CreateInfo& createInfo);
+	GraphicsPipeline(GraphicsPipeline&& other) noexcept;
+	GraphicsPipeline& operator=(GraphicsPipeline&& other) noexcept;
 };
 
 }
