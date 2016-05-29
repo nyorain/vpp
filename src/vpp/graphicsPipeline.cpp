@@ -7,60 +7,60 @@
 #include <utility>
 
 namespace vpp
-{
+  
 
 //info default ctor
 GraphicsPipeline::StatesCreateInfo::StatesCreateInfo(const vk::Viewport& viewportinfo)
 {
 	//needed data
-	blendAttachments_.emplace_back();
-	blendAttachments_.back().blendEnable = false;
-	blendAttachments_.back().colorWriteMask =
+	blendAttachments.emplace_back();
+	blendAttachments.back().blendEnable = false;
+	blendAttachments.back().colorWriteMask =
 		vk::ColorComponentBits::r |
 		vk::ColorComponentBits::g |
 		vk::ColorComponentBits::b |
 		vk::ColorComponentBits::a;
 
-	viewports_.emplace_back(viewportinfo);
+	viewports.emplace_back(viewportinfo);
 
 	vk::Extent2D extent(viewportinfo.width(), viewportinfo.height());
-	scissors_.push_back({{0, 0}, extent});
+	scissors.push_back({{0, 0}, extent});
 
 	//structs
 	vk::StencilOpState stencil;
-	stencil.failOp(vk::StencilOp::Keep);
-	stencil.passOp(vk::StencilOp::Keep);
-	stencil.compareOp(vk::CompareOp::Always);
+	stencil.failOp = vk::StencilOp::keep;
+	stencil.passOp = vk::StencilOp::keep;
+	stencil.compareOp = vk::CompareOp::always;
 
 	//fill
-	inputAssembly.topology(vk::PrimitiveTopology::TriangleList);
+	inputAssembly.topology = vk::PrimitiveTopology::triangleList;
 
-	rasterization.polygonMode(vk::PolygonMode::Fill);
-	rasterization.cullMode(vk::CullModeFlagBits::Back);
-	rasterization.frontFace(vk::FrontFace::CounterClockwise);
-	rasterization.depthClampEnable(true);
-	rasterization.rasterizerDiscardEnable(false);
-	rasterization.depthBiasEnable(false);
-	rasterization.lineWidth(1.f);
+	rasterization.polygonMode = vk::PolygonMode::fill;
+	rasterization.cullMode = vk::CullModeFlagBits::back;
+	rasterization.frontFace = vk::FrontFace::counterClockwise;
+	rasterization.depthClampEnable = true;
+	rasterization.rasterizerDiscardEnable = false;
+	rasterization.depthBiasEnable = false;
+	rasterization.lineWidth = 1.f;
 
-	colorBlend.attachmentCount(blendAttachments_.size());
-	colorBlend.pAttachments(blendAttachments_.data());
+	colorBlend.attachmentCount = blendAttachments_.size();
+	colorBlend.pAttachments = blendAttachments_.data();
 
-	viewport.viewportCount(viewports_.size());
-	viewport.pViewports(viewports_.data());
-	viewport.scissorCount(scissors_.size());
-	viewport.pScissors(scissors_.data());
+	viewport.viewportCount = viewports_.size();
+	viewport.pViewports = viewports_.data();
+	viewport.scissorCount = scissors_.size();
+	viewport.pScissors = scissors_.data();
 
-	depthStencil.depthTestEnable(true);
-	depthStencil.depthWriteEnable(true);
-	depthStencil.depthCompareOp(vk::CompareOp::LessOrEqual);
-	depthStencil.depthBoundsTestEnable(false);
-	depthStencil.stencilTestEnable(false);
-	depthStencil.back(stencil);
-	depthStencil.front(stencil);
+	depthStencil.depthTestEnable = true;
+	depthStencil.depthWriteEnable = true;
+	depthStencil.depthCompareOp = vk::CompareOp::lessOrEqual;
+	depthStencil.depthBoundsTestEnable = false;
+	depthStencil.stencilTestEnable = false;
+	depthStencil.back = stencil;
+	depthStencil.front = stencil;
 
-	multisample.pSampleMask(nullptr);
-	multisample.rasterizationSamples(vk::SampleCountFlagBits::e1);
+	multisample.pSampleMask = nullptr;
+	multisample.rasterizationSamples = vk::SampleCountFlagBits::e1;
 }
 
 //pipeline
@@ -90,23 +90,23 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 		for(auto& attribute : layout->attributes)
 		{
 			attributeDescriptions.emplace_back();
-			attributeDescriptions.back().location(location++);
-			attributeDescriptions.back().binding(layout->binding);
-			attributeDescriptions.back().format(attribute);
-			attributeDescriptions.back().offset(offset);
+			attributeDescriptions.back().location = location++;
+			attributeDescriptions.back().binding = layout->binding;
+			attributeDescriptions.back().format = attribute;
+			attributeDescriptions.back().offset = offset;
 			offset += formatSize(attribute) / 8;
 		}
 
 		bindingDescriptions.emplace_back();
-		bindingDescriptions.back().binding(layout->binding);
-		bindingDescriptions.back().stride(offset);
-		bindingDescriptions.back().inputRate(vk::VertexInputRate::Vertex);
+		bindingDescriptions.back().binding = layout->binding;
+		bindingDescriptions.back().stride = offset;
+		bindingDescriptions.back().inputRate = vk::VertexInputRate::Vertex;
 	}
 
-	vertexInfo.vertexBindingDescriptionCount(bindingDescriptions.size());
-	vertexInfo.pVertexBindingDescriptions(bindingDescriptions.data());
-	vertexInfo.vertexAttributeDescriptionCount(attributeDescriptions.size());
-	vertexInfo.pVertexAttributeDescriptions(attributeDescriptions.data());
+	vertexInfo.vertexBindingDescriptionCount = bindingDescriptions.size();
+	vertexInfo.pVertexBindingDescriptions = bindingDescriptions.data();
+	vertexInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
+	vertexInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 	//pipeline layout
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
@@ -116,8 +116,8 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 		descriptorSetLayouts.push_back(layout->vkDescriptorSetLayout());
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
-	pipelineLayoutInfo.setLayoutCount(descriptorSetLayouts.size());
-	pipelineLayoutInfo.pSetLayouts(descriptorSetLayouts.data());
+	pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
+	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
 	vk::createPipelineLayout(vkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout_);
 
@@ -131,19 +131,19 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 	auto infos = createInfo.shader.vkStageInfos();
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
 
-	pipelineInfo.layout(pipelineLayout_);
-	pipelineInfo.pVertexInputState(&vertexInfo);
-	pipelineInfo.pDynamicState(&dynamicState);
-	pipelineInfo.renderPass(createInfo.renderPass);
-	pipelineInfo.stageCount(infos.size());
-	pipelineInfo.pStages(infos.data());
-	pipelineInfo.pInputAssemblyState(&createInfo.states.inputAssembly);
-	pipelineInfo.pRasterizationState(&createInfo.states.rasterization);
-	pipelineInfo.pColorBlendState(&createInfo.states.colorBlend);
-	pipelineInfo.pMultisampleState(&createInfo.states.multisample);
-	pipelineInfo.pViewportState(&createInfo.states.viewport);
-	pipelineInfo.pDepthStencilState(&createInfo.states.depthStencil);
-	pipelineInfo.pTessellationState(nullptr);
+	pipelineInfo.layout = pipelineLayout_;
+	pipelineInfo.pVertexInputState = &vertexInfo;
+	pipelineInfo.pDynamicState = &dynamicState;
+	pipelineInfo.renderPass = createInfo.renderPass;
+	pipelineInfo.stageCount = infos.size();
+	pipelineInfo.pStages = infos.data();
+	pipelineInfo.pInputAssemblyState = &createInfo.states.inputAssembly;
+	pipelineInfo.pRasterizationState = &createInfo.states.rasterization;
+	pipelineInfo.pColorBlendState = &createInfo.states.colorBlend;
+	pipelineInfo.pMultisampleState = &createInfo.states.multisample;
+	pipelineInfo.pViewportState = &createInfo.states.viewport;
+	pipelineInfo.pDepthStencilState = &createInfo.states.depthStencil;
+	pipelineInfo.pTessellationState = nullptr;
 
 	vk::createGraphicsPipelines(vkDevice(), 0, 1, &pipelineInfo, nullptr, &pipeline_);
 }

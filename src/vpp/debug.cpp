@@ -1,5 +1,6 @@
 #include <vpp/debug.hpp>
 #include <vpp/procAddr.hpp>
+#include <vpp/vk.hpp>
 #include <iostream>
 
 namespace vpp
@@ -34,7 +35,7 @@ std::vector<const char*> validationLayerNames =
 namespace
 {
 
-VkBool32 defaultMessageCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType,
+vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags, vk::DebugReportObjectTypeEXT objType,
 	std::uint64_t srcObject, std::size_t location, std::int32_t msgCode, const char* pLayerPrefix,
 	const char* pMsg, void* pUserData)
 {
@@ -70,12 +71,14 @@ DebugCallback::~DebugCallback()
 
 bool DebugCallback::call(const CallbackInfo& info)
 {
+	/*
 	std::cout	<< enumString(info.flags) << ": " << info.message << "\n\t"
 				<< "objType: " << enumString(info.objectType) << "\n\t"
 				<< "srcObject: " << info.srcObject << "\n\t"
 				<< "location: " << info.location << "\n\t"
 				<< "code: " << info.messageCode << "\n\t"
 				<< "layer: " << info.layer << std::endl;
+	*/
 
 	return false;
 }

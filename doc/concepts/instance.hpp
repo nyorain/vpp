@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 
 #include <vector>
@@ -23,7 +22,7 @@ public:
 		unsigned int engineVersion {0};
 		unsigned int apiVersion {VK_MAKE_VERSION(1, 0, 2)}; //todo
 
-		CreateInfo();
+		CreateInfo(); //for some compiler bug in gcc
 	};
 
 public:

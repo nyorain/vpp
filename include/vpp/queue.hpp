@@ -1,14 +1,13 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/resource.hpp>
 
 namespace vpp
 {
 
 ///Represents a vulkan device queue.
 ///Cannot be created or destroyed, must be received by the device class.
-class Queue : public Resource
+class Queue
 {
 public:
 	///Return the queueFamily of this queue
@@ -20,18 +19,19 @@ public:
 	unsigned int id() const { return id_; }
 
 	///Returns the properties of the queue family of this queue.
-	vk::QueueFamilyProperties properties() const;
+	const vk::QueueFamilyProperties& properties() const { return properties_; }
 
 	///Returns the vulkan queue handle.
 	vk::Queue vkQueue() const { return queue_; }
 
 protected:
 	friend Device;
-	Queue(const Device& dev, vk::Queue queue, unsigned int family, unsigned int id);
+	Queue(vk::Queue queue, const vk::QueueFamilyProperties& prop, unsigned int family, unsigned int id);
 	~Queue() = default;
 
 protected:
 	vk::Queue queue_;
+	const vk::QueueFamilyProperties& properties_;
 	unsigned int family_;
 	unsigned int id_;
 };

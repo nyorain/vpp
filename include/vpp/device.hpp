@@ -45,6 +45,9 @@ public:
 	const vk::PhysicalDeviceMemoryProperties& memoryProperties() const;
 	const vk::PhysicalDeviceProperties& properties() const;
 
+	///Returns the queue properties for the given queue family.
+	const vk::QueueFamilyProperties& queueFamilyProperties(std::uint32_t qFamily) const;
+
 	///Returns the first memoryType for the given memoryTypeBits and flags or -1 if there is none.
 	int memoryType(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits = ~0u) const;
 
@@ -75,21 +78,6 @@ protected:
     vk::Instance instance_ {};
     vk::PhysicalDevice physicalDevice_ {};
     vk::Device device_ {};
-
-	//all retrieved queues for the device
-	/*
-	std::vector<Queue> queues_;
-
-	//stored props
-	vk::PhysicalDeviceMemoryProperties memoryProperties_ {};
-	vk::PhysicalDeviceProperties physicalDeviceProperties_ {};
-
-	//default provider and manager
-	std::unique_ptr<CommandProvider> commandProvider_;
-	std::unique_ptr<DeviceMemoryProvider> memoryProvider_;
-	std::unique_ptr<SubmitManager> submitManager_;
-	std::unique_ptr<TransferManager> transferManager_;
-	*/
 
 	struct Impl;
 	std::unique_ptr<Impl> impl_;

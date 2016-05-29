@@ -33,15 +33,12 @@ void CommandWork<R>::finish()
 template<typename R>
 void CommandWork<R>::queue()
 {
-	vk::SubmitInfo submitInfo;
-	submitInfo.commandBufferCount(1);
-	submitInfo.pCommandBuffers(&cmdBuffer_.vkCommandBuffer());
-
 	//TODO: correct queues
+	auto buf = cmdBuffer_.vkCommandBuffer():
 	auto queue = cmdBuffer_.device().queue(cmdBuffer_.commandPool().queueFamily());
 	if(!queue) throw std::logic_error("dummy1");
 
-	executionState_ = cmdBuffer_.device().submitManager().add(queue->queue, submitInfo);
+	executionState_ = cmdBuffer_.device().submitManager().add(queue->queue(), {buf});
 	state_ = WorkBase::State::pending;
 }
 

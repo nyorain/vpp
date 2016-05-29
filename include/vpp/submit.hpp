@@ -72,6 +72,7 @@ public:
 	///Note that this function does NOT directly submits the given info. It will wait until there
 	///are many submissions batched together or a submit member function is called.
 	CommandExecutionState add(vk::Queue, const vk::SubmitInfo& info);
+	CommandExecutionState add(vk::Queue, const std::vector<vk::CommandBuffer>& buffer);
 
 	///Function for ExecutionState
 	void submit(const CommandSubmissionPtr& ptr);

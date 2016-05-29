@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
+#include <vpp/vk.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/memory.hpp>
 #include <vpp/shader.hpp>
@@ -27,9 +28,9 @@ public:
 		vk::PipelineColorBlendStateCreateInfo colorBlend;
 
 	public:
-		std::vector<vk::PipelineColorBlendAttachmentState> blendAttachments_;
-		std::vector<vk::Viewport> viewports_;
-		std::vector<vk::Rect2D> scissors_;
+		std::vector<vk::PipelineColorBlendAttachmentState> blendAttachments;
+		std::vector<vk::Viewport> viewports;
+		std::vector<vk::Rect2D> scissors;
 
 	public:
 		StatesCreateInfo() = default;

@@ -36,7 +36,7 @@ protected:
 	std::unique_ptr<Device> device_;
 	SwapChain swapChain_;
 
-	const Device::Queue* presentQueue_ = nullptr;
+	const Queue* presentQueue_ = nullptr;
 
 	std::unique_ptr<DebugCallback> debugCallback_;
 
@@ -56,9 +56,9 @@ public:
 	const Device& device() const { return *device_; }
 	const SwapChain& swapChain() const { return swapChain_; }
 
-	const Device::Queue* graphicsQueue() const { return presentQueue_; }
-	const Device::Queue* computeQueue() const { return presentQueue_; }
-	const Device::Queue& presentQueue() const { return *presentQueue_; }
+	const Queue* graphicsQueue() const { return presentQueue_; }
+	const Queue* computeQueue() const { return presentQueue_; }
+	const Queue& presentQueue() const { return *presentQueue_; }
 
 	SwapChain& swapChain() { return swapChain_; }
 	Device& device() { return *device_; }

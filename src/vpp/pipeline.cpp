@@ -14,16 +14,16 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	for(auto& binding : bindings)
 	{
 		vkbindings.emplace_back();
-		vkbindings.back().descriptorType(binding.type);
-		vkbindings.back().stageFlags(binding.stages);
-		vkbindings.back().descriptorCount(binding.count);
-		vkbindings.back().pImmutableSamplers(nullptr);
-		vkbindings.back().binding(vkbindings.size() - 1);
+		vkbindings.back().descriptorType = binding.type;
+		vkbindings.back().stageFlags = binding.stages;
+		vkbindings.back().descriptorCount = binding.count;
+		vkbindings.back().pImmutableSamplers = nullptr;
+		vkbindings.back().binding = vkbindings.size() - 1;
 	}
 
 	vk::DescriptorSetLayoutCreateInfo descriptorLayout;
-	descriptorLayout.bindingCount(vkbindings.size());
-	descriptorLayout.pBindings(vkbindings.data());
+	descriptorLayout.bindingCount = vkbindings.size();
+	descriptorLayout.pBindings = vkbindings.data();
 
 	vk::createDescriptorSetLayout(vkDevice(), &descriptorLayout, nullptr, &layout_);
 	bindings_ = bindings;
@@ -72,9 +72,9 @@ DescriptorSet::DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPo
 	auto vklayout = layout.vkDescriptorSetLayout();
 
 	vk::DescriptorSetAllocateInfo allocInfo;
-	allocInfo.descriptorPool(pool);
-	allocInfo.descriptorSetCount(1);
-	allocInfo.pSetLayouts(&vklayout);
+	allocInfo.descriptorPool = pool;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &vklayout;
 
 	vk::allocateDescriptorSets(vkDevice(), &allocInfo, &descriptorSet_);
 }
@@ -107,14 +107,14 @@ void DescriptorSet::swap(DescriptorSet& other) noexcept
 }
 
 void DescriptorSet::update(const std::vector<vk::WriteDescriptorSet>& writes,
-	const std::vector<vk::CopyDescriptorSets>& copies)
+	const std::vector<vk::CopyDescriptorSet>& copies) const
 {
-
+	vk::updateDescriptorSets(vkDevice(), writes.size(), writes.data(), copies.size(), copies.data());
 }
 
-void DescriptorSet::update(const std::vector<vk::CopyDescriptorSets>& copies)
+void DescriptorSet::update(const std::vector<vk::CopyDescriptorSet>& copies) const
 {
-
+	vk::updateDescriptorSets(vkDevice(), 0, nullptr, copies.size(), copies.data());
 }
 
 //Pipeline
@@ -165,137 +165,137 @@ unsigned int formatSize(vk::Format format)
 
 	switch(format)
     {
-    case Format::Undefined: return 0;
-	case Format::R4G4UnormPack8: return 8;
-	case Format::R4G4B4A4UnormPack16: return 16;
-    case Format::B4G4R4A4UnormPack16: return 16;
-    case Format::R5G6B5UnormPack16: return 16;
-    case Format::B5G6R5UnormPack16: return 16;
-    case Format::R5G5B5A1UnormPack16: return 16;
-    case Format::B5G5R5A1UnormPack16: return 16;
-    case Format::A1R5G5B5UnormPack16: return 16;
-	case Format::R8Unorm: return 8;
-    case Format::R8Snorm: return 8;
-    case Format::R8Uscaled: return 8;
-    case Format::R8Sscaled: return 8;
-    case Format::R8Uint: return 8;
-    case Format::R8Sint: return 8;
-    case Format::R8Srgb: return 8;
-	case Format::R8G8Unorm: return 16;
-    case Format::R8G8Snorm: return 16;
-    case Format::R8G8Uscaled: return 16;
-    case Format::R8G8Sscaled: return 16;
-    case Format::R8G8Uint: return 16;
-    case Format::R8G8Sint: return 16;
-    case Format::R8G8Srgb: return 16;
-	case Format::R8G8B8Unorm: return 24;
-    case Format::R8G8B8Snorm: return 24;
-    case Format::R8G8B8Uscaled: return 24;
-    case Format::R8G8B8Sscaled: return 24;
-    case Format::R8G8B8Uint: return 24;
-    case Format::R8G8B8Sint: return 24;
-    case Format::R8G8B8Srgb: return 24;
-    case Format::B8G8R8Unorm: return 24;
-    case Format::B8G8R8Snorm: return 24;
-    case Format::B8G8R8Uscaled: return 24;
-	case Format::B8G8R8Sscaled: return 24;
-    case Format::B8G8R8Uint: return 24;
-    case Format::B8G8R8Sint: return 24;
-    case Format::B8G8R8Srgb: return 24;
-	case Format::R8G8B8A8Unorm: return 32;
-    case Format::R8G8B8A8Snorm: return 32;
-    case Format::R8G8B8A8Uscaled: return 32;
-    case Format::R8G8B8A8Sscaled: return 32;
-	case Format::R8G8B8A8Uint: return 32;
-    case Format::R8G8B8A8Sint: return 32;
-    case Format::R8G8B8A8Srgb: return 32;
-    case Format::B8G8R8A8Unorm: return 32;
-    case Format::B8G8R8A8Snorm: return 32;
-    case Format::B8G8R8A8Uscaled: return 32;
-    case Format::B8G8R8A8Sscaled: return 32;
-    case Format::B8G8R8A8Uint: return 32;
-    case Format::B8G8R8A8Sint: return 32;
-    case Format::B8G8R8A8Srgb: return 32;
-    case Format::A8B8G8R8UnormPack32: return 32;
-    case Format::A8B8G8R8SnormPack32: return 32;
-    case Format::A8B8G8R8UscaledPack32: return 32;
-    case Format::A8B8G8R8SscaledPack32: return 32;
-    case Format::A8B8G8R8UintPack32: return 32;
-    case Format::A8B8G8R8SintPack32: return 32;
-    case Format::A8B8G8R8SrgbPack32: return 32;
-    case Format::A2R10G10B10UnormPack32: return 32;
-    case Format::A2R10G10B10SnormPack32: return 32;
-    case Format::A2R10G10B10UscaledPack32: return 32;
-    case Format::A2R10G10B10SscaledPack32: return 32;
-    case Format::A2R10G10B10UintPack32: return 32;
-    case Format::A2R10G10B10SintPack32: return 32;
-    case Format::A2B10G10R10UnormPack32: return 32;
-    case Format::A2B10G10R10SnormPack32: return 32;
-    case Format::A2B10G10R10UscaledPack32: return 32;
-    case Format::A2B10G10R10SscaledPack32: return 32;
-    case Format::A2B10G10R10UintPack32: return 32;
-    case Format::A2B10G10R10SintPack32: return 32;
-    case Format::R16Unorm: return 16;
-    case Format::R16Snorm: return 16;
-    case Format::R16Uscaled: return 16;
-    case Format::R16Sscaled: return 16;
-	case Format::R16Uint: return 16;
-    case Format::R16Sint: return 16;
-    case Format::R16Sfloat: return 16;
-    case Format::R16G16Unorm: return 32;
-    case Format::R16G16Snorm: return 32;
-    case Format::R16G16Uscaled: return 32;
-    case Format::R16G16Sscaled: return 32;
-    case Format::R16G16Uint: return 32;
-    case Format::R16G16Sint: return 32;
-    case Format::R16G16Sfloat: return 32;
-	case Format::R16G16B16Unorm: return 48;
-    case Format::R16G16B16Snorm: return 48;
-    case Format::R16G16B16Uscaled: return 48;
-    case Format::R16G16B16Sscaled: return 48;
-    case Format::R16G16B16Uint: return 48;
-    case Format::R16G16B16Sint: return 48;
-    case Format::R16G16B16Sfloat: return 48;
-	case Format::R16G16B16A16Unorm: return 64;
-    case Format::R16G16B16A16Snorm: return 64;
-    case Format::R16G16B16A16Uscaled: return 64;
-    case Format::R16G16B16A16Sscaled: return 64;
-    case Format::R16G16B16A16Uint: return 64;
-    case Format::R16G16B16A16Sint: return 64;
-    case Format::R16G16B16A16Sfloat: return 64;
-	case Format::R32Uint: return 32;
-    case Format::R32Sint: return 32;
-    case Format::R32Sfloat: return 32;
-    case Format::R32G32Uint: return 64;
-    case Format::R32G32Sint: return 64;
-    case Format::R32G32Sfloat: return 64;
-	case Format::R32G32B32Uint: return 96;
-    case Format::R32G32B32Sint: return 96;
-    case Format::R32G32B32Sfloat: return 96;
-	case Format::R32G32B32A32Uint: return 128;
-    case Format::R32G32B32A32Sint: return 128;
-    case Format::R32G32B32A32Sfloat: return 128;
-    case Format::R64Uint: return 64;
-    case Format::R64Sint: return 64;
-    case Format::R64Sfloat: return 64;
-    case Format::R64G64Uint: return 128;
-    case Format::R64G64Sint: return 128;
-    case Format::R64G64Sfloat: return 128;
-	case Format::R64G64B64Uint: return 192;
-    case Format::R64G64B64Sint: return 192;
-	case Format::R64G64B64Sfloat: return 192;
-    case Format::R64G64B64A64Uint: return 256;
-    case Format::R64G64B64A64Sint: return 256;
-    case Format::R64G64B64A64Sfloat: return 256;
-	case Format::B10G11R11UfloatPack32: return 32;
-    case Format::E5B9G9R9UfloatPack32: return 32;
-	case Format::D16Unorm: return 16;
-    case Format::X8D24UnormPack32: return 32;
-    case Format::D32Sfloat: return 32;
-	case Format::S8Uint: return 8;
-	case Format::D16UnormS8Uint: return 24;
-	case Format::D24UnormS8Uint: return 32;
-	case Format::D32SfloatS8Uint: return 48;
+    case Format::undefined: return 0;
+	case Format::r4g4UnormPack8: return 8;
+	case Format::r4g4b4a4UnormPack16: return 16;
+    case Format::b4g4r4a4UnormPack16: return 16;
+    case Format::r5g6b5UnormPack16: return 16;
+    case Format::b5g6r5UnormPack16: return 16;
+    case Format::r5g5b5a1UnormPack16: return 16;
+    case Format::b5g5r5a1UnormPack16: return 16;
+    case Format::a1r5g5b5UnormPack16: return 16;
+	case Format::r8Unorm: return 8;
+    case Format::r8Snorm: return 8;
+    case Format::r8Uscaled: return 8;
+    case Format::r8Sscaled: return 8;
+    case Format::r8Uint: return 8;
+    case Format::r8Sint: return 8;
+    case Format::r8Srgb: return 8;
+	case Format::r8g8Unorm: return 16;
+    case Format::r8g8Snorm: return 16;
+    case Format::r8g8Uscaled: return 16;
+    case Format::r8g8Sscaled: return 16;
+    case Format::r8g8Uint: return 16;
+    case Format::r8g8Sint: return 16;
+    case Format::r8g8Srgb: return 16;
+	case Format::r8g8b8Unorm: return 24;
+    case Format::r8g8b8Snorm: return 24;
+    case Format::r8g8b8Uscaled: return 24;
+    case Format::r8g8b8Sscaled: return 24;
+    case Format::r8g8b8Uint: return 24;
+    case Format::r8g8b8Sint: return 24;
+    case Format::r8g8b8Srgb: return 24;
+    case Format::b8g8r8Unorm: return 24;
+    case Format::b8g8r8Snorm: return 24;
+    case Format::b8g8r8Uscaled: return 24;
+	case Format::b8g8r8Sscaled: return 24;
+    case Format::b8g8r8Uint: return 24;
+    case Format::b8g8r8Sint: return 24;
+    case Format::b8g8r8Srgb: return 24;
+	case Format::r8g8b8a8Unorm: return 32;
+    case Format::r8g8b8a8Snorm: return 32;
+    case Format::r8g8b8a8Uscaled: return 32;
+    case Format::r8g8b8a8Sscaled: return 32;
+	case Format::r8g8b8a8Uint: return 32;
+    case Format::r8g8b8a8Sint: return 32;
+    case Format::r8g8b8a8Srgb: return 32;
+    case Format::b8g8r8a8Unorm: return 32;
+    case Format::b8g8r8a8Snorm: return 32;
+    case Format::b8g8r8a8Uscaled: return 32;
+    case Format::b8g8r8a8Sscaled: return 32;
+    case Format::b8g8r8a8Uint: return 32;
+    case Format::b8g8r8a8Sint: return 32;
+    case Format::b8g8r8a8Srgb: return 32;
+    case Format::a8b8g8r8UnormPack32: return 32;
+    case Format::a8b8g8r8SnormPack32: return 32;
+    case Format::a8b8g8r8UscaledPack32: return 32;
+    case Format::a8b8g8r8SscaledPack32: return 32;
+    case Format::a8b8g8r8UintPack32: return 32;
+    case Format::a8b8g8r8SintPack32: return 32;
+    case Format::a8b8g8r8SrgbPack32: return 32;
+    case Format::a2r10g10b10UnormPack32: return 32;
+    case Format::a2r10g10b10SnormPack32: return 32;
+    case Format::a2r10g10b10UscaledPack32: return 32;
+    case Format::a2r10g10b10SscaledPack32: return 32;
+    case Format::a2r10g10b10UintPack32: return 32;
+    case Format::a2r10g10b10SintPack32: return 32;
+    case Format::a2b10g10r10UnormPack32: return 32;
+    case Format::a2b10g10r10SnormPack32: return 32;
+    case Format::a2b10g10r10UscaledPack32: return 32;
+    case Format::a2b10g10r10SscaledPack32: return 32;
+    case Format::a2b10g10r10UintPack32: return 32;
+    case Format::a2b10g10r10SintPack32: return 32;
+    case Format::r16Unorm: return 16;
+    case Format::r16Snorm: return 16;
+    case Format::r16Uscaled: return 16;
+    case Format::r16Sscaled: return 16;
+	case Format::r16Uint: return 16;
+    case Format::r16Sint: return 16;
+    case Format::r16Sfloat: return 16;
+    case Format::r16g16Unorm: return 32;
+    case Format::r16g16Snorm: return 32;
+    case Format::r16g16Uscaled: return 32;
+    case Format::r16g16Sscaled: return 32;
+    case Format::r16g16Uint: return 32;
+    case Format::r16g16Sint: return 32;
+    case Format::r16g16Sfloat: return 32;
+	case Format::r16g16b16Unorm: return 48;
+    case Format::r16g16b16Snorm: return 48;
+    case Format::r16g16b16Uscaled: return 48;
+    case Format::r16g16b16Sscaled: return 48;
+    case Format::r16g16b16Uint: return 48;
+    case Format::r16g16b16Sint: return 48;
+    case Format::r16g16b16Sfloat: return 48;
+	case Format::r16g16b16a16Unorm: return 64;
+    case Format::r16g16b16a16Snorm: return 64;
+    case Format::r16g16b16a16Uscaled: return 64;
+    case Format::r16g16b16a16Sscaled: return 64;
+    case Format::r16g16b16a16Uint: return 64;
+    case Format::r16g16b16a16Sint: return 64;
+    case Format::r16g16b16a16Sfloat: return 64;
+	case Format::r32Uint: return 32;
+    case Format::r32Sint: return 32;
+    case Format::r32Sfloat: return 32;
+    case Format::r32g32Uint: return 64;
+    case Format::r32g32Sint: return 64;
+    case Format::r32g32Sfloat: return 64;
+	case Format::r32g32b32Uint: return 96;
+    case Format::r32g32b32Sint: return 96;
+    case Format::r32g32b32Sfloat: return 96;
+	case Format::r32g32b32a32Uint: return 128;
+    case Format::r32g32b32a32Sint: return 128;
+    case Format::r32g32b32a32Sfloat: return 128;
+    case Format::r64Uint: return 64;
+    case Format::r64Sint: return 64;
+    case Format::r64Sfloat: return 64;
+    case Format::r64g64Uint: return 128;
+    case Format::r64g64Sint: return 128;
+    case Format::r64g64Sfloat: return 128;
+	case Format::r64g64b64Uint: return 192;
+    case Format::r64g64b64Sint: return 192;
+	case Format::r64g64b64Sfloat: return 192;
+    case Format::r64g64b64a64Uint: return 256;
+    case Format::r64g64b64a64Sint: return 256;
+    case Format::r64g64b64a64Sfloat: return 256;
+	case Format::b10g11r11UfloatPack32: return 32;
+    case Format::e5b9g9r9UfloatPack32: return 32;
+	case Format::d16Unorm: return 16;
+    case Format::x8D24UnormPack32: return 32;
+    case Format::d32Sfloat: return 32;
+	case Format::s8Uint: return 8;
+	case Format::d16UnormS8Uint: return 24;
+	case Format::d24UnormS8Uint: return 32;
+	case Format::d32SfloatS8Uint: return 48;
 	/*
     case Format::Bc1RgbUnormBlock: return "c1RgbUnormBlock";
     case Format::Bc1RgbSrgbBlock: return "c1RgbSrgbBlock";

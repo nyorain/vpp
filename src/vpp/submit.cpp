@@ -103,6 +103,14 @@ CommandExecutionState SubmitManager::add(vk::Queue queue, const vk::SubmitInfo& 
 	return ret;
 }
 
+CommandExecutionState SubmitManager::add(vk::Queue queue, const std::vector<vk::CommandBuffer>& buffer)
+{
+	vk::SubmitInfo info;
+	info.commandBufferCount = buffer.size();
+	info.pCommandBuffers = buffer.data();
+	add(queue, info);
+}
+
 void SubmitManager::submit(const CommandSubmissionPtr& ptr)
 {
 	Lock lock(mutex_);

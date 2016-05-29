@@ -1,4 +1,5 @@
 #include <vpp/instance.hpp>
+#include <vpp/vk.hpp>
 #include <iostream>
 
 namespace vpp
@@ -16,14 +17,6 @@ Instance::Instance(const CreateInfo& createInfo)
 	appInfo.engineVersion(createInfo.engineVersion);
 	appInfo.apiVersion(createInfo.apiVersion);
 
-/*
-	vk::ApplicationInfo appInfo;
-	appInfo.pApplicationName("unknown");
-	appInfo.applicationVersion(0);
-	appInfo.pEngineName("vpp");
-	appInfo.engineVersion(0);
-	appInfo.apiVersion(VK_MAKE_VERSION(1, 0, 2));
-*/
 	vk::InstanceCreateInfo instanceInfo;
 	instanceInfo.pApplicationInfo(&appInfo);
 	instanceInfo.enabledLayerCount(createInfo.layers.size());

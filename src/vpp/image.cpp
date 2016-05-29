@@ -1,4 +1,5 @@
 #include <vpp/image.hpp>
+#include <vpp/vk.hpp>
 #include <vpp/provider.hpp>
 #include <vpp/transfer.hpp>
 #include <utility>
