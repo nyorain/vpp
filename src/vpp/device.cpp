@@ -1,4 +1,5 @@
 #include <vpp/device.hpp>
+#include <vpp/vk.hpp>
 #include <vpp/provider.hpp>
 #include <vpp/commandBuffer.hpp>
 #include <vpp/submit.hpp>
@@ -20,7 +21,7 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 	//retrieve/store requested queues
 	auto qproperties = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
 	std::map<std::uint32_t, unsigned int> familyIds;
-	queues_.reserve(info.queueCreateInfoCount());
+	queues_.reserve(info.queueCreateInfoCount);
 	vk::Queue queue;
 
 	for(std::size_t i(0); i < info.queueCreateInfoCount(); ++i)
@@ -73,18 +74,18 @@ const Device::Queue* Device::queue(std::uint32_t family, std::uint32_t id) const
 const Device::Queue* Device::queue(vk::QueueFlags flags) const
 {
 	for(auto& queue : queues())
-		if(queue.properties.queueFlags() & flags) return &queue;
+		if(queue.properties.queueFlags & flags) return &queue;
 
 	return nullptr;
 }
 
 int Device::memoryType(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits) const
 {
-	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount(); ++i)
+	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount; ++i)
 	{
 		if(typeBits & (1 << i)) //ith bit set to 1?
 		{
-			if((memoryProperties().memoryTypes()[i].propertyFlags() & mflags) == mflags)
+			if((memoryProperties().memoryTypes[i].propertyFlags & mflags) == mflags)
 				return i;
 		}
 	}
@@ -94,11 +95,11 @@ int Device::memoryType(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits) c
 
 std::uint32_t Device::memoryTypeBits(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits) const
 {
-	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount(); ++i)
+	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount; ++i)
 	{
 		if(typeBits & (1 << i)) //ith bit set to 1?
 		{
-			if((memoryProperties().memoryTypes()[i].propertyFlags() & mflags) != mflags)
+			if((memoryProperties().memoryTypes[i].propertyFlags & mflags) != mflags)
 				typeBits &= ~(1 << i); //unset ith bit
 		}
 	}

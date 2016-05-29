@@ -22,11 +22,11 @@ void Context::initInstance(const CreateInfo& info)
 	auto eVersion = 0;
 
     vk::ApplicationInfo appInfo;
-    appInfo.pApplicationName(aName);
-    appInfo.applicationVersion(aVersion);
-    appInfo.pEngineName(eName);
-    appInfo.engineVersion(eVersion);
-    appInfo.apiVersion(VK_MAKE_VERSION(1, 0, 2)); //use header version when working
+    appInfo.pApplicationName = aName;
+    appInfo.applicationVersion = aVersion;
+    appInfo.pEngineName = eName;
+    appInfo.engineVersion = eVersion;
+    appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 2); //use header version when working
 
 	//iniinfo
 	std::vector<const char*> extensions = info.instanceExtensions;
@@ -41,11 +41,11 @@ void Context::initInstance(const CreateInfo& info)
 	}
 
     vk::InstanceCreateInfo iniinfo;
-	iniinfo.enabledLayerCount(layers.size());
-	iniinfo.ppEnabledLayerNames(layers.data());
-	iniinfo.enabledExtensionCount(extensions.size());
-	iniinfo.ppEnabledExtensionNames(extensions.data());
-    iniinfo.pApplicationInfo(&appInfo);
+	iniinfo.enabledLayerCount = layers.size();
+	iniinfo.ppEnabledLayerNames = layers.data();
+	iniinfo.enabledExtensionCount = extensions.size();
+	iniinfo.ppEnabledExtensionNames = extensions.data();
+    iniinfo.pApplicationInfo = &appInfo;
 
     vk::createInstance(&iniinfo, nullptr, &instance_);
 
@@ -133,12 +133,12 @@ void Context::initDevice(const CreateInfo& info)
 
 	//create
     vk::DeviceCreateInfo devinfo{};
-    devinfo.queueCreateInfoCount(queueInfos.size());
-	devinfo.pQueueCreateInfos(queueInfos.data());
-    devinfo.enabledLayerCount(layers.size());
-    devinfo.ppEnabledLayerNames(layers.data());
-	devinfo.enabledExtensionCount(extensions.size());
-	devinfo.ppEnabledExtensionNames(extensions.data());
+    devinfo.queueCreateInfoCount = queueInfos.size();
+	devinfo.pQueueCreateInfos = queueInfos.data();
+    devinfo.enabledLayerCount = layers.size();
+    devinfo.ppEnabledLayerNames = layers.data();
+	devinfo.enabledExtensionCount = extensions.size();
+	devinfo.ppEnabledExtensionNames = extensions.data();
 
     device_.reset(new Device(vkInstance(), phdev, devinfo));
 
