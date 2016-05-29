@@ -560,7 +560,20 @@ void RegistryLoader::parseTypeReqs(QualifiedType& type, Requirements& reqs)
 	for(auto& arrLvl : type.arraylvl)
 	{
 		auto constant = registry_.findConstant(arrLvl);
-		if(constant) reqs.constants.push_back(constant);
+		if(constant) 
+		{
+			bool found = false;
+			for(auto& c : reqs.constants)
+			{
+				if(c == constant)
+				{
+					found = true;
+					break;
+				}
+			}
+
+			if(!found) reqs.constants.push_back(constant);
+		}
 	}
 
 	if(type.type) parseTypeReqs(*type.type, reqs);
