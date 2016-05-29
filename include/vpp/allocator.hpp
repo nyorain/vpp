@@ -103,43 +103,42 @@ public:
 	friend void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept;
 
 protected:
-	struct BufferRequirement
+	enum class RequirementType
 	{
-		vk::Buffer requestor;
-		vk::MemoryRequirements requirements;
-		Entry* entry {nullptr};
-		std::size_t offset {0}; //internal use in alloc
+		linearImage,
+		optimalImage,
+		buffer
 	};
 
-	struct ImageRequirement
+	struct Requirement
 	{
-		vk::Image requestor;
-		vk::MemoryRequirements requirements;
-		AllocationType type;
-		Entry* entry {nullptr};
-		std::size_t offset {0}; //internal use in alloc
+		RequirementType type {};
+		vk::DeviceSize size {};
+		vk::DeviceSize alignment {};
+		std::uint32_t memoryTypes {};
+		Entry* entry {};
+		union { vk::Buffer buffer; vk::Image image; }; //type determines which is active
 	};
 
-	using BufReqs = std::vector<BufferRequirement>;
-	using ImgReqs = std::vector<ImageRequirement>;
+	using Requirements = std::vector<Requirement>;
 
 protected:
+	static AllocationType toAllocType(RequirementType reqType);
+	static bool suppportsType(const Requirement& req, unsigned int type);
+	static bool suppportsType(std::uint32_t bits, unsigned int type);
+
 	//utility allocation functions
 	void minimizeAllocations();
 	void allocate(unsigned int type);
-	DeviceMemory* findMem(const vk::MemoryRequirements&, AllocationType, Allocation&);
-
-	BufReqs::iterator findBufReq(const Entry& entry, unsigned int& type);
-	ImgReqs::iterator findImgReq(const Entry& entry, unsigned int& type);
+	DeviceMemory* findMem(Requirement& req);
+	Requirements::iterator findReq(const Entry& entry);
+	std::vector<std::pair<unsigned int, Requirement*>> queryTypes();
+	unsigned int findBestType(std::uint32_t typeBits) const;
 
 	std::map<unsigned int, std::size_t> sizeMap();
 
 protected:
-	//all requested allocations
-	std::map<unsigned int, std::vector<BufferRequirement>> bufferRequirements_;
-	std::map<unsigned int, std::vector<ImageRequirement>> imageRequirements_;
-
-	//all owned deviceMemories
+	Requirements requirements_;
 	std::vector<std::unique_ptr<DeviceMemory>> memories_;
 };
 

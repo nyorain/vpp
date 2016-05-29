@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vpp/vk.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/utility/allocation.hpp>
@@ -138,6 +137,7 @@ public:
 
 	///Tries to allocate a memory part that matches the given size and aligment requirements.
 	///If there is not enough free space left, a std::runtime_error will be thrown.
+	///The size parameter has to be not null, otherwise a std::logic_error will be thrown.
 	///One can test if there is enough space for the needed allocation with the
 	///allocatable() member function.
 	Allocation alloc(std::size_t size, std::size_t aligment, AllocationType type);
@@ -185,13 +185,14 @@ public:
 
 	const vk::DeviceMemory& vkDeviceMemory() const { return memory_; }
 	vk::MemoryPropertyFlags propertyFlags() const { return flags_; }
+	unsigned int typeIndex() const { return typeIndex_; }
 
 protected:
 	std::vector<AllocationEntry> allocations_ {}; //use sorted container?
 	vk::DeviceMemory memory_ {};
 	std::size_t size_ {};
 
-	std::size_t typeIndex_ {};
+	unsigned int typeIndex_ {};
 	vk::MemoryPropertyFlags flags_ {};
 	MemoryMap memoryMap_ {}; //the current memory map, or invalid object
 };
