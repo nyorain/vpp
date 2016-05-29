@@ -139,7 +139,7 @@ safer.
 vpp uses this idiom not only to initializer resources but also to execute other work.
 This example shows how to fill or retrieve the data from buffers and images.
 
-``````````````````
+``````````````````cpp
 //Easily fill multiple data segments into multiple buffers and retrieve the async work objects.
 
 //Fill buffer1 with the 32 bit int and the data of a vector (will extract it correctly)
