@@ -88,7 +88,7 @@ public:
 
 	///This function will be called when a stored entry is moved.
 	///Will return false if the given entry is not found.
-	bool moveEntry(const Entry& oldOne, const Entry& newOne);
+	bool moveEntry(const Entry& oldOne, Entry& newOne);
 
 	///Allocates and associated device memory for all pending requests.
 	void allocate();

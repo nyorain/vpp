@@ -1,7 +1,10 @@
 #include <vpp/buffer.hpp>
+#include <vpp/vk.hpp>
 #include <vpp/provider.hpp>
 #include <vpp/transfer.hpp>
+
 #include <utility>
+#include <cstring>
 
 namespace vpp
 {
@@ -12,7 +15,7 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPr
 	vk::createBuffer(dev.vkDevice(), &info, nullptr, &buffer_);
 	vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_, &reqs);
 
-	reqs.memoryTypeBits(dev.memoryTypeBits(mflags, reqs.memoryTypeBits()));
+	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits());
 	dev.memoryAllocator().request(buffer_, reqs, memoryEntry_);
 }
 
@@ -23,14 +26,17 @@ Buffer::Buffer(Buffer&& other) noexcept
 
 Buffer& Buffer::operator=(Buffer&& other) noexcept
 {
-	destroy();
+	this->~Buffer();
 	swap(*this, other);
 	return *this;
 }
 
 Buffer::~Buffer()
 {
-	destroy();
+	if(vkBuffer()) vk::destroyBuffer(vkDevice(), vkBuffer(), nullptr);
+
+	memoryEntry_ = {};
+	buffer_ = {};
 }
 
 void swap(Buffer& a, Buffer& b) noexcept
@@ -39,14 +45,6 @@ void swap(Buffer& a, Buffer& b) noexcept
 
 	swap(b.memoryEntry_, a.memoryEntry_);
 	swap(b.buffer_, a.buffer_);
-}
-
-void Buffer::destroy()
-{
-	if(vkBuffer()) vk::destroyBuffer(vkDevice(), vkBuffer(), nullptr);
-
-	memoryEntry_ = {};
-	buffer_ = {};
 }
 
 MemoryMapView Buffer::memoryMap() const
@@ -66,7 +64,7 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bo
 
 	//mappable?
 	//map the memory and directly copy it into it
-	if(memoryEntry().memory()->propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible)
+	if(memoryEntry().memory()->propertyFlags() & vk::MemoryPropertyBits::hostVisible)
 	{
 		//directly map it
 		auto map = memoryEntry().map();

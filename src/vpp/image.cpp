@@ -12,8 +12,8 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPrope
 	vk::createImage(dev.vkDevice(), &info, nullptr, &image_);
 	vk::getImageMemoryRequirements(dev.vkDevice(), image_, &reqs);
 
-	reqs.memoryTypeBits(dev.memoryTypeBits(mflags, reqs.memoryTypeBits()));
-	dev.memoryAllocator().request(image_, reqs, info.tiling(), memoryEntry_);
+	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
+	dev.memoryAllocator().request(image_, reqs, info.tiling, memoryEntry_);
 }
 
 Image::Image(Image&& other) noexcept
@@ -125,23 +125,23 @@ std::unique_ptr<Work<void>> Image::fill(const std::uint8_t& data, std::size_t si
 ViewableImage::CreateInfo ViewableImage::defaultDepth2D {
 	{
 		{},
-		vk::ImageType::e2D,
-		vk::Format::D16UnormS8Uint,
+		vk::ImageType::e2d,
+		vk::Format::d16UnormS8Uint,
 		{},
 		1, 1,
-		vk::SampleCountFlagBits::e1,
-		vk::ImageTiling::Optimal,
-		vk::ImageUsageFlagBits::DepthStencilAttachment | vk::ImageUsageFlagBits::Sampled,
-		vk::SharingMode::Exclusive,
-		0, nullptr, vk::ImageLayout::Undefined
+		vk::SampleCountBits::e1,
+		vk::ImageTiling::optimal,
+		vk::ImageUsageBits::depthStencilAttachment | vk::ImageUsageBits::sampled,
+		vk::SharingMode::exclusive,
+		0, nullptr, vk::ImageLayout::undefined
 	},
 	{
 		{}, {},
-		vk::ImageViewType::e2D,
-		vk::Format::D16UnormS8Uint,
+		vk::ImageViewType::e2d,
+		vk::Format::d16UnormS8Uint,
 		{},
 		{
-			vk::ImageAspectFlagBits::Depth | vk::ImageAspectFlagBits::Stencil,
+			vk::ImageAspectBits::depth | vk::ImageAspectBits::stencil,
 			0, 1, 0, 1
 		}
 	}
@@ -150,23 +150,23 @@ ViewableImage::CreateInfo ViewableImage::defaultDepth2D {
 ViewableImage::CreateInfo ViewableImage::defaultColor2D {
 	{
 		{},
-		vk::ImageType::e2D,
-		vk::Format::B8G8R8A8Unorm,
+		vk::ImageType::e2d,
+		vk::Format::b8g8r8a8Unorm,
 		{},
 		1, 1,
-		vk::SampleCountFlagBits::e1,
-		vk::ImageTiling::Optimal,
-		vk::ImageUsageFlagBits::ColorAttachment | vk::ImageUsageFlagBits::InputAttachment,
-		vk::SharingMode::Exclusive,
-		0, nullptr, vk::ImageLayout::Undefined
+		vk::SampleCountBits::e1,
+		vk::ImageTiling::optimal,
+		vk::ImageUsageBits::colorAttachment | vk::ImageUsageBits::inputAttachment,
+		vk::SharingMode::exclusive,
+		0, nullptr, vk::ImageLayout::undefined
 	},
 	{
 		{}, {},
-		vk::ImageViewType::e2D,
-		vk::Format::B8G8R8A8Unorm,
+		vk::ImageViewType::e2d,
+		vk::Format::b8g8r8a8Unorm,
 		{},
 		{
-			vk::ImageAspectFlagBits::Color,
+			vk::ImageAspectBits::color,
 			0, 1, 0, 1
 		}
 	}
@@ -220,7 +220,7 @@ void ViewableImage::initMemoryLess(const Device& dev, const vk::ImageCreateInfo&
 void ViewableImage::initMemoryResources(vk::ImageViewCreateInfo info)
 {
 	image_.assureMemory();
-	info.image(vkImage());
+	info.image = vkImage();
 	vk::createImageView(vkDevice(), &info, nullptr, &imageView_);
 }
 

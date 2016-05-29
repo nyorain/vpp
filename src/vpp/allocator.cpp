@@ -102,7 +102,7 @@ void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept
 void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
 	Entry& entry)
 {
-	if(reqs.size() == 0)
+	if(!reqs.size)
 		throw std::logic_error("vpp::DeviceMemAllocator::request: allocation size of 0 not allowed");
 
 	entry = {};
@@ -110,7 +110,7 @@ void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequir
 
 	for(auto& type : bufferRequirements_)
 	{
-		if(reqs.memoryTypeBits() & (1 << type.first))
+		if(reqs.memoryTypeBits & (1 << type.first))
 		{
 			type.second.push_back({requestor, reqs, &entry});
 			return;
@@ -118,23 +118,23 @@ void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequir
 	}
 
 	std::uint32_t typeIndex = 0;
-	while(((reqs.memoryTypeBits() >> typeIndex++) & 1) != 1);
+	while(((reqs.memoryTypeBits >> typeIndex++) & 1) != 1);
 	bufferRequirements_[typeIndex].push_back({requestor, reqs, &entry});
 }
 
 void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequirements& reqs,
 	vk::ImageTiling tiling, Entry& entry)
 {
-	if(reqs.size() == 0)
+	if(reqs.size == 0)
 		throw std::logic_error("vpp::DeviceMemAllocator::request: allocation size of 0 not allowed");
 
 	entry = {};
 	entry.allocator_ = this;
-	auto typ = (tiling == vk::ImageTiling::Linear) ? AllocationType::linear : AllocationType::optimal;
+	auto typ = (tiling == vk::ImageTiling::linear) ? AllocationType::linear : AllocationType::optimal;
 
 	for(auto& type : imageRequirements_)
 	{
-		if(reqs.memoryTypeBits() & (1 << type.first))
+		if(reqs.memoryTypeBits & (1 << type.first))
 		{
 			type.second.push_back({requestor, reqs, typ, &entry});
 			return;
@@ -172,7 +172,7 @@ bool DeviceMemoryAllocator::removeRequest(const Entry& entry)
 	return false;
 }
 
-bool DeviceMemoryAllocator::moveEntry(const Entry& oldOne, const Entry& newOne)
+bool DeviceMemoryAllocator::moveEntry(const Entry& oldOne, Entry& newOne)
 {
 	//check buffer
 	for(auto& reqs : bufferRequirements_) {
@@ -201,13 +201,41 @@ bool DeviceMemoryAllocator::moveEntry(const Entry& oldOne, const Entry& newOne)
 DeviceMemoryAllocator::BufReqs::iterator DeviceMemoryAllocator::findBufReq(const Entry& entry,
 	unsigned int& type)
 {
+	for(auto& reqs : bufferRequirements_)
+	{
+		auto& b = reqs.second;
+		for(auto it = b.begin(); it < b.end(); ++it)
+		{
+			if(it->entry == &entry)
+			{
+				type = reqs.first;
+				return it;
+			}
+		}
+	}
 
+	type = 0;
+	return {};
 }
 
 DeviceMemoryAllocator::ImgReqs::iterator DeviceMemoryAllocator::findImgReq(const Entry& entry,
 	unsigned int& type)
 {
+	for(auto& reqs : imageRequirements_)
+	{
+		auto& b = reqs.second;
+		for(auto it = b.begin(); it < b.end(); ++it)
+		{
+			if(it->entry == &entry)
+			{
+				type = reqs.first;
+				return it;
+			}
+		}
+	}
 
+	type = 0;
+	return {};
 }
 
 void DeviceMemoryAllocator::minimizeAllocations()

@@ -11,7 +11,7 @@ namespace vpp
 MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
 	: memory_(&memory), allocation_(alloc)
 {
-	if(!(memory.propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible))
+	if(!(memory.propertyFlags() & vk::MemoryPropertyBits::hostVisible))
 		throw std::logic_error("vpp::MemoryMap: trying to map device local memory");
 
 	vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {}, &ptr_);
@@ -197,11 +197,11 @@ DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, std::uint32_t 
 {
 	typeIndex_ = typeIndex;
 	size_ = size;
-	flags_ = dev.memoryProperties().memoryTypes()[typeIndex_].propertyFlags();
+	flags_ = dev.memoryProperties().memoryTypes[typeIndex_].propertyFlags;
 
 	vk::MemoryAllocateInfo info;
-	info.allocationSize(size_);
-	info.memoryTypeIndex(typeIndex_);
+	info.allocationSize = size_;
+	info.memoryTypeIndex = typeIndex_;
 	vk::allocateMemory(vkDevice(), &info, nullptr, &memory_);
 }
 DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryPropertyFlags flags)
@@ -212,16 +212,14 @@ DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryProp
 	size_ = size;
 
 	vk::MemoryAllocateInfo info;
-	info.allocationSize(size_);
-	info.memoryTypeIndex(typeIndex_);
+	info.allocationSize = size_;
+	info.memoryTypeIndex = typeIndex_;
 	vk::allocateMemory(vkDevice(), &info, nullptr, &memory_);
 }
 DeviceMemory::~DeviceMemory()
 {
 	if(!allocations_.empty())
-	{
 		std::cerr << "vpp::~DeviceMemory: there are " << allocations_.size() << "allocs left\n";
-	}
 
 	if(vkDeviceMemory()) vk::freeMemory(vkDevice(), memory_, nullptr);
 }
@@ -246,20 +244,82 @@ Allocation DeviceMemory::allocSpecified(std::size_t offset, std::size_t size, Al
 Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	AllocationType type) const
 {
-	static const AllocationEntry start = {{0, 0}, AllocationType::none};
-	auto granularity = device().properties().limits().bufferImageGranularity();
+	//TODO: better allocation finding algorithm.
+	//atm the allocation with the least waste for alignment or granularity is chosen,
+	//but there may result small gaps between the allocation which will likely never
+	//be used. if an allocation fits a free segment between allocations really good, it should
+	//be chosen.
+	//
+	//e.g. --allocation---- || -----A) free 10MB----- || -----allocation---- || ----B) free 20---
+	//1) first call to allocatable: size 9MB, would fit free segment A as well as B
+	//B is chosen since it results in less space waste
+	//2) first call to allocatable: size 15MB, does now fit if none of the free segments
+	//if the first allocation had chosen segment A this second allocation would now
+	//fit in B.
+	
+	static constexpr AllocationEntry start = {{0, 0}, AllocationType::none};
+	auto granularity = device().properties().limits.bufferImageGranularity;
 
+
+	//checks for best possible allocation
+	//the best allocation wastes the least space for alignment or granularity reqs
+	Allocation best = {};
+	std::size_t bestWaste = -1;
+	
 	const AllocationEntry* old = &start;
-	for(auto& alloc : allocations_) {
-		auto alignedOffset = ((old->allocation.offset + alignment) & ~(alignment - 1));
-		if(old->type != AllocationType::none && old->type != alloc.type)
+	for(auto& alloc : allocations_) 
+	{
+		auto alignedOffset = old->allocation.offset;
+
+		//check for granularity between prev and to be inserted
+		if(old->type != AllocationType::none && old->type != type)
 			alignedOffset = (alignedOffset + granularity) & ~(granularity - 1);
 
-		if((alloc.allocation.offset - alignedOffset) > size) return {alignedOffset, size};
+		//apply alignment
+		alignedOffset = ((alignedOffset + alignment) & ~(alignment - 1));
+
+		//check for granularity between next and to be inserted
+		auto end = alignedOffset + size;
+		if(alloc.type != AllocationType::none && alloc.type != type)
+			end = (alignedOffset + size + granularity) & ~(granularity - 1);
+
+		if(end < alloc.allocation.offset) 
+		{
+			auto newWaste = alignedOffset - old->allocation.offset;
+			newWaste += end - (alignedOffset + size);
+			if(newWaste < bestWaste)
+			{
+				bestWaste = newWaste;
+				best = {alignedOffset, size};
+			}
+		}
+
 		old = &alloc;
 	}
 
-	return {};
+	//check for segment AFTER the last allcation, since the loop just checks the segments
+	//between two allocations
+	//just copied from above with the "new allocation" alloc being an empty past-end allocation
+	auto alignedOffset = old->allocation.offset;
+
+	//check for granularity between prev and to be inserted
+	if(old->type != AllocationType::none && old->type != type)
+		alignedOffset = (alignedOffset + granularity) & ~(granularity - 1);
+
+	//apply alignment
+	alignedOffset = ((alignedOffset + alignment) & ~(alignment - 1));
+
+	if(alignedOffset + size < this->size())
+	{
+		auto newWaste = alignedOffset - old->allocation.offset;
+		if(newWaste < bestWaste)
+		{
+			bestWaste = newWaste;
+			best = {alignedOffset, size};
+		}
+	}
+
+	return best;
 }
 
 void DeviceMemory::free(const Allocation& alloc)
@@ -300,7 +360,7 @@ std::size_t DeviceMemory::size() const
 
 MemoryMapView DeviceMemory::map(const Allocation& allocation)
 {
-	if(!(propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible))
+	if(!(propertyFlags() & vk::MemoryPropertyBits::hostVisible))
 		throw std::logic_error("vpp::DeviceMemory::map: not mappable.");
 
 	if(!mapped()) memoryMap_ = MemoryMap(*this, allocation);
