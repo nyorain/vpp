@@ -81,7 +81,6 @@ constexpr auto uuidSize = 16;
 constexpr auto maxMemoryTypes = 32;
 constexpr auto maxMemoryHeaps = 16;
 constexpr auto maxExtensionNameSize = 256;
-constexpr auto maxExtensionNameSize = 256;
 constexpr auto maxDescriptionSize = 256;
 
 using Instance = VkInstance;
