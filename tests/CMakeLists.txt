@@ -1,5 +1,6 @@
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}") #mainly for nytl
 
+#function to easily bake shaders using glslandValidator
 function(add_shader name project)
 	add_custom_command(
 		OUTPUT "${CMAKE_BINARY_DIR}/${name}.spv"
@@ -14,6 +15,7 @@ function(add_shader name project)
 	add_dependencies(${project} shader_${name})
 endfunction(add_shader)
 
+#add included tests
 add_subdirectory(particles)
 add_subdirectory(clouds)
 add_subdirectory(godrays)

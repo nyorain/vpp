@@ -1,5 +1,4 @@
-include_directories("$ENV{VK_SDK_PATH}/Include")
-
+#default sources
 set(vpp-sources
 	allocator.cpp
     context.cpp
@@ -25,26 +24,20 @@ set(vpp-sources
 	work.cpp
 	provider.cpp)
 
-if(WIN32 OR MSYS OR MINGW)
-	set(VPP_WINDOWS 1)
-else()
-	set(VPP_WINDOWS 0)
-endif()
-
+#add backends
 if(${VPP_WINDOWS})
 	set(vpp-sources ${vpp-sources} backend/win32.cpp)
 elseif(UNIX)
 	set(vpp-sources ${vpp-sources} backend/xcb.cpp backend/wayland.cpp)
 endif()
 
+#library
 add_library(vpp SHARED ${vpp-sources})
 
-if(${VPP_WINDOWS})
-	target_link_libraries(vpp "$ENV{VK_SDK_PATH}/Source/lib/vulkan-1.dll")
-elseif()
-	target_link_libraries(vpp "vulkan")
-endif()
+#link to vulkan
+target_link_libraries(vpp ${vulkan-lib})
 
+#install
 install(TARGETS vpp
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
