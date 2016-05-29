@@ -62,6 +62,8 @@
 #include "fwd.hpp"
 #include "enums.hpp"
 
+#include <array>
+
 namespace vk
 {
 
@@ -279,9 +281,9 @@ struct PhysicalDeviceLimits
 	uint32_t maxFragmentDualSrcAttachments {};
 	uint32_t maxFragmentCombinedOutputResources {};
 	uint32_t maxComputeSharedMemorySize {};
-	uint32_t maxComputeWorkGroupCount[3] {};
+	std::array<uint32_t, 3> maxComputeWorkGroupCount {};
 	uint32_t maxComputeWorkGroupInvocations {};
-	uint32_t maxComputeWorkGroupSize[3] {};
+	std::array<uint32_t, 3> maxComputeWorkGroupSize {};
 	uint32_t subPixelPrecisionBits {};
 	uint32_t subTexelPrecisionBits {};
 	uint32_t mipmapPrecisionBits {};
@@ -290,8 +292,8 @@ struct PhysicalDeviceLimits
 	float maxSamplerLodBias {};
 	float maxSamplerAnisotropy {};
 	uint32_t maxViewports {};
-	uint32_t maxViewportDimensions[2] {};
-	float viewportBoundsRange[2] {};
+	std::array<uint32_t, 2> maxViewportDimensions {};
+	std::array<float, 2> viewportBoundsRange {};
 	uint32_t viewportSubPixelBits {};
 	size_t minMemoryMapAlignment {};
 	DeviceSize minTexelBufferOffsetAlignment {};
@@ -324,8 +326,8 @@ struct PhysicalDeviceLimits
 	uint32_t maxCullDistances {};
 	uint32_t maxCombinedClipAndCullDistances {};
 	uint32_t discreteQueuePriorities {};
-	float pointSizeRange[2] {};
-	float lineWidthRange[2] {};
+	std::array<float, 2> pointSizeRange {};
+	std::array<float, 2> lineWidthRange {};
 	float pointSizeGranularity {};
 	float lineWidthGranularity {};
 	Bool32 strictLines {};
@@ -361,8 +363,8 @@ struct PhysicalDeviceProperties
 	uint32_t vendorID {};
 	uint32_t deviceID {};
 	PhysicalDeviceType deviceType {};
-	char deviceName[maxPhysicalDeviceNameSize] {};
-	uint8_t pipelineCacheUUID[uuidSize] {};
+	std::array<char, maxPhysicalDeviceNameSize> deviceName {};
+	std::array<uint8_t, uuidSize> pipelineCacheUUID {};
 	PhysicalDeviceLimits limits {};
 	PhysicalDeviceSparseProperties sparseProperties {};
 
@@ -410,9 +412,9 @@ struct MemoryHeap
 struct PhysicalDeviceMemoryProperties
 {
 	uint32_t memoryTypeCount {};
-	MemoryType memoryTypes[maxMemoryTypes] {};
+	std::array<MemoryType, maxMemoryTypes> memoryTypes {};
 	uint32_t memoryHeapCount {};
-	MemoryHeap memoryHeaps[maxMemoryHeaps] {};
+	std::array<MemoryHeap, maxMemoryHeaps> memoryHeaps {};
 
 	const VkPhysicalDeviceMemoryProperties& vkHandle() const { return reinterpret_cast<const VkPhysicalDeviceMemoryProperties&>(*this); }
 	VkPhysicalDeviceMemoryProperties& vkHandle() { return reinterpret_cast<VkPhysicalDeviceMemoryProperties&>(*this); }
@@ -460,7 +462,7 @@ struct DeviceCreateInfo
 };
 struct ExtensionProperties
 {
-	char extensionName[maxExtensionNameSize] {};
+	std::array<char, maxExtensionNameSize> extensionName {};
 	uint32_t specVersion {};
 
 	const VkExtensionProperties& vkHandle() const { return reinterpret_cast<const VkExtensionProperties&>(*this); }
@@ -471,10 +473,10 @@ struct ExtensionProperties
 };
 struct LayerProperties
 {
-	char layerName[maxExtensionNameSize] {};
+	std::array<char, maxExtensionNameSize> layerName {};
 	uint32_t specVersion {};
 	uint32_t implementationVersion {};
-	char description[maxDescriptionSize] {};
+	std::array<char, maxDescriptionSize> description {};
 
 	const VkLayerProperties& vkHandle() const { return reinterpret_cast<const VkLayerProperties&>(*this); }
 	VkLayerProperties& vkHandle() { return reinterpret_cast<VkLayerProperties&>(*this); }
@@ -1227,9 +1229,9 @@ struct PipelineColorBlendStateCreateInfo
 	LogicOp logicOp {};
 	uint32_t attachmentCount {};
 	const PipelineColorBlendAttachmentState* pAttachments {};
-	float blendConstants[4] {};
+	std::array<float, 4> blendConstants {};
 
-	PipelineColorBlendStateCreateInfo(PipelineColorBlendStateCreateFlags xflags = {}, Bool32 xlogicOpEnable = {}, LogicOp xlogicOp = {}, uint32_t xattachmentCount = {}, const PipelineColorBlendAttachmentState* xpAttachments = {}, float xblendConstants = {}) : flags(xflags), logicOpEnable(xlogicOpEnable), logicOp(xlogicOp), attachmentCount(xattachmentCount), pAttachments(xpAttachments), blendConstants(xblendConstants) {}
+	PipelineColorBlendStateCreateInfo(PipelineColorBlendStateCreateFlags xflags = {}, Bool32 xlogicOpEnable = {}, LogicOp xlogicOp = {}, uint32_t xattachmentCount = {}, const PipelineColorBlendAttachmentState* xpAttachments = {}, std::array<float, 4> xblendConstants = {}) : flags(xflags), logicOpEnable(xlogicOpEnable), logicOp(xlogicOp), attachmentCount(xattachmentCount), pAttachments(xpAttachments), blendConstants(xblendConstants) {}
 
 	const VkPipelineColorBlendStateCreateInfo& vkHandle() const { return reinterpret_cast<const VkPipelineColorBlendStateCreateInfo&>(*this); }
 	VkPipelineColorBlendStateCreateInfo& vkHandle() { return reinterpret_cast<VkPipelineColorBlendStateCreateInfo&>(*this); }
@@ -1734,11 +1736,11 @@ struct ImageCopy
 struct ImageBlit
 {
 	ImageSubresourceLayers srcSubresource {};
-	Offset3D srcOffsets[2] {};
+	std::array<Offset3D, 2> srcOffsets {};
 	ImageSubresourceLayers dstSubresource {};
-	Offset3D dstOffsets[2] {};
+	std::array<Offset3D, 2> dstOffsets {};
 
-	ImageBlit(ImageSubresourceLayers xsrcSubresource = {}, Offset3D xsrcOffsets = {}, ImageSubresourceLayers xdstSubresource = {}, Offset3D xdstOffsets = {}) : srcSubresource(xsrcSubresource), srcOffsets(xsrcOffsets), dstSubresource(xdstSubresource), dstOffsets(xdstOffsets) {}
+	ImageBlit(ImageSubresourceLayers xsrcSubresource = {}, std::array<Offset3D, 2> xsrcOffsets = {}, ImageSubresourceLayers xdstSubresource = {}, std::array<Offset3D, 2> xdstOffsets = {}) : srcSubresource(xsrcSubresource), srcOffsets(xsrcOffsets), dstSubresource(xdstSubresource), dstOffsets(xdstOffsets) {}
 
 	const VkImageBlit& vkHandle() const { return reinterpret_cast<const VkImageBlit&>(*this); }
 	VkImageBlit& vkHandle() { return reinterpret_cast<VkImageBlit&>(*this); }
@@ -1765,11 +1767,9 @@ struct BufferImageCopy
 };
 union ClearColorValue
 {
-	float float32[4] {};
-	int32_t int32[4];
-	uint32_t uint32[4];
-
-	ClearColorValue(float xfloat32 = {}, int32_t xint32 = {}, uint32_t xuint32 = {}) : float32(xfloat32), int32(xint32), uint32(xuint32) {}
+	std::array<float, 4> float32 {};
+	std::array<int32_t, 4> int32;
+	std::array<uint32_t, 4> uint32;
 
 	const VkClearColorValue& vkHandle() const { return reinterpret_cast<const VkClearColorValue&>(*this); }
 	VkClearColorValue& vkHandle() { return reinterpret_cast<VkClearColorValue&>(*this); }
@@ -1794,8 +1794,6 @@ union ClearValue
 {
 	ClearColorValue color {};
 	ClearDepthStencilValue depthStencil;
-
-	ClearValue(ClearColorValue xcolor = {}, ClearDepthStencilValue xdepthStencil = {}) : color(xcolor), depthStencil(xdepthStencil) {}
 
 	const VkClearValue& vkHandle() const { return reinterpret_cast<const VkClearValue&>(*this); }
 	VkClearValue& vkHandle() { return reinterpret_cast<VkClearValue&>(*this); }
@@ -2378,9 +2376,9 @@ struct DebugMarkerMarkerInfoEXT
 	StructureType sType {StructureType::debugMarkerMarkerInfoEXT};
 	const void* pNext {};
 	const char* pMarkerName {};
-	float color[4] {};
+	std::array<float, 4> color {};
 
-	DebugMarkerMarkerInfoEXT(const char* xpMarkerName = {}, float xcolor = {}) : pMarkerName(xpMarkerName), color(xcolor) {}
+	DebugMarkerMarkerInfoEXT(const char* xpMarkerName = {}, std::array<float, 4> xcolor = {}) : pMarkerName(xpMarkerName), color(xcolor) {}
 
 	const VkDebugMarkerMarkerInfoEXT& vkHandle() const { return reinterpret_cast<const VkDebugMarkerMarkerInfoEXT&>(*this); }
 	VkDebugMarkerMarkerInfoEXT& vkHandle() { return reinterpret_cast<VkDebugMarkerMarkerInfoEXT&>(*this); }

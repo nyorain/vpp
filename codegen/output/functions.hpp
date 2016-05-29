@@ -459,9 +459,9 @@ void cmdSetDepthBias(CommandBuffer commandBuffer, float depthBiasConstantFactor,
 {
 	vkCmdSetDepthBias(commandBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor);
 }
-void cmdSetBlendConstants(CommandBuffer commandBuffer, const float blendConstants[4])
+void cmdSetBlendConstants(CommandBuffer commandBuffer, std::array<const float, 4> blendConstants)
 {
-	vkCmdSetBlendConstants(commandBuffer, blendConstants);
+	vkCmdSetBlendConstants(commandBuffer, blendConstants.data());
 }
 void cmdSetDepthBounds(CommandBuffer commandBuffer, float minDepthBounds, float maxDepthBounds)
 {

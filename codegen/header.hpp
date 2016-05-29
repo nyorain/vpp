@@ -19,6 +19,8 @@ const auto constexpr structsHeader = 1 + R"SRC(
 #include "fwd.hpp"
 #include "enums.hpp"
 
+#include <array>
+
 )SRC";
 
 const auto constexpr enumsHeader = 1 + R"SRC(
