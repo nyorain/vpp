@@ -522,7 +522,15 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 				functions_ << sepr << "static_cast<" << param.type.string() << ">("
 						<< param.name << ")";
 			}
-			else functions_ << sepr << param.name;
+			else if(!param.type.arraylvl.empty())
+			{
+				functions_ << sepr << param.name << ".data()";
+			}
+			else 
+			{
+				functions_ << sepr << param.name;
+			}
+
 			sepr = ", ";
 		}
 
@@ -695,14 +703,14 @@ void CCOutputGenerator::printStruct(const Struct& type)
 
 		if(member.name == "sType" || member.name == "pNext") continue;
 
-		paramList += sepr + mtype + " x" + mname + " = {}"; //ctor params
+		paramList += sepr + paramName(member, "x") + " = {}"; //ctor params
 		initList += sepr + mname + "(x" + mname + ")"; //initializer
 
 		sepr = ", ";
 	}
 
 	//init ctor
-	if(!type.returnedonly)
+	if(!type.returnedonly && !type.isUnion)
 	{
 		structs_ << "\n\t" << name << "(" << paramList << ")";
 		if(!initList.empty()) structs_ << " : " << initList;
@@ -722,10 +730,14 @@ void CCOutputGenerator::printStruct(const Struct& type)
 	structs_ << "};\n";
 }
 
-std::string CCOutputGenerator::paramName(const Param& param) const
+std::string CCOutputGenerator::paramName(const Param& param, const std::string& namePrefix) const
 {
-	std::string ret = typeName(param.type);
-	ret += " " + param.name;
+	std::string ret;
+
+	for(auto& lvl : param.type.arraylvl)
+		ret += "std::array<";
+
+	ret += typeName(param.type);
 
 	for(auto& lvl : param.type.arraylvl)
 	{
@@ -736,10 +748,12 @@ std::string CCOutputGenerator::paramName(const Param& param) const
 		{
 			removeVkPrefix(lvlName);
 			camelCaseip(lvlName);
-		}
-
-		ret += "[" + lvlName + "]";
+		} 
+			
+		ret += ", " + lvlName + ">";
 	}
+
+	ret += " " + namePrefix + param.name;
 
 	return ret;
 }

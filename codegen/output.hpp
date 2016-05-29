@@ -77,7 +77,7 @@ public:
 	std::string constantName(const Constant& c) const;
 	std::string typeName(const Type& type) const;
 	std::string typeName(const QualifiedType& type) const;
-	std::string paramName(const Param& param) const;
+	std::string paramName(const Param& param, const std::string& namePrefix = "") const;
 
 	void outputAll(const std::string& output);
 	void outputAllHeader(const std::string& output);
