@@ -1,4 +1,12 @@
 - better renderer resetting (all command pools at once, just resize the frameRenderers vector)
 - textures
-- correctly (efficient) device memory allocator
-- something about descriptors and descriptor pools
+- fully implement examples!
+	- general initializer
+		- something about descriptors and descriptor pools
+		- think about buffer/image providers
+	- improve classes to use allocators and provider
+	- backend agnostic createContext function
+	- display class for vkDisplayKHR extension
+	- queue management
+		- easier querying/creation/using for commands
+	- some smaller improvements
