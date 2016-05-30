@@ -19,6 +19,7 @@ at some first release of a stable api.
 Note that those examples just represent one part of the library (the highest abstraction level) while
 there are also other not-shown parts of the library. The code is more some kind of concept, it just exists
 to show how one would do certain things with vpp.
+Some parts of the examples are more concepts and not yet fully implemented in the library!
 
 ## Contexts
 If you just want a vulkan context you can play around with and do not care about the exact details of
@@ -73,10 +74,10 @@ class MyRendererBuilder : public vpp::RendererBuilder
 vpp::SwapChainRenderer renderer(swapChain, builderObject, {renderPass, context->presentQueue()});
 
 //This function will render one frame and present it.
-//Usually before rendering there would be some kind of (backend-specific) event handling, which would
-//cause the application to quit (break the loop) if the window is closed, and a resize of the swapchain
-//(which would result in the need to recreate the SwapChainRenderer) if the window is resized.
-//Here, we just render.
+//Usually before rendering there would be some kind of (backend-specific) event handling, 
+//which would cause the application to quit (break the loop) if the window is closed, and a resize 
+//of the swapchain (which would result in the need to recreate the SwapChainRenderer) if the 
+//window is resized. Here, we just render.
 while(true) renderer.render();
 ```````````````````````
 
@@ -101,7 +102,7 @@ Create Multiple Objects
 * 1MB VertexBuffer
 * 48KB IndexBuffer
 * 96B UniformBuffer, mappable since it will be changed every frame
-* 1000x1000 Image
+* 1000x1000 2D Image (can be used as texture e.g.)
 * 4K Framebuffer only with a color attachment
 
 ``````````````````````cpp
@@ -145,23 +146,24 @@ This example shows how to fill or retrieve the data from buffers and images.
 //Fill buffer1 with the 32 bit int and the data of a vector (will extract it correctly)
 std::uint32_t a = 420;
 std::vector<std::int32_t> b = {1, 4, 2, 5, 6, 3, 2, 4, 3};
-
 auto work1 = bufferA.fill({{a}, {b}}); 
+
 
 //Fill buffer2 with the float[4] array, and two floats
 //The extra 4 in the last data segment signals that it should have an offset of 4 to the previous segment.
 float[4] c = {1.0, 7.7, 4.9, 2.9};
-
 auto work2 = bufferB.fill({c}, {34.f}, {45.f, 4}}); 
+
 
 //In this case the buffer is just filles using a pointer to data and the size of the data
 void* dData = ...;
 std::size_t dSize = ...;
-
 auto work3 = bufferC.fill({{0.f}, {dData, dSize}}); 
+
 
 //Retrieve the data from a buffer
 auto work4 = bufferD.retrieve();
+
 
 //If we now want to make sure all the needed work is done, we can simply wait for it to finish.
 //Usually one wants to do this later, when there is no more work for the cpu to do.
@@ -169,6 +171,7 @@ work1->finish();
 work2->finish();
 work3->finish();
 work4->finish();
+
 
 //Alternatively, if there is lots of setup to do and one does not want to care about all work objects
 //seperatly, it can simply give them to a work manager and then wait for the work manager at the end
@@ -179,6 +182,7 @@ workManager.add({std::move(work1), std::move(work2), std::move(work3), std::move
 //...
 //later on
 workManager.finish();
+
 
 //Now retrieve the data of the last buffer
 std::uint8_t& data = work4->data();
