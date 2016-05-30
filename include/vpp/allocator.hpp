@@ -128,14 +128,12 @@ protected:
 	static bool suppportsType(std::uint32_t bits, unsigned int type);
 
 	//utility allocation functions
-	void minimizeAllocations();
 	void allocate(unsigned int type);
+	void allocate(unsigned int type, const std::vector<Requirement*>& requirements);
 	DeviceMemory* findMem(Requirement& req);
 	Requirements::iterator findReq(const Entry& entry);
-	std::vector<std::pair<unsigned int, Requirement*>> queryTypes();
+	std::map<unsigned int, std::vector<Requirement*>> queryTypes();
 	unsigned int findBestType(std::uint32_t typeBits) const;
-
-	std::map<unsigned int, std::size_t> sizeMap();
 
 protected:
 	Requirements requirements_;
