@@ -483,7 +483,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 
 		assureGuard(functions_, funcGuard, guard);
 
-		functions_ << typeName(cmd.signature.returnType) << " " << name << "(";
+		functions_ << "inline " << typeName(cmd.signature.returnType) << " " << name << "(";
 
 		auto sepr = "";
 		for(auto& param : cmd.signature.params)
