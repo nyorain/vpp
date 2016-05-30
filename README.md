@@ -28,8 +28,8 @@ swapchain for a given backend.
 
 `````````````````````````cpp
 //Let vpp query the backend and create a context for it.
-//Normally you would pass some createInfo wich describes e.g. which queues/extensions/layers and debug
-//information you want, we just use the defaults here.
+//Normally you would pass some createInfo wich describes e.g. which queues/extensions/layers and 
+//debug information you want, we just use the defaults here.
 std::unique_ptr<Context> context = vpp::createContext({}); 
 if(!context) throw std::runtime_error("Failed to create vp context");
 
@@ -111,9 +111,11 @@ using namespace vpp;
 //dev is a vulkan device in this case, manually created or retrieved by a context
 Initializer<Buffer> initBuf1(dev, {{}, 1024 * 2000, vk::BufferUsageBits::vertex}); 
 Initializer<Buffer> initBuf2(dev, {{}, 1024 * 48, vk::BufferUsageBits::index}); 
-Initializer<Buffer> initBuf3(dev, {{}, 96, vk::BufferUsageBits::uniform}, vk::MemoryPropertyBits::hostVisible); 
+Initializer<Buffer> initBuf3(dev, {{}, 96, vk::BufferUsageBits::uniform}, 
+	vk::MemoryPropertyBits::hostVisible); 
 
-Initializer<ViewableImage> initImg(dev, {{}, vk::ImageType::e2d, vk::Format::r8g8b8a8Unorm, {1000, 1000}});
+Initializer<ViewableImage> initImg(dev, {{}, vk::ImageType::e2d, 
+	vk::Format::r8g8b8a8Unorm, {1000, 1000}});
 Initializer<FrameBuffer> initFB(dev, renderPass, {3840, 2160}, {ViewableImage::defaultColor});
 ``````````````````
 
@@ -141,7 +143,7 @@ vpp uses this idiom not only to initializer resources but also to execute other 
 This example shows how to fill or retrieve the data from buffers and images.
 
 ``````````````````cpp
-//Easily fill multiple data segments into multiple buffers and retrieve the async work objects.
+//Easily fill multiple data segments into buffers and retrieve the async work objects.
 
 //Fill buffer1 with the 32 bit int and the data of a vector (will extract it correctly)
 std::uint32_t a = 420;
@@ -150,12 +152,13 @@ auto work1 = bufferA.fill({{a}, {b}});
 
 
 //Fill buffer2 with the float[4] array, and two floats
-//The extra 4 in the last data segment signals that it should have an offset of 4 to the previous segment.
+//The extra number (4) in the last data segment signals that it should have an 
+//offset of 4 to the previous segment.
 float[4] c = {1.0, 7.7, 4.9, 2.9};
 auto work2 = bufferB.fill({c}, {34.f}, {45.f, 4}}); 
 
 
-//In this case the buffer is just filles using a pointer to data and the size of the data
+//In this case the buffer is just filles using a pointer to data and the size of the data.
 void* dData = ...;
 std::size_t dSize = ...;
 auto work3 = bufferC.fill({{0.f}, {dData, dSize}}); 
