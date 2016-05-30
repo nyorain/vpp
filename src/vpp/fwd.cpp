@@ -12,6 +12,9 @@ const auto defaultDebugFlags = vk::DebugReportBitsEXT::error | vk::DebugReportBi
 //from commandBuffer.hpp
 const auto commandBufferLevelPrimary = vk::CommandBufferLevel::primary;
 
+//pipeline.hpp
+const auto allShaderStages = vk::ShaderStageBits::all;
+
 } //fwd
 
 } //vpp

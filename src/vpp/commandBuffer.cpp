@@ -1,4 +1,5 @@
 #include <vpp/commandBuffer.hpp>
+#include <vpp/vk.hpp>
 
 namespace vpp
 {
@@ -49,8 +50,8 @@ CommandPool::CommandPool(const Device& dev, std::uint32_t qfam, vk::CommandPoolC
 	: Resource(dev)
 {
 	vk::CommandPoolCreateInfo info;
-	info.flags(flags);
-	info.queueFamilyIndex(qfam);
+	info.flags = flags;
+	info.queueFamilyIndex = qfam;
 
 	vk::createCommandPool(vkDevice(), &info, nullptr, &commandPool_);
 }
@@ -90,9 +91,9 @@ void CommandPool::destroy()
 std::vector<CommandBuffer> CommandPool::allocate(std::size_t count, vk::CommandBufferLevel lvl)
 {
 	vk::CommandBufferAllocateInfo info;
-	info.commandPool(vkCommandPool());
-	info.level(lvl);
-	info.commandBufferCount(count);
+	info.commandPool = vkCommandPool();
+	info.level = lvl;
+	info.commandBufferCount = count;
 
 	std::vector<vk::CommandBuffer> buffers(count);
 	vk::allocateCommandBuffers(vkDevice(), &info, buffers.data());
@@ -109,9 +110,9 @@ std::vector<CommandBuffer> CommandPool::allocate(std::size_t count, vk::CommandB
 CommandBuffer CommandPool::allocate(vk::CommandBufferLevel lvl)
 {
 	vk::CommandBufferAllocateInfo info;
-	info.commandPool(vkCommandPool());
-	info.level(lvl);
-	info.commandBufferCount(1);
+	info.commandPool = vkCommandPool();
+	info.level = lvl;
+	info.commandBufferCount = 1;
 
 	vk::CommandBuffer buffer;
 	vk::allocateCommandBuffers(vkDevice(), &info, &buffer);

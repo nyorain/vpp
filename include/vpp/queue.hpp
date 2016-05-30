@@ -1,15 +1,22 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
+#include <vpp/utility/nonCopyable.hpp>
 
 namespace vpp
 {
 
 ///Represents a vulkan device queue.
 ///Cannot be created or destroyed, must be received by the device class.
-class Queue
+class Queue : public NonCopyable
 {
 public:
+	///Never call these functions manually.
+	///They are used by the device just for being able to store them, not used after creation
+	~Queue() = default;
+	Queue(Queue&& other) noexcept = default;
+	Queue& operator=(Queue&& other) noexcept = default;
+
 	///Return the queueFamily of this queue
 	unsigned int family() const { return family_; }
 
@@ -27,7 +34,6 @@ public:
 protected:
 	friend Device;
 	Queue(vk::Queue queue, const vk::QueueFamilyProperties& prop, unsigned int family, unsigned int id);
-	~Queue() = default;
 
 protected:
 	vk::Queue queue_;

@@ -16,7 +16,7 @@ public:
 	{
 		vk::RenderPass renderPass {};
 		vk::Extent2D size {};
-		std::vector<ViewableImage::CreateInfo> attachments;
+		std::vector<ViewableImage::CreateInfo> attachments {};
 	};
 
 public:

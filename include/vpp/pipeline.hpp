@@ -7,7 +7,7 @@
 namespace vpp
 {
 
-namespace fwd { vk::ShaderStageFlags allShaderStages; }
+namespace fwd { extern vk::ShaderStageFlags allShaderStages; }
 
 unsigned int formatSize(vk::Format format);
 

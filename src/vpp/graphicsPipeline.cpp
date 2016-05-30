@@ -7,7 +7,7 @@
 #include <utility>
 
 namespace vpp
-  
+{  
 
 //info default ctor
 GraphicsPipeline::StatesCreateInfo::StatesCreateInfo(const vk::Viewport& viewportinfo)
@@ -23,7 +23,7 @@ GraphicsPipeline::StatesCreateInfo::StatesCreateInfo(const vk::Viewport& viewpor
 
 	viewports.emplace_back(viewportinfo);
 
-	vk::Extent2D extent(viewportinfo.width(), viewportinfo.height());
+	vk::Extent2D extent(viewportinfo.width, viewportinfo.height);
 	scissors.push_back({{0, 0}, extent});
 
 	//structs
@@ -36,20 +36,20 @@ GraphicsPipeline::StatesCreateInfo::StatesCreateInfo(const vk::Viewport& viewpor
 	inputAssembly.topology = vk::PrimitiveTopology::triangleList;
 
 	rasterization.polygonMode = vk::PolygonMode::fill;
-	rasterization.cullMode = vk::CullModeFlagBits::back;
+	rasterization.cullMode = vk::CullModeBits::back;
 	rasterization.frontFace = vk::FrontFace::counterClockwise;
 	rasterization.depthClampEnable = true;
 	rasterization.rasterizerDiscardEnable = false;
 	rasterization.depthBiasEnable = false;
 	rasterization.lineWidth = 1.f;
 
-	colorBlend.attachmentCount = blendAttachments_.size();
-	colorBlend.pAttachments = blendAttachments_.data();
+	colorBlend.attachmentCount = blendAttachments.size();
+	colorBlend.pAttachments = blendAttachments.data();
 
-	viewport.viewportCount = viewports_.size();
-	viewport.pViewports = viewports_.data();
-	viewport.scissorCount = scissors_.size();
-	viewport.pScissors = scissors_.data();
+	viewport.viewportCount = viewports.size();
+	viewport.pViewports = viewports.data();
+	viewport.scissorCount = scissors.size();
+	viewport.pScissors = scissors.data();
 
 	depthStencil.depthTestEnable = true;
 	depthStencil.depthWriteEnable = true;
@@ -60,7 +60,7 @@ GraphicsPipeline::StatesCreateInfo::StatesCreateInfo(const vk::Viewport& viewpor
 	depthStencil.front = stencil;
 
 	multisample.pSampleMask = nullptr;
-	multisample.rasterizationSamples = vk::SampleCountFlagBits::e1;
+	multisample.rasterizationSamples = vk::SampleCountBits::e1;
 }
 
 //pipeline
@@ -100,7 +100,7 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 		bindingDescriptions.emplace_back();
 		bindingDescriptions.back().binding = layout->binding;
 		bindingDescriptions.back().stride = offset;
-		bindingDescriptions.back().inputRate = vk::VertexInputRate::Vertex;
+		bindingDescriptions.back().inputRate = vk::VertexInputRate::vertex;
 	}
 
 	vertexInfo.vertexBindingDescriptionCount = bindingDescriptions.size();
@@ -123,8 +123,8 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 
 	//dynamic state
 	vk::PipelineDynamicStateCreateInfo dynamicState;
-	dynamicState.pDynamicStates(createInfo.dynamicStates.data());
-	dynamicState.dynamicStateCount(createInfo.dynamicStates.size());
+	dynamicState.pDynamicStates = createInfo.dynamicStates.data();
+	dynamicState.dynamicStateCount = createInfo.dynamicStates.size();
 
 	//create it
 	//why is this needed? app crashes without copying it

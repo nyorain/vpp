@@ -57,7 +57,7 @@ void Framebuffer::initMemoryLess(const Device& dev, const CreateInfo& info)
 
 	attachments_.reserve(info.attachments.size());
 	for(auto& attachmentinfo : info_.attachments) {
-		attachmentinfo.imageInfo.extent({size().width(), size().height(), 1});
+		attachmentinfo.imageInfo.extent = {size().width, size().height, 1};
 		attachments_.emplace_back();
 		attachments_.back().initMemoryLess(device(), attachmentinfo.imageInfo);
 	}
@@ -92,12 +92,12 @@ void Framebuffer::initMemoryResources(const std::map<unsigned int, vk::ImageView
 
 	//createinfo
 	vk::FramebufferCreateInfo createInfo;
-	createInfo.renderPass(info_.renderPass);
-	createInfo.attachmentCount(attachments.size());
-	createInfo.pAttachments(attachments.data());
-	createInfo.width(size().width());
-	createInfo.height(size().height());
-	createInfo.layers(1);
+	createInfo.renderPass = info_.renderPass;
+	createInfo.attachmentCount = attachments.size();
+	createInfo.pAttachments = attachments.data();
+	createInfo.width = size().width;
+	createInfo.height = size().height;
+	createInfo.layers = 1;
 
 	vk::createFramebuffer(vkDevice(), &createInfo, nullptr, &framebuffer_);
 }
@@ -111,40 +111,40 @@ std::vector<ViewableImage::CreateInfo> Framebuffer::parseRenderPass(const Render
 	for(std::size_t i(0); i < rp.attachments().size(); ++i)
 	{
 		ViewableImage::CreateInfo fbaInfo;
-		fbaInfo.imageInfo.format(rp.attachments()[i].format());
-		fbaInfo.viewInfo.format(rp.attachments()[i].format());
+		fbaInfo.imageInfo.format = rp.attachments()[i].format;
+		fbaInfo.viewInfo.format = rp.attachments()[i].format;
 
 		vk::ImageUsageFlags usage {};
 		vk::ImageAspectFlags aspect {};
 
 		for(auto& sub : rp.subpasses())
 		{
-			if(sub.pDepthStencilAttachment() && sub.pDepthStencilAttachment()->attachment() == i)
+			if(sub.pDepthStencilAttachment && sub.pDepthStencilAttachment->attachment == i)
 			{
-				usage |= vk::ImageUsageFlagBits::DepthStencilAttachment;
-				aspect |= vk::ImageAspectFlagBits::Depth | vk::ImageAspectFlagBits::Stencil;
+				usage |= vk::ImageUsageBits::depthStencilAttachment;
+				aspect |= vk::ImageAspectBits::depth | vk::ImageAspectBits::stencil;
 			}
 
-			for(auto& ref : makeRange(sub.pInputAttachments(), sub.inputAttachmentCount()))
+			for(auto& ref : makeRange(sub.pInputAttachments, sub.inputAttachmentCount))
 			{
-				if(ref.attachment() == i)
+				if(ref.attachment == i)
 				{
-					usage |= vk::ImageUsageFlagBits::InputAttachment;
-					aspect |= vk::ImageAspectFlagBits::Depth;
+					usage |= vk::ImageUsageBits::inputAttachment;
+					aspect |= vk::ImageAspectBits::depth;
 				}
 			}
 
-			for(auto& ref : makeRange(sub.pColorAttachments(), sub.colorAttachmentCount()))
+			for(auto& ref : makeRange(sub.pColorAttachments, sub.colorAttachmentCount))
 			{
-				if(ref.attachment() == i)
+				if(ref.attachment == i)
 				{
-					usage |= vk::ImageUsageFlagBits::ColorAttachment;
-					aspect |= vk::ImageAspectFlagBits::Color;
+					usage |= vk::ImageUsageBits::colorAttachment;
+					aspect |= vk::ImageAspectBits::color;
 				}
 			}
 		}
 
-		fbaInfo.imageInfo.usage(usage);
+		fbaInfo.imageInfo.usage = usage;
 		fbaInfo.viewInfo.vkHandle().subresourceRange.aspectMask = aspect;
 
 		ret.push_back(fbaInfo);

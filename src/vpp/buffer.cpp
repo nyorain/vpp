@@ -15,7 +15,7 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPr
 	vk::createBuffer(dev.vkDevice(), &info, nullptr, &buffer_);
 	vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_, &reqs);
 
-	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits());
+	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
 	dev.memoryAllocator().request(buffer_, reqs, memoryEntry_);
 }
 
@@ -233,7 +233,7 @@ std::unique_ptr<Work<std::uint8_t&>> Buffer::retrieve() const
 	assureMemory();
 
 	//retrieve by mapping
-	if(memoryEntry().memory()->propertyFlags() & vk::MemoryPropertyFlagBits::HostVisible)
+	if(memoryEntry().memory()->propertyFlags() & vk::MemoryPropertyBits::hostVisible)
 	{
 		//mappable
 		//XXX TODO: alternative to use extra host buffer: just use the mapped range as return data

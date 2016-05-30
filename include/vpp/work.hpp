@@ -2,6 +2,7 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
+#include <vpp/queue.hpp>
 #include <vpp/submit.hpp>
 #include <vpp/commandBuffer.hpp>
 

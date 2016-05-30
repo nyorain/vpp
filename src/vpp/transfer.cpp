@@ -1,4 +1,5 @@
 #include <vpp/transfer.hpp>
+#include <vpp/vk.hpp>
 #include <algorithm>
 
 namespace vpp
@@ -9,10 +10,10 @@ TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t s
 	: mutex_(mtx)
 {
 	vk::BufferCreateInfo info;
-	info.size(size);
-	info.usage(vk::BufferUsageFlagBits::TransferDst | vk::BufferUsageFlagBits::TransferSrc);
+	info.size = size;
+	info.usage = vk::BufferUsageBits::transferDst | vk::BufferUsageBits::transferSrc;
 
-	buffer_ = Buffer(dev, info, vk::MemoryPropertyFlagBits::HostVisible);
+	buffer_ = Buffer(dev, info, vk::MemoryPropertyBits::hostVisible);
 }
 
 TransferManager::TransferBuffer::~TransferBuffer()
@@ -26,17 +27,18 @@ Allocation TransferManager::TransferBuffer::use(std::size_t size)
 	static const Allocation start = {0, 0};
 	auto old = start;
 
-	for(auto& alloc : ranges_)
+	for(auto it = ranges_.begin(); it != ranges_.end(); ++it)
 	{
-		if(alloc.offset - old.end() > size)
+		if(it->offset - old.end() > size)
 		{
-			Allocation allocation = {old.end(), size};
-			auto it = std::lower_bound(ranges_.begin(), ranges_.end(), allocation,
-				[](auto& a, auto& b){ return a.offset < b.offset; });
-			return allocation;
+			Allocation range = {old.end(), size};
+
+			//inserts the tested range before the higher range, if there is any
+			ranges_.insert(it, range);
+			return range;
 		}
 
-		old = alloc;
+		old = *it;
 	}
 
 	return {};

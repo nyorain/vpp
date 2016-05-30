@@ -71,7 +71,10 @@ void Context::initDevice(const CreateInfo& info)
 {
 	//phyiscal device
 	std::vector<vk::PhysicalDevice> phdevs;
-    vk::enumeratePhysicalDevices(vkInstance(), phdevs);
+	auto size = 0u;
+    vk::enumeratePhysicalDevices(vkInstance(), &size, nullptr);
+	phdevs.reserve(size);
+    vk::enumeratePhysicalDevices(vkInstance(), &size, phdevs.data());
 	auto phdev = choosePhysicalDevice(phdevs);
 
 	//extensions & layers
@@ -86,7 +89,11 @@ void Context::initDevice(const CreateInfo& info)
 	}
 
 	//queues
-	auto queueProps = vk::getPhysicalDeviceQueueFamilyProperties(phdev);
+	std::vector<vk::QueueFamilyProperties> queueProps;
+	size = 0u;
+	vk::getPhysicalDeviceQueueFamilyProperties(phdev, &size, nullptr);
+	queueProps.reserve(size);
+	vk::getPhysicalDeviceQueueFamilyProperties(phdev, &size, queueProps.data());
 
 	//present queue
 	auto queues = surface().supportedQueueFamilies(phdev);
@@ -95,7 +102,7 @@ void Context::initDevice(const CreateInfo& info)
 
 	for(auto queue : queues)
 	{
-		if(queueProps[queue].queueFlags() & vk::QueueFlagBits::Graphics)
+		if(queueProps[queue].queueFlags & vk::QueueBits::graphics)
 		{
 			presentQueueFamily = queue;
 			break;
@@ -113,12 +120,12 @@ void Context::initDevice(const CreateInfo& info)
 	bool found = 0;
 	for(auto& queueinfo : queueInfos)
 	{
-		if(queueinfo.queueFamilyIndex() == presentQueueFamily)
+		if(queueinfo.queueFamilyIndex == presentQueueFamily)
 		{
 			if(info.extraPresentQueue)
 			{
-				presentQueueId = queueinfo.queueCount();
-				queueinfo.queueCount(queueinfo.queueCount() + 1);
+				presentQueueId = queueinfo.queueCount;
+				queueinfo.queueCount = queueinfo.queueCount + 1;
 			}
 
 			found = 1;

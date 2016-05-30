@@ -4,21 +4,21 @@ namespace vpp
 {
 
 WaylandSurface::WaylandSurface(vk::Instance instance, wl_display& display, wl_surface& surface) 
-	: Surface(instance)
 {
+	instance_ = instance;
     initSurface(display, surface);
 }
 
 WaylandSurface::~WaylandSurface()
 {
-    Surface::destroy();
+	instance_ = {};
 }
 
 void WaylandSurface::initSurface(wl_display& display, wl_surface& surface)
 {
 	vk::WaylandSurfaceCreateInfoKHR info;
-    info.display(&display);
-    info.surface(&surface);
+    info.display = &display;
+    info.surface = &surface;
 
 	vk::createWaylandSurfaceKHR(vkInstance(), &info, nullptr, &surface_);
 }

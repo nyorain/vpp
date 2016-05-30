@@ -3,6 +3,7 @@
 #define VK_USE_PLATFORM_WAYLAND_KHR
 
 #include <vpp/surface.hpp>
+#include <vpp/context.hpp>
 #include <vpp/vk.hpp>
 
 #include <wayland-client-core.h>
