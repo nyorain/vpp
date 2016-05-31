@@ -4,9 +4,10 @@
 #include <iostream>
 #include <locale>
 
-int main()
+int main(int argc, const char** argv)
 {
-	RegistryLoader loader("./vk.xml");
+	if(argc < 2) return EXIT_FAILURE;
+	RegistryLoader loader(argv[1]);
 
 	std::cout << "loaded ... \n";
 	auto& registry = loader.parse();

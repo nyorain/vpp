@@ -25,6 +25,7 @@
 
 #include <string>
 #include <fstream>
+#include <vector>
 
 class Registry;
 class Param;
@@ -32,6 +33,7 @@ class Type;
 class QualifiedType;
 class Enum;
 class Constant;
+class Command;
 class Requirements;
 class Struct;
 
@@ -62,7 +64,7 @@ protected:
 
 struct CCOutputGeneratorSettings
 {
-	std::string outputFolder = "output";
+	std::string outputFolder = ".";
 };
 
 class CCOutputGenerator : public OutputGenerator
@@ -71,12 +73,16 @@ public:
 	CCOutputGenerator(Registry& reg, const CCOutputGeneratorSettings& settings = {});
 	void generate();
 	void printReqs(Requirements& reqs, const Requirements& fulfilled, const std::string& guard = "");
+
 	void printStruct(const Struct& type);
+	void printCmd(const Command& command);
+	void printVecCmd(const Command& command, const Param& count, const Param& data);
+	void printVecCmd(const Command& command, std::vector<std::pair<const Param*, const Param*>>& pars);
 
 	std::string enumName(const Enum& e, const std::string& name, bool* bit = nullptr) const;
 	std::string constantName(const Constant& c) const;
 	std::string typeName(const Type& type) const;
-	std::string typeName(const QualifiedType& type) const;
+	std::string typeName(const QualifiedType& type, bool change = true) const;
 	std::string paramName(const Param& param, const std::string& namePrefix = "") const;
 
 	void outputAll(const std::string& output);

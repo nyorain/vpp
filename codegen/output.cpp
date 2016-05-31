@@ -32,6 +32,8 @@ constexpr const auto copyright = 1 + R"SRC(
 
 #include <iostream>
 #include <algorithm>
+#include <cstring>
+#include <regex>
 
 //utility
 void tolowerip(std::string& str)
@@ -475,66 +477,12 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		auto it = std::find(fulfilled.commands.begin(), fulfilled.commands.end(), cmdit);
 		if(it != fulfilled.commands.end()) continue;
 
+		assureGuard(functions_, funcGuard, guard);
+
 		auto& cmd = *cmdit;
 		count++;
 
-		auto name = removeVkPrefix(cmd.name, nullptr);
-		name[0] = std::tolower(name[0], std::locale());
-
-		assureGuard(functions_, funcGuard, guard);
-
-		functions_ << "inline " << typeName(cmd.signature.returnType) << " " << name << "(";
-
-		auto sepr = "";
-		for(auto& param : cmd.signature.params)
-		{
-			functions_ << sepr << paramName(param);
-			sepr = ", ";
-		}
-
-		std::string returnString = "";
-		std::string returnStringEnd = "";
-		auto& retType = cmd.signature.returnType;
-
-		if(retType.type->name == "VkResult")
-		{
-			returnString = "return VPP_CALL(static_cast<Result>(";
-			returnStringEnd = "))";
-		}
-		else if(retType.type->name != "void" || retType.pointerlvl > 0)
-		{
-			returnString = "return static_cast<" + typeName(cmd.signature.returnType) + ">(";
-			returnStringEnd = ")";
-		}
-
-		functions_ << ")\n{\n\t" << returnString << cmd.name << "(";
-		sepr = "";
-		for(auto& param : cmd.signature.params)
-		{
-			if(param.type.pointerlvl > 0)
-			{
-				functions_ << sepr << "reinterpret_cast<" << param.type.string() << ">("
-						<< param.name << ")";
-			}
-			else if(param.type.type->category == Type::Category::enumeration ||
-				param.type.type->category == Type::Category::bitmask)
-			{
-				functions_ << sepr << "static_cast<" << param.type.string() << ">("
-						<< param.name << ")";
-			}
-			else if(!param.type.arraylvl.empty())
-			{
-				functions_ << sepr << param.name << ".data()";
-			}
-			else 
-			{
-				functions_ << sepr << param.name;
-			}
-
-			sepr = ", ";
-		}
-
-		functions_ << ")" << returnStringEnd << ";\n}\n";
+		printCmd(cmd);
 	}
 
 	if(count > 0) std::cout << "\tOutputted " << count << " commands\n";
@@ -604,7 +552,7 @@ std::string CCOutputGenerator::enumName(const Enum& e, const std::string& name, 
 	ret[0] = tolower(ret[0], std::locale());
 
 	//remove "Bit" from bitmask enums
-	if(e.bitmask && ret.substr(ret.size() - 3) == "Bit")
+	if(ret.size() > 3 && e.bitmask && ret.substr(ret.size() - 3) == "Bit")
 	{
 		if(bit) *bit = true;
 		ret = ret.substr(0, ret.size() - 3);
@@ -654,13 +602,15 @@ std::string CCOutputGenerator::typeName(const Type& type) const
 	return ret;
 }
 
-std::string CCOutputGenerator::typeName(const QualifiedType& type) const
+std::string CCOutputGenerator::typeName(const QualifiedType& type, bool change) const
 {
 	std::string ret = type.type->name;
-	if(type.type->category != Type::Category::external) ret = typeName(*type.type);
+	if(change && type.type->category != Type::Category::external) ret = typeName(*type.type);
+	else ret = type.type->name;
 
 	if(type.constant) ret = "const " + ret;
 	for(auto i = 0u; i < type.pointerlvl; ++i) ret += "*";
+	if(type.reference) ret += "&";
 	return ret;
 }
 
@@ -687,6 +637,7 @@ void CCOutputGenerator::printStruct(const Struct& type)
 	auto sepr = "";
 	std::string paramList;
 	std::string initList;
+	bool printCtor = false;
 	for(auto& member : type.members)
 	{
 		auto mtype = typeName(member.type);
@@ -701,7 +652,11 @@ void CCOutputGenerator::printStruct(const Struct& type)
 		unionInit = true;
 		structs_ << ";\n";
 
-		if(member.name == "sType" || member.name == "pNext") continue;
+		if(member.name == "sType" || member.name == "pNext")
+		{
+			printCtor = true;
+			continue;
+		}
 
 		paramList += sepr + paramName(member, "x") + " = {}"; //ctor params
 		initList += sepr + mname + "(x" + mname + ")"; //initializer
@@ -710,12 +665,16 @@ void CCOutputGenerator::printStruct(const Struct& type)
 	}
 
 	//init ctor
-	if(!type.returnedonly && !type.isUnion)
+	//there will only be one init constructor if the type isnt union, and there are members like
+	//pNext or structureType, other wise uniform init can be used to init the members
+	if(printCtor && !type.returnedonly && !type.isUnion)
 	{
 		structs_ << "\n\t" << name << "(" << paramList << ")";
 		if(!initList.empty()) structs_ << " : " << initList;
 		structs_ << " {}\n";
 	}
+
+	//TODO: union ctors that initialize the different members?
 
 	//explicit conversion function
 	structs_ << "\n\tconst " << type.name << "& vkHandle() const { return reinterpret_cast<const "
@@ -728,6 +687,101 @@ void CCOutputGenerator::printStruct(const Struct& type)
 	structs_ << "\n\toperator const " << type.name << "&() const { return vkHandle(); };\n";
 	structs_ << "\toperator " << type.name << "&() { return vkHandle(); };\n";
 	structs_ << "};\n";
+}
+
+void CCOutputGenerator::printCmd(const Command& cmd)
+{
+	auto name = removeVkPrefix(cmd.name, nullptr);
+	name[0] = std::tolower(name[0], std::locale());
+
+	functions_ << "inline " << typeName(cmd.signature.returnType) << " " << name << "(";
+
+	auto sepr = "";
+	std::vector<std::pair<const Param*, const Param*>> vecPars;
+
+	for(auto& param : cmd.signature.params)
+	{
+		//reference for non optional pointer parameters
+		auto namedParam = param;
+		if(param.type.pointerlvl > 0 && !param.optional && param.type.type->name != "void")
+		{
+			namedParam.type.pointerlvl--;
+			namedParam.type.reference = true;
+		}
+
+		functions_ << sepr << paramName(namedParam);
+		sepr = ", ";
+
+		auto attr = param.node.attribute("len");
+		std::string len = attr.value();
+		if(len.size() > 0)
+		{
+			for(auto& par : vecPars)
+			{
+				if(par.first->name == len)
+				{
+					par.second = &param;
+					break;
+				}
+			}
+		}
+
+		if(param.name.find("Count") != std::string::npos)
+		{
+			vecPars.push_back({&param, nullptr});
+		}
+
+	}
+
+	std::string returnString = "";
+	std::string returnStringEnd = "";
+	auto& retType = cmd.signature.returnType;
+
+	if(retType.type->name == "VkResult")
+	{
+		returnString = "return VPP_CALL(static_cast<Result>(";
+		returnStringEnd = "))";
+	}
+	else if(retType.type->name != "void" || retType.pointerlvl > 0)
+	{
+		returnString = "return static_cast<" + typeName(cmd.signature.returnType) + ">(";
+		returnStringEnd = ")";
+	}
+
+	functions_ << ")\n{\n\t" << returnString << cmd.name << "(";
+	sepr = "";
+	for(auto& param : cmd.signature.params)
+	{
+		if(param.type.pointerlvl > 0)
+		{
+			const char* ref = "";
+			if(!param.optional && param.type.type->name != "void") ref = "&";
+			functions_ << sepr << "reinterpret_cast<" << typeName(param.type, false) << ">("
+					<< ref << param.name << ")";
+		}
+		else if(param.type.type->category == Type::Category::enumeration ||
+			param.type.type->category == Type::Category::bitmask)
+		{
+			functions_ << sepr << "static_cast<" << typeName(param.type, false) << ">("
+					<< param.name << ")";
+		}
+		else if(!param.type.arraylvl.empty())
+		{
+			functions_ << sepr << param.name << ".data()";
+		}
+		else
+		{
+			functions_ << sepr << param.name;
+		}
+
+		sepr = ", ";
+	}
+
+	functions_ << ")" << returnStringEnd << ";\n}\n";
+
+	//if needed, output the std::vector version of the function
+	if(!vecPars.empty())
+		printVecCmd(cmd, vecPars);
 }
 
 std::string CCOutputGenerator::paramName(const Param& param, const std::string& namePrefix) const
@@ -748,8 +802,8 @@ std::string CCOutputGenerator::paramName(const Param& param, const std::string& 
 		{
 			removeVkPrefix(lvlName);
 			camelCaseip(lvlName);
-		} 
-			
+		}
+
 		ret += ", " + lvlName + ">";
 	}
 
@@ -757,3 +811,305 @@ std::string CCOutputGenerator::paramName(const Param& param, const std::string& 
 
 	return ret;
 }
+
+void CCOutputGenerator::printVecCmd(const Command& cmd,
+	std::vector<std::pair<const Param*, const Param*>>& pars)
+{
+	pars.erase(std::remove_if(pars.begin(), pars.end(), [](const auto& a)
+		{ return a.first == nullptr || a.second == nullptr; }), pars.end());
+
+	if(pars.empty()) return;
+
+	std::pair<const Param*, const Param*>* vecRet = nullptr;
+	for(auto& pair : pars)
+		if(pair.first->type.pointerlvl > 0) vecRet = &pair;
+
+	auto name = removeVkPrefix(cmd.name, nullptr);
+	name[0] = std::tolower(name[0], std::locale());
+
+	if(vecRet)
+	{
+		auto dataCpy = *vecRet->second;
+		dataCpy.type.pointerlvl--;
+		functions_ << "inline std::vector<" << typeName(dataCpy.type) << "> ";
+	}
+
+	else functions_ << "inline " << typeName(cmd.signature.returnType) << " ";
+
+	functions_ << name << "(";
+
+	auto sepr = "";
+	std::string args;
+	for(auto& param : cmd.signature.params)
+	{
+		args += sepr;
+
+		const Param* isCount = nullptr; //the correspnding data param or nulllptr
+		bool isData = false;
+
+		for(auto& par : pars)
+		{
+			if(&param == par.first)
+			{
+				isCount = par.second;
+				break;
+			}
+			else if(&param == par.second)
+			{
+				isData = true;
+				break;
+			}
+		}
+
+		if(isCount)
+		{
+			if(vecRet && &param == vecRet->first) args += "&count";
+			else args += isCount->name + ".size()";
+		}
+		else if(isData)
+		{
+			if(vecRet && &param == vecRet->second)
+			{
+				args += "reinterpret_cast<" + typeName(param.type, false) + ">(";
+				args += "ret.data())";
+			}
+			else
+			{
+				args += "reinterpret_cast<" + typeName(param.type, false) + ">(";
+				args += param.name + ".data())";
+
+				auto typeCopy = param.type;
+				typeCopy.constant = false;
+
+				if(typeCopy.pointerlvl > 0) typeCopy.pointerlvl--;
+				else
+				{
+					std::cout << "### invalid data param in printVecCmd\n";
+					std::cout << cmd.name << "\n";
+					std::cout << param.name << "\n";
+					std::cout << typeCopy.type->name << "\n";
+					continue;
+				}
+
+				functions_ << sepr;
+				if(param.type.constant) functions_ << "const ";
+				functions_ << "std::vector<" << typeName(typeCopy) << ">& " << param.name;
+			}
+		}
+		else
+		{
+			//reference for non optional pointer parameters
+			auto namedParam = param;
+			if(param.type.pointerlvl > 0 && !param.optional && param.type.type->name != "void")
+			{
+				namedParam.type.pointerlvl--;
+				namedParam.type.reference = true;
+			}
+			functions_ << sepr << paramName(namedParam);
+
+			if(param.type.pointerlvl > 0)
+			{
+				const char* ref = "";
+				if(!param.optional && param.type.type->name != "void") ref = "&";
+				args += "reinterpret_cast<";
+				args+= typeName(param.type, false);
+				args += ">(";
+				args += ref;
+				args += param.name;
+				args += ")";
+			}
+			else if(param.type.type->category == Type::Category::enumeration ||
+				param.type.type->category == Type::Category::bitmask)
+			{
+				args += "static_cast<";
+				args += typeName(param.type, false);
+				args += ">(";
+				args += param.name;
+				args += ")";
+			}
+			else if(!param.type.arraylvl.empty())
+			{
+				args += param.name + ".data()";
+			}
+			else
+			{
+				args += param.name;
+			}
+		}
+
+		sepr = ", ";
+	}
+
+	functions_ << ")\n{\n";
+
+	if(vecRet)
+	{
+		std::string code;
+		if(cmd.signature.returnType.type->name != "VkResult") code = vecFuncTemplateVoid;
+		else code = vecFuncTemplate;
+
+		auto dataCpy = *vecRet->second;
+		dataCpy.type.pointerlvl--;
+
+		code = std::regex_replace(code, std::regex("%t"), typeName(dataCpy.type));
+		code = std::regex_replace(code, std::regex("%a"), args);
+		code = std::regex_replace(code, std::regex("%f"), cmd.name);
+
+		functions_ << code;
+		functions_ << "}\n";
+	}
+	else
+	{
+		auto& retType = cmd.signature.returnType;
+		std::string returnString;
+		std::string returnStringEnd;
+		if(retType.type->name == "VkResult")
+		{
+			returnString = "return VPP_CALL(";
+			returnStringEnd = ")";
+		}
+		else if(retType.type->name != "void" || retType.pointerlvl > 0)
+		{
+			returnString = "return static_cast<" + typeName(cmd.signature.returnType) + ">(";
+			returnStringEnd = ")";
+		}
+
+		functions_ << "\t" << returnString << cmd.name << "(" << args;
+		functions_ << ")" << returnStringEnd << ";\n}\n";
+	}
+}
+
+// void CCOutputGenerator::printVecCmd(const Command& cmd, const Param& count, const Param& data)
+// {
+// 	auto vecRet = (count.type.pointerlvl > 0); //whether vector is returned
+// 	auto name = removeVkPrefix(cmd.name, nullptr);
+// 	name[0] = std::tolower(name[0], std::locale());
+//
+// 	auto dataCpy = data;
+// 	if(vecRet) dataCpy.type.pointerlvl--;
+//
+// 	if(vecRet) functions_ << "inline std::vector<" << typeName(dataCpy.type) << "> ";
+// 	else functions_ << "inline " << typeName(cmd.signature.returnType) << " ";
+//
+// 	functions_ << name << "(";
+//
+// 	auto sepr = "";
+// 	std::string args;
+// 	for(auto& param : cmd.signature.params)
+// 	{
+// 		args += sepr;
+//
+// 		if(&param == &count)
+// 		{
+// 			if(vecRet) args += "&count";
+// 			else args += data.name + ".size()";
+// 		}
+// 		else if(&param == &data)
+// 		{
+// 			if(vecRet)
+// 			{
+// 				args += "reinterpret_cast<" + typeName(data.type, false) + ">(";
+// 				args += "ret.data())";
+// 			}
+// 			else
+// 			{
+// 				args += "reinterpret_cast<" + typeName(data.type, false) + ">(";
+// 				args += data.name + ".data())";
+//
+// 				auto typeCopy = data.type;
+// 				typeCopy.constant = false;
+//
+// 				if(typeCopy.pointerlvl > 0) typeCopy.pointerlvl--;
+// 				else
+// 				{
+// 					std::cout << "### invalid data param in printVecCmd\n";
+// 					std::cout << cmd.name << "\n";
+// 					std::cout << data.name << "\n";
+// 					std::cout << typeCopy.type->name << "\n";
+// 					continue;
+// 				}
+//
+// 				functions_ << sepr;
+// 				if(data.type.constant) functions_ << "const ";
+// 				functions_ << "std::vector<" << typeName(typeCopy) << ">& " << param.name;
+// 			}
+// 		}
+// 		else
+// 		{
+// 			//reference for non optional pointer parameters
+// 			auto namedParam = param;
+// 			if(param.type.pointerlvl > 0 && !param.optional && param.type.type->name != "void")
+// 			{
+// 				namedParam.type.pointerlvl--;
+// 				namedParam.type.reference = true;
+// 			}
+// 			functions_ << sepr << paramName(namedParam);
+//
+// 			if(param.type.pointerlvl > 0)
+// 			{
+// 				const char* ref = "";
+// 				if(!param.optional && param.type.type->name != "void") ref = "&";
+// 				args += "reinterpret_cast<";
+// 				args+= typeName(param.type, false);
+// 				args += ">(";
+// 				args += ref;
+// 				args += param.name;
+// 				args += ")";
+// 			}
+// 			else if(param.type.type->category == Type::Category::enumeration ||
+// 				param.type.type->category == Type::Category::bitmask)
+// 			{
+// 				args += "static_cast<";
+// 				args += typeName(param.type, false);
+// 				args += ">(";
+// 				args += param.name;
+// 				args += ")";
+// 			}
+// 			else if(!param.type.arraylvl.empty())
+// 			{
+// 				args += param.name + ".data()";
+// 			}
+// 			else
+// 			{
+// 				args += param.name;
+// 			}
+// 		}
+//
+// 		sepr = ", ";
+// 	}
+//
+// 	functions_ << ")\n{\n";
+//
+// 	if(vecRet)
+// 	{
+// 		std::string code;
+// 		if(cmd.signature.returnType.type->name != "VkResult") code = vecFuncTemplateVoid;
+// 		else code = vecFuncTemplate;
+//
+// 		code = std::regex_replace(code, std::regex("%t"), typeName(dataCpy.type));
+// 		code = std::regex_replace(code, std::regex("%a"), args);
+// 		code = std::regex_replace(code, std::regex("%f"), cmd.name);
+//
+// 		functions_ << code;
+// 		functions_ << "}\n";
+// 	}
+// 	else
+// 	{
+// 		auto& retType = cmd.signature.returnType;
+// 		std::string returnString;
+// 		std::string returnStringEnd;
+// 		if(retType.type->name == "VkResult")
+// 		{
+// 			returnString = "return VPP_CALL(";
+// 			returnStringEnd = ")";
+// 		}
+// 		else if(retType.type->name != "void" || retType.pointerlvl > 0)
+// 		{
+// 			returnString = "return static_cast<" + typeName(cmd.signature.returnType) + ">(";
+// 			returnStringEnd = ")";
+// 		}
+//
+// 		functions_ << "\t" << returnString << cmd.name << "(" << args;
+// 		functions_ << ")" << returnStringEnd << ";\n}\n";
+// 	}
+// }

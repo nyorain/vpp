@@ -43,6 +43,11 @@ public:
 namespace call
 {
 
+inline bool success(Result result)
+{
+	return (static_cast<std::uint64_t>(result) >= 0);
+}
+
 inline std::string resultErrorMsg(Result result)
 {
     switch(result)
@@ -77,8 +82,7 @@ inline std::string resultErrorMsg(Result result)
 //throw
 inline vk::Result checkResultThrow(vk::Result result, const char* function, const char* called)
 {
-	if(static_cast<std::uint64_t>(result) >= 0)
-		return result;
+	if(success(result)) return result;
 
 	auto msg = resultErrorMsg(result);
 	auto ecode = static_cast<unsigned int>(result);
@@ -92,8 +96,7 @@ inline vk::Result checkResultThrow(vk::Result result, const char* function, cons
 //warn
 inline vk::Result checkResultWarn(vk::Result result, const char* function, const char* called)
 {
-	if(static_cast<std::uint64_t>(result) >= 0)
-		return result;
+	if(success(result)) return result;
 
 	auto msg = resultErrorMsg(result);
 	auto ecode = static_cast<unsigned int>(result);

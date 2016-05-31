@@ -337,7 +337,7 @@ void RegistryLoader::loadCommands(const pugi::xml_node& node)
 
 Param RegistryLoader::parseParam(const pugi::xml_node& node)
 {
-	Param ret;
+	Param ret(node);
 
 	auto optAttrib = node.attribute("optional");
 	if(std::strcmp(optAttrib.as_string(), "true") == 0) ret.optional = true;
@@ -560,7 +560,7 @@ void RegistryLoader::parseTypeReqs(QualifiedType& type, Requirements& reqs)
 	for(auto& arrLvl : type.arraylvl)
 	{
 		auto constant = registry_.findConstant(arrLvl);
-		if(constant) 
+		if(constant)
 		{
 			bool found = false;
 			for(auto& c : reqs.constants)
@@ -671,17 +671,6 @@ Handle* Registry::findHandle(const std::string& name)
 	for(auto& e : handles) if(e.name == name) return &e;
 	return nullptr;
 }
-
-//types
-std::string QualifiedType::string() const
-{
-	std::string ret = "NO TYPE";
-	if(type) ret = type->name;
-	if(constant) ret = "const " + ret;
-	for(auto i = 0u; i < pointerlvl; ++i) ret += "*";
-	return ret;
-}
-
 
 //Requirements
 void Requirements::add(Requirements& reqs)

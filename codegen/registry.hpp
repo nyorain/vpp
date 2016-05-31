@@ -30,16 +30,16 @@
 #include <utility>
 #include <fstream>
 
-#include <pugixml/pugixml.hpp>
+#include "pugixml/pugixml.hpp"
 
 class Entry
 {
 public:
-	const pugi::xml_node* node_ = nullptr;
+	const pugi::xml_node node;
 
 public:
 	Entry() = default;
-	Entry(const pugi::xml_node& node) : node_(&node) {}
+	Entry(const pugi::xml_node& xnode) : node(xnode) {}
 };
 
 class Type : public Entry
@@ -140,18 +140,21 @@ struct QualifiedType
 public:
 	Type* type {};
 	bool constant = false;
+	bool reference = false;
 	unsigned int pointerlvl = 0;
 	std::vector<std::string> arraylvl;
-
-public:
-	std::string string() const;
 };
 
-struct Param
+struct Param : public Entry
 {
+public:
 	QualifiedType type;
 	std::string name;
 	bool optional = false;
+
+public:
+	Param() = default;
+	Param(const pugi::xml_node& node) : Entry(node) {}
 };
 
 class Struct : public Type

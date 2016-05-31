@@ -1,4 +1,4 @@
-const auto constexpr fwdHeader = 1 + R"SRC(
+auto constexpr fwdHeader = 1 + R"SRC(
 #include "flags.hpp"
 
 #include <vulkan/vulkan.h>
@@ -7,7 +7,7 @@ const auto constexpr fwdHeader = 1 + R"SRC(
 )SRC";
 
 
-const auto constexpr mainHeader = 1 + R"SRC(
+auto constexpr mainHeader = 1 + R"SRC(
 #include "fwd.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
@@ -15,7 +15,7 @@ const auto constexpr mainHeader = 1 + R"SRC(
 
 )SRC";
 
-const auto constexpr structsHeader = 1 + R"SRC(
+auto constexpr structsHeader = 1 + R"SRC(
 #include "fwd.hpp"
 #include "enums.hpp"
 
@@ -23,17 +23,37 @@ const auto constexpr structsHeader = 1 + R"SRC(
 
 )SRC";
 
-const auto constexpr enumsHeader = 1 + R"SRC(
+auto constexpr enumsHeader = 1 + R"SRC(
 #include "fwd.hpp"
 
 )SRC";
 
-const auto constexpr functionsHeader = 1 + R"SRC(
+auto constexpr functionsHeader = 1 + R"SRC(
 #include "fwd.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
 #include "call.hpp"
 
+#include <vector>
+
+)SRC";
+
+auto constexpr vecFuncTemplate = 1 + R"SRC(
+	std::vector<%t> ret;
+	std::uint32_t count = 0u;
+	if(!call::success(VPP_CALL(%f(%a)))) return ret;
+	ret.resize(count);
+	VPP_CALL(%f(%a));
+	return ret;
+)SRC";
+
+auto constexpr vecFuncTemplateVoid = 1 + R"SRC(
+	std::vector<%t> ret;
+	std::uint32_t count = 0u;
+	%f(%a);
+	ret.resize(count);
+	%f(%a);
+	return ret;
 )SRC";
 
 constexpr const char* keywords[]= {"alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand",
