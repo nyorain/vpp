@@ -169,7 +169,7 @@ void RegistryLoader::loadTypes(const pugi::xml_node& node)
 			Struct s(name, typeit);
 
 			if(category == "union") s.isUnion = true;
-			if(typeit.attribute("returnedonly").as_bool() == true) s.returnedonly = true;
+			if(std::string(typeit.attribute("returnedonly").as_string()) == "true") s.returnedonly = true;
 
 			registry_.structs.push_back(s);
 
@@ -475,8 +475,8 @@ Requirements RegistryLoader::parseRequirements(const pugi::xml_node& node)
 		//enums
 		for(auto& req : require.children("enum"))
 		{
-
 			auto enumName = req.attribute("name").as_string();
+			auto value = std::string(req.attribute("value").value());
 			auto extAttrib = req.attribute("extends");
 			if(!extAttrib)
 			{
@@ -499,7 +499,7 @@ Requirements RegistryLoader::parseRequirements(const pugi::xml_node& node)
 					ret.constants.push_back(constant);
 				}
 			}
-			else
+			else if(value[0] == '\"' || value.find("VK") == std::string::npos)
 			{
 				std::string dir = "+";
 				auto dirAttrib = req.attribute("dir");
