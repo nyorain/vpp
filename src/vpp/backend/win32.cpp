@@ -4,21 +4,23 @@ namespace vpp
 {
 
 //Surface
-Win32Surface::Win32Surface(VkInstance instance, HINSTANCE hinstance, HWND hwnd) : Surface(instance)
+Win32Surface::Win32Surface(vk::Instance instance, HINSTANCE hinstance, HWND hwnd)
 {
+	instance_ = instance;
     initSurface(hinstance, hwnd);
 }
 
-Win32Surface::Win32Surface(VkInstance instance, HWND hwnd) : Surface(instance)
+Win32Surface::Win32Surface(vk::Instance instance, HWND hwnd)
 {
+	instance_ = instance;
     initSurface(GetModuleHandle(nullptr), hwnd);
 }
 
 void Win32Surface::initSurface(HINSTANCE hinstance, HWND hwnd)
 {
 	vk::Win32SurfaceCreateInfoKHR info;
-    info.hinstance(hinstance);
-    info.hwnd(hwnd);
+    info.hinstance = hinstance;
+    info.hwnd = hwnd;
 
 	vk::createWin32SurfaceKHR(vkInstance(), &info, nullptr, &surface_);
 }

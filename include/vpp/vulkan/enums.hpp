@@ -68,7 +68,6 @@ enum class PipelineCacheHeaderVersion : std::int32_t
 {
 	one = 1
 };
-VPP_BITMASK_OPS(PipelineCacheHeaderVersion)
 
 enum class StructureType : std::int32_t
 {
