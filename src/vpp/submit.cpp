@@ -37,7 +37,7 @@ void CommandExecutionState::submit()
 void CommandExecutionState::wait(std::uint64_t timeout)
 {
 	if(!submission_->fence) submit();
-	vk::waitForFences(vkDevice(), 1, &submission_->fence, 0, timeout);
+	vk::waitForFences(vkDevice(), 1, submission_->fence, 0, timeout);
 }
 
 bool CommandExecutionState::submitted() const
@@ -81,10 +81,9 @@ vk::Fence SubmitManager::submit(vk::Queue queue)
 	for(auto& submission : it->second)
 		submitInfos.push_back(submission->info);
 
-	vk::Fence fence;
 	vk::FenceCreateInfo fenceInfo {};
-	vk::createFence(vkDevice(), &fenceInfo, nullptr, &fence);
-	vk::queueSubmit(queue, submitInfos.size(), submitInfos.data(), fence);
+	auto fence = vk::createFence(vkDevice(), fenceInfo);
+	vk::queueSubmit(queue, submitInfos, fence);
 
 	for(auto& submission : it->second)
 		submission->fence = fence;

@@ -38,7 +38,7 @@ void CommandBuffer::destroy()
 {
 	if(vkCommandBuffer())
 	{
-		vk::freeCommandBuffers(vkDevice(), commandPool().vkCommandPool(), 1, &commandBuffer_);
+		vk::freeCommandBuffers(vkDevice(), commandPool().vkCommandPool(), {commandBuffer_});
 		commandBuffer_ = {};
 	}
 
@@ -53,7 +53,7 @@ CommandPool::CommandPool(const Device& dev, std::uint32_t qfam, vk::CommandPoolC
 	info.flags = flags;
 	info.queueFamilyIndex = qfam;
 
-	vk::createCommandPool(vkDevice(), &info, nullptr, &commandPool_);
+	commandPool_ = vk::createCommandPool(vkDevice(), info);
 }
 CommandPool::~CommandPool()
 {
@@ -96,7 +96,7 @@ std::vector<CommandBuffer> CommandPool::allocate(std::size_t count, vk::CommandB
 	info.commandBufferCount = count;
 
 	std::vector<vk::CommandBuffer> buffers(count);
-	vk::allocateCommandBuffers(vkDevice(), &info, buffers.data());
+	vk::allocateCommandBuffers(vkDevice(), info, *buffers.data());
 
 	std::vector<CommandBuffer> ret;
 	ret.reserve(count);
@@ -115,7 +115,7 @@ CommandBuffer CommandPool::allocate(vk::CommandBufferLevel lvl)
 	info.commandBufferCount = 1;
 
 	vk::CommandBuffer buffer;
-	vk::allocateCommandBuffers(vkDevice(), &info, &buffer);
+	vk::allocateCommandBuffers(vkDevice(), info, buffer);
 
 	return {buffer, *this};
 }

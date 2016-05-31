@@ -36,14 +36,14 @@ void ComputePipeline::init(const Device& dev, const CreateInfo& createInfo)
 	pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
 	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
-	vk::createPipelineLayout(vkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout_);
+	pipelineLayout_ = vk::createPipelineLayout(vkDevice(), pipelineLayoutInfo);
 
 	//pipeline
 	vk::ComputePipelineCreateInfo info;
 	info.stage = createInfo.shader.vkStageInfo();
 	info.layout = pipelineLayout_;
 
-	vk::createComputePipelines(vkDevice(), 0, 1, &info, nullptr, &pipeline_);
+	vk::createComputePipelines(vkDevice(), 0, 1, info, nullptr, pipeline_);
 }
 
 }

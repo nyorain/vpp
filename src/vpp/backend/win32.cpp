@@ -22,7 +22,7 @@ void Win32Surface::initSurface(HINSTANCE hinstance, HWND hwnd)
     info.hinstance = hinstance;
     info.hwnd = hwnd;
 
-	vk::createWin32SurfaceKHR(vkInstance(), &info, nullptr, &surface_);
+	surface_ = vk::createWin32SurfaceKHR(vkInstance(), info);
 }
 
 //Context

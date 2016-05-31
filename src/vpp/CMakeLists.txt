@@ -22,6 +22,8 @@ set(vpp-sources
 	submit.cpp
 	transfer.cpp
 	work.cpp
+	fwd.cpp
+	queue.cpp
 	provider.cpp)
 
 #add backends

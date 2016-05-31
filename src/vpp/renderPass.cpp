@@ -9,7 +9,7 @@ namespace vpp
 RenderPass::RenderPass(const Device& dev, const vk::RenderPassCreateInfo& info)
 	: Resource(dev)
 {
-	vk::createRenderPass(vkDevice(), &info, nullptr, &renderPass_);
+	renderPass_ = vk::createRenderPass(vkDevice(), info);
 	initInfos(info);
 }
 
@@ -21,7 +21,7 @@ RenderPass::RenderPass(const Device& dev, vk::RenderPass pass, const vk::RenderP
 
 RenderPass::~RenderPass()
 {
-	if(vkRenderPass()) vk::destroyRenderPass(vkDevice(), vkRenderPass(), nullptr);
+	if(vkRenderPass()) vk::destroyRenderPass(vkDevice(), vkRenderPass());
 
 	renderPass_ = {};
 	attachments_.clear();

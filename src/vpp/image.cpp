@@ -9,9 +9,8 @@ namespace vpp
 
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags)
 {
-	vk::MemoryRequirements reqs;
-	vk::createImage(dev.vkDevice(), &info, nullptr, &image_);
-	vk::getImageMemoryRequirements(dev.vkDevice(), image_, &reqs);
+	image_ = vk::createImage(dev.vkDevice(), info);
+	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), image_);
 
 	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
 	dev.memoryAllocator().request(image_, reqs, info.tiling, memoryEntry_);
@@ -44,7 +43,7 @@ void swap(Image& a, Image& b) noexcept
 
 void Image::destroy()
 {
-	if(vkImage()) vk::destroyImage(vkDevice(), vkImage(), nullptr);
+	if(vkImage()) vk::destroyImage(vkDevice(), vkImage());
 
 	memoryEntry_ = {};
 	image_ = {};
@@ -222,7 +221,7 @@ void ViewableImage::initMemoryResources(vk::ImageViewCreateInfo info)
 {
 	image_.assureMemory();
 	info.image = vkImage();
-	vk::createImageView(vkDevice(), &info, nullptr, &imageView_);
+	imageView_ = vk::createImageView(vkDevice(), info);
 }
 
 }

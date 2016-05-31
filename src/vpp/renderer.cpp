@@ -77,7 +77,7 @@ void SwapChainRenderer::initMemoryLess(const SwapChain& swapChain, const CreateI
 	cmdPoolInfo.queueFamilyIndex = info_.queue->family();
 	cmdPoolInfo.flags = vk::CommandPoolCreateBits::resetCommandBuffer;
 
-	vk::createCommandPool(vkDevice(), &cmdPoolInfo, nullptr, &commandPool_);
+	commandPool_ = vk::createCommandPool(vkDevice(), cmdPoolInfo);
 
 	//static attachments
 	auto size = swapChain.size();
@@ -99,7 +99,7 @@ void SwapChainRenderer::initMemoryLess(const SwapChain& swapChain, const CreateI
 	allocInfo.commandBufferCount = swapChain.buffers().size();
 
 	std::vector<vk::CommandBuffer> cmdBuffers(swapChain.buffers().size());
-	vk::allocateCommandBuffers(vkDevice(), &allocInfo, cmdBuffers.data()); 
+	vk::allocateCommandBuffers(vkDevice(), allocInfo, *cmdBuffers.data());
 
 	//frame buffers
 	Framebuffer::CreateInfo fbInfo {vkRenderPass(), swapChain.size()};
@@ -152,7 +152,7 @@ void SwapChainRenderer::destroyRenderBuffers()
 
 	if(!cmdBuffers.empty())
 	{
-		vk::freeCommandBuffers(vkDevice(), vkCommandPool(), cmdBuffers.size(), cmdBuffers.data());
+		vk::freeCommandBuffers(vkDevice(), vkCommandPool(), cmdBuffers);
 	}
 
 	renderBuffers_.clear();
@@ -176,11 +176,11 @@ void SwapChainRenderer::buildCommandBuffers(RendererBuilder& builder)
 		beginInfo.pClearValues = clearValues.data();
 		beginInfo.framebuffer = renderer.framebuffer.vkFramebuffer();
 
-		vk::beginCommandBuffer(renderer.commandBuffer, &cmdBufInfo);
+		vk::beginCommandBuffer(renderer.commandBuffer, cmdBufInfo);
 
 		builder.beforeRender(renderer.commandBuffer);
 
-		vk::cmdBeginRenderPass(renderer.commandBuffer, &beginInfo, vk::SubpassContents::eInline);
+		vk::cmdBeginRenderPass(renderer.commandBuffer, beginInfo, vk::SubpassContents::eInline);
 
 		//Update dynamic viewport state
 		vk::Viewport viewport;
@@ -188,13 +188,13 @@ void SwapChainRenderer::buildCommandBuffers(RendererBuilder& builder)
 		viewport.height = height;
 		viewport.minDepth = 0.f;
 		viewport.maxDepth = 1.f;
-		vk::cmdSetViewport(renderer.commandBuffer, 0, 1, &viewport);
+		vk::cmdSetViewport(renderer.commandBuffer, 0, 1, viewport);
 
 		//Update dynamic scissor state
 		vk::Rect2D scissor;
 		scissor.extent = {width, height};
 		scissor.offset = {0, 0};
-		vk::cmdSetScissor(renderer.commandBuffer, 0, 1, &scissor);
+		vk::cmdSetScissor(renderer.commandBuffer, 0, 1, scissor);
 
 		RenderPassInstance ini(renderer.commandBuffer, renderPass(),
 			renderer.framebuffer.vkFramebuffer());
@@ -215,8 +215,7 @@ void SwapChainRenderer::buildCommandBuffers(RendererBuilder& builder)
 		prePresentBarrier.image = swapChain().buffers()[i].image;
 
 		vk::cmdPipelineBarrier(renderer.commandBuffer, vk::PipelineStageBits::allCommands,
-			vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), 0,
-			nullptr, 0, nullptr, 1, &prePresentBarrier);
+			vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {prePresentBarrier});
 
 		vk::endCommandBuffer(renderer.commandBuffer);
 	}
@@ -224,9 +223,8 @@ void SwapChainRenderer::buildCommandBuffers(RendererBuilder& builder)
 
 void SwapChainRenderer::render()
 {
-	vk::Semaphore presentComplete;
     vk::SemaphoreCreateInfo semaphoreCI;
-	vk::createSemaphore(vkDevice(), &semaphoreCI, nullptr, &presentComplete);
+	auto presentComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 
     auto currentBuffer = swapChain().acquireNextImage(presentComplete);
 
@@ -236,7 +234,7 @@ void SwapChainRenderer::render()
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &renderBuffers_[currentBuffer].commandBuffer;
 
-	vk::queueSubmit(info_.queue->vkQueue(), 1, &submitInfo, 0);
+	vk::queueSubmit(info_.queue->vkQueue(), 1, submitInfo, 0);
     swapChain().present(info_.queue->vkQueue(), currentBuffer);
 
     vk::destroySemaphore(vkDevice(), presentComplete, nullptr);

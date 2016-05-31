@@ -33,7 +33,7 @@ public:
 
 protected:
 	friend Device;
-	Queue(vk::Queue queue, const vk::QueueFamilyProperties& prop, unsigned int family, unsigned int id);
+	Queue(vk::Queue queue, const vk::QueueFamilyProperties& props, unsigned int fam, unsigned int id);
 
 protected:
 	vk::Queue queue_;

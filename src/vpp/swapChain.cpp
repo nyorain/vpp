@@ -99,12 +99,12 @@ void SwapChain::initSwapChain()
     buffers_.reserve(count);
     for(auto& img : imgs)
 	{
-		vk::ComponentMapping components(
+		vk::ComponentMapping components{
 			vk::ComponentSwizzle::r,
 			vk::ComponentSwizzle::g,
 			vk::ComponentSwizzle::b,
 			vk::ComponentSwizzle::a
-		);
+		};
 
 		vk::ImageSubresourceRange range{};
 		range.aspectMask = vk::ImageAspectBits::color;
@@ -118,8 +118,7 @@ void SwapChain::initSwapChain()
 		info.components = components;
 		info.image = img;
 
-	    VkImageView view;
-	    vk::createImageView(vkDevice(), &info, nullptr, &view);
+	    auto view = vk::createImageView(vkDevice(), info);
 
 		buffers_.push_back({img, view});
 	}

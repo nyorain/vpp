@@ -47,7 +47,7 @@ void Context::initInstance(const CreateInfo& info)
 	iniinfo.ppEnabledExtensionNames = extensions.data();
     iniinfo.pApplicationInfo = &appInfo;
 
-    vk::createInstance(&iniinfo, nullptr, &instance_);
+    instance_ = vk::createInstance(iniinfo);
 
 	if(info.debugFlags != 0)
 	{
@@ -72,9 +72,9 @@ void Context::initDevice(const CreateInfo& info)
 	//phyiscal device
 	std::vector<vk::PhysicalDevice> phdevs;
 	auto size = 0u;
-    vk::enumeratePhysicalDevices(vkInstance(), &size, nullptr);
+    vk::enumeratePhysicalDevices(vkInstance(), size, nullptr);
 	phdevs.reserve(size);
-    vk::enumeratePhysicalDevices(vkInstance(), &size, phdevs.data());
+    vk::enumeratePhysicalDevices(vkInstance(), size, phdevs.data());
 	auto phdev = choosePhysicalDevice(phdevs);
 
 	//extensions & layers
@@ -91,9 +91,9 @@ void Context::initDevice(const CreateInfo& info)
 	//queues
 	std::vector<vk::QueueFamilyProperties> queueProps;
 	size = 0u;
-	vk::getPhysicalDeviceQueueFamilyProperties(phdev, &size, nullptr);
+	vk::getPhysicalDeviceQueueFamilyProperties(phdev, size, nullptr);
 	queueProps.reserve(size);
-	vk::getPhysicalDeviceQueueFamilyProperties(phdev, &size, queueProps.data());
+	vk::getPhysicalDeviceQueueFamilyProperties(phdev, size, queueProps.data());
 
 	//present queue
 	auto queues = surface().supportedQueueFamilies(phdev);

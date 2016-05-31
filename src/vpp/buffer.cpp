@@ -11,9 +11,8 @@ namespace vpp
 
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags)
 {
-	vk::MemoryRequirements reqs;
-	vk::createBuffer(dev.vkDevice(), &info, nullptr, &buffer_);
-	vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_, &reqs);
+	buffer_ = vk::createBuffer(dev.vkDevice(), info);
+	auto reqs = vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_);
 
 	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
 	dev.memoryAllocator().request(buffer_, reqs, memoryEntry_);
@@ -125,7 +124,7 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bo
 			std::vector<std::uint32_t> cpydata(totalSize / 4);
 
 			vk::CommandBufferBeginInfo info;
-			vk::beginCommandBuffer(vkcmdb, &info);
+			vk::beginCommandBuffer(vkcmdb, info);
 
 			auto bufferOffset = 0u; //current buffer offset to copy the data to
 			auto cpyOffset = 0u; //current offset in the copy buffer
@@ -138,7 +137,7 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bo
 				std::memcpy(data8, entry.data, size);
 
 				auto data = reinterpret_cast<const std::uint32_t*>(data8);
-				vk::cmdUpdateBuffer(vkcmdb, vkBuffer(), bufferOffset, size, data);
+				vk::cmdUpdateBuffer(vkcmdb, vkBuffer(), bufferOffset, size, *data);
 
 				bufferOffset += size;
 				cpyOffset += size;
@@ -185,7 +184,7 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bo
 
 					if(currSize > 0)
 					{
-						vk::BufferCopy region(currSrcStart, currDstStart, currSize);
+						vk::BufferCopy region{currSrcStart, currDstStart, currSize};
 						regions.push_back(region);
 						currSize = 0;
 					}
@@ -202,13 +201,13 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bo
 			//final region for last data segment
 			if(currSize > 0)
 			{
-				vk::BufferCopy region(currSrcStart, currDstStart, currSize);
+				vk::BufferCopy region{currSrcStart, currDstStart, currSize};
 				regions.push_back(region);
 			}
 
 			//record cpy command for filled regions
 			auto uploadBuf = uploadBuffer.vkBuffer();
-			vk::cmdCopyBuffer(vkcmdb, uploadBuf, vkBuffer(), regions.size(), regions.data());
+			vk::cmdCopyBuffer(vkcmdb, uploadBuf, vkBuffer(), regions);
 
 			//return a custom work implementation
 			struct WorkImpl : public CommandWork<void>

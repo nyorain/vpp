@@ -79,7 +79,7 @@ void MemoryMap::flushRanges() const
 	}
 
 	auto range = mappedMemoryRange();
-	vk::flushMappedMemoryRanges(vkDevice(), 1, &range);
+	vk::flushMappedMemoryRanges(vkDevice(), 1, range);
 }
 
 void MemoryMap::invalidateRanges() const
@@ -91,7 +91,7 @@ void MemoryMap::invalidateRanges() const
 	}
 
 	auto range = mappedMemoryRange();
-	vk::invalidateMappedMemoryRanges(vkDevice(), 1, &range);
+	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);
 }
 
 bool MemoryMap::coherent() const
@@ -153,7 +153,7 @@ void MemoryMapView::flushRanges() const
 	if(coherent()) return;
 
 	auto range = mappedMemoryRange();
-	vk::flushMappedMemoryRanges(vkDevice(), 1, &range);
+	vk::flushMappedMemoryRanges(vkDevice(), 1, range);
 }
 
 void MemoryMapView::invalidateRanges() const
@@ -161,7 +161,7 @@ void MemoryMapView::invalidateRanges() const
 	if(coherent()) return;
 
 	auto range = mappedMemoryRange();
-	vk::invalidateMappedMemoryRanges(vkDevice(), 1, &range);
+	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);
 }
 
 std::uint8_t* MemoryMapView::ptr() const
@@ -190,7 +190,7 @@ DeviceMemory::DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info
 	size_ = info.allocationSize;
 	flags_ = dev.memoryProperties().memoryTypes[typeIndex_].propertyFlags;
 
-	vk::allocateMemory(vkDevice(), &info, nullptr, &memory_);
+	memory_ = vk::allocateMemory(vkDevice(), info);
 }
 DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, std::uint32_t typeIndex)
 	: Resource(dev)
@@ -202,7 +202,8 @@ DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, std::uint32_t 
 	vk::MemoryAllocateInfo info;
 	info.allocationSize = size_;
 	info.memoryTypeIndex = typeIndex_;
-	vk::allocateMemory(vkDevice(), &info, nullptr, &memory_);
+
+	memory_ = vk::allocateMemory(vkDevice(), info);
 }
 DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryPropertyFlags flags)
 	: Resource(dev)
@@ -214,7 +215,8 @@ DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryProp
 	vk::MemoryAllocateInfo info;
 	info.allocationSize = size_;
 	info.memoryTypeIndex = typeIndex_;
-	vk::allocateMemory(vkDevice(), &info, nullptr, &memory_);
+	
+	memory_ = vk::allocateMemory(vkDevice(), info);
 }
 DeviceMemory::~DeviceMemory()
 {
@@ -256,7 +258,7 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	//2) first call to allocatable: size 15MB, does now fit if none of the free segments
 	//if the first allocation had chosen segment A this second allocation would now
 	//fit in B.
-	
+
 	static constexpr AllocationEntry start = {{0, 0}, AllocationType::none};
 	auto granularity = device().properties().limits.bufferImageGranularity;
 
@@ -265,9 +267,9 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	//the best allocation wastes the least space for alignment or granularity reqs
 	Allocation best = {};
 	std::size_t bestWaste = -1;
-	
+
 	const AllocationEntry* old = &start;
-	for(auto& alloc : allocations_) 
+	for(auto& alloc : allocations_)
 	{
 		auto alignedOffset = old->allocation.offset;
 
@@ -283,7 +285,7 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 		if(alloc.type != AllocationType::none && alloc.type != type)
 			end = (alignedOffset + size + granularity) & ~(granularity - 1);
 
-		if(end < alloc.allocation.offset) 
+		if(end < alloc.allocation.offset)
 		{
 			auto newWaste = alignedOffset - old->allocation.offset;
 			newWaste += end - (alignedOffset + size);

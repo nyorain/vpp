@@ -7,7 +7,7 @@
 #include <utility>
 
 namespace vpp
-{  
+{
 
 //info default ctor
 GraphicsPipeline::StatesCreateInfo::StatesCreateInfo(const vk::Viewport& viewportinfo)
@@ -23,7 +23,7 @@ GraphicsPipeline::StatesCreateInfo::StatesCreateInfo(const vk::Viewport& viewpor
 
 	viewports.emplace_back(viewportinfo);
 
-	vk::Extent2D extent(viewportinfo.width, viewportinfo.height);
+	vk::Extent2D extent {std::uint32_t(viewportinfo.width), std::uint32_t(viewportinfo.height)};
 	scissors.push_back({{0, 0}, extent});
 
 	//structs
@@ -119,7 +119,7 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 	pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
 	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
-	vk::createPipelineLayout(vkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout_);
+	pipelineLayout_ = vk::createPipelineLayout(vkDevice(), pipelineLayoutInfo);
 
 	//dynamic state
 	vk::PipelineDynamicStateCreateInfo dynamicState;
@@ -145,7 +145,7 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 	pipelineInfo.pDepthStencilState = &createInfo.states.depthStencil;
 	pipelineInfo.pTessellationState = nullptr;
 
-	vk::createGraphicsPipelines(vkDevice(), 0, 1, &pipelineInfo, nullptr, &pipeline_);
+	vk::createGraphicsPipelines(vkDevice(), 0, 1, pipelineInfo, nullptr, pipeline_);
 }
 
 GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other) noexcept : Pipeline(std::move(other))

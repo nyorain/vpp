@@ -1,6 +1,7 @@
 #include <vpp/allocator.hpp>
 #include <vpp/vk.hpp>
 #include <cmath>
+#include <algorithm>
 
 namespace vpp
 {
@@ -179,11 +180,17 @@ DeviceMemory* DeviceMemoryAllocator::findMem(Requirement& req)
 	return nullptr;
 }
 
+DeviceMemoryAllocator::Requirements::iterator DeviceMemoryAllocator::findReq(const Entry& entry)
+{
+	return std::find_if(requirements_.begin(), requirements_.end(), [&](const auto& r)
+		{ return r.entry == &entry; });
+}
+
 //TODO: all 4 allocate functions can be improved.
 void DeviceMemoryAllocator::allocate()
 {
 	auto map = queryTypes();
-	for(auto& type : map) allocate(type.first, type.second); 
+	for(auto& type : map) allocate(type.first, type.second);
 	requirements_.clear(); //all requirements can be removed
 }
 
@@ -194,7 +201,7 @@ bool DeviceMemoryAllocator::allocate(const Entry& entry)
 
 	//this function makes sure the given entry is allocated
 	//first of all try to find a free spot in the already existent memories
-	if(findMem(*req)) 
+	if(findMem(*req))
 	{
 		requirements_.erase(req);
 		return true;
@@ -284,10 +291,10 @@ void DeviceMemoryAllocator::allocate(unsigned int type, const std::vector<Requir
 		entry.memory_ = mem.get();
 
 		auto isBuffer = (res.first->type == RequirementType::buffer);
-		if(isBuffer) vk::bindBufferMemory(vkDevice(), res.first->buffer, mem->vkDeviceMemory(), offset); 
+		if(isBuffer) vk::bindBufferMemory(vkDevice(), res.first->buffer, mem->vkDeviceMemory(), offset);
 		else vk::bindImageMemory(vkDevice(), res.first->image, mem->vkDeviceMemory(), offset);
 	}
-	
+
 	memories_.push_back(std::move(mem));
 }
 
@@ -296,10 +303,10 @@ DeviceMemoryAllocator::queryTypes()
 {
 	//XXX: probably one of the places where a custom host allocator would really speed things up
 	//XXX: probably there is some really easy and trivial algorithm for it... pls find it...
-	
+
 	//this function implements an algorithm to choose the best type for each requirement from
 	//its typebits, so that in the end there will be as few allocations as possible needed.
-	
+
 	//vector to return, holds requirements that have a type
 	std::map<unsigned int, std::vector<Requirement*>> ret;
 
@@ -312,7 +319,7 @@ DeviceMemoryAllocator::queryTypes()
 			{
 				occurences.clear();
 				for(auto& req : requirements_)
-					for(auto i = 0u; i < 32; ++i)	
+					for(auto i = 0u; i < 32; ++i)
 						if(suppportsType(req, i)) occurences[i].push_back(&req);
 			};
 
@@ -325,7 +332,7 @@ DeviceMemoryAllocator::queryTypes()
 		//find the least occuring type
 		//bestID is after this the memory type with the fewest requirements
 		auto best = requirements_.size() + 1; //cant be bigger than that
-		std::uint32_t bestID = 0u;	
+		std::uint32_t bestID = 0u;
 		for(auto& occ : occurences)
 		{
 			if(occ.second.size() < best)
@@ -338,7 +345,7 @@ DeviceMemoryAllocator::queryTypes()
 		//function to determine if other types besides the given are supported
 		auto othersSupported = [](const Requirement& req, unsigned int type)
 			{
-				for(auto i = 0u; i < 32 && i != type; ++i)	
+				for(auto i = 0u; i < 32 && i != type; ++i)
 					if(suppportsType(req, i)) return true;
 				return false;
 			};
@@ -417,7 +424,7 @@ unsigned int DeviceMemoryAllocator::findBestType(std::uint32_t typeBits) const
 	{
 		//start with one, so even if there are no matching reqs at all, at least a supported
 		//type bit is returned.
-		auto count = 1; 
+		auto count = 1;
 		if(!suppportsType(typeBits, i)) continue;
 		for(auto& req : requirements_) if(suppportsType(req, i)) ++count;
 

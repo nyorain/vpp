@@ -99,7 +99,7 @@ void Framebuffer::initMemoryResources(const std::map<unsigned int, vk::ImageView
 	createInfo.height = size().height;
 	createInfo.layers = 1;
 
-	vk::createFramebuffer(vkDevice(), &createInfo, nullptr, &framebuffer_);
+	framebuffer_ = vk::createFramebuffer(vkDevice(), createInfo);
 }
 
 //static utility

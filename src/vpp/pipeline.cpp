@@ -25,7 +25,7 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	descriptorLayout.bindingCount = vkbindings.size();
 	descriptorLayout.pBindings = vkbindings.data();
 
-	vk::createDescriptorSetLayout(vkDevice(), &descriptorLayout, nullptr, &layout_);
+	layout_ = vk::createDescriptorSetLayout(vkDevice(), descriptorLayout);
 	bindings_ = bindings;
 }
 DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& other) noexcept
@@ -76,7 +76,7 @@ DescriptorSet::DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPo
 	allocInfo.descriptorSetCount = 1;
 	allocInfo.pSetLayouts = &vklayout;
 
-	vk::allocateDescriptorSets(vkDevice(), &allocInfo, &descriptorSet_);
+	vk::allocateDescriptorSets(vkDevice(), allocInfo, descriptorSet_);
 }
 
 DescriptorSet::DescriptorSet(DescriptorSet&& other) noexcept
@@ -109,12 +109,12 @@ void DescriptorSet::swap(DescriptorSet& other) noexcept
 void DescriptorSet::update(const std::vector<vk::WriteDescriptorSet>& writes,
 	const std::vector<vk::CopyDescriptorSet>& copies) const
 {
-	vk::updateDescriptorSets(vkDevice(), writes.size(), writes.data(), copies.size(), copies.data());
+	vk::updateDescriptorSets(vkDevice(), writes, copies);
 }
 
 void DescriptorSet::update(const std::vector<vk::CopyDescriptorSet>& copies) const
 {
-	vk::updateDescriptorSets(vkDevice(), 0, nullptr, copies.size(), copies.data());
+	vk::updateDescriptorSets(vkDevice(), {}, copies);
 }
 
 //Pipeline

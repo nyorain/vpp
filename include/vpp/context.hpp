@@ -12,7 +12,7 @@ namespace vpp
 {
 
 class DebugCallback;
-namespace fwd { extern vk::DebugReportFlagsEXT defaultDebugFlags; }
+namespace fwd { extern const vk::DebugReportFlagsEXT defaultDebugFlags; }
 
 //TODO: correct graphics/compute/present queue support
 //Context

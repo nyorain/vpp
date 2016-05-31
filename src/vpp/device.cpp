@@ -23,7 +23,7 @@ struct Device::Impl
 	SubmitManager submitManager;
 	TransferManager transferManager;
 
-	Impl(const Device& dev) : commandProvider(dev), memoryProvider(dev), submitManager(dev), 
+	Impl(const Device& dev) : commandProvider(dev), memoryProvider(dev), submitManager(dev),
 		transferManager(dev) {}
 };
 
@@ -36,26 +36,25 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 {
 	impl_.reset(new Impl(*this));
 
-	vk::getPhysicalDeviceProperties(vkPhysicalDevice(), &impl_->physicalDeviceProperties);
-	vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice(), &impl_->memoryProperties);
+	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());
+	impl_->memoryProperties = vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
 
-	vk::createDevice(vkPhysicalDevice(), &info, nullptr, &device_);
+	device_ = vk::createDevice(vkPhysicalDevice(), info);
 
 	//retrieve/store requested queues
 	std::uint32_t size;
-	vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice(), &size, nullptr);
+	vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice(), size, nullptr);
 	impl_->qFamilyProperties.resize(size);
-	vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice(), &size, impl_->qFamilyProperties.data());
+	vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice(), size, impl_->qFamilyProperties.data());
 
 	std::map<std::uint32_t, unsigned int> familyIds;
 	impl_->queues.reserve(info.queueCreateInfoCount);
-	vk::Queue queue;
 
 	for(std::size_t i(0); i < info.queueCreateInfoCount; ++i)
 	{
 		auto& queueInfo = info.pQueueCreateInfos[i];
 		auto idx = familyIds[queueInfo.queueFamilyIndex]++;
-		vk::getDeviceQueue(vkDevice(), queueInfo.queueFamilyIndex, idx, &queue);
+		auto queue = vk::getDeviceQueue(vkDevice(), queueInfo.queueFamilyIndex, idx);
 
 		impl_->queues.push_back({queue, impl_->qFamilyProperties[i], queueInfo.queueFamilyIndex, idx});
 	}
@@ -148,6 +147,26 @@ void Device::finishSetup() const
 DeviceMemoryAllocator& Device::memoryAllocator() const
 {
 	return memoryProvider().get();
+}
+
+DeviceMemoryProvider& Device::memoryProvider() const
+{
+	return impl_->memoryProvider;
+}
+
+CommandProvider& Device::commandProvider() const
+{
+	return impl_->commandProvider;
+}
+
+SubmitManager& Device::submitManager() const
+{
+	return impl_->submitManager;
+}
+
+TransferManager& Device::transferManager() const
+{
+	return impl_->transferManager;
 }
 
 }

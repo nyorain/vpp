@@ -56,8 +56,7 @@ vk::ShaderModule ShaderStage::loadModule(vk::Device device, const std::string& f
 	moduleCreateInfo.codeSize = code.size();
 	moduleCreateInfo.pCode = code.data();
 
-	vk::createShaderModule(device, &moduleCreateInfo, nullptr, &module);
-	return module;
+	return vk::createShaderModule(device, moduleCreateInfo);
 }
 
 //stage
