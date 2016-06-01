@@ -33,6 +33,7 @@ auto constexpr functionsHeader = 1 + R"SRC(
 #include "enums.hpp"
 #include "structs.hpp"
 #include "call.hpp"
+#include "range.hpp"
 
 #include <vector>
 

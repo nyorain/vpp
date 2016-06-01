@@ -13,6 +13,7 @@ add_custom_command(
 	OUTPUT
 		"${output-dir}/flags.hpp"
 		"${output-dir}/call.hpp"
+		"${output-dir}/range.hpp"
 	COMMAND
 		${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/pre"
@@ -20,6 +21,7 @@ add_custom_command(
 	DEPENDS
 		"${CMAKE_CURRENT_SOURCE_DIR}/pre/flags.hpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/pre/call.hpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/pre/range.hpp"
 	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 	COMMENT "Copying vulkan headers dependency files")
 
@@ -44,4 +46,5 @@ add_custom_target(vkHeaders ALL
 	DEPENDS
 		${outputs}
 		"${output-dir}/flags.hpp"
+		"${output-dir}/range.hpp"
 		"${output-dir}/call.hpp")

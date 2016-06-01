@@ -67,6 +67,31 @@ struct CCOutputGeneratorSettings
 	std::string outputFolder = ".";
 };
 
+struct ParsedParam
+{
+	const Param* param;
+
+	//if parsed param is array it references the count param
+	ParsedParam* countPar = nullptr;
+	const Param* countMember = nullptr; //if count is member of a struct
+
+	//if parsed param is count
+	std::vector<ParsedParam*> dataPars;
+
+	//whether the param is an out param
+	bool out = false;
+
+	//whether the param is optional
+	bool optional = false;
+};
+
+struct ParsedCommand
+{
+	const Command* command;
+	std::vector<ParsedParam> parsedParams;
+	ParsedParam* returnParam = nullptr; //the data part of the return param
+};
+
 class CCOutputGenerator : public OutputGenerator
 {
 public:
@@ -78,6 +103,10 @@ public:
 	void printCmd(const Command& command);
 	void printVecCmd(const Command& command, const Param& count, const Param& data);
 	void printVecCmd(const Command& command, std::vector<std::pair<const Param*, const Param*>>& pars);
+
+	ParsedCommand parseCommand(const Command& cmd) const;
+	std::string paramDecl(const ParsedParam& param, bool rangeify, const char* sepr) const;
+	std::string paramCall(const ParsedParam& param, bool rangeify, const char* sepr) const;
 
 	std::string enumName(const Enum& e, const std::string& name, bool* bit = nullptr) const;
 	std::string constantName(const Constant& c) const;

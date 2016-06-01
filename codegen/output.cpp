@@ -760,7 +760,7 @@ void CCOutputGenerator::printCmd(const Command& cmd)
 		{
 			for(auto& par : vecPars)
 			{
-				if(par.first->name == len)
+				if(par.first->name == len && par.second == nullptr)
 				{
 					par.second = &param;
 					break;
@@ -947,7 +947,7 @@ void CCOutputGenerator::printVecCmd(const Command& cmd,
 
 				functions_ << sepr;
 				if(param.type.constant) functions_ << "const ";
-				functions_ << "std::vector<" << typeName(typeCopy) << ">& " << param.name;
+				functions_ << "Range<" << typeName(typeCopy) << ">& " << param.name;
 			}
 		}
 		else
@@ -1031,4 +1031,169 @@ void CCOutputGenerator::printVecCmd(const Command& cmd,
 		functions_ << "\t" << returnString << cmd.name << "(" << args;
 		functions_ << ")" << returnStringEnd << ";\n}\n";
 	}
+}
+
+ParsedCommand CCOutputGenerator::parseCommand(const Command& cmd) const
+{
+	ParsedCommand parsed;
+
+	auto& params = cmd.signature.params;
+	auto& pparams = parsed.parsedParams;
+	pparams.reserve(params.size());
+
+	//iterate through params to find array/count matches
+	for(auto& param : params)
+	{
+		pparams.emplace_back();
+		auto& pparam = pparams.back();
+		pparam.param = &param;
+
+		//out?
+		if(param.type.pointerlvl > 0 && !param.type.constant) pparam.out = true;
+
+		//array attrib, find the matching count param
+		auto attr = param.node.attribute("len");
+		std::string len = attr.value();
+		if(len.empty()) continue;
+
+		std::string paramName = len;
+		std::string memName;
+
+		auto memAcc = len.find("->");
+		if(memAcc != std::string::npos)
+		{
+			paramName = len.substr(0, memAcc);
+			memName = len.substr(memAcc + 2);
+		}
+
+		for(auto& par : pparams)
+		{
+			if(par.param->name != paramName) continue;
+
+			par.dataPars.push_back(&pparam);
+			pparam.countPar = &par;
+
+			if(!memName.empty())
+			{
+				auto& structType = static_cast<const Struct&>(*par.param->type.type);
+				for(auto& member : structType.members)
+				{
+					if(member.name == memName)
+					{
+						pparam.countMember = &member;
+						break;
+					}
+				}
+			}
+
+			break;
+		}
+	}
+
+	auto optional = true;
+
+	//reverse iteration
+	for(auto it = pparams.rbegin(); it < pparams.rend(); ++it)
+	{
+		//optional
+		if(!it->param->optional) optional = false;
+		else if(optional) it->optional = true;
+
+		//find param (pair) that should be returned
+		if(it->dataPars.empty() && it->out && !parsed.returnParam)
+		{
+			if(it->param->type.type->category == Type::Category::structure)
+			{
+				auto& structType = static_cast<const Struct&>(*it->param->type.type);
+				if(!structType.returnedonly) continue;
+			}
+
+			parsed.returnParam = &(*it);
+			if(!optional) break;
+		}
+	}
+
+	return parsed;
+}
+
+std::string CCOutputGenerator::paramDecl(const ParsedParam& param, bool rangeify, const char* sepr) const
+{
+	if(rangeify)
+	{
+		if(!param.dataPars.empty()) return "";
+		if(param.countPar)
+		{
+			std::string ret = sepr;
+			ret += "const Range<" + typeName(param.param->type) + ">& " + param.param->name;
+			return ret;
+		}
+	}
+
+	//reference for non optional pointer parameters
+	auto namedParam = *param.param;
+	if(namedParam.type.pointerlvl > 0 && !param.optional && namedParam.type.type->name != "void")
+	{
+		namedParam.type.pointerlvl--;
+		namedParam.type.reference = true;
+	}
+
+	auto ret =  paramName(namedParam);
+	if(param.optional) ret += " = {}";
+
+	return ret;
+}
+
+std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify, const char* sepr) const
+{
+	if(rangeify)
+	{
+		if(!param.dataPars.empty())
+		{
+			std::string ret = sepr;
+			ret += param.dataPars[0]->param->name;
+			ret += ".size()";
+			return ret;
+		}
+		else if(param.countPar)
+		{
+			std::string ret = sepr;
+			ret += "reinterpret_cast<" + typeName(param.param->type, false) + ">(";
+			ret += param.param->name;
+			ret += ".data())";
+			return ret;
+		}
+	}
+
+	auto category = param.param->type.type->category;
+	std::string ret = sepr;
+	if(param.param->type.pointerlvl > 0)
+	{
+		const char* ref = "";
+		if(!param.param->optional && param.param->type.type->name != "void") ref = "&";
+
+		ret += "reinterpret_cast<";
+		ret += typeName(param.param->type, false);
+		ret += ">(";
+		ret += ref;
+		ret += param.param->name;
+		ret += ")";
+	}
+	else if(category == Type::Category::enumeration || category == Type::Category::bitmask)
+	{
+		ret += "static_cast<";
+		ret += typeName(param.param->type, false);
+		ret += ">(";
+		ret += param.param->name;
+		ret += ")";
+	}
+	else if(!param.param->type.arraylvl.empty())
+	{
+		ret += param.param->name + ".data()";
+	}
+	else
+	{
+		ret += param.param->name;
+	}
+
+	return ret;
 }
