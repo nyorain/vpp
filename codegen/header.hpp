@@ -57,6 +57,20 @@ auto constexpr vecFuncTemplateVoid = 1 + R"SRC(
 	return ret;
 )SRC";
 
+auto constexpr vecFuncTemplateRetGiven = 1 + R"SRC(
+	std::vector<%t> ret;
+	ret.reserve(%c);
+	VPP_CALL(%f(%a));
+	return ret;
+)SRC";
+
+auto constexpr vecFuncTemplateRetGivenVoid = 1 + R"SRC(
+	std::vector<%t> ret;
+	ret.reserve(%c);
+	%f(%a);
+	return ret;
+)SRC";
+
 constexpr const char* keywords[]= {"alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand",
 	"bitor", "bool", "break", "case", "catch", "char", "char16_t", "char32_t", "class", "compl",
 	"const", "constexpr", "const_cast", "continue", "decltype", "default", "delete", "do",

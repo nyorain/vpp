@@ -73,10 +73,11 @@ struct ParsedParam
 
 	//if parsed param is array it references the count param
 	ParsedParam* countPar = nullptr;
-	const Param* countMember = nullptr; //if count is member of a struct
+	const Param* countMember = nullptr;
 
 	//if parsed param is count
 	std::vector<ParsedParam*> dataPars;
+	bool memberAsCount = false; //if it is count, whether the count is only a struct member
 
 	//whether the param is an out param
 	bool out = false;
@@ -87,7 +88,7 @@ struct ParsedParam
 
 struct ParsedCommand
 {
-	const Command* command;
+	const Command* command = nullptr;
 	std::vector<ParsedParam> parsedParams;
 	ParsedParam* returnParam = nullptr; //the data part of the return param
 };
@@ -102,11 +103,13 @@ public:
 	void printStruct(const Struct& type);
 	void printCmd(const Command& command);
 	void printVecCmd(const Command& command, const Param& count, const Param& data);
-	void printVecCmd(const Command& command, std::vector<std::pair<const Param*, const Param*>>& pars);
+	void printVecCmd(const ParsedCommand& command, const std::string& name);
 
 	ParsedCommand parseCommand(const Command& cmd) const;
-	std::string paramDecl(const ParsedParam& param, bool rangeify, const char* sepr) const;
-	std::string paramCall(const ParsedParam& param, bool rangeify, const char* sepr) const;
+	std::string paramDecl(const ParsedParam& param, bool rangeify, const char* sepr,
+		const ParsedParam* retParam) const;
+	std::string paramCall(const ParsedParam& param, bool rangeify, const char* sepr,
+		const ParsedParam* retParam) const;
 
 	std::string enumName(const Enum& e, const std::string& name, bool* bit = nullptr) const;
 	std::string constantName(const Constant& c) const;
