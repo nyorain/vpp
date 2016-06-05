@@ -43,7 +43,7 @@ void ComputePipeline::init(const Device& dev, const CreateInfo& createInfo)
 	info.stage = createInfo.shader.vkStageInfo();
 	info.layout = pipelineLayout_;
 
-	vk::createComputePipelines(vkDevice(), 0, 1, info, nullptr, pipeline_);
+	vk::createComputePipelines(vkDevice(), {}, 1, info, nullptr, pipeline_);
 }
 
 }

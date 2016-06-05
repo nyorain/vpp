@@ -200,7 +200,7 @@ void SwapChainRenderer::buildCommandBuffers(RendererBuilder& builder)
 			renderer.framebuffer.vkFramebuffer());
 		builder.build(ini);
 
-		vkCmdEndRenderPass(renderer.commandBuffer);
+		vk::cmdEndRenderPass(renderer.commandBuffer);
 
 		builder.afterRender(renderer.commandBuffer);
 

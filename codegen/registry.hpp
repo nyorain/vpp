@@ -35,11 +35,11 @@
 class Entry
 {
 public:
-	const pugi::xml_node node;
+	pugi::xml_node node;
 
 public:
 	Entry() = default;
-	Entry(const pugi::xml_node& xnode) : node(xnode) {}
+	Entry(const pugi::xml_node& xnode) : node(const_cast<pugi::xml_node&>(xnode)) {}
 };
 
 class Type : public Entry
@@ -126,7 +126,7 @@ public:
 class Handle : public Type
 {
 public:
-	bool dispatchable = false;
+	std::string type;
 	Handle* parent = nullptr;
 
 public:
@@ -211,6 +211,7 @@ class Requirements
 {
 public:
 	std::vector<Command*> commands;
+	std::vector<Command*> funcPtr;
 	std::vector<Type*> types;
 	std::vector<Constant*> constants;
 	std::vector<Constant> extraConstants;
@@ -294,14 +295,15 @@ public:
 	void loadFeature(const pugi::xml_node& node);
 	void loadExtension(const pugi::xml_node& node);
 
-	Requirements parseRequirements(const pugi::xml_node& node);
+	Requirements parseRequirements(const pugi::xml_node& node, bool extension = false);
 	void parseTypeReqs(Type& type, Requirements& reqs);
 	void parseTypeReqs(QualifiedType& type, Requirements& reqs);
-	void parseCommandReqs(Command& cmd, Requirements& reqs);
+	void parseCommandReqs(Command& cmd, Requirements& reqs, bool extension = false);
 
 	Param parseParam(const pugi::xml_node& node);
 
 protected:
 	Registry registry_;
 	pugi::xml_document doc_;
+	bool prototypes_ = false;
 };

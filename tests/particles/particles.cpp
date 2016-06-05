@@ -46,8 +46,8 @@ void ParticleSystem::build(const vpp::RenderPassInstance& instance) const
 
 	vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::graphics, graphicsPipeline_.vkPipeline());
 	vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
-		graphicsPipeline_.vkPipelineLayout(), 0, 1, &gd, 0, nullptr);
-	vk::cmdBindVertexBuffers(cmdBuffer, 0, 1, &buf, offsets);
+		graphicsPipeline_.vkPipelineLayout(), 0, {gd}, 0, nullptr);
+	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf}, offsets);
 	vk::cmdDraw(cmdBuffer, particles_.size(), 1, 0, 0);
 }
 
@@ -225,7 +225,7 @@ void ParticleSystem::buildComputeBuffer()
 
 	vk::cmdBindPipeline(computeBuffer_, vk::PipelineBindPoint::compute, computePipeline_.vkPipeline());
 	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::compute,
-		computePipeline_.vkPipelineLayout(), 0, 1, &cd, 0, nullptr);
+		computePipeline_.vkPipelineLayout(), 0, {}, {});
 	vk::cmdDispatch(computeBuffer_, particles_.size() / 16, 1, 1);
 
 	vk::endCommandBuffer(computeBuffer_);
@@ -275,7 +275,7 @@ void ParticleSystem::compute()
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &computeBuffer_;
 
-	vk::queueSubmit(app_.computeQueue, 1, &submitInfo, 0);
+	vk::queueSubmit(app_.computeQueue, {submitInfo}, 0);
 	vk::queueWaitIdle(app_.computeQueue);
 }
 

@@ -153,6 +153,7 @@ void RegistryLoader::loadTypes(const pugi::xml_node& node)
 			//auto parent = typeit.attribute("parent").as_string();
 			auto name = typeit.child_value("name");
 			Handle handle(name, typeit);
+			handle.type = typeit.child_value("type");
 			registry_.handles.push_back(handle);
 
 			std::cout << "\t\thandle: " << name << "\n";
@@ -416,7 +417,7 @@ void RegistryLoader::loadFeature(const pugi::xml_node& node)
 void RegistryLoader::loadExtension(const pugi::xml_node& node)
 {
 	Extension extension;
-	extension.reqs = parseRequirements(node);
+	extension.reqs = parseRequirements(node, true);
 	extension.number = node.attribute("number").as_int();
 	extension.name = node.attribute("name").as_string();
 	extension.protect = node.attribute("protect").as_string();
@@ -437,7 +438,7 @@ void RegistryLoader::loadExtension(const pugi::xml_node& node)
 	std::cout << "\t\t" << extension.name << "\n";
 }
 
-Requirements RegistryLoader::parseRequirements(const pugi::xml_node& node)
+Requirements RegistryLoader::parseRequirements(const pugi::xml_node& node, bool extension)
 {
 	Requirements ret;
 
@@ -469,7 +470,7 @@ Requirements RegistryLoader::parseRequirements(const pugi::xml_node& node)
 				std::cout << "###couldnt find cmd " << req.attribute("name").as_string() << "\n";
 				continue;
 			}
-			parseCommandReqs(*cmd, ret);
+			parseCommandReqs(*cmd, ret, extension);
 		}
 
 		//enums
@@ -478,7 +479,7 @@ Requirements RegistryLoader::parseRequirements(const pugi::xml_node& node)
 			auto enumName = req.attribute("name").as_string();
 			auto value = std::string(req.attribute("value").value());
 			auto extAttrib = req.attribute("extends");
-			if(!extAttrib)
+			if(!extAttrib && (value[0] == '\"' || value.find("VK") == std::string::npos))
 			{
 				auto valueAttrib = req.attribute("value");
 				if(valueAttrib)
@@ -499,7 +500,7 @@ Requirements RegistryLoader::parseRequirements(const pugi::xml_node& node)
 					ret.constants.push_back(constant);
 				}
 			}
-			else if(value[0] == '\"' || value.find("VK") == std::string::npos)
+			else
 			{
 				std::string dir = "+";
 				auto dirAttrib = req.attribute("dir");
@@ -579,14 +580,15 @@ void RegistryLoader::parseTypeReqs(QualifiedType& type, Requirements& reqs)
 	if(type.type) parseTypeReqs(*type.type, reqs);
 }
 
-void RegistryLoader::parseCommandReqs(Command& cmd, Requirements& reqs)
+void RegistryLoader::parseCommandReqs(Command& cmd, Requirements& reqs, bool extension)
 {
 	for(auto& param : cmd.signature.params)
 		parseTypeReqs(*param.type.type, reqs);
 
 	parseTypeReqs(*cmd.signature.returnType.type, reqs);
 
-	reqs.commands.push_back(&cmd);
+	if(!extension || prototypes_) reqs.commands.push_back(&cmd);
+	if(extension) reqs.funcPtr.push_back(&cmd);
 }
 
 
@@ -678,6 +680,7 @@ void Requirements::add(Requirements& reqs)
 	commands.insert(commands.end(), reqs.commands.begin(), reqs.commands.end());
 	types.insert(types.end(), reqs.types.begin(), reqs.types.end());
 	constants.insert(constants.end(), reqs.constants.begin(), reqs.constants.end());
+	funcPtr.insert(funcPtr.end(), reqs.funcPtr.begin(), reqs.funcPtr.end());
 
 	for(auto& c : reqs.extraConstants)
 		constants.push_back(&c);

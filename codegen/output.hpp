@@ -84,6 +84,7 @@ struct ParsedParam
 
 	//whether the param is optional
 	bool optional = false;
+	bool optionalWithRet = false; //whehter it is optional if return param is normal param
 };
 
 struct ParsedCommand

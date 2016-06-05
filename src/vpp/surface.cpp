@@ -12,7 +12,8 @@ Surface::Surface(vk::Instance instance, vk::SurfaceKHR surface)
 
 Surface::~Surface()
 {
-    if(vkInstance() && vkSurface()) vk::destroySurfaceKHR(vkInstance(), vkSurface(), nullptr);
+	VPP_LOAD_PROC(vkInstance(), DestroySurfaceKHR);
+    if(vkInstance() && vkSurface()) pfDestroySurfaceKHR(vkInstance(), vkSurface(), nullptr);
     surface_ = {};
 }
 
@@ -38,10 +39,10 @@ void swap(Surface& a, Surface& b) noexcept
 
 bool Surface::queueFamilySupported(vk::PhysicalDevice phdev, std::uint32_t qFamiliyIndex) const
 {
-	VPP_LOAD_INSTANCE_PROC(vkInstance(), GetPhysicalDeviceSurfaceSupportKHR);
+	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceSupportKHR);
 
     vk::Bool32 ret;
-    fpGetPhysicalDeviceSurfaceSupportKHR(phdev, qFamiliyIndex, vkSurface(), &ret);
+    VPP_CALL(pfGetPhysicalDeviceSurfaceSupportKHR(phdev, qFamiliyIndex, vkSurface(), &ret));
     return (ret == VK_TRUE);
 }
 
@@ -62,37 +63,35 @@ std::vector<std::uint32_t> Surface::supportedQueueFamilies(vk::PhysicalDevice ph
 
 vk::SurfaceCapabilitiesKHR Surface::capabilities(vk::PhysicalDevice phdev) const
 {
-	VPP_LOAD_INSTANCE_PROC(vkInstance(), GetPhysicalDeviceSurfaceCapabilitiesKHR);
+	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceCapabilitiesKHR);
 
     vk::SurfaceCapabilitiesKHR surfCaps;
-    fpGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev, vkSurface(), &surfCaps.vkHandle());
+    VPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev, vkSurface(), &surfCaps));
     return surfCaps;
 }
 
-std::vector<vk::SurfaceFormatKHR> Surface::formats(VkPhysicalDevice phdev) const
+std::vector<vk::SurfaceFormatKHR> Surface::formats(vk::PhysicalDevice phdev) const
 {
-	VPP_LOAD_INSTANCE_PROC(vkInstance(), GetPhysicalDeviceSurfaceFormatsKHR);
+	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceFormatsKHR);
 
     uint32_t count;
-    fpGetPhysicalDeviceSurfaceFormatsKHR(phdev, vkSurface(), &count, nullptr);
+    VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev, vkSurface(), &count, nullptr));
 
     std::vector<vk::SurfaceFormatKHR> ret(count);
-    fpGetPhysicalDeviceSurfaceFormatsKHR(phdev, vkSurface(), &count,
-		reinterpret_cast<VkSurfaceFormatKHR*>(ret.data()));
+    VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev, vkSurface(), &count, ret.data()));
 
     return ret;
 }
 
-std::vector<vk::PresentModeKHR> Surface::presentModes(VkPhysicalDevice phdev) const
+std::vector<vk::PresentModeKHR> Surface::presentModes(vk::PhysicalDevice phdev) const
 {
-	VPP_LOAD_INSTANCE_PROC(vkInstance(), GetPhysicalDeviceSurfacePresentModesKHR);
+	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfacePresentModesKHR);
 
     uint32_t count;
-    fpGetPhysicalDeviceSurfacePresentModesKHR(phdev, vkSurface(), &count, nullptr);
+    VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev, vkSurface(), &count, nullptr));
 
     std::vector<vk::PresentModeKHR> ret(count);
-    fpGetPhysicalDeviceSurfacePresentModesKHR(phdev, vkSurface(), &count,
-		reinterpret_cast<VkPresentModeKHR*>(ret.data()));
+    VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev, vkSurface(), &count, ret.data()));
 
     return ret;
 }

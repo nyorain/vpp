@@ -1,7 +1,7 @@
 auto constexpr fwdHeader = 1 + R"SRC(
 #include "flags.hpp"
+#include "handle.hpp"
 
-#include <vulkan/vulkan.h>
 #include <cstdint>
 
 )SRC";
@@ -20,6 +20,7 @@ auto constexpr structsHeader = 1 + R"SRC(
 #include "enums.hpp"
 
 #include <array>
+#include <vulkan/vulkan.h>
 
 )SRC";
 
@@ -36,23 +37,24 @@ auto constexpr functionsHeader = 1 + R"SRC(
 #include "range.hpp"
 
 #include <vector>
+#include <vulkan/vulkan.h>
 
 )SRC";
 
 auto constexpr vecFuncTemplate = 1 + R"SRC(
 	std::vector<%t> ret;
-	std::uint32_t count = 0u;
+	%ct count = 0u;
 	if(!call::success(VPP_CALL(%f(%a)))) return ret;
-	ret.resize(count);
+	ret.reserve(count);
 	VPP_CALL(%f(%a));
 	return ret;
 )SRC";
 
 auto constexpr vecFuncTemplateVoid = 1 + R"SRC(
 	std::vector<%t> ret;
-	std::uint32_t count = 0u;
+	%ct count = 0u;
 	%f(%a);
-	ret.resize(count);
+	ret.reserve(count);
 	%f(%a);
 	return ret;
 )SRC";

@@ -28,8 +28,8 @@ SwapChain::~SwapChain()
 
 	if(!vkSwapChain()) return;
 
-	VPP_LOAD_DEVICE_PROC(vkDevice(), DestroySwapchainKHR);
-    fpDestroySwapchainKHR(vkDevice(), vkSwapChain(), nullptr);
+	VPP_LOAD_PROC(vkDevice(), DestroySwapchainKHR);
+    pfDestroySwapchainKHR(vkDevice(), vkSwapChain(), nullptr);
 	swapChain_ = {};
 }
 
@@ -66,9 +66,9 @@ void SwapChain::destroyBuffers()
 
 void SwapChain::initSwapChain()
 {
-	VPP_LOAD_DEVICE_PROC(vkDevice(), CreateSwapchainKHR);
-	VPP_LOAD_DEVICE_PROC(vkDevice(), GetSwapchainImagesKHR);
-	VPP_LOAD_DEVICE_PROC(vkDevice(), DestroySwapchainKHR);
+	VPP_LOAD_PROC(vkDevice(), CreateSwapchainKHR);
+	VPP_LOAD_PROC(vkDevice(), GetSwapchainImagesKHR);
+	VPP_LOAD_PROC(vkDevice(), DestroySwapchainKHR);
 
 	//destory just the buffers, not the swapchain (if there is any)
 	destroyBuffers();
@@ -79,21 +79,21 @@ void SwapChain::initSwapChain()
 
 	//create info from seperate function since it requires a lot of querying
     auto createInfo = swapChainCreateInfo();
-    fpCreateSwapchainKHR(vkDevice(), &createInfo.vkHandle(), nullptr, &swapChain_);
+    VPP_CALL(pfCreateSwapchainKHR(vkDevice(), &createInfo, nullptr, &swapChain_));
 
 	if(oldSwapchain)
 	{
-		fpDestroySwapchainKHR(vkDevice(), oldSwapchain, nullptr);
-		oldSwapchain = 0;
+		pfDestroySwapchainKHR(vkDevice(), oldSwapchain, nullptr);
+		oldSwapchain = {};
 	}
 
     //new buffers
 	//get swapchain images
     std::uint32_t count;
-    fpGetSwapchainImagesKHR(vkDevice(), vkSwapChain(), &count, nullptr);
+    VPP_CALL(pfGetSwapchainImagesKHR(vkDevice(), vkSwapChain(), &count, nullptr));
 
-    std::vector<VkImage> imgs(count);
-    fpGetSwapchainImagesKHR(vkDevice(), vkSwapChain(), &count, imgs.data());
+    std::vector<vk::Image> imgs(count);
+    VPP_CALL(pfGetSwapchainImagesKHR(vkDevice(), vkSwapChain(), &count, imgs.data()));
 
 	//create imageviews and insert buffers
     buffers_.reserve(count);
@@ -132,17 +132,17 @@ void SwapChain::resize(const vk::Extent2D& size)
 
 void SwapChain::queryFormats()
 {
-	VPP_LOAD_INSTANCE_PROC(vkInstance(), GetPhysicalDeviceSurfaceFormatsKHR);
+	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceFormatsKHR);
 
 	//get formats
     uint32_t count;
-    fpGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(), vkSurface(), &count, nullptr);
+    VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(), vkSurface(), &count, nullptr));
 
 	if(!count) throw std::runtime_error("SwapChain::queryFormats: Surface has no valid formats.");
 
     std::vector<vk::SurfaceFormatKHR> formats(count);
-    fpGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(), vkSurface(), &count,
-		reinterpret_cast<VkSurfaceFormatKHR*>(formats.data()));
+    VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(), vkSurface(), &count,
+		formats.data()));
 
     if(formats.size() == 1 && formats[0].format == vk::Format::undefined)
 	{
@@ -159,16 +159,17 @@ void SwapChain::queryFormats()
 
 vk::SwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
 {
-	VPP_LOAD_INSTANCE_PROC(vkInstance(), GetPhysicalDeviceSurfacePresentModesKHR);
-	VPP_LOAD_INSTANCE_PROC(vkInstance(), GetPhysicalDeviceSurfaceCapabilitiesKHR);
+	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfacePresentModesKHR);
+	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceCapabilitiesKHR);
 
 	//presentModes
     uint32_t count;
-    fpGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(), vkSurface(), &count, nullptr);
+    VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(), vkSurface(), &count,
+		nullptr));
 
     std::vector<vk::PresentModeKHR> presentModes(count);
-    fpGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(), vkSurface(), &count,
-		reinterpret_cast<VkPresentModeKHR*>(presentModes.data()));
+    VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(), vkSurface(), &count,
+		presentModes.data()));
 
     auto presentMode = vk::PresentModeKHR::fifo;
     for(auto& mode : presentModes)
@@ -186,7 +187,7 @@ vk::SwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
 
 	//capabilities
 	vk::SurfaceCapabilitiesKHR surfCaps;
-	fpGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(), vkSurface(), &surfCaps.vkHandle());
+	VPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(), vkSurface(), &surfCaps));
 
     //size
     if(surfCaps.currentExtent.width > 1)
@@ -224,23 +225,23 @@ vk::SwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
 
 unsigned int SwapChain::acquireNextImage(vk::Semaphore presentComplete) const
 {
-	VPP_LOAD_DEVICE_PROC(vkDevice(), AcquireNextImageKHR);
+	VPP_LOAD_PROC(vkDevice(), AcquireNextImageKHR);
 
     std::uint32_t ret;
-    fpAcquireNextImageKHR(vkDevice(), vkSwapChain(), UINT64_MAX, presentComplete, 0, &ret);
+    VPP_CALL(pfAcquireNextImageKHR(vkDevice(), vkSwapChain(), UINT64_MAX, presentComplete, 0, &ret));
     return ret;
 }
 
 void SwapChain::present(vk::Queue queue, std::uint32_t currentBuffer) const
 {
-	VPP_LOAD_DEVICE_PROC(vkDevice(), QueuePresentKHR);
+	VPP_LOAD_PROC(vkDevice(), QueuePresentKHR);
 
     vk::PresentInfoKHR presentInfo {};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &swapChain_;
     presentInfo.pImageIndices = &currentBuffer;
 
-    fpQueuePresentKHR(queue, &presentInfo.vkHandle());
+    VPP_CALL(pfQueuePresentKHR(queue, &presentInfo));
 }
 
 }

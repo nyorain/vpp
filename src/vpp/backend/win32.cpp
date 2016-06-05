@@ -1,4 +1,5 @@
 #include <vpp/backend/win32.hpp>
+#include <vpp/procAddr.hpp>
 
 namespace vpp
 {
@@ -22,7 +23,7 @@ void Win32Surface::initSurface(HINSTANCE hinstance, HWND hwnd)
     info.hinstance = hinstance;
     info.hwnd = hwnd;
 
-	surface_ = vk::createWin32SurfaceKHR(vkInstance(), info);
+	VPP_PROC(instance_, CreateWin32SurfaceKHR)(vkInstance(), &info, nullptr, &surface_);
 }
 
 //Context

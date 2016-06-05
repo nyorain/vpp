@@ -14,7 +14,7 @@ MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
 	if(!(memory.propertyFlags() & vk::MemoryPropertyBits::hostVisible))
 		throw std::logic_error("vpp::MemoryMap: trying to map device local memory");
 
-	vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {}, &ptr_);
+	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
 }
 
 MemoryMap::MemoryMap(MemoryMap&& other) noexcept
@@ -47,7 +47,7 @@ void MemoryMap::remap(const Allocation& allocation)
 	vk::unmapMemory(vkDevice(), vkMemory());
 	allocation_ = {nbeg, nsize};
 
-	vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {}, &ptr_);
+	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
 }
 
 void swap(MemoryMap& a, MemoryMap& b) noexcept
@@ -215,7 +215,7 @@ DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryProp
 	vk::MemoryAllocateInfo info;
 	info.allocationSize = size_;
 	info.memoryTypeIndex = typeIndex_;
-	
+
 	memory_ = vk::allocateMemory(vkDevice(), info);
 }
 DeviceMemory::~DeviceMemory()

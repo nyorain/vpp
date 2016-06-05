@@ -18,9 +18,9 @@ class Resource : public NonCopyable
 public:
 	const Device& device() const { return *device_; }
 
-	const VkInstance& vkInstance() const { return device().vkInstance(); }
-	const VkPhysicalDevice& vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
-	const VkDevice& vkDevice() const { return device().vkDevice(); }
+	const vk::Instance& vkInstance() const { return device().vkInstance(); }
+	const vk::PhysicalDevice& vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
+	const vk::Device& vkDevice() const { return device().vkDevice(); }
 
 protected:
 	Resource() = default;
@@ -54,9 +54,9 @@ class ResourceReference : public NonCopyable
 public:
 	const Device& device() const { return reinterpret_cast<const T&>(*this).resourceRef().device(); }
 
-	const VkInstance& vkInstance() const { return device().vkInstance(); }
-	const VkPhysicalDevice& vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
-	const VkDevice& vkDevice() const { return device().vkDevice(); }
+	const vk::Instance& vkInstance() const { return device().vkInstance(); }
+	const vk::PhysicalDevice& vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
+	const vk::Device& vkDevice() const { return device().vkDevice(); }
 };
 
 }

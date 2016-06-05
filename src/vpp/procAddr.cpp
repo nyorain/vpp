@@ -4,7 +4,7 @@ namespace vpp
 {
     namespace detail
     {
-        sup<VkInstance, sup<std::string, PFN_vkVoidFunction>> instanceProcs;
-        sup<VkDevice, sup<std::string, PFN_vkVoidFunction>> deviceProcs;
+        sup<vk::Instance, sup<std::string, vk::PfnVoidFunction>> instanceProcs;
+        sup<vk::Device, sup<std::string, vk::PfnVoidFunction>> deviceProcs;
     }
 }

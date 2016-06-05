@@ -23,9 +23,9 @@ public:
     Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info);
     ~Device();
 
-    const VkInstance& vkInstance() const { return instance_; }
-    const VkPhysicalDevice& vkPhysicalDevice() const { return physicalDevice_; }
-    const VkDevice& vkDevice() const { return device_; }
+    const vk::Instance& vkInstance() const { return instance_; }
+    const vk::PhysicalDevice& vkPhysicalDevice() const { return physicalDevice_; }
+    const vk::Device& vkDevice() const { return device_; }
 
 	///Waits until all operations on this device are finished.
     void waitIdle() const;

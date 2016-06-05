@@ -63,6 +63,7 @@
 #include "enums.hpp"
 
 #include <array>
+#include <vulkan/vulkan.h>
 
 namespace vk
 {

@@ -53,32 +53,29 @@ vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags, vk::DebugReport
 DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags)
 	: instance_(instance)
 {
-	VPP_LOAD_INSTANCE_PROC(vkInstance(), CreateDebugReportCallbackEXT);
+	VPP_LOAD_PROC(vkInstance(), CreateDebugReportCallbackEXT);
 
-	vk::DebugReportCallbackCreateInfoEXT dbgCreateInfo(flags, defaultMessageCallback, this);
-	auto handle = &dbgCreateInfo.vkHandle();
+	vk::DebugReportCallbackCreateInfoEXT createInfo(flags, defaultMessageCallback, this);
 
-	VPP_CALL(fpCreateDebugReportCallbackEXT(vkInstance(), handle, nullptr, &debugCallback_));
+	VPP_CALL(pfCreateDebugReportCallbackEXT(vkInstance(), &createInfo, nullptr, &debugCallback_));
 }
 
 DebugCallback::~DebugCallback()
 {
-	VPP_LOAD_INSTANCE_PROC(vkInstance(), DestroyDebugReportCallbackEXT);
+	VPP_LOAD_PROC(vkInstance(), DestroyDebugReportCallbackEXT);
 
-	if(vkCallback() && vkInstance()) fpDestroyDebugReportCallbackEXT(vkInstance(), vkCallback(), nullptr);
+	if(vkCallback() && vkInstance()) pfDestroyDebugReportCallbackEXT(vkInstance(), vkCallback(), nullptr);
 	debugCallback_ = {};
 }
 
 bool DebugCallback::call(const CallbackInfo& info)
 {
-	/*
-	std::cout	<< enumString(info.flags) << ": " << info.message << "\n\t"
-				<< "objType: " << enumString(info.objectType) << "\n\t"
+	std::cout	<< /*enumString(info.flags) << ": " << */ info.message << "\n\t"
+				//<< "objType: " << enumString(info.objectType) << "\n\t"
 				<< "srcObject: " << info.srcObject << "\n\t"
 				<< "location: " << info.location << "\n\t"
 				<< "code: " << info.messageCode << "\n\t"
 				<< "layer: " << info.layer << std::endl;
-	*/
 
 	return false;
 }

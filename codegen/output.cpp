@@ -249,6 +249,10 @@ void CCOutputGenerator::generate()
 
 	//end
 	outputAllHeader("\n\n} //namespace vk");
+
+	fwd_ << "\n\n";
+	fwd_ << "#undef VK_DEFINE_HANDLE\n";
+	fwd_ << "#undef VK_DEFINE_NON_DISPATCHABLE_HANDLE\n";
 }
 
 void CCOutputGenerator::outputAll(const std::string& string)
@@ -320,7 +324,8 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 
 		//fwd
 		auto name = typeName(type);
-		fwd_ << "using " << name << " = " << type.name << ";\n";
+		//fwd_ << "using " << name << " = " << type.name << ";\n";
+		fwd_ << type.type << "(" << name << ")" << ";\n";
 	}
 	if(count > 0) std::cout << "\tOutputted " << count << " handles\n";
 	if(count > 0) fwd_ << "\n";
@@ -454,6 +459,32 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		assureGuard(fwd_, fwdGuard, guard);
 
 		fwd_ << "using " << typeName(type) << " = " << typeName(type.signature.returnType);
+		fwd_ << "(*)(";
+
+		auto sepr = "";
+		for(auto& param : type.signature.params)
+		{
+			fwd_ << sepr << typeName(param.type) << " " << param.name;
+			for(auto& lvl : param.type.arraylvl) fwd_ << "[" << lvl << "]";
+			sepr = ", ";
+		}
+
+		fwd_ << ");\n";
+	}
+
+	//extra funcPOinter
+	for(auto* typeit : reqs.funcPtr)
+	{
+		auto it = std::find(fulfilled.funcPtr.begin(), fulfilled.funcPtr.end(), typeit);
+		if(it != fulfilled.funcPtr.end()) continue;
+
+		auto& type = *typeit;
+		count++;
+
+		auto name = removeVkPrefix(type.name, nullptr);
+		assureGuard(fwd_, fwdGuard, guard);
+
+		fwd_ << "using Pfn" << name << " = " << typeName(type.signature.returnType);
 		fwd_ << "(*)(";
 
 		auto sepr = "";
@@ -697,7 +728,7 @@ void CCOutputGenerator::printCmd(const Command& cmd)
 
 	auto parsed = parseCommand(cmd);
 
-	if(parsed.returnParam)
+	if(parsed.returnParam && !parsed.returnParam->countPar)
 	{
 		auto typeCpy = parsed.returnParam->param->type;
 		typeCpy.pointerlvl--;
@@ -714,7 +745,7 @@ void CCOutputGenerator::printCmd(const Command& cmd)
 	std::string args;
 	for(auto& pparam : parsed.parsedParams)
 	{
-		if(&pparam != parsed.returnParam && pparam.countPar) printVecVersion = true;
+		if(pparam.countPar) printVecVersion = true;
 
 		auto decl = paramDecl(pparam, false, declSepr, parsed.returnParam);
 		if(!decl.empty())
@@ -727,67 +758,31 @@ void CCOutputGenerator::printCmd(const Command& cmd)
 		callSepr = ", ";
 	}
 
-	if(parsed.returnParam && parsed.returnParam->countPar) //if vecotr is returned
+	std::string returnString = "";
+	std::string returnStringEnd = "";
+	auto& retType = cmd.signature.returnType;
+
+	if(parsed.returnParam && !parsed.returnParam->countPar)
 	{
-		std::string code;
-		auto& countPar = *parsed.returnParam->countPar;
-		if(countPar.memberAsCount || !countPar.out) //if return count is given
-		{
-			if(cmd.signature.returnType.type->name != "VkResult") code = vecFuncTemplateRetGivenVoid;
-			else code = vecFuncTemplateRetGiven;
-
-			//TODO: check for pointer
-			std::string count;
-			if(countPar.memberAsCount) count = countPar.param->name + "." + parsed.returnParam->countMember->name;
-			if(!countPar.out) count = countPar.param->name;
-			code = std::regex_replace(code, std::regex("%c"), count);
-		}
-		else
-		{
-			if(cmd.signature.returnType.type->name != "VkResult") code = vecFuncTemplateVoid;
-			else code = vecFuncTemplate;
-		}
-
 		auto typeCpy = parsed.returnParam->param->type;
 		typeCpy.pointerlvl--;
-
-		code = std::regex_replace(code, std::regex("%t"), typeName(typeCpy));
-		code = std::regex_replace(code, std::regex("%a"), args);
-		code = std::regex_replace(code, std::regex("%f"), cmd.name);
-
-		functions_ << ")\n{\n";
-		functions_ << code;
-		functions_ << "}\n";
-
+		returnString = typeName(typeCpy) + " ret = {};\n\t";
+		returnStringEnd = ";\n\treturn ret";
 	}
-	else
+	else if(retType.type->name == "VkResult")
 	{
-		std::string returnString = "";
-		std::string returnStringEnd = "";
-		auto& retType = cmd.signature.returnType;
-
-		if(parsed.returnParam)
-		{
-			auto typeCpy = parsed.returnParam->param->type;
-			typeCpy.pointerlvl--;
-			returnString = typeName(typeCpy) + " ret = {};\n\t";
-			returnStringEnd = ";\n\treturn ret";
-		}
-		if(retType.type->name == "VkResult")
-		{
-			returnString = "return VPP_CALL(static_cast<Result>(";
-			returnStringEnd = "))";
-		}
-		else if(retType.type->name != "void" || retType.pointerlvl > 0)
-		{
-			returnString = "return static_cast<" + typeName(cmd.signature.returnType) + ">(";
-			returnStringEnd = ")";
-		}
-
-		functions_ << ")\n{\n\t";
-		functions_ << returnString << cmd.name << "(" << args;
-		functions_ << ")" << returnStringEnd << ";\n}\n";
+		returnString = "return VPP_CALL(static_cast<Result>(";
+		returnStringEnd = "))";
 	}
+	else if(retType.type->name != "void" || retType.pointerlvl > 0)
+	{
+		returnString = "return static_cast<" + typeName(cmd.signature.returnType) + ">(";
+		returnStringEnd = ")";
+	}
+
+	functions_ << ")\n{\n\t";
+	functions_ << returnString << cmd.name << "(" << args;
+	functions_ << ")" << returnStringEnd << ";\n}\n";
 
 	//if needed, output the std::vector version of the function
 	if(printVecVersion) printVecCmd(parsed, name);
@@ -843,7 +838,8 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 	{
 		auto typeCpy = vecRet->first->param->type;
 		typeCpy.pointerlvl--;
-		retType = "std::vector<" + typeName(typeCpy) + ">";
+		if(typeCpy.type->name != "void") retType = "std::vector<" + typeName(typeCpy) + ">";
+		else retType = "std::vector<std::uint8_t>";
 	}
 
 	std::cout << "startVec2" << std::endl;
@@ -873,6 +869,7 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 	if(vecRet)
 	{
 		std::string code;
+		auto& countPar = *pcmd.returnParam->countPar;
 		if(vecRet->second->memberAsCount || !vecRet->second->out)
 		{
 			if(cmd.signature.returnType.type->name != "VkResult") code = vecFuncTemplateRetGivenVoid;
@@ -881,7 +878,8 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 			//TODO: check for pointer
 			std::string count;
 			if(vecRet->first->countMember) count = vecRet->second->param->name + "." + vecRet->first->countMember->name;
-			if(!vecRet->second->memberAsCount) count = vecRet->second->param->name;
+			else if(countPar.dataPars[0] != pcmd.returnParam) count = countPar.dataPars[0]->param->name + ".size()";
+			else count = countPar.param->name;
 			code = std::regex_replace(code, std::regex("%c"), count);
 		}
 		else
@@ -893,9 +891,13 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 		auto typeCpy = vecRet->first->param->type;
 		typeCpy.pointerlvl--;
 
-		code = std::regex_replace(code, std::regex("%t"), typeName(typeCpy));
+		if(typeCpy.type->name != "void") code = std::regex_replace(code, std::regex("%t"), typeName(typeCpy));
+		else code = std::regex_replace(code, std::regex("%t"), "std::uint8_t");
 		code = std::regex_replace(code, std::regex("%a"), args);
 		code = std::regex_replace(code, std::regex("%f"), cmd.name);
+
+		auto& countType = *countPar.param->type.type;
+		code = std::regex_replace(code, std::regex("%ct"), countType.name);
 
 		functions_ << code;
 		functions_ << "}\n";
@@ -987,24 +989,29 @@ ParsedCommand CCOutputGenerator::parseCommand(const Command& cmd) const
 	for(auto it = pparams.rbegin(); it < pparams.rend(); ++it)
 	{
 		//find param (pair) that should be returned
-		if(it->dataPars.empty() && it->out && !parsed.returnParam)
+		if(it->dataPars.empty() && it->out)
 		{
-			if(it->param->type.type->category == Type::Category::structure)
+			if(it->param->type.type->category == Type::Category::structure && !it->countPar)
 			{
 				auto& structType = static_cast<const Struct&>(*it->param->type.type);
 				if(!structType.returnedonly) continue;
 			}
 
 			parsed.returnParam = &(*it);
+			break;
 		}
 	}
 
 	auto optional = true;
+	auto optionalWithRet = true;
 	for(auto it = pparams.rbegin(); it < pparams.rend(); ++it)
 	{
 		//optional
 		if(&(*it) != parsed.returnParam && !it->param->optional) optional = false;
 		else if(optional) it->optional = true;
+
+		if(!it->param->optional) optionalWithRet = false;
+		else if(optionalWithRet) it->optionalWithRet = true;
 	}
 
 	return parsed;
@@ -1013,30 +1020,41 @@ ParsedCommand CCOutputGenerator::parseCommand(const Command& cmd) const
 std::string CCOutputGenerator::paramDecl(const ParsedParam& param, bool rangeify, const char* sepr,
 	const ParsedParam* retParam) const
 {
-	if(retParam && &param == retParam) return ""; //returnParam data part
-	else if(retParam && &param == retParam->countPar && !retParam->countMember) return ""; //reParam coutPart
+	if(retParam && &param == retParam && !retParam->countPar) return ""; //returnParam data part
 
 	std::string ret = sepr;
 	if(rangeify)
 	{
-		if(!param.dataPars.empty() && !param.memberAsCount) return "";
+		if(retParam && &param == retParam) return "";
+		if(!param.dataPars.empty() && !param.memberAsCount)
+		{
+			if(param.out || !retParam || (retParam && retParam != param.dataPars[0])) return "";
+		}
 		if(param.countPar && !param.countMember)
 		{
-			ret += "const Range<" + typeName(param.param->type) + ">& " + param.param->name;
+			auto typeCopy = param.param->type;
+			if(typeCopy.pointerlvl)typeCopy.pointerlvl--;
+			if(typeCopy.type->name == "void") typeCopy.type->name = "std::uint8_t";
+			ret += "const Range<" + typeName(typeCopy) + ">& " + param.param->name;
+			if(typeCopy.type->name == "std::uint8_t") typeCopy.type->name = "void";
 			return ret;
 		}
 	}
 
+	bool optional = ((rangeify || (!retParam || !retParam->countPar)) && param.optional);
+	optional |= (!rangeify && retParam && retParam->countPar && param.optionalWithRet);
+
 	//reference for non optional pointer parameters
 	auto namedParam = *param.param;
-	if(namedParam.type.pointerlvl > 0 && !param.optional && namedParam.type.type->name != "void")
+	if(namedParam.type.pointerlvl > 0 && !param.param->optional && namedParam.type.type->name != "void"
+		&& namedParam.type.type->name != "char")
 	{
 		namedParam.type.pointerlvl--;
 		namedParam.type.reference = true;
 	}
 
 	ret += paramName(namedParam);
-	if(param.optional) ret += " = {}";
+	if(optional) ret += " = {}";
 
 	return ret;
 }
@@ -1045,45 +1063,40 @@ std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify
 	const ParsedParam* retParam) const
 {
 	std::string ret = sepr;
-	if(retParam && &param == retParam) //is return param data
+	if(retParam && &param == retParam && !param.countPar) //is return param (data)
 	{
-		std::string dataName;
-		if(param.countPar) dataName = ">(ret.data())";
-		else dataName = ">(&ret)";
-
-		ret += "reinterpret_cast<" + typeName(param.param->type, false) + dataName;
+		ret += "reinterpret_cast<" + typeName(param.param->type, false) + ">(&ret)";
 		return ret;
 	}
-	else if(retParam && &param == retParam->countPar) //is count part of return param
+	else if(!param.memberAsCount && rangeify && retParam && &param == retParam->countPar) //is count part of return param
 	{
-		if(param.memberAsCount)
+		if(param.out)
 		{
-			ret += param.param->name;
-			if(param.optional || param.param->type.pointerlvl > 1) ret += "->";
-			else ret += ".";
-			ret += retParam->countMember->name;
+			ret += "&count";
+			return ret;
+		}
+		else if(param.dataPars[0] != retParam)
+		{
+			ret += param.dataPars[0]->param->name + ".size()";
 			return ret;
 		}
 		else
 		{
-			ret += "&count";
+			ret += param.param->name;
 			return ret;
 		}
 	}
 
 	if(rangeify)
 	{
-		if(!param.dataPars.empty()) //is count part of normal range
+		if(retParam && &param == retParam)
 		{
-			if(param.memberAsCount)
-			{
-				ret += param.param->name;
-				if(param.optional || param.param->type.pointerlvl > 1) ret += "->";
-				else ret += ".";
-				ret += param.dataPars[0]->countMember->name;
-				return ret;
-			}
-			else
+			ret += "reinterpret_cast<" + typeName(param.param->type, false) + ">(ret.data())";
+			return ret;
+		}
+		else if(!param.dataPars.empty()) //is count part of normal range
+		{
+			if(!param.memberAsCount)
 			{
 				ret += param.dataPars[0]->param->name;
 				ret += ".size()";
@@ -1100,12 +1113,15 @@ std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify
 		}
 	}
 
-	//normal params here that will not be returned and are not part of a range
+	//normal params here that will not be returned and are not (directly) part of a range
 	auto category = param.param->type.type->category;
-	if(param.param->type.pointerlvl > 0)
+	if(param.param->type.pointerlvl > 0 || category == Type::Category::handle)
 	{
+		bool optional = ((rangeify || (!retParam || !retParam->countPar)) && param.optional);
+		optional |= (!rangeify && retParam && retParam->countPar && param.optionalWithRet);
+
 		const char* ref = "";
-		if(!param.param->optional && param.param->type.type->name != "void") ref = "&";
+		if(!optional && param.param->type.type->name != "void" && param.param->type.type->name != "char") ref = "&";
 
 		ret += "reinterpret_cast<";
 		ret += typeName(param.param->type, false);
