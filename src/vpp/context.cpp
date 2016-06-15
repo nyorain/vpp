@@ -1,8 +1,8 @@
 #include <vpp/context.hpp>
 #include <vpp/procAddr.hpp>
+#include <vpp/vk.hpp>
 #include <vpp/debug.hpp>
-#include <vpp/surface.hpp>
-#include <vpp/swapChain.hpp>
+#include <vpp/device.hpp>
 
 #include <stdexcept>
 
@@ -159,6 +159,11 @@ void Context::initDevice(const CreateInfo& info)
 void Context::initSwapChain(const CreateInfo& info)
 {
 	swapChain_ = SwapChain(device(), surface(), info.size);
+}
+
+const vk::Device& Context::vkDevice() const
+{
+	return device().vkDevice();
 }
 
 }

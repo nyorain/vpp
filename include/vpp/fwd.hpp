@@ -19,6 +19,7 @@ class DeviceMemory;
 class DeviceMemoryAllocator;
 class Buffer;
 class Image;
+class DebugCallback;
 class Pipeline;
 class GraphicsPipeline;
 class ComputePipeline;

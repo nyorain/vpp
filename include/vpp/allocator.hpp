@@ -12,6 +12,7 @@
 namespace vpp
 {
 
+//TODO: make DMA::Entry to class MemoryEntry (only typedef now)
 ///Makes it possible to allocate a few vk::DeviceMemory objects for many buffers/images.
 ///Basically a memory pool
 class DeviceMemoryAllocator : public Resource

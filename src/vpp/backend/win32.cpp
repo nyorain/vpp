@@ -1,52 +1,36 @@
 #include <vpp/backend/win32.hpp>
 #include <vpp/procAddr.hpp>
+#include <vpp/vk.hpp>
 
 namespace vpp
 {
 
-//Surface
-Win32Surface::Win32Surface(vk::Instance instance, HINSTANCE hinstance, HWND hwnd)
+Surface createSurface(vk::Instance instance, HWND window, HINSTANCE module)
 {
-	instance_ = instance;
-    initSurface(hinstance, hwnd);
-}
+	if(module == nullptr) module = ::GetModuleHandle(nullptr);
 
-Win32Surface::Win32Surface(vk::Instance instance, HWND hwnd)
-{
-	instance_ = instance;
-    initSurface(GetModuleHandle(nullptr), hwnd);
-}
-
-void Win32Surface::initSurface(HINSTANCE hinstance, HWND hwnd)
-{
 	vk::Win32SurfaceCreateInfoKHR info;
-    info.hinstance = hinstance;
-    info.hwnd = hwnd;
+    info.hinstance = module;
+    info.hwnd = window;
 
-	VPP_PROC(instance_, CreateWin32SurfaceKHR)(vkInstance(), &info, nullptr, &surface_);
+	vk::SurfaceKHR ret;
+	VPP_PROC(instance, CreateWin32SurfaceKHR)(instance, &info, nullptr, &ret);
+	return {instance, ret};
 }
 
-//Context
-Win32Context::Win32Context(const CreateInfo& info, HINSTANCE hinstance, HWND hwnd)
+Context createContext(HWND window, Context::CreateInfo info, HINSTANCE module)
 {
-	auto wininfo = info;
-	wininfo.instanceExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+	info.instanceExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 
-	Context::initInstance(wininfo);
-	surface_ = Win32Surface(vkInstance(), hinstance, hwnd);
+	Context ret;
+	ret.initInstance(info);
+	ret.initDevice(info);
 
-	Context::initDevice(wininfo);
-	Context::initSwapChain(wininfo);
-}
+	auto surface = createSurface(ret.vkInstance(), window, module);
+	ret.initSurface(std::move(surface));
+	ret.initSwapChain(info);
 
-Win32Context::Win32Context(const CreateInfo& info, HWND hwnd)
-	: Win32Context(info, GetModuleHandle(nullptr), hwnd)
-{
-}
-
-Win32Context::~Win32Context()
-{
-	swapChain_ = {}; //destroy it before surface destruction
+	return ret;
 }
 
 }

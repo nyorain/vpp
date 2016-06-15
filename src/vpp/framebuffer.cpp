@@ -7,15 +7,17 @@ namespace vpp
 {
 
 //Framebuffer
-Framebuffer::Framebuffer(const Device& dev, const CreateInfo& info)
+Framebuffer::Framebuffer(const Device& dev, const CreateInfo& info, const ExtAttachments& ext)
 {
-	initMemoryLess(dev, info);
-	initMemoryResources();
+	create(dev, info);
+	init(info.renderPass, ext);
 }
 
 Framebuffer::~Framebuffer()
 {
-	destroy();
+	if(vkFramebuffer()) vk::destroyFramebuffer(vkDevice(), vkFramebuffer(), nullptr);
+	attachments_.clear();
+	framebuffer_ = {};
 }
 
 Framebuffer::Framebuffer(Framebuffer&& other) noexcept
@@ -24,7 +26,7 @@ Framebuffer::Framebuffer(Framebuffer&& other) noexcept
 }
 Framebuffer& Framebuffer::operator=(Framebuffer&& other) noexcept
 {
-	destroy();
+	this->~Framebuffer();
 	swap(*this, other);
 	return *this;
 }
@@ -33,40 +35,36 @@ void swap(Framebuffer& a, Framebuffer& b) noexcept
 {
 	using std::swap;
 
-	swap(a.device_, b.device_);
 	swap(a.framebuffer_, b.framebuffer_);
 	swap(a.attachments_, b.attachments_);
-	swap(a.info_, b.info_);
+	swap(a.device_, b.device_);
 }
 
-void Framebuffer::destroy()
+void Framebuffer::create(const Device& dev, const CreateInfo& info)
 {
-	if(vkFramebuffer()) vk::destroyFramebuffer(vkDevice(), vkFramebuffer(), nullptr);
-
-	attachments_.clear();
-	framebuffer_ = {};
-	info_ = {};
-
-	Resource::destroy();
+	create(dev, info.size, info.attachments);
 }
 
-void Framebuffer::initMemoryLess(const Device& dev, const CreateInfo& info)
+void Framebuffer::create(const Device& dev, const vk::Extent2D& size, const AttachmentsInfo& info)
 {
 	Resource::init(dev);
-	info_ = info;
+	attachmentsInfo_ = info;
+	size_ = size;
 
-	attachments_.reserve(info.attachments.size());
-	for(auto& attachmentinfo : info_.attachments) {
-		attachmentinfo.imageInfo.extent = {size().width, size().height, 1};
+	attachments_.reserve(info.size());
+	for(auto& attinfo : info) {
+		auto imageInfo = attinfo.imageInfo;
+		imageInfo.extent = {size.width, size.height, 1};
+
 		attachments_.emplace_back();
-		attachments_.back().initMemoryLess(device(), attachmentinfo.imageInfo);
+		attachments_.back().create(device(), imageInfo);
 	}
 }
 
-void Framebuffer::initMemoryResources(const std::map<unsigned int, vk::ImageView>& extAttachments)
+void Framebuffer::init(vk::RenderPass rp, const ExtAttachments& extAttachments)
 {
 	for(std::size_t i(0); i < attachments_.size(); ++i)
-		attachments_[i].initMemoryResources(info_.attachments[i].viewInfo);
+		attachments_[i].init(attachmentsInfo_[i].viewInfo);
 
 	//framebuffer
 	//attachments
@@ -92,12 +90,12 @@ void Framebuffer::initMemoryResources(const std::map<unsigned int, vk::ImageView
 
 	//createinfo
 	vk::FramebufferCreateInfo createInfo;
-	createInfo.renderPass = info_.renderPass;
+	createInfo.renderPass = rp;
 	createInfo.attachmentCount = attachments.size();
 	createInfo.pAttachments = attachments.data();
-	createInfo.width = size().width;
-	createInfo.height = size().height;
-	createInfo.layers = 1;
+	createInfo.width = size_.width;
+	createInfo.height = size_.height;
+	createInfo.layers = 1; ///XXX: should be paramterized?
 
 	framebuffer_ = vk::createFramebuffer(vkDevice(), createInfo);
 }

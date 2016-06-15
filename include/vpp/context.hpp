@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/device.hpp>
 #include <vpp/swapChain.hpp>
+#include <vpp/surface.hpp>
 
 #include <vector>
 #include <string>
@@ -11,11 +11,15 @@
 namespace vpp
 {
 
-class DebugCallback;
 namespace fwd { extern const vk::DebugReportFlagsEXT defaultDebugFlags; }
 
-//TODO: correct graphics/compute/present queue support
-//Context
+//TODO: correct graphics/compute/present queue support -- holy shit one bugfest atm
+//TODO: do not public expose init functions. Needed for createContext funcionts.
+//rather do some friend class Backend and then create backend implementations using the
+//functionality.
+// -- we are writing code for idiots --
+
+///A Vulkan Context. Can be used to easily create Device and Swapchain.
 class Context
 {
 public:
@@ -31,27 +35,15 @@ public:
 		bool extraPresentQueue = 1;
 	};
 
-protected:
-	vk::Instance instance_ {};
-	std::unique_ptr<Device> device_;
-	SwapChain swapChain_;
-
-	const Queue* presentQueue_ = nullptr;
-
-	std::unique_ptr<DebugCallback> debugCallback_;
-
-protected:
-	Context();
-
-	void initInstance(const CreateInfo& info);
-	void initDevice(const CreateInfo& info);
-	void initSwapChain(const CreateInfo& info);
-	vk::PhysicalDevice choosePhysicalDevice(const std::vector<vk::PhysicalDevice>& devices) const;
-
 public:
-	virtual ~Context();
+	Context();
+	Context(vk::Instance ini, vk::SurfaceKHR surface, const CreateInfo& info);
+	~Context();
 
-	virtual const Surface& surface() const = 0;
+	Context(Context&& other) noexcept;
+	Context& operator=(Context&& other) noexcept;
+
+	const Surface& surface() const { return surface_; }
 
 	const Device& device() const { return *device_; }
 	const SwapChain& swapChain() const { return swapChain_; }
@@ -64,6 +56,24 @@ public:
 	Device& device() { return *device_; }
 
 	const vk::Instance& vkInstance() const { return instance_; }
+	const vk::SurfaceKHR& vkSurface() const { return surface_.vkSurface(); }
+	const vk::Device& vkDevice() const;
+	const vk::SwapchainKHR& vkSwapChain() const { return swapChain_.vkSwapChain(); }
+
+	void initInstance(const CreateInfo& info);
+	void initDevice(const CreateInfo& info);
+	void initSurface(Surface&& surface) { surface_ = std::move(surface); }
+	void initSwapChain(const CreateInfo& info);
+	vk::PhysicalDevice choosePhysicalDevice(const std::vector<vk::PhysicalDevice>& devices) const;
+
+protected:
+	vk::Instance instance_ {};
+	std::unique_ptr<Device> device_;
+	Surface surface_;
+	SwapChain swapChain_;
+
+	const Queue* presentQueue_ = nullptr;
+	std::unique_ptr<DebugCallback> debugCallback_;
 };
 
 }

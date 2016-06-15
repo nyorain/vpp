@@ -38,8 +38,8 @@ public:
     unsigned int acquireNextImage(vk::Semaphore presentComplete) const;
     void present(vk::Queue queue, unsigned int currentBuffer) const;
 
-    vk::SwapchainKHR vkSwapChain() const { return swapChain_; }
-	vk::SurfaceKHR vkSurface() const { return surface_; }
+    const vk::SwapchainKHR& vkSwapChain() const { return swapChain_; }
+	const vk::SurfaceKHR& vkSurface() const { return surface_; }
 
 	vk::Format format() const { return format_; }
 	vk::ColorSpaceKHR colorSpace() const { return colorSpace_; }

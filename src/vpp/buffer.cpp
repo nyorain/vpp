@@ -11,11 +11,7 @@ namespace vpp
 
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags)
 {
-	buffer_ = vk::createBuffer(dev.vkDevice(), info);
-	auto reqs = vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_);
-
-	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
-	dev.memoryAllocator().request(buffer_, reqs, memoryEntry_);
+	create(dev, info, mflags);
 }
 
 Buffer::Buffer(Buffer&& other) noexcept
@@ -46,13 +42,16 @@ void swap(Buffer& a, Buffer& b) noexcept
 	swap(b.buffer_, a.buffer_);
 }
 
-MemoryMapView Buffer::memoryMap() const
+void Buffer::create(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags flgs)
 {
-	assureMemory();
-	return memoryEntry().map();
+	buffer_ = vk::createBuffer(dev.vkDevice(), info);
+	auto reqs = vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_);
+
+	reqs.memoryTypeBits = dev.memoryTypeBits(flgs, reqs.memoryTypeBits);
+	dev.memoryAllocator().request(buffer_, reqs, memoryEntry_);
 }
 
-//todo
+///TODO: split up in smaller parts
 std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bool prefdirect) const
 {
 	//TODO: check for overflow (too much data given?)
@@ -281,11 +280,6 @@ std::unique_ptr<Work<std::uint8_t&>> Buffer::retrieve() const
 
 		return std::make_unique<WorkImpl>(std::move(cmdBuffer), std::move(downloadBuffer));
 	}
-}
-
-void Buffer::assureMemory() const
-{
-	memoryEntry().allocate();
 }
 
 }

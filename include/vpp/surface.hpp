@@ -23,8 +23,8 @@ public:
 	Surface(Surface&& other) noexcept;
 	Surface& operator=(Surface&& other) noexcept;
 
-    vk::Instance vkInstance() const { return instance_; }
-    vk::SurfaceKHR vkSurface() const { return surface_; }
+    const vk::Instance& vkInstance() const { return instance_; }
+    const vk::SurfaceKHR& vkSurface() const { return surface_; }
 
 	///Returns whether the surface suppports the given queue family.
     bool queueFamilySupported(vk::PhysicalDevice phdev, std::uint32_t qFamiliyIndex) const;

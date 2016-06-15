@@ -8,43 +8,48 @@
 namespace vpp
 {
 
+//must be resource since it might be created without internal manages attachments
 ///Vulkan Framebuffer.
+///Can be initialized with two step initialization.
 class Framebuffer : public Resource
 {
 public:
+	using ExtAttachments = std::unordered_map<unsigned int, vk::ImageView>;
+	using AttachmentsInfo = std::vector<ViewableImage::CreateInfo>;
+
 	struct CreateInfo
 	{
 		vk::RenderPass renderPass {};
 		vk::Extent2D size {};
-		std::vector<ViewableImage::CreateInfo> attachments {};
+		AttachmentsInfo attachments {};
 	};
 
 public:
+	///Can be used to create required framebuffer attachments for a render pass.
+	///The returned vecotr can be passed as the attachments vector of the CreateInfo
+	///object that is given as create paramater.
 	static std::vector<ViewableImage::CreateInfo> parseRenderPass(const RenderPass& renderPass);
 
 public:
 	Framebuffer() = default;
-	Framebuffer(const Device& dev, const CreateInfo& info);
+	Framebuffer(const Device& dev, const CreateInfo& info, const ExtAttachments& ext = {});
 	~Framebuffer();
 
 	Framebuffer(Framebuffer&& other) noexcept;
 	Framebuffer& operator=(Framebuffer&& other) noexcept;
 
-	void initMemoryLess(const Device& dev, const CreateInfo& info);
-	void initMemoryResources(const std::map<unsigned int, vk::ImageView>& extAttachments = {});
+	void create(const Device& dev, const CreateInfo& info);
+	void create(const Device& dev, const vk::Extent2D& size, const AttachmentsInfo& attchs);
+	void init(vk::RenderPass rp, const ExtAttachments& extAttachments = {});
 
 	vk::Framebuffer vkFramebuffer() const { return framebuffer_; }
-	const vk::Extent2D& size() const { return info_.size; }
-	const std::vector<ViewableImage>& attachments() const { return attachments_; }
-	const CreateInfo& info() const { return info_; }
-
-	void destroy();
 	friend void swap(Framebuffer& a, Framebuffer& b) noexcept;
 
 protected:
 	vk::Framebuffer framebuffer_ {};
 	std::vector<ViewableImage> attachments_;
-	CreateInfo info_ {};
+	AttachmentsInfo attachmentsInfo_;
+	vk::Extent2D size_;
 };
 
 }

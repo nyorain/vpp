@@ -9,11 +9,7 @@ namespace vpp
 
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags)
 {
-	image_ = vk::createImage(dev.vkDevice(), info);
-	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), image_);
-
-	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
-	dev.memoryAllocator().request(image_, reqs, info.tiling, memoryEntry_);
+	create(dev, info, mflags);
 }
 
 Image::Image(Image&& other) noexcept
@@ -23,14 +19,17 @@ Image::Image(Image&& other) noexcept
 
 Image& Image::operator=(Image&& other) noexcept
 {
-	destroy();
+	this->~Image();
 	swap(*this, other);
 	return *this;
 }
 
 Image::~Image()
 {
-	destroy();
+	if(vkImage()) vk::destroyImage(vkDevice(), vkImage());
+
+	memoryEntry_ = {};
+	image_ = {};
 }
 
 void swap(Image& a, Image& b) noexcept
@@ -41,23 +40,13 @@ void swap(Image& a, Image& b) noexcept
 	swap(a.memoryEntry_, b.memoryEntry_);
 }
 
-void Image::destroy()
+void Image::create(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags flags)
 {
-	if(vkImage()) vk::destroyImage(vkDevice(), vkImage());
+	image_ = vk::createImage(dev.vkDevice(), info);
+	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), image_);
 
-	memoryEntry_ = {};
-	image_ = {};
-}
-
-MemoryMapView Image::memoryMap() const
-{
-	assureMemory();
-	return memoryEntry().map();
-}
-
-void Image::assureMemory() const
-{
-	memoryEntry_.allocate();
+	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
+	dev.memoryAllocator().request(image_, reqs, info.tiling, memoryEntry_);
 }
 
 void Image::changeLayoutCommand(vk::CommandBuffer buffer, vk::ImageLayout oldlayout, vk::ImageLayout
@@ -175,13 +164,14 @@ ViewableImage::CreateInfo ViewableImage::defaultColor2D {
 //attachment
 ViewableImage::ViewableImage(const Device& dev, const CreateInfo& info)
 {
-	initMemoryLess(dev, info.imageInfo, info.imageMemoryFlags);
-	initMemoryResources(info.viewInfo);
+	create(dev, info);
+	init(info.viewInfo);
 }
 
 ViewableImage::~ViewableImage()
 {
-	destroy();
+	if(vkImageView()) vk::destroyImageView(vkDevice(), vkImageView(), nullptr);
+	image_ = {};
 }
 
 ViewableImage::ViewableImage(ViewableImage&& other) noexcept
@@ -191,7 +181,7 @@ ViewableImage::ViewableImage(ViewableImage&& other) noexcept
 
 ViewableImage& ViewableImage::operator=(ViewableImage&& other) noexcept
 {
-	destroy();
+	this->~ViewableImage();
 	swap(*this, other);
 	return *this;
 }
@@ -204,24 +194,24 @@ void swap(ViewableImage& a, ViewableImage& b) noexcept
 	swap(a.imageView_, b.imageView_);
 }
 
-void ViewableImage::destroy()
+void ViewableImage::create(const Device& dev, const CreateInfo& info)
 {
-	if(vkImageView()) vk::destroyImageView(vkDevice(), vkImageView(), nullptr);
-
-	image_ = {};
+	create(dev, info.imageInfo, info.memoryFlags);
 }
 
-void ViewableImage::initMemoryLess(const Device& dev, const vk::ImageCreateInfo& info,
+void ViewableImage::create(const Device& dev, const vk::ImageCreateInfo& info,
 	vk::MemoryPropertyFlags flags)
 {
 	image_ = Image(dev, info, flags);
 }
 
-void ViewableImage::initMemoryResources(vk::ImageViewCreateInfo info)
+void ViewableImage::init(const vk::ImageViewCreateInfo& info)
 {
+	auto cpy = info;
+
 	image_.assureMemory();
-	info.image = vkImage();
-	imageView_ = vk::createImageView(vkDevice(), info);
+	cpy.image = vkImage();
+	imageView_ = vk::createImageView(vkDevice(), cpy);
 }
 
 }

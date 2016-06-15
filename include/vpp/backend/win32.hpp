@@ -2,7 +2,7 @@
 
 #define VK_USE_PLATFORM_WIN32_KHR
 
-#include <vpp/vk.hpp>
+#include <vpp/fwd.hpp>
 #include <vpp/surface.hpp>
 #include <vpp/context.hpp>
 
@@ -11,31 +11,11 @@
 namespace vpp
 {
 
-///Surface class for the windows wsi backend.
-class Win32Surface : public Surface
-{
-public:
-	Win32Surface() = default;
-	Win32Surface(vk::Instance instance, HWND hwnds);
-    Win32Surface(vk::Instance instance, HINSTANCE hinstance, HWND hwnd);
+///Creates a win32 surface for the given vulkan instance, win32 window and module [optional].
+///Does require the needed extensions to be enables for the given instance.
+Surface createSurface(vk::Instance instance, HWND window, HINSTANCE module = nullptr);
 
-protected:
-    void initSurface(HINSTANCE hinstance, HWND hwnd);
-};
-
-///Context class for the windows wsi backend.
-class Win32Context : public Context
-{
-public:
-	Win32Context() = default;
-	Win32Context(const CreateInfo& info, HWND hwnds);
-	Win32Context(const CreateInfo& info, HINSTANCE hinstance, HWND hwnd);
-	virtual ~Win32Context();
-
-	virtual const Surface& surface() const override { return surface_; }
-
-protected:
-	Win32Surface surface_;
-};
+///Creates a win32 context for the given window.
+Context createContext(HWND window, Context::CreateInfo info = {}, HINSTANCE module = nullptr);
 
 }

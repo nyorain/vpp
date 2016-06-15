@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/resource.hpp>
+#include <vpp/memoryResource.hpp>
 #include <vpp/allocator.hpp>
 #include <vpp/commandBuffer.hpp>
 #include <vpp/work.hpp>
@@ -35,10 +35,17 @@ public:
 		: data(container.data()), size(container.size() * sizeof(T)), offset(xoff) {}
 };
 
-//TODO: make resourceReference (image too) with the memoryEntry
 ///Representing a vulkan buffer on a device.
-class Buffer : public ResourceReference<Buffer>
+///Can be filled and read, and stores a handle to the memory location it is allocated on (or
+///the allocator that will take care of its allocation).
+///Does not store additional information such as buffer usage type or memory layout, this
+///must be handled by the application for best performance.
+class Buffer : public MemoryResource
 {
+public:
+	using EmptyWorkPtr = std::unique_ptr<Work<void>>;
+	using DataWorkPtr = std::unique_ptr<Work<std::uint8_t&>>;
+
 public:
 	Buffer() = default;
 	Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
@@ -47,14 +54,7 @@ public:
 	Buffer(Buffer&& other) noexcept;
 	Buffer& operator=(Buffer&& other) noexcept;
 
-	///Assures that there is device memory associated with this buffer.
-	///Will be implicitly called on member functions that require it.
-	void assureMemory() const;
-
-	///Returns a vulkan memory map guard. Should only be called when buffer was created on a
-	///host visible device memory heap and if the device memory was allocated.
-	///Wil throw std::locgic_error if the Buffer was not allocated on a host visible memory.
-	MemoryMapView memoryMap() const;
+	void create(const Device& dv, const vk::BufferCreateInfo& inf, vk::MemoryPropertyFlags flgs = {});
 
 	///Fills the buffer with the given data.
 	///Does this either by memory mapping the buffer or by copying it via command buffer.
@@ -67,26 +67,18 @@ public:
 	///\param direct Specifies whether direct transfer via cmdUpdateBuffer should be preferred over a
 	///uploadBuffer copy if possible. By default it is preferred. Will only be taken into account if
 	///the buffer is device local and the given data makes direct transfer possible.
-	std::unique_ptr<Work<void>> fill(const std::vector<BufferData>& data, bool direct = true) const;
+	EmptyWorkPtr fill(const std::vector<BufferData>& data, bool direct = true) const;
 
 	//TODO: retrieve only specific range
 	///Retrives the data stored in the buffer.
 	///\return A Work ptr that is able to retrive an array of std::uint8_t values storing the data.
-	std::unique_ptr<Work<std::uint8_t&>> retrieve() const;
+	DataWorkPtr retrieve() const;
 
-	const MemoryEntry& memoryEntry() const { return memoryEntry_; }
-	std::size_t size() const { return memoryEntry().allocation().size; }
 	const vk::Buffer& vkBuffer() const { return buffer_; }
-
-	const MemoryEntry& resourceRef() const { return memoryEntry(); }
 	friend void swap(Buffer& a, Buffer& b) noexcept;
 
 protected:
-	void destroy();
-
-protected:
 	vk::Buffer buffer_ {};
-	MemoryEntry memoryEntry_;
 };
 
 };

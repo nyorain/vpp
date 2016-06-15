@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/vk.hpp>
+#include <vpp/vk.hpp> //TODO: get rid of this little piece of ...
 
 #include <iostream>
 #include <stdexcept>
