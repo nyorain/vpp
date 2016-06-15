@@ -45,7 +45,7 @@ void Image::create(const Device& dev, const vk::ImageCreateInfo& info, vk::Memor
 	image_ = vk::createImage(dev.vkDevice(), info);
 	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), image_);
 
-	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
+	reqs.memoryTypeBits = dev.memoryTypeBits(flags, reqs.memoryTypeBits);
 	dev.memoryAllocator().request(image_, reqs, info.tiling, memoryEntry_);
 }
 

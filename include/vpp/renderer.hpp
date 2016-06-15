@@ -25,6 +25,7 @@ public:
 
 ///Capable of rendering on a SwapChain.
 //TODO: possibility for external (imageView) attachments
+//TODO XXX: one big pile of shit needs a (complete) rework. another day.
 class SwapChainRenderer : public Resource
 {
 public:
@@ -50,15 +51,14 @@ public:
 
 public:
 	SwapChainRenderer() = default;
-	SwapChainRenderer(const SwapChain& swapChain, RendererBuilder& builder,
-		const CreateInfo& info);
+	SwapChainRenderer(const SwapChain& swapChain, RendererBuilder& builder, const CreateInfo& info);
 	~SwapChainRenderer();
 
 	SwapChainRenderer(SwapChainRenderer&& other) noexcept;
 	SwapChainRenderer& operator=(SwapChainRenderer&& other) noexcept;
 
-	void initMemoryLess(const SwapChain& swapChain, const CreateInfo& info);
-	void initMemoryResources(RendererBuilder& builder);
+	void create(const SwapChain& swapChain, const CreateInfo& info);
+	void init(RendererBuilder& builder);
 
 	///Renders one frame and presents the swapChain buffer.
 	void render();
@@ -69,7 +69,6 @@ public:
 	const std::vector<RenderBuffer>& renderBuffers() const { return renderBuffers_; }
 	const std::vector<ViewableImage>& staticAttachments() const { return staticAttachments_; }
 
-	vk::CommandPool vkCommandPool() const { return commandPool_; }
 	vk::RenderPass vkRenderPass() const { return renderPass().vkRenderPass(); }
 
 	void destroy();
@@ -85,7 +84,6 @@ protected:
 	CreateInfo info_ {};
 	std::vector<RenderBuffer> renderBuffers_;
 	std::vector<ViewableImage> staticAttachments_;
-	vk::CommandPool commandPool_ {}; //TODO: replace with provider
 };
 
 }

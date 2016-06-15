@@ -5,6 +5,16 @@
 namespace vpp
 {
 
+///TODO: asynchronous two step initialization concept
+///some operations do need more than 2 steps to be fully initialized.
+///Make their waiting asynchronous in a way that it makes sence (?)
+///e.g. wait 5ms for someone else to ask for an uploadBuffer, if no one is doing, ask yourself
+///then record the needed commands, then wait 20ms for someone else to submit work on a valid queue
+///, if no one is doing submit youself.
+///TODO (e.g. for the point above): dynamic queue mangement. Sometimes more than one queue
+///would be able to execute commands, make it possible to just give some expression that is
+///available to use the first matching queue.
+
 ///Safe wrapper for two step initialization.
 ///This class is a utility wrapper around one of the most important concepts of vpp.
 ///It safely ensures two-step-initiazation for local used objects.
