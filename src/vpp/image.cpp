@@ -110,62 +110,68 @@ std::unique_ptr<Work<void>> Image::fill(const std::uint8_t& data, std::size_t si
 	// }
 }
 
-//static convinience attachment instances
-ViewableImage::CreateInfo ViewableImage::defaultDepth2D {
-	{
-		{},
-		vk::ImageType::e2d,
-		vk::Format::d16UnormS8Uint,
-		{},
-		1, 1,
-		vk::SampleCountBits::e1,
-		vk::ImageTiling::optimal,
-		vk::ImageUsageBits::depthStencilAttachment | vk::ImageUsageBits::sampled,
-		vk::SharingMode::exclusive,
-		0, nullptr, vk::ImageLayout::undefined
-	},
-	{
-		{}, {},
-		vk::ImageViewType::e2d,
-		vk::Format::d16UnormS8Uint,
-		{},
+//static infos
+ViewableImage::CreateInfo ViewableImage::defaultColor2D()
+{
+	return {
 		{
-			vk::ImageAspectBits::depth | vk::ImageAspectBits::stencil,
-			0, 1, 0, 1
+			{},
+			vk::ImageType::e2d,
+			vk::Format::b8g8r8a8Unorm,
+			{},
+			1, 1,
+			vk::SampleCountBits::e1,
+			vk::ImageTiling::optimal,
+			vk::ImageUsageBits::colorAttachment | vk::ImageUsageBits::inputAttachment,
+			vk::SharingMode::exclusive,
+			0, nullptr, vk::ImageLayout::undefined
+		},
+		{
+			{}, {},
+			vk::ImageViewType::e2d,
+			vk::Format::b8g8r8a8Unorm,
+			{},
+			{
+				vk::ImageAspectBits::color,
+				0, 1, 0, 1
+			}
 		}
-	}
-};
+	};
+}
 
-ViewableImage::CreateInfo ViewableImage::defaultColor2D {
-	{
-		{},
-		vk::ImageType::e2d,
-		vk::Format::b8g8r8a8Unorm,
-		{},
-		1, 1,
-		vk::SampleCountBits::e1,
-		vk::ImageTiling::optimal,
-		vk::ImageUsageBits::colorAttachment | vk::ImageUsageBits::inputAttachment,
-		vk::SharingMode::exclusive,
-		0, nullptr, vk::ImageLayout::undefined
-	},
-	{
-		{}, {},
-		vk::ImageViewType::e2d,
-		vk::Format::b8g8r8a8Unorm,
-		{},
+ViewableImage::CreateInfo ViewableImage::defaultDepth2D()
+{
+	return {
 		{
-			vk::ImageAspectBits::color,
-			0, 1, 0, 1
+			{},
+			vk::ImageType::e2d,
+			vk::Format::d16UnormS8Uint,
+			{},
+			1, 1,
+			vk::SampleCountBits::e1,
+			vk::ImageTiling::optimal,
+			vk::ImageUsageBits::depthStencilAttachment | vk::ImageUsageBits::sampled,
+			vk::SharingMode::exclusive,
+			0, nullptr, vk::ImageLayout::undefined
+		},
+		{
+			{}, {},
+			vk::ImageViewType::e2d,
+			vk::Format::d16UnormS8Uint,
+			{},
+			{
+				vk::ImageAspectBits::depth | vk::ImageAspectBits::stencil,
+				0, 1, 0, 1
+			}
 		}
-	}
-};
+	};
+}
 
 //attachment
-ViewableImage::ViewableImage(const Device& dev, const CreateInfo& info)
+ViewableImage::ViewableImage(const Device& dev, const CreateInfo& info, vk::MemoryPropertyFlags flags)
 {
-	create(dev, info);
-	init(info.viewInfo);
+	create(dev, info.first, flags);
+	init(info.second);
 }
 
 ViewableImage::~ViewableImage()
@@ -192,11 +198,6 @@ void swap(ViewableImage& a, ViewableImage& b) noexcept
 
 	swap(a.image_, b.image_);
 	swap(a.imageView_, b.imageView_);
-}
-
-void ViewableImage::create(const Device& dev, const CreateInfo& info)
-{
-	create(dev, info.imageInfo, info.memoryFlags);
 }
 
 void ViewableImage::create(const Device& dev, const vk::ImageCreateInfo& info,

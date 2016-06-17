@@ -7,17 +7,13 @@
 namespace vpp
 {
 
-//SwapChain
-SwapChain::SwapChain(const Device& device, const Surface& surface, const vk::Extent2D& size)
-	: SwapChain(device, surface.vkSurface(), size)
-{
-}
-
 SwapChain::SwapChain(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& size)
-	: Resource(device), surface_(surface), size_(size)
+	: Resource(device), surface_(surface)
 {
     surface_ = surface;
-	size_ = size;
+
+	width_ = size.width;
+	height_ = size.height;
 
 	queryFormats();
 	initSwapChain();
@@ -25,7 +21,6 @@ SwapChain::SwapChain(const Device& device, vk::SurfaceKHR surface, const vk::Ext
 
 SwapChain::~SwapChain()
 {
-
 	if(!vkSwapChain()) return;
 
 	VPP_LOAD_PROC(vkDevice(), DestroySwapchainKHR);
@@ -53,7 +48,8 @@ void swap(SwapChain& a, SwapChain& b) noexcept
 	swap(a.buffers_, b.buffers_);
 	swap(a.format_, b.format_);
 	swap(a.colorSpace_, b.colorSpace_);
-	swap(a.size_, b.size_);
+	swap(a.width_, b.width_);
+	swap(a.height_, b.height_);
 	swap(a.surface_, b.surface_);
 	swap(a.device_, b.device_);
 }
@@ -126,7 +122,8 @@ void SwapChain::initSwapChain()
 
 void SwapChain::resize(const vk::Extent2D& size)
 {
-	size_ = size;
+	width_ = size.width;
+	height_ = size.height;
 	initSwapChain();
 }
 
@@ -190,8 +187,12 @@ vk::SwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
 	VPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(), vkSurface(), &surfCaps));
 
     //size
+	//if the size is equal the zero the size has to be chosen by us (using the given size)
     if(surfCaps.currentExtent.width > 1)
-        size_ = surfCaps.currentExtent;
+	{
+        width_ = surfCaps.currentExtent.width;
+        height_ = surfCaps.currentExtent.height;
+	}
 
     //number of images
     std::uint32_t imagesCount = surfCaps.minImageCount + 1;
@@ -207,7 +208,7 @@ vk::SwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
     vk::SwapchainCreateInfoKHR ret;
     ret.surface = vkSurface();
     ret.minImageCount = imagesCount;
-    ret.imageExtent = size_;
+    ret.imageExtent = size();
     ret.imageUsage = vk::ImageUsageBits::colorAttachment;
     ret.preTransform = preTransform;
     ret.imageArrayLayers = 1;
@@ -242,6 +243,11 @@ void SwapChain::present(vk::Queue queue, std::uint32_t currentBuffer) const
     presentInfo.pImageIndices = &currentBuffer;
 
     VPP_CALL(pfQueuePresentKHR(queue, &presentInfo));
+}
+
+vk::Extent2D SwapChain::size() const
+{
+	return {width_, height_};
 }
 
 }

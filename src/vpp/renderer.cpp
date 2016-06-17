@@ -3,6 +3,7 @@
 #include <vpp/swapChain.hpp>
 #include <vpp/surface.hpp>
 #include <vpp/queue.hpp>
+#include <vpp/provider.hpp>
 
 #include <stdexcept>
 
@@ -10,11 +11,10 @@ namespace vpp
 {
 
 //SwapChainRenderer
-SwapChainRenderer::SwapChainRenderer(const SwapChain& swapChain, RendererBuilder& builder,
-	const CreateInfo& info)
+SwapChainRenderer::SwapChainRenderer(const SwapChain& sc, const CreateInfo& inf, RendererBuilder& bld)
 {
-	initMemoryLess(swapChain, info);
-	initMemoryResources(builder);
+	create(sc, inf);
+	init(bld);
 }
 
 SwapChainRenderer::SwapChainRenderer(SwapChainRenderer&& other) noexcept
@@ -24,118 +24,133 @@ SwapChainRenderer::SwapChainRenderer(SwapChainRenderer&& other) noexcept
 
 SwapChainRenderer& SwapChainRenderer::operator=(SwapChainRenderer&& other) noexcept
 {
-	destroy();
+	this->~SwapChainRenderer();
 	swap(*this, other);
 	return *this;
 }
 
 SwapChainRenderer::~SwapChainRenderer()
 {
-	destroy();
+	destroyRenderBuffers();
+	staticAttachments_.clear();
+
+	swapChain_ = nullptr;
 }
 
 void swap(SwapChainRenderer& a, SwapChainRenderer& b) noexcept
 {
 	using std::swap;
 
-	swap(a.device_, b.device_);
 	swap(a.swapChain_, b.swapChain_);
-	swap(a.info_, b.info_);
 	swap(a.renderBuffers_, b.renderBuffers_);
-	swap(a.staticAttachments_, b.staticAttachments_);
-	swap(a.commandPool_, b.commandPool_);
+	swap(a.info_, b.info_);
 }
 
-void SwapChainRenderer::destroy()
-{
-	destroyRenderBuffers();
-	staticAttachments_.clear();
-
-	if(vkCommandPool()) vk::destroyCommandPool(vkDevice(), vkCommandPool(), nullptr);
-
-	//reset
-	commandPool_ = {};
-	swapChain_ = nullptr;
-	info_ = {};
-
-	Resource::destroy();
-}
-
-void SwapChainRenderer::initMemoryLess(const SwapChain& swapChain, const CreateInfo& info)
+void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& info)
 {
 	if(info.renderPass == nullptr)
 	{
 		throw std::runtime_error("SwapChainRenderer: nullptr renderPass");
 	}
 
-	Resource::init(swapChain.device());
 	swapChain_ = &swapChain;
 	info_ = info;
 
 	//command pool
 	vk::CommandPoolCreateInfo cmdPoolInfo;
-	cmdPoolInfo.queueFamilyIndex = info_.queue->family();
+	cmdPoolInfo.queueFamilyIndex = info.queue->family();
 	cmdPoolInfo.flags = vk::CommandPoolCreateBits::resetCommandBuffer;
 
-	commandPool_ = vk::createCommandPool(vkDevice(), cmdPoolInfo);
-
-	//static attachments
+	//attachments
+	//TODO: more efficient: reserve/resize prediction?
+	std::vector<vk::ImageCreateInfo> dynamic;
+	Framebuffer::ExtAttachments ext;
 	auto size = swapChain.size();
-	staticAttachments_.reserve(info_.staticAttachments.size());
-	for(auto& attachInfo : info_.staticAttachments)
+	auto i = 0u;
+
+	for(auto& attachInfo : info.attachments)
 	{
-		attachInfo.imageInfo.extent = {size.width, size.height, 1};
-		staticAttachments_.emplace_back();
-		staticAttachments_.back().initMemoryLess(device(), attachInfo.imageInfo);
+		if(i == info.swapChainAttachment) ++i;
+		if(attachInfo.external)
+		{
+			ext[i] = attachInfo.external;
+		}
+		else if(attachInfo.dynamic)
+		{
+			dynamic.push_back(attachInfo.info.first);
+		}
+		else
+		{
+			auto imgInfo = attachInfo.info.first;
+			imgInfo.extent = {size.width, size.height, 1};
+			staticAttachments_.emplace_back();
+			staticAttachments_.back().create(device(), imgInfo);
+		}
+
+		++i;
 	}
 
 	//RenderBuffers
 	//CommandBuffers
-	renderBuffers_.reserve(swapChain.buffers().size());
+	renderBuffers_.reserve(swapChain.renderBuffers().size());
 
-	vk::CommandBufferAllocateInfo allocInfo;
-	allocInfo.commandPool = vkCommandPool();
-	allocInfo.level = vk::CommandBufferLevel::primary;
-	allocInfo.commandBufferCount = swapChain.buffers().size();
-
-	std::vector<vk::CommandBuffer> cmdBuffers(swapChain.buffers().size());
-	vk::allocateCommandBuffers(vkDevice(), allocInfo, *cmdBuffers.data());
+	auto qFam = info.queue->family();
+	auto cmdBuffers = device().commandProvider().get(qFam, renderBuffers_.size());
 
 	//frame buffers
-	Framebuffer::CreateInfo fbInfo {vkRenderPass(), swapChain.size()};
-	//fbInfo.attachments = info_.dynamicAttachments;
-
 	for(auto& cmdBuffer : cmdBuffers)
 	{
 		renderBuffers_.emplace_back();
-		renderBuffers_.back().commandBuffer = cmdBuffer;
-		renderBuffers_.back().framebuffer.initMemoryLess(device(), fbInfo);
+		renderBuffers_.back().commandBuffer = std::move(cmdBuffer);
+		renderBuffers_.back().framebuffer.create(device(), swapChain.size(), dynamic);
 	}
 }
 
-void SwapChainRenderer::initMemoryResources(RendererBuilder& builder)
+void SwapChainRenderer::init(RendererBuilder& builder)
 {
-	//const std::size_t dynAttachSize = info().dynamicAttachments.size() + 1;
-	std::map<unsigned int, vk::ImageView> attachmentMap;
+	Framebuffer::ExtAttachments attachmentMap;
+	std::vector<vk::ImageViewCreateInfo> viewInfos;
 
-	//static attachments
-	for(std::size_t i(0); i < staticAttachments_.size(); i++)
+	//attachments
+	auto staticAttachmentID = 0u;
+	auto attachmentMapID = 0u;
+	auto attachInfoID = 0u;
+
+	for(auto i = 0u; i < info_.attachments.size(); ++i)
 	{
-		staticAttachments_[i].image().assureMemory();
-		staticAttachments_[i].initMemoryResources(info_.staticAttachments[i].viewInfo);
-		attachmentMap[i + 1] = staticAttachments_[i].vkImageView();
+		if(i == info_.swapChainAttachment) continue;
+
+		auto& ainfo = info_.attachments[attachInfoID];
+		if(!ainfo.external && !ainfo.dynamic)
+		{
+			auto& statAttach = staticAttachments_[staticAttachmentID];
+			statAttach.init(ainfo.info.second);
+			attachmentMap[attachmentMapID] = statAttach.vkImageView();
+
+			attachmentMapID++;
+			staticAttachmentID++;
+		}
+		else if(!ainfo.external && ainfo.dynamic)
+		{
+			viewInfos.push_back(ainfo.info.second);
+		}
+		else if(ainfo.external)
+		{
+			attachmentMap[attachmentMapID] = ainfo.external;
+			attachmentMapID++;
+		}
+
+		++attachInfoID;
 	}
 
 	//frameBufferAttachment resources
 	for(std::size_t i(0); i < renderBuffers_.size(); i++)
 	{
-		attachmentMap[0] = swapChain().buffers()[i].imageView;
-		renderBuffers_[i].framebuffer.initMemoryResources(attachmentMap);
+		attachmentMap[info_.swapChainAttachment] = swapChain().renderBuffers()[i].imageView;
+		renderBuffers_[i].framebuffer.init(info_.renderPass, viewInfos, attachmentMap);
 	}
 
 	builder.init(*this);
-
-	//record command buffers
 	buildCommandBuffers(builder);
 }
 
@@ -146,13 +161,14 @@ void SwapChainRenderer::destroyRenderBuffers()
 
 	for(auto& renderer : renderBuffers_)
 	{
-		if(renderer.commandBuffer)
-			cmdBuffers.push_back(renderer.commandBuffer);
+		auto vkbuf = renderer.commandBuffer.vkCommandBuffer();
+		if(vkbuf) cmdBuffers.push_back(vkbuf);
 	}
 
 	if(!cmdBuffers.empty())
 	{
-		vk::freeCommandBuffers(vkDevice(), vkCommandPool(), cmdBuffers);
+		auto vkpool = renderBuffers_[0].commandBuffer.commandPool().vkCommandPool();
+		vk::freeCommandBuffers(vkDevice(), vkpool, cmdBuffers);
 	}
 
 	renderBuffers_.clear();
@@ -167,20 +183,21 @@ void SwapChainRenderer::buildCommandBuffers(RendererBuilder& builder)
 	for(std::size_t i(0); i < renderBuffers_.size(); ++i)
 	{
 		auto& renderer = renderBuffers_[i];
+		auto vkbuf = renderer.commandBuffer.vkCommandBuffer();
 		vk::CommandBufferBeginInfo cmdBufInfo;
 
 		vk::RenderPassBeginInfo beginInfo;
-		beginInfo.renderPass = vkRenderPass();
+		beginInfo.renderPass = info_.renderPass;
 		beginInfo.renderArea = {{0, 0}, {width, height}};
 		beginInfo.clearValueCount = clearValues.size();
 		beginInfo.pClearValues = clearValues.data();
 		beginInfo.framebuffer = renderer.framebuffer.vkFramebuffer();
 
-		vk::beginCommandBuffer(renderer.commandBuffer, cmdBufInfo);
+		vk::beginCommandBuffer(vkbuf, cmdBufInfo);
 
-		builder.beforeRender(renderer.commandBuffer);
+		builder.beforeRender(vkbuf);
 
-		vk::cmdBeginRenderPass(renderer.commandBuffer, beginInfo, vk::SubpassContents::eInline);
+		vk::cmdBeginRenderPass(vkbuf, beginInfo, vk::SubpassContents::eInline);
 
 		//Update dynamic viewport state
 		vk::Viewport viewport;
@@ -188,21 +205,20 @@ void SwapChainRenderer::buildCommandBuffers(RendererBuilder& builder)
 		viewport.height = height;
 		viewport.minDepth = 0.f;
 		viewport.maxDepth = 1.f;
-		vk::cmdSetViewport(renderer.commandBuffer, 0, 1, viewport);
+		vk::cmdSetViewport(vkbuf, 0, 1, viewport);
 
 		//Update dynamic scissor state
 		vk::Rect2D scissor;
 		scissor.extent = {width, height};
 		scissor.offset = {0, 0};
-		vk::cmdSetScissor(renderer.commandBuffer, 0, 1, scissor);
+		vk::cmdSetScissor(vkbuf, 0, 1, scissor);
 
-		RenderPassInstance ini(renderer.commandBuffer, renderPass(),
-			renderer.framebuffer.vkFramebuffer());
+		RenderPassInstance ini(vkbuf, info_.renderPass, renderer.framebuffer.vkFramebuffer());
 		builder.build(ini);
 
-		vk::cmdEndRenderPass(renderer.commandBuffer);
+		vk::cmdEndRenderPass(vkbuf);
 
-		builder.afterRender(renderer.commandBuffer);
+		builder.afterRender(vkbuf);
 
 		vk::ImageMemoryBarrier prePresentBarrier;
 		prePresentBarrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite;
@@ -212,12 +228,12 @@ void SwapChainRenderer::buildCommandBuffers(RendererBuilder& builder)
 		prePresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		prePresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		prePresentBarrier.subresourceRange = {vk::ImageAspectBits::color, 0, 1, 0, 1};
-		prePresentBarrier.image = swapChain().buffers()[i].image;
+		prePresentBarrier.image = swapChain().renderBuffers()[i].image;
 
-		vk::cmdPipelineBarrier(renderer.commandBuffer, vk::PipelineStageBits::allCommands,
+		vk::cmdPipelineBarrier(vkbuf, vk::PipelineStageBits::allCommands,
 			vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {prePresentBarrier});
 
-		vk::endCommandBuffer(renderer.commandBuffer);
+		vk::endCommandBuffer(vkbuf);
 	}
 }
 
@@ -232,7 +248,7 @@ void SwapChainRenderer::render()
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = &presentComplete;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &renderBuffers_[currentBuffer].commandBuffer;
+	submitInfo.pCommandBuffers = &renderBuffers_[currentBuffer].commandBuffer.vkCommandBuffer();
 
 	vk::queueSubmit(info_.queue->vkQueue(), 1, submitInfo, 0);
     swapChain().present(info_.queue->vkQueue(), currentBuffer);

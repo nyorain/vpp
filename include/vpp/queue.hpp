@@ -31,6 +31,8 @@ public:
 	///Returns the vulkan queue handle.
 	vk::Queue vkQueue() const { return queue_; }
 
+	operator vk::Queue() const { return vkQueue(); }
+
 protected:
 	friend Device;
 	Queue(vk::Queue queue, const vk::QueueFamilyProperties& props, unsigned int fam, unsigned int id);

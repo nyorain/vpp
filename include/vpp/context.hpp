@@ -2,6 +2,7 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/swapChain.hpp>
+#include <vpp/vk.hpp> //TODO: get rid of this.
 #include <vpp/surface.hpp>
 
 #include <vector>

@@ -2,7 +2,7 @@ auto constexpr fwdHeader = 1 + R"SRC(
 #include "flags.hpp"
 #include "handle.hpp"
 
-#include <cstdint>
+#include <vulkan/vk_platform.h>
 
 )SRC";
 

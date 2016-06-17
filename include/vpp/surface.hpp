@@ -36,6 +36,7 @@ public:
     std::vector<vk::SurfaceFormatKHR> formats(vk::PhysicalDevice phdev) const;
     std::vector<vk::PresentModeKHR> presentModes(vk::PhysicalDevice phdev) const;
 
+	operator vk::SurfaceKHR() const { return vkSurface(); }
 	friend void swap(Surface& a, Surface& b) noexcept;
 
 protected:

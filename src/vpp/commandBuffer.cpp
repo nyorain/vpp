@@ -12,7 +12,14 @@ CommandBuffer::CommandBuffer(vk::CommandBuffer buffer, const CommandPool& pool)
 
 CommandBuffer::~CommandBuffer()
 {
-	destroy();
+	if(vkCommandBuffer())
+	{
+		//TODO. cannot always be done
+		//vk::freeCommandBuffers(vkDevice(), commandPool().vkCommandPool(), {commandBuffer_});
+		commandBuffer_ = {};
+	}
+
+	commandPool_ = {};
 }
 
 CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
@@ -22,7 +29,7 @@ CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
 
 CommandBuffer& CommandBuffer::operator=(CommandBuffer&& other) noexcept
 {
-	destroy();
+	this->~CommandBuffer();
 	this->swap(other);
 	return *this;
 }
@@ -32,17 +39,6 @@ void CommandBuffer::swap(CommandBuffer& other) noexcept
 	using std::swap;
 	swap(commandPool_, other.commandPool_);
 	swap(commandBuffer_, other.commandBuffer_);
-}
-
-void CommandBuffer::destroy()
-{
-	if(vkCommandBuffer())
-	{
-		vk::freeCommandBuffers(vkDevice(), commandPool().vkCommandPool(), {commandBuffer_});
-		commandBuffer_ = {};
-	}
-
-	commandPool_ = {};
 }
 
 //CommandPool
@@ -57,7 +53,8 @@ CommandPool::CommandPool(const Device& dev, std::uint32_t qfam, vk::CommandPoolC
 }
 CommandPool::~CommandPool()
 {
-	destroy();
+	if(commandPool_) vk::destroyCommandPool(vkDevice(), commandPool_, nullptr);
+	commandPool_ = {};
 }
 
 CommandPool::CommandPool(CommandPool&& other) noexcept
@@ -66,7 +63,7 @@ CommandPool::CommandPool(CommandPool&& other) noexcept
 }
 CommandPool& CommandPool::operator=(CommandPool&& other) noexcept
 {
-	destroy();
+	this->~CommandPool();
 	this->swap(other);
 	return *this;
 }
@@ -77,15 +74,6 @@ void CommandPool::swap(CommandPool& other) noexcept
 
 	swap(commandPool_, other.commandPool_);
 	swap(device_, other.device_);
-}
-void CommandPool::destroy()
-{
-	if(commandPool_)
-	{
-		vk::destroyCommandPool(vkDevice(), commandPool_, nullptr);
-	}
-
-	commandPool_ = {};
 }
 
 std::vector<CommandBuffer> CommandPool::allocate(std::size_t count, vk::CommandBufferLevel lvl)

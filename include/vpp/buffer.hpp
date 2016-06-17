@@ -75,6 +75,8 @@ public:
 	DataWorkPtr retrieve() const;
 
 	const vk::Buffer& vkBuffer() const { return buffer_; }
+
+	operator vk::Buffer() const { return vkBuffer(); }
 	friend void swap(Buffer& a, Buffer& b) noexcept;
 
 protected:

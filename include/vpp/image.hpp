@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/vk.hpp>
 #include <vpp/memoryResource.hpp>
 #include <vpp/allocator.hpp>
 #include <vpp/work.hpp>
@@ -50,6 +49,8 @@ public:
 	DataWorkPtr retrieve() const;
 
 	const vk::Image& vkImage() const { return image_; }
+
+	operator vk::Image() const { return vkImage(); }
 	friend void swap(Image& a, Image& b) noexcept;
 
 protected:
@@ -60,27 +61,27 @@ protected:
 class ViewableImage : public ResourceReference<ViewableImage>
 {
 public:
-	struct CreateInfo
-	{
-		vk::ImageCreateInfo imageInfo {};
-		vk::ImageViewCreateInfo viewInfo {};
-		vk::MemoryPropertyFlags memoryFlags = {};
-	};
+	using CreateInfo = std::pair<vk::ImageCreateInfo, vk::ImageViewCreateInfo>;
 
-	//convinience attachment info instances
-	static CreateInfo defaultDepth2D;
-	static CreateInfo defaultColor2D;
+	///\{
+	///Some useful default create infos.
+	///Can e.g. be used for framebuffers or texures.
+	///Note that some properties like e.g. the size must be set manually afterwards.
+	static CreateInfo defaultDepth2D();
+	static CreateInfo defaultColor2D();
+	///\}
 
 public:
 	ViewableImage() = default;
-	ViewableImage(const Device& dev, const CreateInfo& info);
+	ViewableImage(const Device& dev, const CreateInfo& info, vk::MemoryPropertyFlags flgs = {});
+	ViewableImage(const Device& dev, const vk::ImageCreateInfo& img, vk::ImageViewCreateInfo& view,
+		vk::MemoryPropertyFlags flgs = {});
 	~ViewableImage();
 
 	ViewableImage(ViewableImage&& other) noexcept;
 	ViewableImage& operator=(ViewableImage&& other) noexcept;
 
 	void create(const Device& dev, const vk::ImageCreateInfo& img, vk::MemoryPropertyFlags flgs = {});
-	void create(const Device& dev, const CreateInfo& info);
 	void init(const vk::ImageViewCreateInfo& info);
 
 	const Image& image() const { return image_; }
@@ -92,6 +93,15 @@ public:
 
 protected:
 	Image image_;
+	vk::ImageView imageView_ {};
+};
+
+///TODO:
+///Vulkan image view.
+class ImageView : public Resource
+{
+public:
+protected:
 	vk::ImageView imageView_ {};
 };
 

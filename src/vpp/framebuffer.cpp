@@ -1,5 +1,6 @@
 #include <vpp/framebuffer.hpp>
 #include <vpp/memory.hpp>
+#include <vpp/vk.hpp>
 #include <vpp/renderPass.hpp>
 #include <vpp/utility/range.hpp>
 
@@ -7,10 +8,19 @@ namespace vpp
 {
 
 //Framebuffer
-Framebuffer::Framebuffer(const Device& dev, const CreateInfo& info, const ExtAttachments& ext)
+Framebuffer::Framebuffer(const Device& dev, vk::RenderPass rp, const vk::Extent2D& size,
+	AttachmentsInfo attachments, const ExtAttachments& ext)
 {
-	create(dev, info);
-	init(info.renderPass, ext);
+	std::vector<vk::ImageCreateInfo> imgInfo(attachments.size());
+	std::vector<vk::ImageViewCreateInfo> viewInfo(attachments.size());
+	for(auto i = 0u; i < attachments.size(); ++i)
+	{
+		imgInfo[i] = attachments[i].first;
+		viewInfo[i] = attachments[i].second;
+	}
+
+	create(dev, size, imgInfo);
+	init(rp, viewInfo, ext);
 }
 
 Framebuffer::~Framebuffer()
@@ -40,20 +50,15 @@ void swap(Framebuffer& a, Framebuffer& b) noexcept
 	swap(a.device_, b.device_);
 }
 
-void Framebuffer::create(const Device& dev, const CreateInfo& info)
-{
-	create(dev, info.size, info.attachments);
-}
-
-void Framebuffer::create(const Device& dev, const vk::Extent2D& size, const AttachmentsInfo& info)
+void Framebuffer::create(const Device& dev, const vk::Extent2D& size,
+	const std::vector<vk::ImageCreateInfo>& imgInfo)
 {
 	Resource::init(dev);
-	attachmentsInfo_ = info;
 	size_ = size;
 
-	attachments_.reserve(info.size());
-	for(auto& attinfo : info) {
-		auto imageInfo = attinfo.imageInfo;
+	attachments_.reserve(imgInfo.size());
+	for(auto& attinfo : imgInfo) {
+		auto imageInfo = attinfo;
 		imageInfo.extent = {size.width, size.height, 1};
 
 		attachments_.emplace_back();
@@ -61,10 +66,14 @@ void Framebuffer::create(const Device& dev, const vk::Extent2D& size, const Atta
 	}
 }
 
-void Framebuffer::init(vk::RenderPass rp, const ExtAttachments& extAttachments)
+void Framebuffer::init(vk::RenderPass rp, const std::vector<vk::ImageViewCreateInfo>& viewInfo,
+	const ExtAttachments& extAttachments)
 {
+	if(viewInfo.size() < attachments_.size())
+		throw std::logic_error("vpp::Framebuffer::init: to few viewInfos");
+
 	for(std::size_t i(0); i < attachments_.size(); ++i)
-		attachments_[i].init(attachmentsInfo_[i].viewInfo);
+		attachments_[i].init(viewInfo[i]);
 
 	//framebuffer
 	//attachments
@@ -101,16 +110,17 @@ void Framebuffer::init(vk::RenderPass rp, const ExtAttachments& extAttachments)
 }
 
 //static utility
-std::vector<ViewableImage::CreateInfo> Framebuffer::parseRenderPass(const RenderPass& rp)
+Framebuffer::AttachmentsInfo Framebuffer::parseRenderPass(const RenderPass& rp, const vk::Extent2D& s)
 {
-	std::vector<ViewableImage::CreateInfo> ret;
+	AttachmentsInfo ret;
 	ret.reserve(rp.attachments().size());
 
 	for(std::size_t i(0); i < rp.attachments().size(); ++i)
 	{
 		ViewableImage::CreateInfo fbaInfo;
-		fbaInfo.imageInfo.format = rp.attachments()[i].format;
-		fbaInfo.viewInfo.format = rp.attachments()[i].format;
+		fbaInfo.first.format = rp.attachments()[i].format;
+		fbaInfo.first.extent = {s.width, s.height, 1};
+		fbaInfo.second.format = rp.attachments()[i].format;
 
 		vk::ImageUsageFlags usage {};
 		vk::ImageAspectFlags aspect {};
@@ -142,14 +152,13 @@ std::vector<ViewableImage::CreateInfo> Framebuffer::parseRenderPass(const Render
 			}
 		}
 
-		fbaInfo.imageInfo.usage = usage;
-		fbaInfo.viewInfo.vkHandle().subresourceRange.aspectMask = aspect;
+		fbaInfo.first.usage = usage;
+		fbaInfo.second.vkHandle().subresourceRange.aspectMask = aspect;
 
 		ret.push_back(fbaInfo);
 	}
 
 	return ret;
 }
-
 
 }

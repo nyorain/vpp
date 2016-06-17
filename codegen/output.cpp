@@ -459,7 +459,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		assureGuard(fwd_, fwdGuard, guard);
 
 		fwd_ << "using " << typeName(type) << " = " << typeName(type.signature.returnType);
-		fwd_ << "(*)(";
+		fwd_ << "(*VKAPI_PTR)(";
 
 		auto sepr = "";
 		for(auto& param : type.signature.params)
@@ -485,7 +485,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		assureGuard(fwd_, fwdGuard, guard);
 
 		fwd_ << "using Pfn" << name << " = " << typeName(type.signature.returnType);
-		fwd_ << "(*)(";
+		fwd_ << "(*VKAPI_PTR)(";
 
 		auto sepr = "";
 		for(auto& param : type.signature.params)

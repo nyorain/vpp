@@ -32,13 +32,11 @@ public:
 
 	void swap(CommandBuffer& other) noexcept;
 
-	const CommandPool& resourceRef() const { return *commandPool_; }
-
 	const CommandPool& commandPool() const { return *commandPool_; }
 	const vk::CommandBuffer& vkCommandBuffer() const { return commandBuffer_; }
 
-protected:
-	void destroy();
+	const CommandPool& resourceRef() const { return *commandPool_; }
+	operator vk::CommandBuffer() const { return vkCommandBuffer(); }
 
 protected:
 	vk::CommandBuffer commandBuffer_ {};
@@ -69,8 +67,7 @@ public:
 	const vk::CommandPoolCreateFlags& flags() const { return flags_; }
 	const vk::CommandPool& vkCommandPool() const { return commandPool_; }
 
-protected:
-	void destroy();
+	operator vk::CommandPool() const { return vkCommandPool(); }
 
 protected:
 	vk::CommandPool commandPool_ {};
