@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/vk.hpp>
 #include <vpp/resource.hpp>
 
 #include <string>
@@ -10,39 +9,41 @@
 namespace vpp
 {
 
+using ShaderModulePtr = std::shared_ptr<vk::ShaderModule>;
+ShaderModulePtr loadShaderModule(vk::Device dev, const std::string& file);
+ShaderModulePtr loadShaderModule(vk::Device dev, const std::vector<std::uint8_t>& data);
+
 ///Wrapper around a single shader stage module.
-class ShaderStage : public Resource
+class ShaderStage
 {
 public:
 	struct CreateInfo
 	{
-		std::string filename;
 		vk::ShaderStageBits stage;
-		const vk::SpecializationInfo* specializationInfo {nullptr};
-		std::string entry { u8"main"};
+		const vk::SpecializationInfo* specializationInfo {}; //optional, if set, must stay valid
+		const char* name = u8"main"; //utf-8 encoded entry point, must stay valid until destruction
 	};
-
-	static vk::ShaderModule loadModule(vk::Device dev, const std::string& file);
 
 public:
 	ShaderStage() = default;
-	ShaderStage(const Device& device, const CreateInfo& info);
+	ShaderStage(const Device& device, const std::string& file, const CreateInfo& info);
+	ShaderStage(const Device& device, ShaderModulePtr module, const CreateInfo& info);
 	~ShaderStage();
 
 	ShaderStage(ShaderStage&& other) noexcept;
 	ShaderStage& operator=(ShaderStage&& other) noexcept;
 
-	const vk::PipelineShaderStageCreateInfo& vkStageInfo() const { return stageInfo_; }
+	vk::PipelineShaderStageCreateInfo vkStageInfo() const;
+	vk::ShaderModule vkShaderModule() const { return *module_; }
+	ShaderModulePtr shaderModule() const { return module_; }
+
+	operator vk::PipelineShaderStageCreateInfo() const;
 	friend void swap(ShaderStage& a, ShaderStage& b) noexcept;
 
 protected:
-	vk::PipelineShaderStageCreateInfo stageInfo_;
+	CreateInfo info_;
+	ShaderModulePtr module_;
 };
-
-//TODO: at the moment every single ShaderStage holds an extra word for the device pointer
-//		just store the vk stage info instead of the ShaderStage to remove the overhead
-//		Will also make it possible to use the same shadr module for multiple shader
-//		programs which is important
 
 ///ShaderProgram with multiple stages for graphic pipelines.
 class ShaderProgram : public Resource
@@ -58,7 +59,6 @@ public:
 	void addStage(const ShaderStage::CreateInfo& createInfo);
 	void addStages(const std::vector<ShaderStage::CreateInfo>& createInfo);
 
-	const std::vector<ShaderStage>& stages() const { return stages_; }
 	std::vector<vk::PipelineShaderStageCreateInfo> vkStageInfos() const;
 
 protected:

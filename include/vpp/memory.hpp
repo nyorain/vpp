@@ -14,6 +14,8 @@ namespace vpp
 
 ///Represents a mapped range of a vulkan DeviceMemory.
 ///There shall never be more than one MemoryMap object for on DeviceMemory object.
+///The MemoryMap class is usually never used directly, but rather accessed through a
+///MemoryMapView.
 class MemoryMap : public ResourceReference<MemoryMap>
 {
 public:
@@ -186,6 +188,9 @@ public:
 	const vk::DeviceMemory& vkDeviceMemory() const { return memory_; }
 	vk::MemoryPropertyFlags propertyFlags() const { return flags_; }
 	unsigned int typeIndex() const { return typeIndex_; }
+	const std::vector<AllocationEntry> allocations() const { return allocations_; }
+
+	operator vk::DeviceMemory() const { return vkDeviceMemory(); }
 
 protected:
 	std::vector<AllocationEntry> allocations_ {}; //use sorted container?

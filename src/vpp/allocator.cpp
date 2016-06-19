@@ -7,30 +7,33 @@ namespace vpp
 {
 
 //Entry
-DeviceMemoryAllocator::Entry::Entry(DeviceMemory* memory, const Allocation& alloc)
+MemoryEntry::MemoryEntry(DeviceMemory* memory, const Allocation& alloc)
 	: memory_(memory), allocation_(alloc)
 {
 }
 
-DeviceMemoryAllocator::Entry::Entry(Entry&& other) noexcept
+MemoryEntry::MemoryEntry(MemoryEntry&& other) noexcept
 {
 	swap(*this, other);
 }
 
-DeviceMemoryAllocator::Entry& DeviceMemoryAllocator::Entry::operator=(Entry&& other) noexcept
+MemoryEntry& MemoryEntry::operator=(MemoryEntry&& other) noexcept
 {
-	this->free();
+	this->~MemoryEntry();
 	swap(*this, other);
 	return *this;
 }
 
-DeviceMemoryAllocator::Entry::~Entry()
+MemoryEntry::~MemoryEntry()
 {
-	if(allocator_) allocator_->removeRequest(*this);
-	free();
+	if(!allocated() && allocator_) allocator_->removeRequest(*this);
+	else if(allocated()) memory_->free(allocation_);
+
+	allocation_ = {};
+	allocator_ = nullptr;
 }
 
-void swap(DeviceMemoryAllocator::Entry& a, DeviceMemoryAllocator::Entry& b) noexcept
+void swap(MemoryEntry& a, MemoryEntry& b) noexcept
 {
 	using std::swap;
 
@@ -57,16 +60,7 @@ void swap(DeviceMemoryAllocator::Entry& a, DeviceMemoryAllocator::Entry& b) noex
 	swap(a.allocation_, b.allocation_);
 }
 
-void DeviceMemoryAllocator::Entry::free()
-{
-	if(!allocated() && allocator_) allocator_->removeRequest(*this);
-	else if(allocated()) memory_->free(allocation_);
-
-	allocation_ = {};
-	allocator_ = nullptr;
-}
-
-MemoryMapView DeviceMemoryAllocator::Entry::map() const
+MemoryMapView MemoryEntry::map() const
 {
 	return memory()->map(allocation());
 }
@@ -102,7 +96,7 @@ void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept
 }
 
 void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
-	Entry& entry)
+	MemoryEntry& entry)
 {
 	if(!reqs.size)
 		throw std::logic_error("vpp::DeviceMemAllocator::request: allocation size of 0 not allowed");
@@ -121,7 +115,7 @@ void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequir
 }
 
 void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequirements& reqs,
-	vk::ImageTiling tiling, Entry& entry)
+	vk::ImageTiling tiling, MemoryEntry& entry)
 {
 	if(reqs.size == 0)
 		throw std::logic_error("vpp::DeviceMemAllocator::request: allocation size of 0 not allowed");
@@ -141,7 +135,7 @@ void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequire
 	requirements_.push_back(req);
 }
 
-bool DeviceMemoryAllocator::removeRequest(const Entry& entry)
+bool DeviceMemoryAllocator::removeRequest(const MemoryEntry& entry)
 {
 	auto it = findReq(entry);
 	if(it == requirements_.end()) return false;
@@ -149,7 +143,7 @@ bool DeviceMemoryAllocator::removeRequest(const Entry& entry)
 	return true;
 }
 
-bool DeviceMemoryAllocator::moveEntry(const Entry& oldOne, Entry& newOne)
+bool DeviceMemoryAllocator::moveEntry(const MemoryEntry& oldOne, MemoryEntry& newOne)
 {
 	auto req = findReq(oldOne);
 	if(req == requirements_.end()) return false;
@@ -180,7 +174,7 @@ DeviceMemory* DeviceMemoryAllocator::findMem(Requirement& req)
 	return nullptr;
 }
 
-DeviceMemoryAllocator::Requirements::iterator DeviceMemoryAllocator::findReq(const Entry& entry)
+DeviceMemoryAllocator::Requirements::iterator DeviceMemoryAllocator::findReq(const MemoryEntry& entry)
 {
 	return std::find_if(requirements_.begin(), requirements_.end(), [&](const auto& r)
 		{ return r.entry == &entry; });
@@ -194,7 +188,7 @@ void DeviceMemoryAllocator::allocate()
 	requirements_.clear(); //all requirements can be removed
 }
 
-bool DeviceMemoryAllocator::allocate(const Entry& entry)
+bool DeviceMemoryAllocator::allocate(const MemoryEntry& entry)
 {
 	auto req = findReq(entry);
 	if(req == requirements_.end()) return false;

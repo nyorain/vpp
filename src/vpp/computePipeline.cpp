@@ -6,31 +6,14 @@
 namespace vpp
 {
 
-ComputePipeline::ComputePipeline(const Device& dev, const CreateInfo& createInfo)
+ComputePipeline::ComputePipeline(const Device& dev, const CreateInfo& createInfo) : Pipeline(dev)
 {
-	init(dev, createInfo);
-}
-
-ComputePipeline::ComputePipeline(ComputePipeline&& other) noexcept : Pipeline(std::move(other))
-{
-}
-
-ComputePipeline& ComputePipeline::operator=(ComputePipeline&& other) noexcept
-{
-	Pipeline::operator=(std::move(other));
-	return *this;
-}
-
-void ComputePipeline::init(const Device& dev, const CreateInfo& createInfo)
-{
-	Resource::init(dev);
-
 	//pipeline layout
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
 	descriptorSetLayouts.reserve(createInfo.descriptorSetLayouts.size());
 
 	for(auto& layout : createInfo.descriptorSetLayouts)
-		descriptorSetLayouts.push_back(layout->vkDescriptorSetLayout());
+		descriptorSetLayouts.push_back(layout.get().vkDescriptorSetLayout());
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
 	pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
@@ -44,6 +27,16 @@ void ComputePipeline::init(const Device& dev, const CreateInfo& createInfo)
 	info.layout = pipelineLayout_;
 
 	vk::createComputePipelines(vkDevice(), {}, 1, info, nullptr, pipeline_);
+}
+
+ComputePipeline::ComputePipeline(ComputePipeline&& other) noexcept : Pipeline(std::move(other))
+{
+}
+
+ComputePipeline& ComputePipeline::operator=(ComputePipeline&& other) noexcept
+{
+	Pipeline::operator=(std::move(other));
+	return *this;
 }
 
 }

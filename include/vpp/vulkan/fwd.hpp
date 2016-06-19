@@ -62,12 +62,12 @@
 #include "flags.hpp"
 #include "handle.hpp"
 
-#include <cstdint>
+#include <vulkan/vk_platform.h>
 
 namespace vk
 {
 
-enum class DummyEnum : std::int32_t {};
+enum class DummyEnum : int32_t {};
 
 constexpr auto lodClampNone = 1000.0f;
 constexpr auto remainingMipLevels = (~0U);
@@ -113,71 +113,71 @@ using Bool32 = uint32_t;
 using DeviceSize = uint64_t;
 using SampleMask = uint32_t;
 
-enum class PipelineCacheHeaderVersion : std::int32_t;
-enum class StructureType : std::int32_t;
-enum class SystemAllocationScope : std::int32_t;
-enum class InternalAllocationType : std::int32_t;
-enum class Result : std::int32_t;
-enum class Format : std::int32_t;
-enum class FormatFeatureBits : std::int32_t;
-enum class ImageType : std::int32_t;
-enum class ImageTiling : std::int32_t;
-enum class ImageUsageBits : std::int32_t;
-enum class ImageCreateBits : std::int32_t;
-enum class SampleCountBits : std::int32_t;
-enum class PhysicalDeviceType : std::int32_t;
-enum class QueueBits : std::int32_t;
-enum class MemoryPropertyBits : std::int32_t;
-enum class MemoryHeapBits : std::int32_t;
-enum class PipelineStageBits : std::int32_t;
-enum class ImageAspectBits : std::int32_t;
-enum class SparseImageFormatBits : std::int32_t;
-enum class SparseMemoryBindBits : std::int32_t;
-enum class FenceCreateBits : std::int32_t;
-enum class QueryType : std::int32_t;
-enum class QueryPipelineStatisticBits : std::int32_t;
-enum class QueryResultBits : std::int32_t;
-enum class BufferCreateBits : std::int32_t;
-enum class BufferUsageBits : std::int32_t;
-enum class SharingMode : std::int32_t;
-enum class ImageLayout : std::int32_t;
-enum class ImageViewType : std::int32_t;
-enum class ComponentSwizzle : std::int32_t;
-enum class PipelineCreateBits : std::int32_t;
-enum class ShaderStageBits : std::int32_t;
-enum class VertexInputRate : std::int32_t;
-enum class PrimitiveTopology : std::int32_t;
-enum class PolygonMode : std::int32_t;
-enum class CullModeBits : std::int32_t;
-enum class FrontFace : std::int32_t;
-enum class CompareOp : std::int32_t;
-enum class StencilOp : std::int32_t;
-enum class LogicOp : std::int32_t;
-enum class BlendFactor : std::int32_t;
-enum class BlendOp : std::int32_t;
-enum class ColorComponentBits : std::int32_t;
-enum class DynamicState : std::int32_t;
-enum class Filter : std::int32_t;
-enum class SamplerMipmapMode : std::int32_t;
-enum class SamplerAddressMode : std::int32_t;
-enum class BorderColor : std::int32_t;
-enum class DescriptorType : std::int32_t;
-enum class DescriptorPoolCreateBits : std::int32_t;
-enum class AttachmentDescriptionBits : std::int32_t;
-enum class AttachmentLoadOp : std::int32_t;
-enum class AttachmentStoreOp : std::int32_t;
-enum class PipelineBindPoint : std::int32_t;
-enum class AccessBits : std::int32_t;
-enum class DependencyBits : std::int32_t;
-enum class CommandPoolCreateBits : std::int32_t;
-enum class CommandPoolResetBits : std::int32_t;
-enum class CommandBufferLevel : std::int32_t;
-enum class CommandBufferUsageBits : std::int32_t;
-enum class QueryControlBits : std::int32_t;
-enum class CommandBufferResetBits : std::int32_t;
-enum class StencilFaceBits : std::int32_t;
-enum class IndexType : std::int32_t;
-enum class SubpassContents : std::int32_t;
+enum class PipelineCacheHeaderVersion : int32_t;
+enum class StructureType : int32_t;
+enum class SystemAllocationScope : int32_t;
+enum class InternalAllocationType : int32_t;
+enum class Result : int32_t;
+enum class Format : int32_t;
+enum class FormatFeatureBits : int32_t;
+enum class ImageType : int32_t;
+enum class ImageTiling : int32_t;
+enum class ImageUsageBits : int32_t;
+enum class ImageCreateBits : int32_t;
+enum class SampleCountBits : int32_t;
+enum class PhysicalDeviceType : int32_t;
+enum class QueueBits : int32_t;
+enum class MemoryPropertyBits : int32_t;
+enum class MemoryHeapBits : int32_t;
+enum class PipelineStageBits : int32_t;
+enum class ImageAspectBits : int32_t;
+enum class SparseImageFormatBits : int32_t;
+enum class SparseMemoryBindBits : int32_t;
+enum class FenceCreateBits : int32_t;
+enum class QueryType : int32_t;
+enum class QueryPipelineStatisticBits : int32_t;
+enum class QueryResultBits : int32_t;
+enum class BufferCreateBits : int32_t;
+enum class BufferUsageBits : int32_t;
+enum class SharingMode : int32_t;
+enum class ImageLayout : int32_t;
+enum class ImageViewType : int32_t;
+enum class ComponentSwizzle : int32_t;
+enum class PipelineCreateBits : int32_t;
+enum class ShaderStageBits : int32_t;
+enum class VertexInputRate : int32_t;
+enum class PrimitiveTopology : int32_t;
+enum class PolygonMode : int32_t;
+enum class CullModeBits : int32_t;
+enum class FrontFace : int32_t;
+enum class CompareOp : int32_t;
+enum class StencilOp : int32_t;
+enum class LogicOp : int32_t;
+enum class BlendFactor : int32_t;
+enum class BlendOp : int32_t;
+enum class ColorComponentBits : int32_t;
+enum class DynamicState : int32_t;
+enum class Filter : int32_t;
+enum class SamplerMipmapMode : int32_t;
+enum class SamplerAddressMode : int32_t;
+enum class BorderColor : int32_t;
+enum class DescriptorType : int32_t;
+enum class DescriptorPoolCreateBits : int32_t;
+enum class AttachmentDescriptionBits : int32_t;
+enum class AttachmentLoadOp : int32_t;
+enum class AttachmentStoreOp : int32_t;
+enum class PipelineBindPoint : int32_t;
+enum class AccessBits : int32_t;
+enum class DependencyBits : int32_t;
+enum class CommandPoolCreateBits : int32_t;
+enum class CommandPoolResetBits : int32_t;
+enum class CommandBufferLevel : int32_t;
+enum class CommandBufferUsageBits : int32_t;
+enum class QueryControlBits : int32_t;
+enum class CommandBufferResetBits : int32_t;
+enum class StencilFaceBits : int32_t;
+enum class IndexType : int32_t;
+enum class SubpassContents : int32_t;
 
 using InstanceCreateFlags = Flags<DummyEnum>;
 using FormatFeatureFlags = Flags<FormatFeatureBits>;
@@ -346,22 +346,22 @@ struct DispatchIndirectCommand;
 struct DrawIndexedIndirectCommand;
 struct DrawIndirectCommand;
 
-using PfnAllocationFunction = void*(*)(void* pUserData, size_t size, size_t alignment, SystemAllocationScope allocationScope);
-using PfnReallocationFunction = void*(*)(void* pUserData, void* pOriginal, size_t size, size_t alignment, SystemAllocationScope allocationScope);
-using PfnFreeFunction = void(*)(void* pUserData, void* pMemory);
-using PfnInternalAllocationNotification = void(*)(void* pUserData, size_t size, InternalAllocationType allocationType, SystemAllocationScope allocationScope);
-using PfnInternalFreeNotification = void(*)(void* pUserData, size_t size, InternalAllocationType allocationType, SystemAllocationScope allocationScope);
-using PfnVoidFunction = void(*)();
+using PfnAllocationFunction = void*(*VKAPI_PTR)(void* pUserData, size_t size, size_t alignment, SystemAllocationScope allocationScope);
+using PfnReallocationFunction = void*(*VKAPI_PTR)(void* pUserData, void* pOriginal, size_t size, size_t alignment, SystemAllocationScope allocationScope);
+using PfnFreeFunction = void(*VKAPI_PTR)(void* pUserData, void* pMemory);
+using PfnInternalAllocationNotification = void(*VKAPI_PTR)(void* pUserData, size_t size, InternalAllocationType allocationType, SystemAllocationScope allocationScope);
+using PfnInternalFreeNotification = void(*VKAPI_PTR)(void* pUserData, size_t size, InternalAllocationType allocationType, SystemAllocationScope allocationScope);
+using PfnVoidFunction = void(*VKAPI_PTR)();
 
 constexpr auto khrSurfaceSpecVersion = 25;
 constexpr auto khrSurfaceExtensionName = "VK_KHR_surface";
 
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(SurfaceKHR);
 
-enum class SurfaceTransformBitsKHR : std::int32_t;
-enum class CompositeAlphaBitsKHR : std::int32_t;
-enum class ColorSpaceKHR : std::int32_t;
-enum class PresentModeKHR : std::int32_t;
+enum class SurfaceTransformBitsKHR : int32_t;
+enum class CompositeAlphaBitsKHR : int32_t;
+enum class ColorSpaceKHR : int32_t;
+enum class PresentModeKHR : int32_t;
 
 using SurfaceTransformFlagsKHR = Flags<SurfaceTransformBitsKHR>;
 using CompositeAlphaFlagsKHR = Flags<CompositeAlphaBitsKHR>;
@@ -369,11 +369,11 @@ using CompositeAlphaFlagsKHR = Flags<CompositeAlphaBitsKHR>;
 struct SurfaceCapabilitiesKHR;
 struct SurfaceFormatKHR;
 
-using PfnDestroySurfaceKHR = void(*)(Instance instance, SurfaceKHR surface, const AllocationCallbacks* pAllocator);
-using PfnGetPhysicalDeviceSurfaceSupportKHR = Result(*)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, SurfaceKHR surface, Bool32* pSupported);
-using PfnGetPhysicalDeviceSurfaceCapabilitiesKHR = Result(*)(PhysicalDevice physicalDevice, SurfaceKHR surface, SurfaceCapabilitiesKHR* pSurfaceCapabilities);
-using PfnGetPhysicalDeviceSurfaceFormatsKHR = Result(*)(PhysicalDevice physicalDevice, SurfaceKHR surface, uint32_t* pSurfaceFormatCount, SurfaceFormatKHR* pSurfaceFormats);
-using PfnGetPhysicalDeviceSurfacePresentModesKHR = Result(*)(PhysicalDevice physicalDevice, SurfaceKHR surface, uint32_t* pPresentModeCount, PresentModeKHR* pPresentModes);
+using PfnDestroySurfaceKHR = void(*VKAPI_PTR)(Instance instance, SurfaceKHR surface, const AllocationCallbacks* pAllocator);
+using PfnGetPhysicalDeviceSurfaceSupportKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, SurfaceKHR surface, Bool32* pSupported);
+using PfnGetPhysicalDeviceSurfaceCapabilitiesKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, SurfaceKHR surface, SurfaceCapabilitiesKHR* pSurfaceCapabilities);
+using PfnGetPhysicalDeviceSurfaceFormatsKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, SurfaceKHR surface, uint32_t* pSurfaceFormatCount, SurfaceFormatKHR* pSurfaceFormats);
+using PfnGetPhysicalDeviceSurfacePresentModesKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, SurfaceKHR surface, uint32_t* pPresentModeCount, PresentModeKHR* pPresentModes);
 
 constexpr auto khrSwapchainSpecVersion = 68;
 constexpr auto khrSwapchainExtensionName = "VK_KHR_swapchain";
@@ -385,11 +385,11 @@ using SwapchainCreateFlagsKHR = Flags<DummyEnum>;
 struct SwapchainCreateInfoKHR;
 struct PresentInfoKHR;
 
-using PfnCreateSwapchainKHR = Result(*)(Device device, const SwapchainCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SwapchainKHR* pSwapchain);
-using PfnDestroySwapchainKHR = void(*)(Device device, SwapchainKHR swapchain, const AllocationCallbacks* pAllocator);
-using PfnGetSwapchainImagesKHR = Result(*)(Device device, SwapchainKHR swapchain, uint32_t* pSwapchainImageCount, Image* pSwapchainImages);
-using PfnAcquireNextImageKHR = Result(*)(Device device, SwapchainKHR swapchain, uint64_t timeout, Semaphore semaphore, Fence fence, uint32_t* pImageIndex);
-using PfnQueuePresentKHR = Result(*)(Queue queue, const PresentInfoKHR* pPresentInfo);
+using PfnCreateSwapchainKHR = Result(*VKAPI_PTR)(Device device, const SwapchainCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SwapchainKHR* pSwapchain);
+using PfnDestroySwapchainKHR = void(*VKAPI_PTR)(Device device, SwapchainKHR swapchain, const AllocationCallbacks* pAllocator);
+using PfnGetSwapchainImagesKHR = Result(*VKAPI_PTR)(Device device, SwapchainKHR swapchain, uint32_t* pSwapchainImageCount, Image* pSwapchainImages);
+using PfnAcquireNextImageKHR = Result(*VKAPI_PTR)(Device device, SwapchainKHR swapchain, uint64_t timeout, Semaphore semaphore, Fence fence, uint32_t* pImageIndex);
+using PfnQueuePresentKHR = Result(*VKAPI_PTR)(Queue queue, const PresentInfoKHR* pPresentInfo);
 
 constexpr auto khrDisplaySpecVersion = 21;
 constexpr auto khrDisplayExtensionName = "VK_KHR_display";
@@ -397,7 +397,7 @@ constexpr auto khrDisplayExtensionName = "VK_KHR_display";
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(DisplayKHR);
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(DisplayModeKHR);
 
-enum class DisplayPlaneAlphaBitsKHR : std::int32_t;
+enum class DisplayPlaneAlphaBitsKHR : int32_t;
 
 using DisplayPlaneAlphaFlagsKHR = Flags<DisplayPlaneAlphaBitsKHR>;
 using DisplayModeCreateFlagsKHR = Flags<DummyEnum>;
@@ -411,20 +411,20 @@ struct DisplayPlaneCapabilitiesKHR;
 struct DisplayPlanePropertiesKHR;
 struct DisplaySurfaceCreateInfoKHR;
 
-using PfnGetPhysicalDeviceDisplayPropertiesKHR = Result(*)(PhysicalDevice physicalDevice, uint32_t* pPropertyCount, DisplayPropertiesKHR* pProperties);
-using PfnGetPhysicalDeviceDisplayPlanePropertiesKHR = Result(*)(PhysicalDevice physicalDevice, uint32_t* pPropertyCount, DisplayPlanePropertiesKHR* pProperties);
-using PfnGetDisplayPlaneSupportedDisplaysKHR = Result(*)(PhysicalDevice physicalDevice, uint32_t planeIndex, uint32_t* pDisplayCount, DisplayKHR* pDisplays);
-using PfnGetDisplayModePropertiesKHR = Result(*)(PhysicalDevice physicalDevice, DisplayKHR display, uint32_t* pPropertyCount, DisplayModePropertiesKHR* pProperties);
-using PfnCreateDisplayModeKHR = Result(*)(PhysicalDevice physicalDevice, DisplayKHR display, const DisplayModeCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, DisplayModeKHR* pMode);
-using PfnGetDisplayPlaneCapabilitiesKHR = Result(*)(PhysicalDevice physicalDevice, DisplayModeKHR mode, uint32_t planeIndex, DisplayPlaneCapabilitiesKHR* pCapabilities);
-using PfnCreateDisplayPlaneSurfaceKHR = Result(*)(Instance instance, const DisplaySurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
+using PfnGetPhysicalDeviceDisplayPropertiesKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, uint32_t* pPropertyCount, DisplayPropertiesKHR* pProperties);
+using PfnGetPhysicalDeviceDisplayPlanePropertiesKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, uint32_t* pPropertyCount, DisplayPlanePropertiesKHR* pProperties);
+using PfnGetDisplayPlaneSupportedDisplaysKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, uint32_t planeIndex, uint32_t* pDisplayCount, DisplayKHR* pDisplays);
+using PfnGetDisplayModePropertiesKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, DisplayKHR display, uint32_t* pPropertyCount, DisplayModePropertiesKHR* pProperties);
+using PfnCreateDisplayModeKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, DisplayKHR display, const DisplayModeCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, DisplayModeKHR* pMode);
+using PfnGetDisplayPlaneCapabilitiesKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, DisplayModeKHR mode, uint32_t planeIndex, DisplayPlaneCapabilitiesKHR* pCapabilities);
+using PfnCreateDisplayPlaneSurfaceKHR = Result(*VKAPI_PTR)(Instance instance, const DisplaySurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
 
 constexpr auto khrDisplaySwapchainSpecVersion = 9;
 constexpr auto khrDisplaySwapchainExtensionName = "VK_KHR_display_swapchain";
 
 struct DisplayPresentInfoKHR;
 
-using PfnCreateSharedSwapchainsKHR = Result(*)(Device device, uint32_t swapchainCount, const SwapchainCreateInfoKHR* pCreateInfos, const AllocationCallbacks* pAllocator, SwapchainKHR* pSwapchains);
+using PfnCreateSharedSwapchainsKHR = Result(*VKAPI_PTR)(Device device, uint32_t swapchainCount, const SwapchainCreateInfoKHR* pCreateInfos, const AllocationCallbacks* pAllocator, SwapchainKHR* pSwapchains);
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 
@@ -435,8 +435,8 @@ using XlibSurfaceCreateFlagsKHR = Flags<DummyEnum>;
 
 struct XlibSurfaceCreateInfoKHR;
 
-using PfnCreateXlibSurfaceKHR = Result(*)(Instance instance, const XlibSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
-using PfnGetPhysicalDeviceXlibPresentationSupportKHR = Bool32(*)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, Display* dpy, VisualID visualID);
+using PfnCreateXlibSurfaceKHR = Result(*VKAPI_PTR)(Instance instance, const XlibSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
+using PfnGetPhysicalDeviceXlibPresentationSupportKHR = Bool32(*VKAPI_PTR)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, Display* dpy, VisualID visualID);
 
 #endif //VK_USE_PLATFORM_XLIB_KHR
 
@@ -449,8 +449,8 @@ using XcbSurfaceCreateFlagsKHR = Flags<DummyEnum>;
 
 struct XcbSurfaceCreateInfoKHR;
 
-using PfnCreateXcbSurfaceKHR = Result(*)(Instance instance, const XcbSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
-using PfnGetPhysicalDeviceXcbPresentationSupportKHR = Bool32(*)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, xcb_connection_t* connection, xcb_visualid_t visual_id);
+using PfnCreateXcbSurfaceKHR = Result(*VKAPI_PTR)(Instance instance, const XcbSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
+using PfnGetPhysicalDeviceXcbPresentationSupportKHR = Bool32(*VKAPI_PTR)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, xcb_connection_t* connection, xcb_visualid_t visual_id);
 
 #endif //VK_USE_PLATFORM_XCB_KHR
 
@@ -463,8 +463,8 @@ using WaylandSurfaceCreateFlagsKHR = Flags<DummyEnum>;
 
 struct WaylandSurfaceCreateInfoKHR;
 
-using PfnCreateWaylandSurfaceKHR = Result(*)(Instance instance, const WaylandSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
-using PfnGetPhysicalDeviceWaylandPresentationSupportKHR = Bool32(*)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, wl_display* display);
+using PfnCreateWaylandSurfaceKHR = Result(*VKAPI_PTR)(Instance instance, const WaylandSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
+using PfnGetPhysicalDeviceWaylandPresentationSupportKHR = Bool32(*VKAPI_PTR)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, wl_display* display);
 
 #endif //VK_USE_PLATFORM_WAYLAND_KHR
 
@@ -477,8 +477,8 @@ using MirSurfaceCreateFlagsKHR = Flags<DummyEnum>;
 
 struct MirSurfaceCreateInfoKHR;
 
-using PfnCreateMirSurfaceKHR = Result(*)(Instance instance, const MirSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
-using PfnGetPhysicalDeviceMirPresentationSupportKHR = Bool32(*)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, MirConnection* connection);
+using PfnCreateMirSurfaceKHR = Result(*VKAPI_PTR)(Instance instance, const MirSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
+using PfnGetPhysicalDeviceMirPresentationSupportKHR = Bool32(*VKAPI_PTR)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex, MirConnection* connection);
 
 #endif //VK_USE_PLATFORM_MIR_KHR
 
@@ -491,7 +491,7 @@ using AndroidSurfaceCreateFlagsKHR = Flags<DummyEnum>;
 
 struct AndroidSurfaceCreateInfoKHR;
 
-using PfnCreateAndroidSurfaceKHR = Result(*)(Instance instance, const AndroidSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
+using PfnCreateAndroidSurfaceKHR = Result(*VKAPI_PTR)(Instance instance, const AndroidSurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
 
 #endif //VK_USE_PLATFORM_ANDROID_KHR
 
@@ -504,8 +504,8 @@ using Win32SurfaceCreateFlagsKHR = Flags<DummyEnum>;
 
 struct Win32SurfaceCreateInfoKHR;
 
-using PfnCreateWin32SurfaceKHR = Result(*)(Instance instance, const Win32SurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
-using PfnGetPhysicalDeviceWin32PresentationSupportKHR = Bool32(*)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex);
+using PfnCreateWin32SurfaceKHR = Result(*VKAPI_PTR)(Instance instance, const Win32SurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
+using PfnGetPhysicalDeviceWin32PresentationSupportKHR = Bool32(*VKAPI_PTR)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex);
 
 #endif //VK_USE_PLATFORM_WIN32_KHR
 
@@ -518,18 +518,18 @@ constexpr auto extDebugReportExtensionName = "VK_EXT_debug_report";
 
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(DebugReportCallbackEXT);
 
-enum class DebugReportObjectTypeEXT : std::int32_t;
-enum class DebugReportErrorEXT : std::int32_t;
-enum class DebugReportBitsEXT : std::int32_t;
+enum class DebugReportObjectTypeEXT : int32_t;
+enum class DebugReportErrorEXT : int32_t;
+enum class DebugReportBitsEXT : int32_t;
 
 using DebugReportFlagsEXT = Flags<DebugReportBitsEXT>;
 
 struct DebugReportCallbackCreateInfoEXT;
 
-using PfnDebugReportCallbackEXT = Bool32(*)(DebugReportFlagsEXT flags, DebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData);
-using PfnCreateDebugReportCallbackEXT = Result(*)(Instance instance, const DebugReportCallbackCreateInfoEXT* pCreateInfo, const AllocationCallbacks* pAllocator, DebugReportCallbackEXT* pCallback);
-using PfnDestroyDebugReportCallbackEXT = void(*)(Instance instance, DebugReportCallbackEXT callback, const AllocationCallbacks* pAllocator);
-using PfnDebugReportMessageEXT = void(*)(Instance instance, DebugReportFlagsEXT flags, DebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage);
+using PfnDebugReportCallbackEXT = Bool32(*VKAPI_PTR)(DebugReportFlagsEXT flags, DebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData);
+using PfnCreateDebugReportCallbackEXT = Result(*VKAPI_PTR)(Instance instance, const DebugReportCallbackCreateInfoEXT* pCreateInfo, const AllocationCallbacks* pAllocator, DebugReportCallbackEXT* pCallback);
+using PfnDestroyDebugReportCallbackEXT = void(*VKAPI_PTR)(Instance instance, DebugReportCallbackEXT callback, const AllocationCallbacks* pAllocator);
+using PfnDebugReportMessageEXT = void(*VKAPI_PTR)(Instance instance, DebugReportFlagsEXT flags, DebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage);
 
 constexpr auto nvGlslShaderSpecVersion = 1;
 constexpr auto nvGlslShaderExtensionName = "VK_NV_glsl_shader";
@@ -552,7 +552,7 @@ constexpr auto amdExtension2ExtensionName = "VK_AMD_extension_2";
 constexpr auto amdRasterizationOrderSpecVersion = 1;
 constexpr auto amdRasterizationOrderExtensionName = "VK_AMD_rasterization_order";
 
-enum class RasterizationOrderAMD : std::int32_t;
+enum class RasterizationOrderAMD : int32_t;
 
 struct PipelineRasterizationStateRasterizationOrderAMD;
 
@@ -572,11 +572,11 @@ struct DebugMarkerObjectNameInfoEXT;
 struct DebugMarkerObjectTagInfoEXT;
 struct DebugMarkerMarkerInfoEXT;
 
-using PfnDebugMarkerSetObjectTagEXT = Result(*)(Device device, DebugMarkerObjectTagInfoEXT* pTagInfo);
-using PfnDebugMarkerSetObjectNameEXT = Result(*)(Device device, DebugMarkerObjectNameInfoEXT* pNameInfo);
-using PfnCmdDebugMarkerBeginEXT = void(*)(CommandBuffer commandBuffer, DebugMarkerMarkerInfoEXT* pMarkerInfo);
-using PfnCmdDebugMarkerEndEXT = void(*)(CommandBuffer commandBuffer);
-using PfnCmdDebugMarkerInsertEXT = void(*)(CommandBuffer commandBuffer, DebugMarkerMarkerInfoEXT* pMarkerInfo);
+using PfnDebugMarkerSetObjectTagEXT = Result(*VKAPI_PTR)(Device device, DebugMarkerObjectTagInfoEXT* pTagInfo);
+using PfnDebugMarkerSetObjectNameEXT = Result(*VKAPI_PTR)(Device device, DebugMarkerObjectNameInfoEXT* pNameInfo);
+using PfnCmdDebugMarkerBeginEXT = void(*VKAPI_PTR)(CommandBuffer commandBuffer, DebugMarkerMarkerInfoEXT* pMarkerInfo);
+using PfnCmdDebugMarkerEndEXT = void(*VKAPI_PTR)(CommandBuffer commandBuffer);
+using PfnCmdDebugMarkerInsertEXT = void(*VKAPI_PTR)(CommandBuffer commandBuffer, DebugMarkerMarkerInfoEXT* pMarkerInfo);
 
 
 

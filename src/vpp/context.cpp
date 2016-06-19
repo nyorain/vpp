@@ -158,7 +158,7 @@ void Context::initDevice(const CreateInfo& info)
 
 void Context::initSwapChain(const CreateInfo& info)
 {
-	swapChain_ = SwapChain(device(), surface(), info.size);
+	swapChain_ = SwapChain(device(), surface(), {info.width, info.height});
 }
 
 const vk::Device& Context::vkDevice() const

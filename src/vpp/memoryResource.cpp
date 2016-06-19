@@ -1,4 +1,5 @@
 #include <vpp/memoryResource.hpp>
+#include <vpp/vk.hpp>
 #include <stdexcept>
 
 namespace vpp
@@ -20,6 +21,12 @@ MemoryMapView MemoryResource::memoryMap() const
 
 	assureMemory();
 	return memoryEntry().map();
+}
+
+bool MemoryResource::mappable() const
+{
+	if(!memoryEntry().memory()) return false;
+	return memoryEntry().memory()->propertyFlags() & vk::MemoryPropertyBits::hostVisible;
 }
 
 }

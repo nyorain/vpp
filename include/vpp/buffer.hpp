@@ -28,8 +28,9 @@ public:
 		: data(&obj), size(sizeof(T)), offset(xoff) {}
 
 	///Constructs the buffer data for a given container, which must correctly implement
-	///a size and a data member function and must have the stored type as first template param.
-	///Can be e.g. be used to create a BufferData object diretly from a std::vector.
+	///a size and a data member function and must have its value type as first template param.
+	///The container must be contigous.
+	///Can be e.g. be used to create a BufferData object diretly from a std::vector or std::string.
 	template<template<typename, typename...> typename C, typename T, typename... A>
 	BufferData(const C<T, A...>& container, std::size_t xoff = 0)
 		: data(container.data()), size(container.size() * sizeof(T)), offset(xoff) {}

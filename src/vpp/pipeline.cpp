@@ -124,31 +124,17 @@ Pipeline::Pipeline(const Device& dev) : Resource(dev)
 
 Pipeline::Pipeline(Pipeline&& other) noexcept
 {
-	this->swap(other);
+	swap(*this, other);
 }
 
 Pipeline& Pipeline::operator=(Pipeline&& other) noexcept
 {
-	destroy();
-	this->swap(other);
+	this->~Pipeline();
+	swap(*this, other);
 	return *this;
 }
 
 Pipeline::~Pipeline()
-{
-	destroy();
-}
-
-void Pipeline::swap(Pipeline& other) noexcept
-{
-	using std::swap;
-
-	swap(pipelineLayout_, other.pipelineLayout_);
-	swap(pipeline_, other.pipeline_);
-	swap(device_, other.device_);
-}
-
-void Pipeline::destroy()
 {
 	if(pipeline_) vk::destroyPipeline(vkDevice(), pipeline_, nullptr);
 	if(pipelineLayout_) vk::destroyPipelineLayout(vkDevice(), pipelineLayout_, nullptr);
@@ -157,6 +143,14 @@ void Pipeline::destroy()
 	pipelineLayout_ = {};
 }
 
+void swap(Pipeline& a, Pipeline& b) noexcept
+{
+	using std::swap;
+
+	swap(a.pipelineLayout_, b.pipelineLayout_);
+	swap(a.pipeline_, b.pipeline_);
+	swap(a.device_, b.device_);
+}
 
 //utility -format size in bits
 unsigned int formatSize(vk::Format format)

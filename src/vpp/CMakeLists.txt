@@ -18,6 +18,7 @@ set(vpp-sources
 	graphicsPipeline.cpp
 	computePipeline.cpp
 	renderPass.cpp
+	memoryResource.cpp
 	commandBuffer.cpp
 	submit.cpp
 	transfer.cpp

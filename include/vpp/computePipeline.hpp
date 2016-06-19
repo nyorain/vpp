@@ -6,6 +6,7 @@
 #include <vpp/pipeline.hpp>
 
 #include <vector>
+#include <functional>
 
 namespace vpp
 {
@@ -15,7 +16,7 @@ class ComputePipeline : public Pipeline
 public:
 	struct CreateInfo
 	{
-		std::vector<DescriptorSetLayout*> descriptorSetLayouts;
+		std::vector<std::reference_wrapper<DescriptorSetLayout>> descriptorSetLayouts;
 		ShaderStage shader;
 		vk::PipelineCreateFlags flags {};
 	};
@@ -27,8 +28,6 @@ public:
 
 	ComputePipeline(ComputePipeline&& other) noexcept;
 	ComputePipeline& operator=(ComputePipeline&& other) noexcept;
-
-	void init(const Device& dev, const CreateInfo& createInfo);
 };
 
 }

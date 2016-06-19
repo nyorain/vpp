@@ -64,12 +64,12 @@
 namespace vk
 {
 
-enum class PipelineCacheHeaderVersion : std::int32_t
+enum class PipelineCacheHeaderVersion : int32_t
 {
 	one = 1
 };
 
-enum class StructureType : std::int32_t
+enum class StructureType : int32_t
 {
 	applicationInfo = 0,
 	instanceCreateInfo = 1,
@@ -138,7 +138,7 @@ enum class StructureType : std::int32_t
 	debugMarkerMarkerInfoEXT = 1000022002
 };
 
-enum class SystemAllocationScope : std::int32_t
+enum class SystemAllocationScope : int32_t
 {
 	command = 0,
 	object = 1,
@@ -147,12 +147,12 @@ enum class SystemAllocationScope : std::int32_t
 	instance = 4
 };
 
-enum class InternalAllocationType : std::int32_t
+enum class InternalAllocationType : int32_t
 {
 	executable = 0
 };
 
-enum class Result : std::int32_t
+enum class Result : int32_t
 {
 	success = 0,
 	notReady = 1,
@@ -181,7 +181,7 @@ enum class Result : std::int32_t
 	nvExtension1Error = -1000013000
 };
 
-enum class Format : std::int32_t
+enum class Format : int32_t
 {
 	undefined = 0,
 	r4g4UnormPack8 = 1,
@@ -370,7 +370,7 @@ enum class Format : std::int32_t
 	astc12x12SrgbBlock = 184
 };
 
-enum class FormatFeatureBits : std::int32_t
+enum class FormatFeatureBits : int32_t
 {
 	sampledImage = (1 << 0),
 	storageImage = (1 << 1),
@@ -389,20 +389,20 @@ enum class FormatFeatureBits : std::int32_t
 };
 VPP_BITMASK_OPS(FormatFeatureBits)
 
-enum class ImageType : std::int32_t
+enum class ImageType : int32_t
 {
 	e1d = 0,
 	e2d = 1,
 	e3d = 2
 };
 
-enum class ImageTiling : std::int32_t
+enum class ImageTiling : int32_t
 {
 	optimal = 0,
 	linear = 1
 };
 
-enum class ImageUsageBits : std::int32_t
+enum class ImageUsageBits : int32_t
 {
 	transferSrc = (1 << 0),
 	transferDst = (1 << 1),
@@ -415,7 +415,7 @@ enum class ImageUsageBits : std::int32_t
 };
 VPP_BITMASK_OPS(ImageUsageBits)
 
-enum class ImageCreateBits : std::int32_t
+enum class ImageCreateBits : int32_t
 {
 	sparseBinding = (1 << 0),
 	sparseResidency = (1 << 1),
@@ -425,7 +425,7 @@ enum class ImageCreateBits : std::int32_t
 };
 VPP_BITMASK_OPS(ImageCreateBits)
 
-enum class SampleCountBits : std::int32_t
+enum class SampleCountBits : int32_t
 {
 	e1 = (1 << 0),
 	e2 = (1 << 1),
@@ -437,7 +437,7 @@ enum class SampleCountBits : std::int32_t
 };
 VPP_BITMASK_OPS(SampleCountBits)
 
-enum class PhysicalDeviceType : std::int32_t
+enum class PhysicalDeviceType : int32_t
 {
 	other = 0,
 	integratedGpu = 1,
@@ -446,7 +446,7 @@ enum class PhysicalDeviceType : std::int32_t
 	cpu = 4
 };
 
-enum class QueueBits : std::int32_t
+enum class QueueBits : int32_t
 {
 	graphics = (1 << 0),
 	compute = (1 << 1),
@@ -455,7 +455,7 @@ enum class QueueBits : std::int32_t
 };
 VPP_BITMASK_OPS(QueueBits)
 
-enum class MemoryPropertyBits : std::int32_t
+enum class MemoryPropertyBits : int32_t
 {
 	deviceLocal = (1 << 0),
 	hostVisible = (1 << 1),
@@ -465,13 +465,13 @@ enum class MemoryPropertyBits : std::int32_t
 };
 VPP_BITMASK_OPS(MemoryPropertyBits)
 
-enum class MemoryHeapBits : std::int32_t
+enum class MemoryHeapBits : int32_t
 {
 	deviceLocal = (1 << 0)
 };
 VPP_BITMASK_OPS(MemoryHeapBits)
 
-enum class PipelineStageBits : std::int32_t
+enum class PipelineStageBits : int32_t
 {
 	topOfPipe = (1 << 0),
 	drawIndirect = (1 << 1),
@@ -493,7 +493,7 @@ enum class PipelineStageBits : std::int32_t
 };
 VPP_BITMASK_OPS(PipelineStageBits)
 
-enum class ImageAspectBits : std::int32_t
+enum class ImageAspectBits : int32_t
 {
 	color = (1 << 0),
 	depth = (1 << 1),
@@ -502,7 +502,7 @@ enum class ImageAspectBits : std::int32_t
 };
 VPP_BITMASK_OPS(ImageAspectBits)
 
-enum class SparseImageFormatBits : std::int32_t
+enum class SparseImageFormatBits : int32_t
 {
 	singleMiptail = (1 << 0),
 	alignedMipSize = (1 << 1),
@@ -510,26 +510,26 @@ enum class SparseImageFormatBits : std::int32_t
 };
 VPP_BITMASK_OPS(SparseImageFormatBits)
 
-enum class SparseMemoryBindBits : std::int32_t
+enum class SparseMemoryBindBits : int32_t
 {
 	metadata = (1 << 0)
 };
 VPP_BITMASK_OPS(SparseMemoryBindBits)
 
-enum class FenceCreateBits : std::int32_t
+enum class FenceCreateBits : int32_t
 {
 	signaled = (1 << 0)
 };
 VPP_BITMASK_OPS(FenceCreateBits)
 
-enum class QueryType : std::int32_t
+enum class QueryType : int32_t
 {
 	occlusion = 0,
 	pipelineStatistics = 1,
 	timestamp = 2
 };
 
-enum class QueryPipelineStatisticBits : std::int32_t
+enum class QueryPipelineStatisticBits : int32_t
 {
 	inputAssemblyVertices = (1 << 0),
 	inputAssemblyPrimitives = (1 << 1),
@@ -545,7 +545,7 @@ enum class QueryPipelineStatisticBits : std::int32_t
 };
 VPP_BITMASK_OPS(QueryPipelineStatisticBits)
 
-enum class QueryResultBits : std::int32_t
+enum class QueryResultBits : int32_t
 {
 	e64 = (1 << 0),
 	wait = (1 << 1),
@@ -554,7 +554,7 @@ enum class QueryResultBits : std::int32_t
 };
 VPP_BITMASK_OPS(QueryResultBits)
 
-enum class BufferCreateBits : std::int32_t
+enum class BufferCreateBits : int32_t
 {
 	sparseBinding = (1 << 0),
 	sparseResidency = (1 << 1),
@@ -562,7 +562,7 @@ enum class BufferCreateBits : std::int32_t
 };
 VPP_BITMASK_OPS(BufferCreateBits)
 
-enum class BufferUsageBits : std::int32_t
+enum class BufferUsageBits : int32_t
 {
 	transferSrc = (1 << 0),
 	transferDst = (1 << 1),
@@ -576,13 +576,13 @@ enum class BufferUsageBits : std::int32_t
 };
 VPP_BITMASK_OPS(BufferUsageBits)
 
-enum class SharingMode : std::int32_t
+enum class SharingMode : int32_t
 {
 	exclusive = 0,
 	concurrent = 1
 };
 
-enum class ImageLayout : std::int32_t
+enum class ImageLayout : int32_t
 {
 	undefined = 0,
 	general = 1,
@@ -596,7 +596,7 @@ enum class ImageLayout : std::int32_t
 	presentSrcKHR = 1000001002
 };
 
-enum class ImageViewType : std::int32_t
+enum class ImageViewType : int32_t
 {
 	e1d = 0,
 	e2d = 1,
@@ -607,7 +607,7 @@ enum class ImageViewType : std::int32_t
 	cubeArray = 6
 };
 
-enum class ComponentSwizzle : std::int32_t
+enum class ComponentSwizzle : int32_t
 {
 	identity = 0,
 	zero = 1,
@@ -618,7 +618,7 @@ enum class ComponentSwizzle : std::int32_t
 	a = 6
 };
 
-enum class PipelineCreateBits : std::int32_t
+enum class PipelineCreateBits : int32_t
 {
 	disableOptimization = (1 << 0),
 	allowDerivatives = (1 << 1),
@@ -626,7 +626,7 @@ enum class PipelineCreateBits : std::int32_t
 };
 VPP_BITMASK_OPS(PipelineCreateBits)
 
-enum class ShaderStageBits : std::int32_t
+enum class ShaderStageBits : int32_t
 {
 	vertex = (1 << 0),
 	tessellationControl = (1 << 1),
@@ -639,13 +639,13 @@ enum class ShaderStageBits : std::int32_t
 };
 VPP_BITMASK_OPS(ShaderStageBits)
 
-enum class VertexInputRate : std::int32_t
+enum class VertexInputRate : int32_t
 {
 	vertex = 0,
 	instance = 1
 };
 
-enum class PrimitiveTopology : std::int32_t
+enum class PrimitiveTopology : int32_t
 {
 	pointList = 0,
 	lineList = 1,
@@ -660,14 +660,14 @@ enum class PrimitiveTopology : std::int32_t
 	patchList = 10
 };
 
-enum class PolygonMode : std::int32_t
+enum class PolygonMode : int32_t
 {
 	fill = 0,
 	line = 1,
 	point = 2
 };
 
-enum class CullModeBits : std::int32_t
+enum class CullModeBits : int32_t
 {
 	none = 0,
 	front = (1 << 0),
@@ -676,13 +676,13 @@ enum class CullModeBits : std::int32_t
 };
 VPP_BITMASK_OPS(CullModeBits)
 
-enum class FrontFace : std::int32_t
+enum class FrontFace : int32_t
 {
 	counterClockwise = 0,
 	clockwise = 1
 };
 
-enum class CompareOp : std::int32_t
+enum class CompareOp : int32_t
 {
 	never = 0,
 	less = 1,
@@ -694,7 +694,7 @@ enum class CompareOp : std::int32_t
 	always = 7
 };
 
-enum class StencilOp : std::int32_t
+enum class StencilOp : int32_t
 {
 	keep = 0,
 	zero = 1,
@@ -706,7 +706,7 @@ enum class StencilOp : std::int32_t
 	decrementAndWrap = 7
 };
 
-enum class LogicOp : std::int32_t
+enum class LogicOp : int32_t
 {
 	clear = 0,
 	eAnd = 1,
@@ -726,7 +726,7 @@ enum class LogicOp : std::int32_t
 	set = 15
 };
 
-enum class BlendFactor : std::int32_t
+enum class BlendFactor : int32_t
 {
 	zero = 0,
 	one = 1,
@@ -749,7 +749,7 @@ enum class BlendFactor : std::int32_t
 	oneMinusSrc1Alpha = 18
 };
 
-enum class BlendOp : std::int32_t
+enum class BlendOp : int32_t
 {
 	add = 0,
 	subtract = 1,
@@ -758,7 +758,7 @@ enum class BlendOp : std::int32_t
 	max = 4
 };
 
-enum class ColorComponentBits : std::int32_t
+enum class ColorComponentBits : int32_t
 {
 	r = (1 << 0),
 	g = (1 << 1),
@@ -767,7 +767,7 @@ enum class ColorComponentBits : std::int32_t
 };
 VPP_BITMASK_OPS(ColorComponentBits)
 
-enum class DynamicState : std::int32_t
+enum class DynamicState : int32_t
 {
 	viewport = 0,
 	scissor = 1,
@@ -780,20 +780,20 @@ enum class DynamicState : std::int32_t
 	stencilReference = 8
 };
 
-enum class Filter : std::int32_t
+enum class Filter : int32_t
 {
 	nearest = 0,
 	linear = 1,
 	cubicIMG = 1000015000
 };
 
-enum class SamplerMipmapMode : std::int32_t
+enum class SamplerMipmapMode : int32_t
 {
 	nearest = 0,
 	linear = 1
 };
 
-enum class SamplerAddressMode : std::int32_t
+enum class SamplerAddressMode : int32_t
 {
 	repeat = 0,
 	mirroredRepeat = 1,
@@ -802,7 +802,7 @@ enum class SamplerAddressMode : std::int32_t
 	mirrorClampToEdge = 1000014000
 };
 
-enum class BorderColor : std::int32_t
+enum class BorderColor : int32_t
 {
 	floatTransparentBlack = 0,
 	intTransparentBlack = 1,
@@ -812,7 +812,7 @@ enum class BorderColor : std::int32_t
 	intOpaqueWhite = 5
 };
 
-enum class DescriptorType : std::int32_t
+enum class DescriptorType : int32_t
 {
 	sampler = 0,
 	combinedImageSampler = 1,
@@ -827,38 +827,38 @@ enum class DescriptorType : std::int32_t
 	inputAttachment = 10
 };
 
-enum class DescriptorPoolCreateBits : std::int32_t
+enum class DescriptorPoolCreateBits : int32_t
 {
 	freeDescriptorSet = (1 << 0)
 };
 VPP_BITMASK_OPS(DescriptorPoolCreateBits)
 
-enum class AttachmentDescriptionBits : std::int32_t
+enum class AttachmentDescriptionBits : int32_t
 {
 	mayAlias = (1 << 0)
 };
 VPP_BITMASK_OPS(AttachmentDescriptionBits)
 
-enum class AttachmentLoadOp : std::int32_t
+enum class AttachmentLoadOp : int32_t
 {
 	load = 0,
 	clear = 1,
 	dontCare = 2
 };
 
-enum class AttachmentStoreOp : std::int32_t
+enum class AttachmentStoreOp : int32_t
 {
 	store = 0,
 	dontCare = 1
 };
 
-enum class PipelineBindPoint : std::int32_t
+enum class PipelineBindPoint : int32_t
 {
 	graphics = 0,
 	compute = 1
 };
 
-enum class AccessBits : std::int32_t
+enum class AccessBits : int32_t
 {
 	indirectCommandRead = (1 << 0),
 	indexRead = (1 << 1),
@@ -880,32 +880,32 @@ enum class AccessBits : std::int32_t
 };
 VPP_BITMASK_OPS(AccessBits)
 
-enum class DependencyBits : std::int32_t
+enum class DependencyBits : int32_t
 {
 	byRegion = (1 << 0)
 };
 VPP_BITMASK_OPS(DependencyBits)
 
-enum class CommandPoolCreateBits : std::int32_t
+enum class CommandPoolCreateBits : int32_t
 {
 	transient = (1 << 0),
 	resetCommandBuffer = (1 << 1)
 };
 VPP_BITMASK_OPS(CommandPoolCreateBits)
 
-enum class CommandPoolResetBits : std::int32_t
+enum class CommandPoolResetBits : int32_t
 {
 	releaseResources = (1 << 0)
 };
 VPP_BITMASK_OPS(CommandPoolResetBits)
 
-enum class CommandBufferLevel : std::int32_t
+enum class CommandBufferLevel : int32_t
 {
 	primary = 0,
 	secondary = 1
 };
 
-enum class CommandBufferUsageBits : std::int32_t
+enum class CommandBufferUsageBits : int32_t
 {
 	oneTimeSubmit = (1 << 0),
 	renderPassContinue = (1 << 1),
@@ -913,19 +913,19 @@ enum class CommandBufferUsageBits : std::int32_t
 };
 VPP_BITMASK_OPS(CommandBufferUsageBits)
 
-enum class QueryControlBits : std::int32_t
+enum class QueryControlBits : int32_t
 {
 	precise = (1 << 0)
 };
 VPP_BITMASK_OPS(QueryControlBits)
 
-enum class CommandBufferResetBits : std::int32_t
+enum class CommandBufferResetBits : int32_t
 {
 	releaseResources = (1 << 0)
 };
 VPP_BITMASK_OPS(CommandBufferResetBits)
 
-enum class StencilFaceBits : std::int32_t
+enum class StencilFaceBits : int32_t
 {
 	front = (1 << 0),
 	back = (1 << 1),
@@ -933,20 +933,20 @@ enum class StencilFaceBits : std::int32_t
 };
 VPP_BITMASK_OPS(StencilFaceBits)
 
-enum class IndexType : std::int32_t
+enum class IndexType : int32_t
 {
 	uint16 = 0,
 	uint32 = 1
 };
 
-enum class SubpassContents : std::int32_t
+enum class SubpassContents : int32_t
 {
 	eInline = 0,
 	secondaryCommandBuffers = 1
 };
 
 
-enum class SurfaceTransformBitsKHR : std::int32_t
+enum class SurfaceTransformBitsKHR : int32_t
 {
 	identity = (1 << 0),
 	rotate90 = (1 << 1),
@@ -960,7 +960,7 @@ enum class SurfaceTransformBitsKHR : std::int32_t
 };
 VPP_BITMASK_OPS(SurfaceTransformBitsKHR)
 
-enum class CompositeAlphaBitsKHR : std::int32_t
+enum class CompositeAlphaBitsKHR : int32_t
 {
 	opaque = (1 << 0),
 	preMultiplied = (1 << 1),
@@ -969,12 +969,12 @@ enum class CompositeAlphaBitsKHR : std::int32_t
 };
 VPP_BITMASK_OPS(CompositeAlphaBitsKHR)
 
-enum class ColorSpaceKHR : std::int32_t
+enum class ColorSpaceKHR : int32_t
 {
 	srgbNonlinear = 0
 };
 
-enum class PresentModeKHR : std::int32_t
+enum class PresentModeKHR : int32_t
 {
 	immediate = 0,
 	mailbox = 1,
@@ -983,7 +983,7 @@ enum class PresentModeKHR : std::int32_t
 };
 
 
-enum class DisplayPlaneAlphaBitsKHR : std::int32_t
+enum class DisplayPlaneAlphaBitsKHR : int32_t
 {
 	opaque = (1 << 0),
 	global = (1 << 1),
@@ -993,7 +993,7 @@ enum class DisplayPlaneAlphaBitsKHR : std::int32_t
 VPP_BITMASK_OPS(DisplayPlaneAlphaBitsKHR)
 
 
-enum class DebugReportObjectTypeEXT : std::int32_t
+enum class DebugReportObjectTypeEXT : int32_t
 {
 	unknown = 0,
 	instance = 1,
@@ -1026,13 +1026,13 @@ enum class DebugReportObjectTypeEXT : std::int32_t
 	debugReport = 28
 };
 
-enum class DebugReportErrorEXT : std::int32_t
+enum class DebugReportErrorEXT : int32_t
 {
 	none = 0,
 	callbackRef = 1
 };
 
-enum class DebugReportBitsEXT : std::int32_t
+enum class DebugReportBitsEXT : int32_t
 {
 	information = (1 << 0),
 	warning = (1 << 1),
@@ -1043,7 +1043,7 @@ enum class DebugReportBitsEXT : std::int32_t
 VPP_BITMASK_OPS(DebugReportBitsEXT)
 
 
-enum class RasterizationOrderAMD : std::int32_t
+enum class RasterizationOrderAMD : int32_t
 {
 	strict = 0,
 	relaxed = 1

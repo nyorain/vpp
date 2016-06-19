@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/vk.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/allocator.hpp>
 
@@ -28,6 +27,7 @@ public:
 	MemoryMapView memoryMap() const;
 
 	///Returns whether the resource was allocated on hostVisible (mappable) memory.
+	///If the there was not yet memory allocated for this resource, false is returned.
 	bool mappable() const;
 
 	///Returns the memoryEntry for this memory resource.

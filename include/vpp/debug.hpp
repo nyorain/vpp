@@ -2,6 +2,7 @@
 
 #include <vpp/fwd.hpp>
 #include <vector>
+#include <cstdint>
 
 namespace vpp
 {

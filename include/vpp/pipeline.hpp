@@ -82,13 +82,11 @@ class Pipeline : public Resource
 public:
 	~Pipeline();
 
-	void swap(Pipeline& other) noexcept;
-
-	using Resource::init;
-	void destroy();
-
 	vk::Pipeline vkPipeline() const { return pipeline_; }
 	vk::PipelineLayout vkPipelineLayout() const { return pipelineLayout_; }
+
+	operator vk::Pipeline() const { return vkPipeline(); }
+	friend void swap(Pipeline& a, Pipeline& b) noexcept;
 
 protected:
 	vk::PipelineLayout pipelineLayout_ {};

@@ -1,20 +1,36 @@
 #include <vpp/renderer.hpp>
-#include <vpp/vk.hpp>
+#include <vpp/defs.hpp>
 #include <vpp/swapChain.hpp>
 #include <vpp/surface.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/provider.hpp>
+#include <vpp/submit.hpp>
 
 #include <stdexcept>
 
 namespace vpp
 {
 
+//Builder
+std::vector<vk::SubmitInfo>
+RendererBuilder::submit(vk::CommandBuffer cmdBuf, vk::Semaphore wait, vk::Semaphore complete)
+{
+	vk::SubmitInfo submitInfo;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &wait;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmdBuf;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &complete;
+
+	return {submitInfo};
+}
+
 //SwapChainRenderer
-SwapChainRenderer::SwapChainRenderer(const SwapChain& sc, const CreateInfo& inf, RendererBuilder& bld)
+SwapChainRenderer::SwapChainRenderer(const SwapChain& sc, const CreateInfo& inf, RenderImpl bld)
 {
 	create(sc, inf);
-	init(bld);
+	init(std::move(bld));
 }
 
 SwapChainRenderer::SwapChainRenderer(SwapChainRenderer&& other) noexcept
@@ -43,6 +59,8 @@ void swap(SwapChainRenderer& a, SwapChainRenderer& b) noexcept
 
 	swap(a.swapChain_, b.swapChain_);
 	swap(a.renderBuffers_, b.renderBuffers_);
+	swap(a.staticAttachments_, b.staticAttachments_);
+	swap(a.renderImpl_, b.renderImpl_);
 	swap(a.info_, b.info_);
 }
 
@@ -58,12 +76,12 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 
 	//command pool
 	vk::CommandPoolCreateInfo cmdPoolInfo;
-	cmdPoolInfo.queueFamilyIndex = info.queue->family();
-	cmdPoolInfo.flags = vk::CommandPoolCreateBits::resetCommandBuffer;
+	cmdPoolInfo.queueFamilyIndex = info.queueFamily;
+	cmdPoolInfo.flags = vk::CommandPoolCreateBits::resetCommandBuffer; //XXX: needed?
 
 	//attachments
 	//TODO: more efficient: reserve/resize prediction?
-	std::vector<vk::ImageCreateInfo> dynamic;
+	std::vector<ViewableImage::CreateInfo> dynamic;
 	Framebuffer::ExtAttachments ext;
 	auto size = swapChain.size();
 	auto i = 0u;
@@ -77,14 +95,16 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 		}
 		else if(attachInfo.dynamic)
 		{
-			dynamic.push_back(attachInfo.info.first);
+			auto imgInfo = attachInfo.createInfo.imgInfo;
+			imgInfo.extent = {size.width, size.height, 1};
+			dynamic.push_back(attachInfo.createInfo);
 		}
 		else
 		{
-			auto imgInfo = attachInfo.info.first;
+			auto imgInfo = attachInfo.createInfo.imgInfo;
 			imgInfo.extent = {size.width, size.height, 1};
 			staticAttachments_.emplace_back();
-			staticAttachments_.back().create(device(), imgInfo);
+			staticAttachments_.back().create(device(), imgInfo, attachInfo.createInfo.memoryFlags);
 		}
 
 		++i;
@@ -94,7 +114,7 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 	//CommandBuffers
 	renderBuffers_.reserve(swapChain.renderBuffers().size());
 
-	auto qFam = info.queue->family();
+	auto qFam = info.queueFamily;
 	auto cmdBuffers = device().commandProvider().get(qFam, renderBuffers_.size());
 
 	//frame buffers
@@ -106,10 +126,12 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 	}
 }
 
-void SwapChainRenderer::init(RendererBuilder& builder)
+void SwapChainRenderer::init(RenderImpl builder)
 {
 	Framebuffer::ExtAttachments attachmentMap;
 	std::vector<vk::ImageViewCreateInfo> viewInfos;
+
+	renderImpl_ = std::move(builder);
 
 	//attachments
 	auto staticAttachmentID = 0u;
@@ -124,7 +146,7 @@ void SwapChainRenderer::init(RendererBuilder& builder)
 		if(!ainfo.external && !ainfo.dynamic)
 		{
 			auto& statAttach = staticAttachments_[staticAttachmentID];
-			statAttach.init(ainfo.info.second);
+			statAttach.init(ainfo.createInfo.viewInfo);
 			attachmentMap[attachmentMapID] = statAttach.vkImageView();
 
 			attachmentMapID++;
@@ -132,7 +154,7 @@ void SwapChainRenderer::init(RendererBuilder& builder)
 		}
 		else if(!ainfo.external && ainfo.dynamic)
 		{
-			viewInfos.push_back(ainfo.info.second);
+			viewInfos.push_back(ainfo.createInfo.viewInfo);
 		}
 		else if(ainfo.external)
 		{
@@ -150,8 +172,7 @@ void SwapChainRenderer::init(RendererBuilder& builder)
 		renderBuffers_[i].framebuffer.init(info_.renderPass, viewInfos, attachmentMap);
 	}
 
-	builder.init(*this);
-	buildCommandBuffers(builder);
+	builder->init(*this);
 }
 
 void SwapChainRenderer::destroyRenderBuffers()
@@ -174,87 +195,141 @@ void SwapChainRenderer::destroyRenderBuffers()
 	renderBuffers_.clear();
 }
 
-void SwapChainRenderer::buildCommandBuffers(RendererBuilder& builder)
+void SwapChainRenderer::record(int id)
 {
-	auto clearValues = builder.clearValues();
+	if(id == -1)
+	{
+		for(std::size_t i(0); i < renderBuffers_.size(); ++i) record(id);
+		return;
+	}
+
+	auto clearValues = renderImpl_->clearValues(id);
 	auto width = swapChain().size().width;
 	auto height = swapChain().size().height;
 
-	for(std::size_t i(0); i < renderBuffers_.size(); ++i)
-	{
-		auto& renderer = renderBuffers_[i];
-		auto vkbuf = renderer.commandBuffer.vkCommandBuffer();
-		vk::CommandBufferBeginInfo cmdBufInfo;
+	vk::ImageMemoryBarrier barrier;
+	barrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite;
+	barrier.dstAccessMask = vk::AccessFlags();
+	barrier.oldLayout = vk::ImageLayout::presentSrcKHR;
+	barrier.newLayout = vk::ImageLayout::colorAttachmentOptimal;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.subresourceRange = {vk::ImageAspectBits::color, 0, 1, 0, 1};
+	barrier.image = swapChain().renderBuffers()[id].image;
 
-		vk::RenderPassBeginInfo beginInfo;
-		beginInfo.renderPass = info_.renderPass;
-		beginInfo.renderArea = {{0, 0}, {width, height}};
-		beginInfo.clearValueCount = clearValues.size();
-		beginInfo.pClearValues = clearValues.data();
-		beginInfo.framebuffer = renderer.framebuffer.vkFramebuffer();
+	auto& renderer = renderBuffers_[id];
+	auto vkbuf = renderer.commandBuffer.vkCommandBuffer();
+	vk::CommandBufferBeginInfo cmdBufInfo;
 
-		vk::beginCommandBuffer(vkbuf, cmdBufInfo);
+	vk::RenderPassBeginInfo beginInfo;
+	beginInfo.renderPass = info_.renderPass;
+	beginInfo.renderArea = {{0, 0}, {width, height}};
+	beginInfo.clearValueCount = clearValues.size();
+	beginInfo.pClearValues = clearValues.data();
+	beginInfo.framebuffer = renderer.framebuffer.vkFramebuffer();
 
-		builder.beforeRender(vkbuf);
+	vk::beginCommandBuffer(vkbuf, cmdBufInfo);
 
-		vk::cmdBeginRenderPass(vkbuf, beginInfo, vk::SubpassContents::eInline);
+	//present to attachment layout
+	vk::cmdPipelineBarrier(vkbuf, vk::PipelineStageBits::allCommands,
+		vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {barrier});
 
-		//Update dynamic viewport state
-		vk::Viewport viewport;
-		viewport.width = width;
-		viewport.height = height;
-		viewport.minDepth = 0.f;
-		viewport.maxDepth = 1.f;
-		vk::cmdSetViewport(vkbuf, 0, 1, viewport);
+	renderImpl_->beforeRender(vkbuf);
 
-		//Update dynamic scissor state
-		vk::Rect2D scissor;
-		scissor.extent = {width, height};
-		scissor.offset = {0, 0};
-		vk::cmdSetScissor(vkbuf, 0, 1, scissor);
+	vk::cmdBeginRenderPass(vkbuf, beginInfo, vk::SubpassContents::eInline);
 
-		RenderPassInstance ini(vkbuf, info_.renderPass, renderer.framebuffer.vkFramebuffer());
-		builder.build(ini);
+	//Update dynamic viewport state
+	vk::Viewport viewport;
+	viewport.width = width;
+	viewport.height = height;
+	viewport.minDepth = 0.f;
+	viewport.maxDepth = 1.f;
+	vk::cmdSetViewport(vkbuf, 0, 1, viewport);
 
-		vk::cmdEndRenderPass(vkbuf);
+	//Update dynamic scissor state
+	vk::Rect2D scissor;
+	scissor.extent = {width, height};
+	scissor.offset = {0, 0};
+	vk::cmdSetScissor(vkbuf, 0, 1, scissor);
 
-		builder.afterRender(vkbuf);
+	RenderPassInstance ini(vkbuf, info_.renderPass, renderer.framebuffer.vkFramebuffer());
+	renderImpl_->build(*this, id, ini);
 
-		vk::ImageMemoryBarrier prePresentBarrier;
-		prePresentBarrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite;
-		prePresentBarrier.dstAccessMask = vk::AccessFlags();
-		prePresentBarrier.oldLayout = vk::ImageLayout::colorAttachmentOptimal;
-		prePresentBarrier.newLayout = vk::ImageLayout::presentSrcKHR;
-		prePresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		prePresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		prePresentBarrier.subresourceRange = {vk::ImageAspectBits::color, 0, 1, 0, 1};
-		prePresentBarrier.image = swapChain().renderBuffers()[i].image;
+	vk::cmdEndRenderPass(vkbuf);
 
-		vk::cmdPipelineBarrier(vkbuf, vk::PipelineStageBits::allCommands,
-			vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {prePresentBarrier});
+	renderImpl_->afterRender(vkbuf);
 
-		vk::endCommandBuffer(vkbuf);
-	}
+	barrier.oldLayout = vk::ImageLayout::colorAttachmentOptimal;
+	barrier.newLayout = vk::ImageLayout::presentSrcKHR;
+
+	//attachment to present layout
+	vk::cmdPipelineBarrier(vkbuf, vk::PipelineStageBits::allCommands,
+		vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {barrier});
+
+	vk::endCommandBuffer(vkbuf);
 }
 
-void SwapChainRenderer::render()
+std::unique_ptr<Work<void>> SwapChainRenderer::render(Queue* present, Queue* gfx)
 {
     vk::SemaphoreCreateInfo semaphoreCI;
-	auto presentComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
+	auto acquireComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
+	auto renderComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 
-    auto currentBuffer = swapChain().acquireNextImage(presentComplete);
+    auto currentBuffer = swapChain().acquireNextImage(acquireComplete);
 
-	vk::SubmitInfo submitInfo;
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &presentComplete;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &renderBuffers_[currentBuffer].commandBuffer.vkCommandBuffer();
+	auto& cmdBuf = renderBuffers_[currentBuffer].commandBuffer;
+	auto submits = renderImpl_->submit(cmdBuf, acquireComplete, renderComplete);
 
-	vk::queueSubmit(info_.queue->vkQueue(), 1, submitInfo, 0);
-    swapChain().present(info_.queue->vkQueue(), currentBuffer);
+	auto execState = device().submitManager().add(*gfx, submits[0]);
 
-    vk::destroySemaphore(vkDevice(), presentComplete, nullptr);
-	vk::queueWaitIdle(info_.queue->vkQueue());
+	//TODO: which kind of submit makes sence here? submit ALL queued commands?
+	//execState.submit();
+	device().submitManager().submit();
+
+	//TODO: some kind of queue lock? must be synchronized.
+	//need some submitmanager improvements as general queue sync manager.
+    swapChain().present(*present, currentBuffer, renderComplete);
+
+	class WorkImpl : public Work<void>
+	{
+	public:
+		vk::Semaphore acquire_;
+		vk::Semaphore render_;
+		CommandExecutionState executionState_;
+		WorkBase::State state_ = WorkBase::State::submitted;
+
+		WorkImpl(vk::Semaphore acquire, vk::Semaphore render, CommandExecutionState state)
+			: acquire_(acquire), render_(render), executionState_(std::move(state)) {}
+
+		virtual void finish() override
+		{
+			wait();
+			auto& dev = executionState_.device();
+
+    		if(acquire_) vk::destroySemaphore(dev, acquire_, nullptr);
+    		if(render_) vk::destroySemaphore(dev, render_, nullptr);
+
+			acquire_ = {};
+			render_ = {};
+
+			state_ = WorkBase::State::finished;
+		}
+		virtual WorkBase::State state() override
+		{
+			return state_;
+		}
+		virtual void submit() override
+		{
+			std::cerr << "vpp::SwapChainRenderer::WorkImpl::submit, was already submitted\n";
+		}
+		virtual void wait() override
+		{
+			executionState_.wait();
+			state_ = WorkBase::State::executed;
+		}
+	};
+
+	return std::make_unique<WorkImpl>(acquireComplete, renderComplete, std::move(execState));
 }
 
 }

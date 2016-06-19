@@ -17,6 +17,7 @@ class ShaderStage;
 class ShaderProgram;
 class DeviceMemory;
 class DeviceMemoryAllocator;
+class MemoryEntry;
 class Buffer;
 class Image;
 class DebugCallback;

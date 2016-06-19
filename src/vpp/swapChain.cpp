@@ -1,6 +1,7 @@
 #include <vpp/swapChain.hpp>
 #include <vpp/vk.hpp>
 #include <vpp/procAddr.hpp>
+#include <vpp/queue.hpp>
 #include <vpp/surface.hpp>
 #include <vpp/vulkan/vulkan.hpp>
 
@@ -224,17 +225,19 @@ vk::SwapchainCreateInfoKHR SwapChain::swapChainCreateInfo()
     return ret;
 }
 
-unsigned int SwapChain::acquireNextImage(vk::Semaphore presentComplete) const
+unsigned int SwapChain::acquireNextImage(vk::Semaphore sem, vk::Fence fence) const
 {
+	//TODO: out of date, sync, timeout...
 	VPP_LOAD_PROC(vkDevice(), AcquireNextImageKHR);
 
     std::uint32_t ret;
-    VPP_CALL(pfAcquireNextImageKHR(vkDevice(), vkSwapChain(), UINT64_MAX, presentComplete, 0, &ret));
+    VPP_CALL(pfAcquireNextImageKHR(vkDevice(), vkSwapChain(), UINT64_MAX, sem, fence, &ret));
     return ret;
 }
 
-void SwapChain::present(vk::Queue queue, std::uint32_t currentBuffer) const
+void SwapChain::present(const Queue& queue, std::uint32_t currentBuffer) const
 {
+	//TODO: sync!
 	VPP_LOAD_PROC(vkDevice(), QueuePresentKHR);
 
     vk::PresentInfoKHR presentInfo {};

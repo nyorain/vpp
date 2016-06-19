@@ -8,8 +8,6 @@
 namespace vpp
 {
 
-class B;
-
 ///Vulkan Renderpass. Can be created just from a vulkan device.
 ///Stores its description information.
 class RenderPass : public Resource

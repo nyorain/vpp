@@ -24,24 +24,29 @@ public:
 	///Can be used to create required framebuffer attachments for a render pass.
 	///The returned vecotr can be passed as the attachments vector of the CreateInfo
 	///object that is given as create paramater.
-	static AttachmentsInfo parseRenderPass(const RenderPass& rp, const vk::Extent2D& size = {});
+	///\param size The size stored in the image create infos.
+	static AttachmentsInfo parseRenderPass(const RenderPass& rp, const vk::Extent2D& size);
 
 public:
 	Framebuffer() = default;
 	Framebuffer(const Device& dev, vk::RenderPass rp, const vk::Extent2D& size,
-		AttachmentsInfo attachments, const ExtAttachments& ext = {});
+		const AttachmentsInfo& attachments, const ExtAttachments& ext = {});
 	~Framebuffer();
 
 	Framebuffer(Framebuffer&& other) noexcept;
 	Framebuffer& operator=(Framebuffer&& other) noexcept;
 
 	void create(const Device& dev, const vk::Extent2D& size, const std::vector<vk::ImageCreateInfo>&);
+	void create(const Device& dev, const vk::Extent2D& size, const AttachmentsInfo& info);
 
 	///\exception std::logic_error if there are less view infos than image infos passed to create.
+	void init(vk::RenderPass rp, const AttachmentsInfo& info, const ExtAttachments& ext = {});
 	void init(vk::RenderPass rp, const std::vector<vk::ImageViewCreateInfo>& info,
 		const ExtAttachments& extAttachments = {});
 
 	vk::Framebuffer vkFramebuffer() const { return framebuffer_; }
+	const std::vector<ViewableImage>& attachments() const { return attachments_; }
+	vk::Extent2D size() const;
 
 	operator vk::Framebuffer() const { return vkFramebuffer(); }
 	friend void swap(Framebuffer& a, Framebuffer& b) noexcept;
@@ -49,7 +54,8 @@ public:
 protected:
 	vk::Framebuffer framebuffer_ {};
 	std::vector<ViewableImage> attachments_;
-	vk::Extent2D size_;
+	unsigned int width_ = 0;
+	unsigned int height_ = 0;
 };
 
 }

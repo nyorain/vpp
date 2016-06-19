@@ -2,7 +2,6 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/swapChain.hpp>
-#include <vpp/vk.hpp> //TODO: get rid of this.
 #include <vpp/surface.hpp>
 
 #include <vector>
@@ -26,7 +25,9 @@ class Context
 public:
 	struct CreateInfo
 	{
-		vk::Extent2D size {800, 500};
+		///These two members are ignored if the backend choses the size (i.e. the size of the window)
+		unsigned int width = 0;
+		unsigned int height = 0;
 		vk::DebugReportFlagsEXT debugFlags = fwd::defaultDebugFlags;
 
 		std::vector<const char*> instanceExtensions;

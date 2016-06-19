@@ -24,7 +24,7 @@
 // The specification (vk.xml) itself is protected by the following license:
 
 // Copyright (c) 2015-2016 The Khronos Group Inc.
-//
+// 
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and/or associated documentation files (the
 // "Materials"), to deal in the Materials without restriction, including
@@ -32,10 +32,10 @@
 // distribute, sublicense, and/or sell copies of the Materials, and to
 // permit persons to whom the Materials are furnished to do so, subject to
 // the following conditions:
-//
+// 
 // The above copyright notice and this permission notice shall be included
 // in all copies or substantial portions of the Materials.
-//
+// 
 // THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -43,9 +43,9 @@
 // CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
-//
+// 
 // ------------------------------------------------------------------------
-//
+// 
 // This file, vk.xml, is the Vulkan API Registry. It is a critically important
 // and normative part of the Vulkan Specification, including a canonical
 // machine-readable definition of the API, parameter and member validation
@@ -53,7 +53,7 @@
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
 // maintained in the master branch of the Khronos Vulkan Github project.
-
+    
 // Automaitcally generated vulkan header file for the nyorain/vpp library.
 // Do not edit manually, rather edit the codegen files.
 
@@ -399,9 +399,9 @@ inline Result getQueryPoolResults(Device device, QueryPool queryPool, uint32_t f
 {
 	return VPP_CALL(static_cast<Result>(vkGetQueryPoolResults(reinterpret_cast<VkDevice>(&device), reinterpret_cast<VkQueryPool>(&queryPool), firstQuery, queryCount, dataSize, reinterpret_cast<void*>(pData), stride, static_cast<VkQueryResultFlags>(flags))));
 }
-inline std::vector<std::uint8_t> getQueryPoolResults(Device device, QueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, DeviceSize stride, QueryResultFlags flags = {})
+inline std::vector<uint8_t> getQueryPoolResults(Device device, QueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, DeviceSize stride, QueryResultFlags flags = {})
 {
-	std::vector<std::uint8_t> ret;
+	std::vector<uint8_t> ret;
 	ret.reserve(dataSize);
 	VPP_CALL(vkGetQueryPoolResults(reinterpret_cast<VkDevice>(&device), reinterpret_cast<VkQueryPool>(&queryPool), firstQuery, queryCount, dataSize, reinterpret_cast<void*>(ret.data()), stride, static_cast<VkQueryResultFlags>(flags)));
 	return ret;
@@ -476,9 +476,9 @@ inline Result getPipelineCacheData(Device device, PipelineCache pipelineCache, s
 {
 	return VPP_CALL(static_cast<Result>(vkGetPipelineCacheData(reinterpret_cast<VkDevice>(&device), reinterpret_cast<VkPipelineCache>(&pipelineCache), reinterpret_cast<size_t*>(&pDataSize), reinterpret_cast<void*>(pData))));
 }
-inline std::vector<std::uint8_t> getPipelineCacheData(Device device, PipelineCache pipelineCache)
+inline std::vector<uint8_t> getPipelineCacheData(Device device, PipelineCache pipelineCache)
 {
-	std::vector<std::uint8_t> ret;
+	std::vector<uint8_t> ret;
 	size_t count = 0u;
 	if(!call::success(VPP_CALL(vkGetPipelineCacheData(reinterpret_cast<VkDevice>(&device), reinterpret_cast<VkPipelineCache>(&pipelineCache), &count, reinterpret_cast<void*>(ret.data()))))) return ret;
 	ret.reserve(count);
@@ -879,7 +879,7 @@ inline void cmdPushConstants(CommandBuffer commandBuffer, PipelineLayout layout,
 {
 	vkCmdPushConstants(reinterpret_cast<VkCommandBuffer>(&commandBuffer), reinterpret_cast<VkPipelineLayout>(&layout), static_cast<VkShaderStageFlags>(stageFlags), offset, size, reinterpret_cast<const void*>(pValues));
 }
-inline void cmdPushConstants(CommandBuffer commandBuffer, PipelineLayout layout, ShaderStageFlags stageFlags, uint32_t offset, const Range<const std::uint8_t>& pValues)
+inline void cmdPushConstants(CommandBuffer commandBuffer, PipelineLayout layout, ShaderStageFlags stageFlags, uint32_t offset, const Range<const uint8_t>& pValues)
 {
 	vkCmdPushConstants(reinterpret_cast<VkCommandBuffer>(&commandBuffer), reinterpret_cast<VkPipelineLayout>(&layout), static_cast<VkShaderStageFlags>(stageFlags), offset, pValues.size(), reinterpret_cast<const void*>(pValues.data()));
 }

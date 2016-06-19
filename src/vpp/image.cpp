@@ -1,5 +1,5 @@
 #include <vpp/image.hpp>
-#include <vpp/vk.hpp>
+#include <vpp/defs.hpp>
 #include <vpp/provider.hpp>
 #include <vpp/transfer.hpp>
 #include <utility>
@@ -168,10 +168,10 @@ ViewableImage::CreateInfo ViewableImage::defaultDepth2D()
 }
 
 //attachment
-ViewableImage::ViewableImage(const Device& dev, const CreateInfo& info, vk::MemoryPropertyFlags flags)
+ViewableImage::ViewableImage(const Device& dev, const CreateInfo& info)
 {
-	create(dev, info.first, flags);
-	init(info.second);
+	create(dev, info.imgInfo, info.memoryFlags);
+	init(info.viewInfo);
 }
 
 ViewableImage::~ViewableImage()

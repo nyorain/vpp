@@ -228,7 +228,7 @@ void CCOutputGenerator::generate()
 	outputAllHeader("namespace vk\n{\n\n");
 
 	//fwd dummy enum
-	fwd_ << "enum class DummyEnum : std::int32_t {};\n\n";
+	fwd_ << "enum class DummyEnum : int32_t {};\n\n";
 
 	//all printed requirements
 	Requirements fulfilled;
@@ -371,10 +371,10 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		assureGuard(fwd_, fwdGuard, guard);
 		assureGuard(enums_, enumGuard, guard);
 
-		fwd_ << "enum class " << name << " : std::int32_t;\n";
+		fwd_ << "enum class " << name << " : int32_t;\n";
 
 		//header
-		enums_ << "enum class " << name << " : std::int32_t\n{\n";
+		enums_ << "enum class " << name << " : int32_t\n{\n";
 		auto sepr = "";
 		for(auto& value : type.values)
 		{
@@ -839,7 +839,7 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 		auto typeCpy = vecRet->first->param->type;
 		typeCpy.pointerlvl--;
 		if(typeCpy.type->name != "void") retType = "std::vector<" + typeName(typeCpy) + ">";
-		else retType = "std::vector<std::uint8_t>";
+		else retType = "std::vector<uint8_t>";
 	}
 
 	std::cout << "startVec2" << std::endl;
@@ -892,7 +892,7 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 		typeCpy.pointerlvl--;
 
 		if(typeCpy.type->name != "void") code = std::regex_replace(code, std::regex("%t"), typeName(typeCpy));
-		else code = std::regex_replace(code, std::regex("%t"), "std::uint8_t");
+		else code = std::regex_replace(code, std::regex("%t"), "uint8_t");
 		code = std::regex_replace(code, std::regex("%a"), args);
 		code = std::regex_replace(code, std::regex("%f"), cmd.name);
 
@@ -1034,9 +1034,9 @@ std::string CCOutputGenerator::paramDecl(const ParsedParam& param, bool rangeify
 		{
 			auto typeCopy = param.param->type;
 			if(typeCopy.pointerlvl)typeCopy.pointerlvl--;
-			if(typeCopy.type->name == "void") typeCopy.type->name = "std::uint8_t";
+			if(typeCopy.type->name == "void") typeCopy.type->name = "uint8_t";
 			ret += "const Range<" + typeName(typeCopy) + ">& " + param.param->name;
-			if(typeCopy.type->name == "std::uint8_t") typeCopy.type->name = "void";
+			if(typeCopy.type->name == "uint8_t") typeCopy.type->name = "void";
 			return ret;
 		}
 	}

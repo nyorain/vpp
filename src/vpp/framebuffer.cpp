@@ -54,7 +54,8 @@ void Framebuffer::create(const Device& dev, const vk::Extent2D& size,
 	const std::vector<vk::ImageCreateInfo>& imgInfo)
 {
 	Resource::init(dev);
-	size_ = size;
+	width_ = size.width;
+	height_ = size.height;
 
 	attachments_.reserve(imgInfo.size());
 	for(auto& attinfo : imgInfo) {
@@ -102,11 +103,16 @@ void Framebuffer::init(vk::RenderPass rp, const std::vector<vk::ImageViewCreateI
 	createInfo.renderPass = rp;
 	createInfo.attachmentCount = attachments.size();
 	createInfo.pAttachments = attachments.data();
-	createInfo.width = size_.width;
-	createInfo.height = size_.height;
+	createInfo.width = width_;
+	createInfo.height = height_;
 	createInfo.layers = 1; ///XXX: should be paramterized?
 
 	framebuffer_ = vk::createFramebuffer(vkDevice(), createInfo);
+}
+
+vk::Extent2D Framebuffer::size() const
+{
+	return {width_, height_};
 }
 
 //static utility

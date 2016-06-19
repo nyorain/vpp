@@ -61,7 +61,7 @@ protected:
 class ViewableImage : public ResourceReference<ViewableImage>
 {
 public:
-	using CreateInfo = std::pair<vk::ImageCreateInfo, vk::ImageViewCreateInfo>;
+	struct CreateInfo;
 
 	///\{
 	///Some useful default create infos.
@@ -73,9 +73,7 @@ public:
 
 public:
 	ViewableImage() = default;
-	ViewableImage(const Device& dev, const CreateInfo& info, vk::MemoryPropertyFlags flgs = {});
-	ViewableImage(const Device& dev, const vk::ImageCreateInfo& img, vk::ImageViewCreateInfo& view,
-		vk::MemoryPropertyFlags flgs = {});
+	ViewableImage(const Device& dev, const CreateInfo& info);
 	~ViewableImage();
 
 	ViewableImage(ViewableImage&& other) noexcept;

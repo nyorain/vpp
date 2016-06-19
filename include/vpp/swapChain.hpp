@@ -11,6 +11,7 @@ namespace vpp
 {
 
 ///TODO: more settings, especially related to blocking, presentation mode (vsync) etc.
+///TODO: synchronization for acquire and present commands. Handle acquire -> out_of_date
 ///Represents Vulkan swap chain and associated images/frameBuffers.
 class SwapChain : public Resource
 {
@@ -42,11 +43,16 @@ public:
 	void resize(const vk::Extent2D& size);
 
 	///Acquires the next swapchain image (i.e. the next render buffer).
-	///\return The id of the newly acquired image. This id should be passed
-	///to present as currentBuffer parameter.
-	///May block. TODO.
-    unsigned int acquireNextImage(vk::Semaphore presentComplete) const;
-    void present(vk::Queue queue, unsigned int currentBuffer) const;
+	///\param sem Semaphore to be signaled when acquiring is complete or nullHandle.
+	///\param fence Fence to be signaled when acquiring is complete or nullHandle.
+	///\return The id of the newly acquired image.
+	///May block depending on present mode. TODO.
+    unsigned int acquireNextImage(vk::Semaphore sem = {}, vk::Fence fence = {}) const;
+
+	///Queues commands to present the image with the given id on the given queue. TODO
+	///\param wait The semaphore to wait on before presenting (usually signaled at the end
+	///of all rendering commands for this image).
+    void present(const Queue& queue, unsigned int image, vk::Semaphore wait) const;
 
     const vk::SwapchainKHR& vkSwapChain() const { return swapChain_; }
 	const vk::SurfaceKHR& vkSurface() const { return surface_; }
