@@ -1,5 +1,5 @@
 #include <vpp/graphicsPipeline.hpp>
-#include <vpp/vk.hpp>
+#include <vpp/defs.hpp>
 #include <vpp/context.hpp>
 #include <vpp/shader.hpp>
 #include <vpp/buffer.hpp>
@@ -10,7 +10,7 @@ namespace vpp
 {
 
 //info default ctor
-GraphicsPipeline::StatesCreateInfo::StatesCreateInfo(const vk::Viewport& viewportinfo)
+GraphicsPipeline::States::States(const vk::Viewport& viewportinfo)
 {
 	//needed data
 	blendAttachments.emplace_back();
@@ -74,7 +74,7 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 	//Binding description
 	std::size_t attributeCount = 0;
 	for(auto& layout : createInfo.vertexBufferLayouts)
-		attributeCount += layout->attributes.size();
+		attributeCount += layout.get().attributes.size();
 
 	std::vector<vk::VertexInputBindingDescription> bindingDescriptions;
 	bindingDescriptions.reserve(createInfo.vertexBufferLayouts.size());
@@ -87,18 +87,18 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 		std::size_t location = 0;
 		std::size_t offset = 0;
 
-		for(auto& attribute : layout->attributes)
+		for(auto& attribute : layout.get().attributes)
 		{
 			attributeDescriptions.emplace_back();
 			attributeDescriptions.back().location = location++;
-			attributeDescriptions.back().binding = layout->binding;
+			attributeDescriptions.back().binding = layout.get().binding;
 			attributeDescriptions.back().format = attribute;
 			attributeDescriptions.back().offset = offset;
 			offset += formatSize(attribute) / 8;
 		}
 
 		bindingDescriptions.emplace_back();
-		bindingDescriptions.back().binding = layout->binding;
+		bindingDescriptions.back().binding = layout.get().binding;
 		bindingDescriptions.back().stride = offset;
 		bindingDescriptions.back().inputRate = vk::VertexInputRate::vertex;
 	}
@@ -113,7 +113,7 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 	descriptorSetLayouts.reserve(createInfo.descriptorSetLayouts.size());
 
 	for(auto& layout : createInfo.descriptorSetLayouts)
-		descriptorSetLayouts.push_back(layout->vkDescriptorSetLayout());
+		descriptorSetLayouts.push_back(layout.get().vkDescriptorSetLayout());
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
 	pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();

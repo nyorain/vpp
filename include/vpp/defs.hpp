@@ -41,7 +41,7 @@ struct GraphicsPipeline::States
 	std::vector<vk::Viewport> viewports;
 	std::vector<vk::Rect2D> scissors;
 
-	States(vk::Viewport viewport = {});
+	States(const vk::Viewport& viewport = {});
 };
 
 GraphicsPipeline::States defaultGraphicsPipelineStates();

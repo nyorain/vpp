@@ -235,7 +235,7 @@ unsigned int SwapChain::acquireNextImage(vk::Semaphore sem, vk::Fence fence) con
     return ret;
 }
 
-void SwapChain::present(const Queue& queue, std::uint32_t currentBuffer) const
+void SwapChain::present(const Queue& queue, std::uint32_t currentBuffer, vk::Semaphore wait) const
 {
 	//TODO: sync!
 	VPP_LOAD_PROC(vkDevice(), QueuePresentKHR);
@@ -244,6 +244,12 @@ void SwapChain::present(const Queue& queue, std::uint32_t currentBuffer) const
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &swapChain_;
     presentInfo.pImageIndices = &currentBuffer;
+	
+	if(wait)
+	{
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &wait;
+	}
 
     VPP_CALL(pfQueuePresentKHR(queue, &presentInfo));
 }

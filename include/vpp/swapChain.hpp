@@ -51,8 +51,8 @@ public:
 
 	///Queues commands to present the image with the given id on the given queue. TODO
 	///\param wait The semaphore to wait on before presenting (usually signaled at the end
-	///of all rendering commands for this image).
-    void present(const Queue& queue, unsigned int image, vk::Semaphore wait) const;
+	///of all rendering commands for this image). Can be nullHandle.
+    void present(const Queue& queue, unsigned int image, vk::Semaphore wait = {}) const;
 
     const vk::SwapchainKHR& vkSwapChain() const { return swapChain_; }
 	const vk::SurfaceKHR& vkSurface() const { return surface_; }
