@@ -60,7 +60,8 @@ void Framebuffer::create(const Device& dev, const vk::Extent2D& size,
 	height_ = size.height;
 
 	attachments_.reserve(imgInfo.size());
-	for(auto& attinfo : imgInfo) {
+	for(auto& attinfo : imgInfo)
+	{
 		auto imageInfo = attinfo;
 		imageInfo.extent = {size.width, size.height, 1};
 
@@ -120,6 +121,7 @@ void Framebuffer::init(vk::RenderPass rp, const std::vector<vk::ImageViewCreateI
 	createInfo.height = height_;
 	createInfo.layers = 1; ///XXX: should be paramterized?
 
+	std::cout << "fb count: " << attachments.size() << "\n";
 	framebuffer_ = vk::createFramebuffer(vkDevice(), createInfo);
 }
 

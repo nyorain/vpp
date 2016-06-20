@@ -22,11 +22,13 @@ ParticleRenderer::~ParticleRenderer()
 
 void ParticleRenderer::init(vpp::SwapChainRenderer& renderer)
 {
+	std::cout << "init\n";
 	renderer.record();
 }
 
-void ParticleRenderer::build(unsigned int, const vpp::RenderPassInstance& instance)
+void ParticleRenderer::build(unsigned int id, const vpp::RenderPassInstance& instance)
 {
+	std::cout << "building: " << id << "\n";
 	auto cmdBuffer = instance.vkCommandBuffer();
 	VkDeviceSize offsets[1] = { 0 };
 

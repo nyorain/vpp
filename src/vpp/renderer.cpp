@@ -74,11 +74,6 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 	swapChain_ = &swapChain;
 	info_ = info;
 
-	//command pool
-	vk::CommandPoolCreateInfo cmdPoolInfo;
-	cmdPoolInfo.queueFamilyIndex = info.queueFamily;
-	cmdPoolInfo.flags = vk::CommandPoolCreateBits::resetCommandBuffer; //XXX: needed?
-
 	//attachments
 	//TODO: more efficient: reserve/resize prediction?
 	std::vector<ViewableImage::CreateInfo> dynamic;
@@ -115,7 +110,7 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 	renderBuffers_.reserve(swapChain.renderBuffers().size());
 
 	auto qFam = info.queueFamily;
-	auto cmdBuffers = device().commandProvider().get(qFam, renderBuffers_.size());
+	auto cmdBuffers = device().commandProvider().get(qFam, swapChain.renderBuffers().size());
 
 	//frame buffers
 	for(auto& cmdBuffer : cmdBuffers)
@@ -134,13 +129,13 @@ void SwapChainRenderer::init(RenderImpl builder)
 	renderImpl_ = std::move(builder);
 
 	//attachments
-	auto staticAttachmentID = 0u;
-	auto attachmentMapID = 0u;
-	auto attachInfoID = 0u;
+	auto staticAttachmentID = 0u; //staticAttachments_ id
+	auto attachmentMapID = 0u; //attachmentMap[] id
+	auto attachInfoID = 0u; //info_.attachments id
 
 	for(auto i = 0u; i < info_.attachments.size(); ++i)
 	{
-		if(i == info_.swapChainAttachment) continue;
+		if(attachmentMapID == info_.swapChainAttachment) attachmentMapID++;
 
 		auto& ainfo = info_.attachments[attachInfoID];
 		if(!ainfo.external && !ainfo.dynamic)
@@ -172,7 +167,7 @@ void SwapChainRenderer::init(RenderImpl builder)
 		renderBuffers_[i].framebuffer.init(info_.renderPass, viewInfos, attachmentMap);
 	}
 
-	builder->init(*this);
+	renderImpl_->init(*this);
 }
 
 void SwapChainRenderer::destroyRenderBuffers()
@@ -199,14 +194,17 @@ void SwapChainRenderer::record(int id)
 {
 	if(id == -1)
 	{
-		for(std::size_t i(0); i < renderBuffers_.size(); ++i) record(id);
+		std::cout << ",w\n";
+		for(std::size_t i(0); i < renderBuffers_.size(); ++i) record(i);
 		return;
 	}
 
+	std::cout << ",?\n";
 	auto clearValues = renderImpl_->clearValues(id);
 	auto width = swapChain().size().width;
 	auto height = swapChain().size().height;
 
+	std::cout << ",0\n";
 	vk::ImageMemoryBarrier barrier;
 	barrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite;
 	barrier.dstAccessMask = vk::AccessFlags();
@@ -220,6 +218,7 @@ void SwapChainRenderer::record(int id)
 	auto& renderer = renderBuffers_[id];
 	auto vkbuf = renderer.commandBuffer.vkCommandBuffer();
 	vk::CommandBufferBeginInfo cmdBufInfo;
+	std::cout << ",1\n";
 
 	vk::RenderPassBeginInfo beginInfo;
 	beginInfo.renderPass = info_.renderPass;
@@ -229,14 +228,17 @@ void SwapChainRenderer::record(int id)
 	beginInfo.framebuffer = renderer.framebuffer.vkFramebuffer();
 
 	vk::beginCommandBuffer(vkbuf, cmdBufInfo);
+	std::cout << ",2\n";
 
 	//present to attachment layout
 	vk::cmdPipelineBarrier(vkbuf, vk::PipelineStageBits::allCommands,
 		vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {barrier});
 
+	std::cout << ",3\n";
 	renderImpl_->beforeRender(vkbuf);
 
 	vk::cmdBeginRenderPass(vkbuf, beginInfo, vk::SubpassContents::eInline);
+	std::cout << ",4\n";
 
 	//Update dynamic viewport state
 	vk::Viewport viewport;
@@ -252,9 +254,11 @@ void SwapChainRenderer::record(int id)
 	scissor.offset = {0, 0};
 	vk::cmdSetScissor(vkbuf, 0, 1, scissor);
 
+	std::cout << ",5\n";
 	RenderPassInstance ini(vkbuf, info_.renderPass, renderer.framebuffer.vkFramebuffer());
 	renderImpl_->build(id, ini);
 
+	std::cout << ",6\n";
 	vk::cmdEndRenderPass(vkbuf);
 
 	renderImpl_->afterRender(vkbuf);
@@ -266,6 +270,7 @@ void SwapChainRenderer::record(int id)
 	vk::cmdPipelineBarrier(vkbuf, vk::PipelineStageBits::allCommands,
 		vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {barrier});
 
+	std::cout << ",7\n";
 	vk::endCommandBuffer(vkbuf);
 }
 
