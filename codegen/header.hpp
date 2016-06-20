@@ -45,7 +45,7 @@ auto constexpr vecFuncTemplate = 1 + R"SRC(
 	std::vector<%t> ret;
 	%ct count = 0u;
 	if(!call::success(VPP_CALL(%f(%a)))) return ret;
-	ret.reserve(count);
+	ret.resize(count);
 	VPP_CALL(%f(%a));
 	return ret;
 )SRC";
@@ -54,21 +54,21 @@ auto constexpr vecFuncTemplateVoid = 1 + R"SRC(
 	std::vector<%t> ret;
 	%ct count = 0u;
 	%f(%a);
-	ret.reserve(count);
+	ret.resize(count);
 	%f(%a);
 	return ret;
 )SRC";
 
 auto constexpr vecFuncTemplateRetGiven = 1 + R"SRC(
 	std::vector<%t> ret;
-	ret.reserve(%c);
+	ret.resize(%c);
 	VPP_CALL(%f(%a));
 	return ret;
 )SRC";
 
 auto constexpr vecFuncTemplateRetGivenVoid = 1 + R"SRC(
 	std::vector<%t> ret;
-	ret.reserve(%c);
+	ret.resize(%c);
 	%f(%a);
 	return ret;
 )SRC";

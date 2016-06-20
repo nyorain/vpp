@@ -59,4 +59,21 @@ protected:
 	std::mutex mutex_;
 };
 
+///XXX: concept atm
+class DescriptorPool : public Resource
+{
+public:
+
+};
+
+class DescriptorProvider : public Resource
+{
+public:
+	DescriptorPool& get();
+
+protected:
+	std::map<std::thread::id, DescriptorPool> pools_;
+	std::mutex mutex_;
+};
+
 }

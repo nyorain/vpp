@@ -69,7 +69,7 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 	Pipeline::init(device);
 
 	//vertexInfo
-	vk::PipelineVertexInputStateCreateInfo vertexInfo;
+	vk::PipelineVertexInputStateCreateInfo vertexInfo {};
 
 	//Binding description
 	std::size_t attributeCount = 0;
@@ -103,10 +103,10 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 		bindingDescriptions.back().inputRate = vk::VertexInputRate::vertex;
 	}
 
-	vertexInfo.vertexBindingDescriptionCount = bindingDescriptions.size();
-	vertexInfo.pVertexBindingDescriptions = bindingDescriptions.data();
-	vertexInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
-	vertexInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+	// vertexInfo.vertexBindingDescriptionCount = bindingDescriptions.size();
+	// vertexInfo.pVertexBindingDescriptions = bindingDescriptions.data();
+	// vertexInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
+	// vertexInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 	//pipeline layout
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
@@ -115,9 +115,9 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 	for(auto& layout : createInfo.descriptorSetLayouts)
 		descriptorSetLayouts.push_back(layout.get().vkDescriptorSetLayout());
 
-	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
-	pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
-	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+	vk::PipelineLayoutCreateInfo pipelineLayoutInfo {};
+	//pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
+	//pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
 	pipelineLayout_ = vk::createPipelineLayout(vkDevice(), pipelineLayoutInfo);
 
@@ -127,8 +127,8 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 	dynamicState.dynamicStateCount = createInfo.dynamicStates.size();
 
 	//create it
-	//why is this needed? app crashes without copying it
 	auto infos = createInfo.shader.vkStageInfos();
+
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
 
 	pipelineInfo.layout = pipelineLayout_;
@@ -145,7 +145,8 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 	pipelineInfo.pDepthStencilState = &createInfo.states.depthStencil;
 	pipelineInfo.pTessellationState = nullptr;
 
-	vk::createGraphicsPipelines(vkDevice(), 0, 1, pipelineInfo, nullptr, pipeline_);
+	vk::createGraphicsPipelines(vkDevice(), {}, 1, pipelineInfo, nullptr, pipeline_);
+	//vkCreateGraphicsPipelines(reinterpret_cast<VkDevice>(vkDevice()), {}, 1, reinterpret_cast<VkGraphicsPipelineCreateInfo*>(&pipelineInfo), nullptr, reinterpret_cast<VkPipeline*>(&pipeline_));
 }
 
 GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other) noexcept : Pipeline(std::move(other))

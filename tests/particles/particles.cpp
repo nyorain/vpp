@@ -1,4 +1,5 @@
 #include "particles.hpp"
+#include <vpp/provider.hpp>
 
 #include <random>
 #include <type_traits>
@@ -6,6 +7,83 @@
 #include <cstring>
 
 App* gApp;
+
+//Renderer
+ParticleRenderer::ParticleRenderer(App& app) : app_(&app)
+{
+	auto& dev = app.context->device();
+	computeSemaphore_ = vk::createSemaphore(dev, {});
+}
+
+ParticleRenderer::~ParticleRenderer()
+{
+	
+}
+
+void ParticleRenderer::build(unsigned int, const vpp::RenderPassInstance& instance)
+{
+	auto cmdBuffer = instance.vkCommandBuffer();
+	VkDeviceSize offsets[1] = { 0 };
+
+	auto gd = ps().graphicsDescriptorSet_.vkDescriptorSet();
+	auto buf = ps().particlesBuffer_.vkBuffer();
+
+	vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::graphics,
+		ps().graphicsPipeline_.vkPipeline());
+	vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
+		ps().graphicsPipeline_.vkPipelineLayout(), 0, {gd}, {});
+	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf}, offsets);
+	vk::cmdDraw(cmdBuffer, ps().particles_.size(), 1, 0, 0);
+}
+
+std::vector<vk::ClearValue> ParticleRenderer::clearValues(unsigned int)
+{
+	std::vector<vk::ClearValue> ret(2, vk::ClearValue{});
+	ret[0].color = {{0.f, 0.f, 0.f, 1.f}};
+	ret[1].depthStencil = {1.f, 0};
+	return ret;
+}
+
+void ParticleRenderer::beforeRender(vk::CommandBuffer cmdBuffer)
+{
+	vk::BufferMemoryBarrier bufferBarrier;
+	bufferBarrier.srcAccessMask = vk::AccessBits::shaderWrite;
+	bufferBarrier.dstAccessMask = vk::AccessBits::vertexAttributeRead;
+	bufferBarrier.buffer = ps().particlesBuffer_.vkBuffer();
+	bufferBarrier.offset = 0;
+	bufferBarrier.size = sizeof(Particle) * ps().particles_.size();
+	bufferBarrier.srcQueueFamilyIndex = vk::queueFamilyIgnored;
+	bufferBarrier.dstQueueFamilyIndex = vk::queueFamilyIgnored;
+
+	vk::cmdPipelineBarrier(cmdBuffer, vk::PipelineStageBits::allCommands,
+		vk::PipelineStageBits::topOfPipe, {}, {}, {&bufferBarrier}, {});
+}
+
+vk::SubmitInfo ParticleRenderer::submit(vk::CommandBuffer cmd, vk::Semaphore wait, vk::Semaphore signal)
+{
+	auto& dev = app_->context->device();
+
+	//submit command buffer
+	vk::SubmitInfo submitInfo;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &ps().computeBuffer_;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &computeSemaphore_;
+
+	dev.submitManager().add(*app_->context->computeQueue(), submitInfo);
+
+	//return default gfx submit
+	auto waitSemaphores = {wait, computeSemaphore_};
+
+	submitInfo.waitSemaphoreCount = 2;
+	submitInfo.pWaitSemaphores = waitSemaphores.begin();
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmd;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &signal;
+
+	return {submitInfo};
+}
 
 //ParticleSystem
 ParticleSystem::ParticleSystem(App& app, std::size_t count)
@@ -36,43 +114,6 @@ ParticleSystem::~ParticleSystem()
 {
 }
 
-void ParticleSystem::build(const vpp::RenderPassInstance& instance) const
-{
-	auto cmdBuffer = instance.vkCommandBuffer();
-	VkDeviceSize offsets[1] = { 0 };
-
-	auto gd = graphicsDescriptorSet_.vkDescriptorSet();
-	auto buf = particlesBuffer_.vkBuffer();
-
-	vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::graphics, graphicsPipeline_.vkPipeline());
-	vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
-		graphicsPipeline_.vkPipelineLayout(), 0, {gd}, 0, nullptr);
-	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf}, offsets);
-	vk::cmdDraw(cmdBuffer, particles_.size(), 1, 0, 0);
-}
-
-std::vector<vk::ClearValue> ParticleSystem::clearValues() const
-{
-	std::vector<vk::ClearValue> ret(2);
-	ret[0].color = {{0.f, 0.f, 0.f, 1.f}};
-	ret[1].depthStencil = {1.f, 0};
-	return ret;
-}
-
-void ParticleSystem::beforeRender(vk::CommandBuffer cmdBuffer) const
-{
-	vk::BufferMemoryBarrier bufferBarrier;
-	bufferBarrier.srcAccessMask = vk::AccessBits::shaderWrite;
-	bufferBarrier.dstAccessMask = vk::AccessBits::vertexAttributeRead;
-	bufferBarrier.buffer = particlesBuffer_.vkBuffer();
-	bufferBarrier.offset = 0;
-	bufferBarrier.size = sizeof(Particle) * particles_.size();
-	bufferBarrier.srcQueueFamilyIndex = vk::queueFamilyIgnored;
-	bufferBarrier.dstQueueFamilyIndex = vk::queueFamilyIgnored;
-
-	vk::cmdPipelineBarrier(cmdBuffer, vk::PipelineStageBits::allCommands,
-		vk::PipelineStageBits::topOfPipe, {}, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
-}
 
 void ParticleSystem::initGraphicsPipeline()
 {
@@ -86,16 +127,16 @@ void ParticleSystem::initGraphicsPipeline()
 	0}; //at binding 0
 
 	vpp::GraphicsPipeline::CreateInfo info;
-	info.descriptorSetLayouts = {&graphicsDescriptorSetLayout_};
-	info.vertexBufferLayouts = {&vertexBufferLayout_};
+	info.descriptorSetLayouts = {graphicsDescriptorSetLayout_};
+	info.vertexBufferLayouts = {vertexBufferLayout_};
 	info.dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
 	info.renderPass = app_.renderPass.vkRenderPass();
 
 	info.shader = vpp::ShaderProgram(device());
-	info.shader.addStage({"particles.vert.spv", vk::ShaderStageBits::vertex});
-	info.shader.addStage({"particles.frag.spv", vk::ShaderStageBits::fragment});
+	info.shader.stage("particles.vert.spv", {vk::ShaderStageBits::vertex});
+	info.shader.stage("particles.frag.spv", {vk::ShaderStageBits::fragment});
 
-	info.states = vpp::GraphicsPipeline::StatesCreateInfo{vk::Viewport{0, 0, 900, 900, 0.f, 1.f}};
+	info.states = vpp::GraphicsPipeline::States(vk::Viewport{0, 0, 900, 900, 0.f, 1.f});
 	info.states.rasterization.cullMode = vk::CullModeBits::none;
 	info.states.inputAssembly.topology = vk::PrimitiveTopology::pointList;
 
@@ -104,8 +145,8 @@ void ParticleSystem::initGraphicsPipeline()
 void ParticleSystem::initComputePipeline()
 {
 	vpp::ComputePipeline::CreateInfo info;
-	info.descriptorSetLayouts = {&computeDescriptorSetLayout_};
-	info.shader = vpp::ShaderStage(device(), {"particles.comp.spv", vk::ShaderStageBits::compute});
+	info.descriptorSetLayouts = {computeDescriptorSetLayout_};
+	info.shader = vpp::ShaderStage(device(), "particles.comp.spv", {vk::ShaderStageBits::compute});
 
 	computePipeline_ = vpp::ComputePipeline(device(), info);
 }
@@ -125,7 +166,7 @@ void ParticleSystem::initDescriptors()
 	descriptorPoolInfo.pPoolSizes = typeCounts;
 	descriptorPoolInfo.maxSets = 2;
 
-	vk::createDescriptorPool(vkDevice(), &descriptorPoolInfo, nullptr, &descriptorPool_);
+	descriptorPool_ = vk::createDescriptorPool(vkDevice(), descriptorPoolInfo);
 
 
 	//graphics set
@@ -202,24 +243,11 @@ void ParticleSystem::writeParticleBuffer()
 
 void ParticleSystem::buildComputeBuffer()
 {
-	//command pool
-	vk::CommandPoolCreateInfo cmdPoolInfo;
-	cmdPoolInfo.queueFamilyIndex = 0;
-	cmdPoolInfo.flags = {};
-
-	vk::createCommandPool(vkDevice(), &cmdPoolInfo, nullptr, &commandPool_);
-
-	//commandBuffer
-	vk::CommandBufferAllocateInfo allocInfo;
-	allocInfo.commandPool = commandPool_;
-	allocInfo.level = vk::CommandBufferLevel::primary;
-	allocInfo.commandBufferCount = 1;
-
-	vk::allocateCommandBuffers(vkDevice(), &allocInfo, &computeBuffer_);
+	computeBuffer_ = device().commandProvider().get(0);
 
 	//build computeBuffer
 	vk::CommandBufferBeginInfo cmdBufInfo;
-	vk::beginCommandBuffer(computeBuffer_, &cmdBufInfo);
+	vk::beginCommandBuffer(computeBuffer_, cmdBufInfo);
 
 	auto cd = computeDescriptorSet_.vkDescriptorSet();
 
@@ -271,18 +299,20 @@ void ParticleSystem::writeDescriptorSets()
 
 void ParticleSystem::compute()
 {
+	/*
 	vk::SubmitInfo submitInfo;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &computeBuffer_;
 
 	vk::queueSubmit(app_.computeQueue, {submitInfo}, 0);
 	vk::queueWaitIdle(app_.computeQueue);
+	*/
 }
 
 void ParticleSystem::ParticleSystem::update(const nytl::Vec2ui& mousePos)
 {
 	updateUBOs(mousePos);
-	compute();
+	//compute();
 }
 
 

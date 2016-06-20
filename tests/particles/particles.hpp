@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vpp/vpp.hpp>
+#include <vpp/defs.hpp>
 #include <nytl/nytl.hpp>
 #include <windows.h> //srsly microsoft? "near" and "far" macros? WTF man hoooly shit
 
@@ -24,8 +25,8 @@ struct App
 
 	ParticleSystem* particleSystem;
 
-	vk::Queue presentQueue {};
-	vk::Queue computeQueue {};
+	const vpp::Queue* presentQueue {};
+	const vpp::Queue* computeQueue {};
 };
 
 //global app
@@ -39,7 +40,7 @@ struct Particle
 	nytl::Vec4f color;
 };
 
-class ParticleSystem : public vpp::RendererBuilder, public vpp::Resource
+class ParticleSystem : public vpp::Resource
 {
 protected:
 	App& app_;
@@ -52,7 +53,6 @@ protected:
 	vpp::ComputePipeline computePipeline_;
 	vpp::GraphicsPipeline graphicsPipeline_;
 
-	vk::CommandPool commandPool_;
 	vk::CommandBuffer computeBuffer_;
 
 	vk::DescriptorPool descriptorPool_;
@@ -92,10 +92,25 @@ public:
 	~ParticleSystem();
 
 	void update(const nytl::Vec2ui& mousePos);
+	friend class ParticleRenderer;
+};
 
-	virtual void build(const vpp::RenderPassInstance& instance) const override;
-	virtual std::vector<vk::ClearValue> clearValues() const override;
-	virtual void beforeRender(vk::CommandBuffer cmdBuffer) const override;
+class ParticleRenderer : public vpp::RendererBuilder
+{
+protected:
+	App* app_;
+	vk::Semaphore computeSemaphore_;
+
+public:
+	ParticleRenderer(App& app);
+	~ParticleRenderer();
+
+	void build(unsigned int, const vpp::RenderPassInstance&) override;
+	std::vector<vk::ClearValue> clearValues(unsigned int) override;
+	void beforeRender(vk::CommandBuffer cmdBuffer) override;
+	vk::SubmitInfo submit(vk::CommandBuffer cmd, vk::Semaphore wait, vk::Semaphore signal) override;
+
+	ParticleSystem& ps() const { return *app_->particleSystem; }
 };
 
 //utility

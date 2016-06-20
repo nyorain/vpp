@@ -724,7 +724,6 @@ void CCOutputGenerator::printCmd(const Command& cmd)
 {
 	auto name = removeVkPrefix(cmd.name, nullptr);
 	name[0] = std::tolower(name[0], std::locale());
-	std::cout << ":0 " << name << std::endl;
 
 	auto parsed = parseCommand(cmd);
 
@@ -829,11 +828,7 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 		vecRet->second = pcmd.returnParam->countPar;
 	}
 
-	std::cout << "startVec " << cmd.signature.returnType.type->name << std::endl;
-	std::cout << "startVec " << cmd.signature.returnType.pointerlvl << std::endl;
-
 	std::string retType = typeName(cmd.signature.returnType);
-	std::cout << "startVec12" << std::endl;
 	if(vecRet)
 	{
 		auto typeCpy = vecRet->first->param->type;
@@ -841,8 +836,6 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 		if(typeCpy.type->name != "void") retType = "std::vector<" + typeName(typeCpy) + ">";
 		else retType = "std::vector<uint8_t>";
 	}
-
-	std::cout << "startVec2" << std::endl;
 
 	functions_ << "inline " << retType << " " << name << "(";
 
@@ -864,7 +857,6 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 	}
 
 	functions_ << ")\n{\n";
-		std::cout << ":3" << std::endl;
 
 	if(vecRet)
 	{
@@ -921,8 +913,6 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 		functions_ << "\t" << returnString << cmd.name << "(" << args;
 		functions_ << ")" << returnStringEnd << ";\n}\n";
 	}
-
-	std::cout << ":4" << std::endl;
 }
 
 ParsedCommand CCOutputGenerator::parseCommand(const Command& cmd) const
@@ -1121,7 +1111,8 @@ std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify
 		optional |= (!rangeify && retParam && retParam->countPar && param.optionalWithRet);
 
 		const char* ref = "";
-		if(!optional && param.param->type.type->name != "void" && param.param->type.type->name != "char") ref = "&";
+		if(!optional && param.param->type.pointerlvl > 0 && param.param->type.type->name != "void"
+			&& param.param->type.type->name != "char") ref = "&";
 
 		ret += "reinterpret_cast<";
 		ret += typeName(param.param->type, false);
@@ -1149,5 +1140,3 @@ std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify
 
 	return ret;
 }
-
-//D:/Programming/projects/vulkan++/codegen/vk.xml

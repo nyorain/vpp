@@ -64,9 +64,9 @@ public:
 	friend void swap(ShaderStage& a, ShaderStage& b) noexcept;
 
 protected:
-	vk::ShaderModule module_;
+	vk::ShaderModule module_ {};
 	CreateInfo info_;
-	bool owned_; //whether it should be destructed or was external retrieved
+	bool owned_ = false; //whether it should be destructed or was external retrieved
 };
 
 ///ShaderProgram with multiple stages for graphic pipelines.

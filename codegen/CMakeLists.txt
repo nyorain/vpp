@@ -41,7 +41,7 @@ add_custom_command(
 add_custom_command(
 	OUTPUT ${outputs}
   	COMMAND vkGenerator "${CMAKE_CURRENT_SOURCE_DIR}/vk.xml"
-    DEPENDS vkGenerator
+    DEPENDS vkGenerator ${pres}
 	WORKING_DIRECTORY "${output-dir}"
 	COMMENT "Generating vulkan hpp headers")
 

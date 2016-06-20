@@ -12,8 +12,8 @@ namespace vpp
 {
 
 //Builder
-std::vector<vk::SubmitInfo>
-RendererBuilder::submit(vk::CommandBuffer cmdBuf, vk::Semaphore wait, vk::Semaphore complete)
+vk::SubmitInfo
+RendererBuilder::submit(vk::CommandBuffer cmdBuf, vk::Semaphore wait, vk::Semaphore signal)
 {
 	vk::SubmitInfo submitInfo;
 	submitInfo.waitSemaphoreCount = 1;
@@ -21,7 +21,7 @@ RendererBuilder::submit(vk::CommandBuffer cmdBuf, vk::Semaphore wait, vk::Semaph
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &cmdBuf;
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &complete;
+	submitInfo.pSignalSemaphores = &signal;
 
 	return {submitInfo};
 }
@@ -253,7 +253,7 @@ void SwapChainRenderer::record(int id)
 	vk::cmdSetScissor(vkbuf, 0, 1, scissor);
 
 	RenderPassInstance ini(vkbuf, info_.renderPass, renderer.framebuffer.vkFramebuffer());
-	renderImpl_->build(*this, id, ini);
+	renderImpl_->build(id, ini);
 
 	vk::cmdEndRenderPass(vkbuf);
 
@@ -276,11 +276,12 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(Queue* present, Queue* gfx
 	auto renderComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 
     auto currentBuffer = swapChain().acquireNextImage(acquireComplete);
+	renderImpl_->frame(currentBuffer);
 
 	auto& cmdBuf = renderBuffers_[currentBuffer].commandBuffer;
 	auto submits = renderImpl_->submit(cmdBuf, acquireComplete, renderComplete);
 
-	auto execState = device().submitManager().add(*gfx, submits[0]);
+	auto execState = device().submitManager().add(*gfx, submits);
 
 	//TODO: which kind of submit makes sence here? submit ALL queued commands?
 	//execState.submit();

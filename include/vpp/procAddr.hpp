@@ -6,8 +6,8 @@
 namespace vpp
 {
 
-vk::PfnVoidFunction vulkanProc(vk::Instance instance, const std::string& name);
-vk::PfnVoidFunction vulkanProc(vk::Device device, const std::string& name);
+vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name);
+vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name);
 
 }
 

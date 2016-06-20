@@ -24,10 +24,11 @@ Context createContext(HWND window, Context::CreateInfo info, HINSTANCE module)
 
 	Context ret;
 	ret.initInstance(info);
-	ret.initDevice(info);
 
 	auto surface = createSurface(ret.vkInstance(), window, module);
 	ret.initSurface(std::move(surface));
+
+	ret.initDevice(info);
 	ret.initSwapChain(info);
 
 	return ret;

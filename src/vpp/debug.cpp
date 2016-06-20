@@ -35,16 +35,14 @@ std::vector<const char*> validationLayerNames =
 namespace
 {
 
-vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags, vk::DebugReportObjectTypeEXT objType,
+vk::Bool32 defaultMessageCallback(std::uint32_t flags, vk::DebugReportObjectTypeEXT objType,
 	std::uint64_t srcObject, std::size_t location, std::int32_t msgCode, const char* pLayerPrefix,
 	const char* pMsg, void* pUserData)
 {
+	std::cout << "addr: " << &flags << "\n";
 	auto callback = static_cast<DebugCallback*>(pUserData);
-
-	auto vkFlags = reinterpret_cast<const vk::DebugReportFlagsEXT&>(flags);
-	auto vkObjType = reinterpret_cast<const vk::DebugReportObjectTypeEXT&>(objType);
-
-	return callback->call({vkFlags, vkObjType, srcObject, location, msgCode, pLayerPrefix, pMsg});
+	auto sflags = static_cast<vk::DebugReportBitsEXT>(flags);
+	return callback->call({sflags, objType, srcObject, location, msgCode, pLayerPrefix, pMsg});
 }
 
 }
@@ -54,17 +52,16 @@ DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flag
 	: instance_(instance)
 {
 	VPP_LOAD_PROC(vkInstance(), CreateDebugReportCallbackEXT);
-
-	vk::DebugReportCallbackCreateInfoEXT createInfo(flags, defaultMessageCallback, this);
-
+	auto ptr = reinterpret_cast<vk::PfnDebugReportCallbackEXT>(&defaultMessageCallback);
+	vk::DebugReportCallbackCreateInfoEXT createInfo(flags, ptr, this);
 	VPP_CALL(pfCreateDebugReportCallbackEXT(vkInstance(), &createInfo, nullptr, &debugCallback_));
 }
 
 DebugCallback::~DebugCallback()
 {
-	VPP_LOAD_PROC(vkInstance(), DestroyDebugReportCallbackEXT);
+	if(vkCallback() && vkInstance())
+		VPP_PROC(vkInstance(), DestroyDebugReportCallbackEXT)(vkInstance(), vkCallback(), nullptr);
 
-	if(vkCallback() && vkInstance()) pfDestroyDebugReportCallbackEXT(vkInstance(), vkCallback(), nullptr);
 	debugCallback_ = {};
 }
 

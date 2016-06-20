@@ -18,20 +18,20 @@ class RendererBuilder
 {
 public:
 	///This function is called to record the render commands into the given renderpass instance.
-	virtual void build(SwapChainRenderer& rndr, unsigned int id, const RenderPassInstance& ini) = 0;
+	virtual void build(unsigned int id, const RenderPassInstance& ini) = 0;
 
 	///Should return the clearValues for the given render buffer id.
-	virtual std::vector<vk::ClearValue> clearValues(unsigned int id) const = 0;
+	virtual std::vector<vk::ClearValue> clearValues(unsigned int id) = 0;
 
 	///This function will be called once by the SwapChainRenderer, after it was constructed
 	///and before it will use any other builder functions.
-	virtual void init(const SwapChainRenderer&) {};
+	virtual void init(SwapChainRenderer&) {};
 
 	///Will be called to record additional command buffer commands before rendering.
-	virtual void beforeRender(vk::CommandBuffer) const {};
+	virtual void beforeRender(vk::CommandBuffer) {};
 
 	///Will be called to record additional command buffer commands after rendering.
-	virtual void afterRender(vk::CommandBuffer) const {};
+	virtual void afterRender(vk::CommandBuffer) {};
 
 	///This function is called everytime the commands for a frame should be submitted
 	///to the gpu. It is called after a new image from the swapchain was acquired but before
@@ -39,13 +39,12 @@ public:
 	///Usually the default implemention will suffice, modifications are usually only needed
 	///when additional command batches have to be submitted that must be in sync with the
 	///render commands (e.g. additional offscreen framebuffers).
-	virtual std::vector<vk::SubmitInfo>
-	submit(vk::CommandBuffer cmdBuf, vk::Semaphore wait, vk::Semaphore complete);
+	virtual vk::SubmitInfo submit(vk::CommandBuffer cmdBuf, vk::Semaphore wait, vk::Semaphore signal);
 
 	///This function is called before every frame and allows the builder to execute/queue
 	///additional operations or to re-record the command buffer for the given id.
 	///It is called exactly before the command buffer for the given id is queued for submission.
-	virtual void frame(SwapChainRenderer& renderer, unsigned int id) {};
+	virtual void frame(unsigned int id) {};
 };
 
 ///Capable of rendering on a SwapChain.

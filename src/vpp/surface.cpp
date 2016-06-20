@@ -12,9 +12,11 @@ Surface::Surface(vk::Instance instance, vk::SurfaceKHR surface)
 
 Surface::~Surface()
 {
-	VPP_LOAD_PROC(vkInstance(), DestroySurfaceKHR);
-    if(vkInstance() && vkSurface()) pfDestroySurfaceKHR(vkInstance(), vkSurface(), nullptr);
+    if(vkInstance() && vkSurface())
+		VPP_PROC(vkInstance(), DestroySurfaceKHR)(vkInstance(), vkSurface(), nullptr);
+
     surface_ = {};
+	instance_ = {};
 }
 
 Surface::Surface(Surface&& other) noexcept

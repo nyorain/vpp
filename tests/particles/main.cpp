@@ -32,8 +32,11 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 			{
 				std::cout << "resizing to " << LOWORD(lparam) << "," << HIWORD(lparam) << "\n";
 				gApp->context->swapChain().resize({LOWORD(lparam), HIWORD(lparam)});
-				*gApp->renderer = vpp::SwapChainRenderer(gApp->context->swapChain(),
-					*gApp->particleSystem, gApp->rendererInfo);
+
+				auto builder = std::make_unique<ParticleRenderer>(*gApp);
+				auto& swapChain = gApp->context->swapChain();
+				auto& info = gApp->rendererInfo;
+				*gApp->renderer = vpp::SwapChainRenderer(swapChain, info, std::move(builder));
 				gApp->renderer->render();
 
 				gApp->width = LOWORD(lparam);
@@ -138,6 +141,10 @@ void mainLoop(App& app)
 //
 int main()
 {
+	const char* str = "sfkjs";
+	auto str2 = reinterpret_cast<const char*>(str);
+	std::cout << "s: " << str << " " << str2 << "\n";
+
 	{
 		std::uint32_t computeQF; //queueFamily
 
@@ -147,29 +154,30 @@ int main()
 	    app.hinstance = GetModuleHandle(nullptr);
 	    initWindow(app);
 
-		vpp::Win32Context context({{900, 900}}, app.window);
+		auto context = vpp::createContext(app.window, {});
 		app.context = &context;
 
 		initRenderPass(app);
 
-		app.rendererInfo.queue = context.presentQueue();
-		app.rendererInfo.renderPass = &app.renderPass;
-		app.rendererInfo.staticAttachments = {vpp::ViewableImage::defaultDepth2D};
+		app.rendererInfo.queueFamily = context.graphicsQueue()->family();
+		app.rendererInfo.renderPass = app.renderPass;
+		app.rendererInfo.attachments = {{vpp::ViewableImage::defaultDepth2D()}};
 
 		ParticleSystem particleSystem(app, 1024 * 3000);
 		app.particleSystem = &particleSystem;
 
 		context.device().memoryAllocator().allocate();
 
-		vpp::SwapChainRenderer renderer(context.swapChain(), particleSystem, app.rendererInfo);
+		auto builder = std::make_unique<ParticleRenderer>(app);
+		vpp::SwapChainRenderer renderer(context.swapChain(), app.rendererInfo, std::move(builder));
 		app.renderer = &renderer;
 
 		context.device().memoryAllocator().allocate();
 
-		app.presentQueue = context.presentQueue().queue;
-		app.computeQueue = context.computeQueue()->queue;
+		app.presentQueue = &context.presentQueue();
+		app.computeQueue = context.computeQueue();
 
-		std::cout << "qf: " << context.computeQueue()->family << "\n";
+		std::cout << "qf: " << context.computeQueue()->family() << "\n";
 
 		std::cout << "setup complete.\n";
 

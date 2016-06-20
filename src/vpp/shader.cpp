@@ -72,7 +72,11 @@ ShaderModule::ShaderModule(const Device& dev, const std::vector<std::uint32_t>& 
 
 ShaderModule::~ShaderModule()
 {
-	if(module_ && device()) vk::destroyShaderModule(device(), module_);
+	if(module_ && device())
+	{
+		vk::destroyShaderModule(vkDevice(), module_, nullptr);
+		std::cout << "destroy2 " << module_ << "\n";
+	}
 }
 
 ShaderModule::ShaderModule(ShaderModule&& other) noexcept
@@ -96,28 +100,36 @@ void swap(ShaderModule& a, ShaderModule& b) noexcept
 
 //ShaderStage
 ShaderStage::ShaderStage(const Device& dev, const std::string& filename, const CreateInfo& info)
-	: Resource(dev), owned_(true)
+	: Resource(dev), owned_(true), info_(info)
 {
 	module_ = loadShaderModule(dev, filename);
 	if(!module_) throw std::runtime_error("vpp::ShaderModule: failed to create from " + filename);
 }
 
 ShaderStage::ShaderStage(const Device& dev, const std::vector<std::uint32_t>& code,
-	const CreateInfo& info) : Resource(dev), owned_(true)
+	const CreateInfo& info) : Resource(dev), owned_(true), info_(info)
 {
 	module_ = loadShaderModule(dev, code);
 	if(!module_) throw std::runtime_error("vpp::ShaderModule: failed to create from given code");
 }
 
 ShaderStage::ShaderStage(const Device& dev, vk::ShaderModule module, const CreateInfo& info)
-	: Resource(dev), owned_(false), module_(module)
+	: Resource(dev), owned_(false), module_(module), info_(info)
 {
 }
 
 ShaderStage::~ShaderStage()
 {
-	if(owned_ && module_) vk::destroyShaderModule(vkDevice(), module_, nullptr);
+	if(owned_ && module_)
+	{
+		vk::destroyShaderModule(vkDevice(), module_, nullptr);
+		std::cout << "destroy " << module_ << "\n";
+	}
+
 	info_ = {};
+	module_ = {};
+	device_ = {};
+	owned_ = {};
 }
 
 ShaderStage::ShaderStage(ShaderStage&& other) noexcept
@@ -138,6 +150,7 @@ void swap(ShaderStage& a, ShaderStage& b) noexcept
 	swap(a.device_, b.device_);
 	swap(a.info_, b.info_);
 	swap(a.owned_, b.owned_);
+	swap(a.module_, b.module_);
 }
 
 vk::PipelineShaderStageCreateInfo ShaderStage::vkStageInfo() const

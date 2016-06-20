@@ -14,12 +14,12 @@ namespace
     um<vk::Device, um<std::string, vk::PfnVoidFunction>> deviceProcs;
 }
 
-vk::PfnVoidFunction vulkanProc(vk::Instance instance, const std::string& name)
+vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name)
 {
     auto it = instanceProcs[instance].find(name);
     if(it == instanceProcs[instance].cend())
     {
-        auto addr = vk::getInstanceProcAddr(instance, name.c_str());
+        auto addr = vk::getInstanceProcAddr(instance, name);
 		if(!addr)
 		{
 			std::cerr << "Failed to load proc " << name << " from instance " << instance << "\n";
@@ -32,12 +32,12 @@ vk::PfnVoidFunction vulkanProc(vk::Instance instance, const std::string& name)
     return it->second;
 }
 
-vk::PfnVoidFunction vulkanProc(vk::Device device, const std::string& name)
+vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name)
 {
     auto it = deviceProcs[device].find(name);
     if(it == deviceProcs[device].cend())
     {
-        auto addr = vk::getDeviceProcAddr(device, name.c_str());
+        auto addr = vk::getDeviceProcAddr(device, name);
 		if(!addr)
 		{
 			std::cerr << "Failed to load proc " << name << " from device " << device << "\n";

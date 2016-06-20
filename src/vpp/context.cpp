@@ -58,10 +58,7 @@ void Context::initInstance(const CreateInfo& info)
 
 vk::PhysicalDevice Context::choosePhysicalDevice(const std::vector<vk::PhysicalDevice>& phdevs) const
 {
-	if(phdevs.empty())
-	{
-		throw std::runtime_error("Context::choosePhysicalDevice: no physical devices");
-	}
+	if(phdevs.empty()) throw std::runtime_error("vpp::Context: no physical devices");
 
 	//TODO - algorithm for choosing, presetnation support
 	return phdevs[0];
@@ -73,20 +70,18 @@ void Context::initDevice(const CreateInfo& info)
 	std::vector<vk::PhysicalDevice> phdevs;
 	auto size = 0u;
     vk::enumeratePhysicalDevices(vkInstance(), size, nullptr);
-	phdevs.reserve(size);
+	phdevs.resize(size);
     vk::enumeratePhysicalDevices(vkInstance(), size, phdevs.data());
 	auto phdev = choosePhysicalDevice(phdevs);
 
 	//extensions & layers
+	//atm: activate all layes - make this configurable maybe?
+	//or at least query the layers and not use the hard coded names?
 	std::vector<const char*> extensions = info.deviceExtensions;
 	extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
 	std::vector<const char*> layers;
-
-	if(info.debugFlags != 0)
-	{
-		layers = validationLayerNames;
-	}
+	if(info.debugFlags != 0) layers = validationLayerNames;
 
 	//queues
 	std::vector<vk::QueueFamilyProperties> queueProps;
