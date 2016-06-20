@@ -4,6 +4,9 @@
 #include <vpp/resource.hpp>
 #include <vpp/shader.hpp>
 
+#include <vector>
+#include <functional>
+
 namespace vpp
 {
 
@@ -12,7 +15,8 @@ namespace fwd { extern const vk::ShaderStageFlags allShaderStages; }
 unsigned int formatSize(vk::Format format);
 
 ///Allows convinient descriptorSet updates.
-class DescriptorSetUpdate
+///Does not perform any checking.
+class DescriptorSetUpdate : ResourceReference<DescriptorSetUpdate>
 {
 public:
 	using BufferInfos = std::vector<vk::DescriptorBufferInfo>;
@@ -33,31 +37,44 @@ public:
 	///\}
 
 	void sampler(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
-	void combinedSampler(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
 	void sampled(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
 	void storage(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
+	void combinedSampler(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
 	void inputAttachment(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
 
-	void uniform(const BufferViewInfos& buffer, int binding = -1, unsigned int elem = 0);
-	void storage(const BufferViewInfos& buffer, int binding = -1, unsigned int elem = 0);
+	void uniform(const BufferViewInfos& views, int binding = -1, unsigned int elem = 0);
+	void storage(const BufferViewInfos& views, int binding = -1, unsigned int elem = 0);
 
 	void copy(const vk::CopyDescriptorSet& copySet);
+
+	///Will be automatically triggered on destruction.
+	void apply();
 
 	// more convinient copy function?
 	// void copy(const DescriptorSet& set, const std::uint32_t (&binding)[2],
 	// 	const std::uint32_t (&elem)[2] = {0, 0}, unsigned int count = 1);
 
-public:
+	const auto& resourceRef() const { return *set_; }
+
+protected:
 	std::vector<vk::WriteDescriptorSet> writes_;
 	std::vector<vk::CopyDescriptorSet> copies_;
 
-	unsigned int currentBinding = 0;
+	//double vecotr to avoid reference (in writes_) invalidation
+	//some values must be stored continuesly, so deque doesnt work
+	std::vector<std::vector<vk::DescriptorBufferInfo>> buffers_;
+	std::vector<std::vector<vk::BufferView>> views_;
+	std::vector<std::vector<vk::DescriptorImageInfo>> images_;
+
+	unsigned int currentBinding_ = 0;
 	const DescriptorSet* set_;
+
+	friend void apply(const std::vector<std::reference_wrapper<DescriptorSetUpdate>>& updates);
 };
 
 ///Applies multiple descriptor set updates.
 ///May be a bit more efficient than updating them individually.
-void apply(const std::vector<DescriptorSetUpdate>& updates);
+void apply(const std::vector<std::reference_wrapper<DescriptorSetUpdate>>& updates);
 
 struct DescriptorBinding
 {
@@ -107,17 +124,18 @@ public:
 	DescriptorSet(DescriptorSet&& other) noexcept;
 	DescriptorSet& operator=(DescriptorSet&& other) noexcept;
 
-	void swap(DescriptorSet& other) noexcept;
-
-	vk::DescriptorSet vkDescriptorSet() const { return descriptorSet_; }
-	const DescriptorSetLayout& layout() const { return *layout_; }
-
 	///Updates the descriptorSet with the given writes and copies.
 	void update(const std::vector<vk::WriteDescriptorSet>& writes,
 		const std::vector<vk::CopyDescriptorSet>& copies = {}) const;
 
 	///Updates the descriptorSet with the given copies.
 	void update(const std::vector<vk::CopyDescriptorSet>& copies) const;
+
+	vk::DescriptorSet vkDescriptorSet() const { return descriptorSet_; }
+	const DescriptorSetLayout& layout() const { return *layout_; }
+
+	operator vk::DescriptorSet() const { return vkDescriptorSet(); }
+	void swap(DescriptorSet& other) noexcept;
 
 protected:
 	const DescriptorSetLayout* layout_;

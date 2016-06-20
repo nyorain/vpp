@@ -4,6 +4,179 @@
 namespace vpp
 {
 
+//decriptorSetUpdate
+DescriptorSetUpdate::DescriptorSetUpdate(const DescriptorSet& set) : set_(&set)
+{
+}
+
+DescriptorSetUpdate::~DescriptorSetUpdate()
+{
+	apply();
+}
+
+void DescriptorSetUpdate::apply()
+{
+	if((writes_.empty() && copies_.empty()) || !set_) return;
+	vk::updateDescriptorSets(device(), writes_, copies_);
+
+	writes_.clear();
+	copies_.clear();
+	buffers_.clear();
+	images_.clear();
+	views_.clear();
+}
+
+void apply(const std::vector<std::reference_wrapper<DescriptorSetUpdate>>& updates)
+{
+	if(updates.empty()) return;
+
+	std::vector<vk::WriteDescriptorSet> writes;
+	std::vector<vk::CopyDescriptorSet> copies;
+
+	for(auto& updateRef : updates)
+	{
+		auto& update = updateRef.get();
+
+		writes.insert(writes.end(), update.writes_.begin(), update.writes_.end());
+		copies.insert(copies.end(), update.copies_.begin(), update.copies_.end());
+
+		update.writes_.clear();
+		update.copies_.clear();
+	}
+
+	vk::updateDescriptorSets(updates[0].get().device(), writes, copies);
+
+	for(auto& updateRef : updates)
+	{
+		updateRef.get().buffers_.clear();
+		updateRef.get().images_.clear();
+		updateRef.get().views_.clear();
+	}
+}
+
+void DescriptorSetUpdate::uniform(const BufferInfos& buffers, int binding, unsigned int elem)
+{
+	if(binding == -1) binding = ++currentBinding_;
+	else currentBinding_ = binding;
+
+	buffers_.emplace_back(buffers);
+	for(auto& b : buffers_.back()) if(b.range == 0) b.range = vk::wholeSize;
+
+	writes_.emplace_back(*set_, binding, elem, buffers.size(), vk::DescriptorType::uniformBuffer,
+		nullptr, buffers_.back().data(), nullptr);
+}
+
+void DescriptorSetUpdate::storage(const BufferInfos& buffers, int binding, unsigned int elem)
+{
+	if(binding == -1) binding = ++currentBinding_;
+	else currentBinding_ = binding;
+
+	buffers_.emplace_back(buffers);
+	for(auto& b : buffers_.back()) if(b.range == 0) b.range = vk::wholeSize;
+
+	writes_.emplace_back(*set_, binding, elem, buffers.size(), vk::DescriptorType::storageBuffer,
+		nullptr, buffers_.back().data(), nullptr);
+}
+void DescriptorSetUpdate::uniformDynamic(const BufferInfos& buffers, int binding, unsigned int elem)
+{
+	if(binding == -1) binding = ++currentBinding_;
+	else currentBinding_ = binding;
+
+	buffers_.emplace_back(buffers);
+	for(auto& b : buffers_.back()) if(b.range == 0) b.range = vk::wholeSize;
+
+	writes_.emplace_back(*set_, binding, elem, buffers.size(),
+		vk::DescriptorType::uniformBufferDynamic, nullptr, buffers_.back().data(), nullptr);
+}
+void DescriptorSetUpdate::storageDynamic(const BufferInfos& buffers, int binding, unsigned int elem)
+{
+	if(binding == -1) binding = ++currentBinding_;
+	else currentBinding_ = binding;
+
+	buffers_.emplace_back(buffers);
+	for(auto& b : buffers_.back()) if(b.range == 0) b.range = vk::wholeSize;
+
+	writes_.emplace_back(*set_, binding, elem, buffers.size(),
+		vk::DescriptorType::storageBufferDynamic, nullptr, buffers_.back().data(), nullptr);
+}
+
+void DescriptorSetUpdate::sampler(const ImageInfos& images, int binding, unsigned int elem)
+{
+	if(binding == -1) binding = ++currentBinding_;
+	else currentBinding_ = binding;
+
+	images_.emplace_back(images);
+
+	writes_.emplace_back(*set_, binding, elem, images.size(),
+		vk::DescriptorType::sampler, images_.back().data(), nullptr, nullptr);
+}
+void DescriptorSetUpdate::sampled(const ImageInfos& images, int binding, unsigned int elem)
+{
+	if(binding == -1) binding = ++currentBinding_;
+	else currentBinding_ = binding;
+
+	images_.emplace_back(images);
+
+	writes_.emplace_back(*set_, binding, elem, images.size(),
+		vk::DescriptorType::sampledImage, images_.back().data(), nullptr, nullptr);
+}
+void DescriptorSetUpdate::storage(const ImageInfos& images, int binding, unsigned int elem)
+{
+	if(binding == -1) binding = ++currentBinding_;
+	else currentBinding_ = binding;
+
+	images_.emplace_back(images);
+
+	writes_.emplace_back(*set_, binding, elem, images.size(),
+		vk::DescriptorType::storageImage, images_.back().data(), nullptr, nullptr);
+}
+void DescriptorSetUpdate::combinedSampler(const ImageInfos& images, int binding, unsigned int elem)
+{
+	if(binding == -1) binding = ++currentBinding_;
+	else currentBinding_ = binding;
+
+	images_.emplace_back(images);
+
+	writes_.emplace_back(*set_, binding, elem, images.size(),
+		vk::DescriptorType::combinedImageSampler, images_.back().data(), nullptr, nullptr);
+}
+void DescriptorSetUpdate::inputAttachment(const ImageInfos& images, int binding, unsigned int elem)
+{
+	if(binding == -1) binding = ++currentBinding_;
+	else currentBinding_ = binding;
+
+	images_.emplace_back(images);
+
+	writes_.emplace_back(*set_, binding, elem, images.size(),
+		vk::DescriptorType::inputAttachment, images_.back().data(), nullptr, nullptr);
+}
+
+void DescriptorSetUpdate::uniform(const BufferViewInfos& views, int binding, unsigned int elem)
+{
+	if(binding == -1) binding = ++currentBinding_;
+	else currentBinding_ = binding;
+
+	views_.emplace_back(views);
+
+	writes_.emplace_back(*set_, binding, elem, views.size(),
+		vk::DescriptorType::uniformTexelBuffer, nullptr, nullptr, views_.back().data());
+}
+void DescriptorSetUpdate::storage(const BufferViewInfos& views, int binding, unsigned int elem)
+{
+	if(binding == -1) binding = ++currentBinding_;
+	else currentBinding_ = binding;
+
+	views_.emplace_back(views);
+
+	writes_.emplace_back(*set_, binding, elem, views.size(),
+		vk::DescriptorType::storageTexelBuffer, nullptr, nullptr, views_.back().data());
+}
+void DescriptorSetUpdate::copy(const vk::CopyDescriptorSet& copySet)
+{
+	//current binding?
+	copies_.push_back(copySet);
+}
+
 //descriptorSetLayout
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	const std::vector<DescriptorBinding>& bindings) : Resource(dev)

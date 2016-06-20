@@ -301,19 +301,14 @@ void ParticleSystem::writeGraphicsUBO()
 
 void ParticleSystem::writeDescriptorSets()
 {
-	//write buffers
-	// graphicsDescriptorSet_.writeBuffers(0, {{graphicsUBO_.vkBuffer(), 0, sizeof(nytl::Mat4f) * 2}}, vk::DescriptorType::UniformBuffer);
-	//vk::WriteDescriptorSets write(graphicsDescriptorSet_, 0, 0, 1, vk::DescriptorType::uniformBuffer, nullptr, )
-	vpp::WriteDescriptors gfxWrite(graphicsDescriptorSet_);
-	gfxWrite.uniform(0, {{graphicsUBO_, 0, sizeof(nytl::Mat4f) * 2}});
+	vpp::DescriptorSetUpdate gfx(graphicsDescriptorSet_);
+	gfx.uniform({{graphicsUBO_, 0, sizeof(nytl::Mat4f) * 2}});
 
+	vpp::DescriptorSetUpdate comp(computeDescriptorSet_);
+	comp.storage({{particlesBuffer_, 0, sizeof(Particle) * particles_.size()}});
+	comp.uniform({{computeUBO_, 0, sizeof(float) * 5}});
 
-	vpp::WriteDescriptors compWrite(computeDescriptorSet_);
-	compWrite.storage(0, {{particlesBuffer_, 0, sizeof(Particle) * particles_.size()}});
-	compWrite.uniform(1, {{computeUbo_, 0, sizeof(float) * 5}});
-	
-	// computeDescriptorSet_.writeBuffers(0, {{particlesBuffer_.vkBuffer(), 0, sizeof(Particle) * particles_.size()}}, vk::DescriptorType::StorageBuffer);
-	// computeDescriptorSet_.writeBuffers(1, {{computeUBO_.vkBuffer(), 0, sizeof(float) * 5}}, vk::DescriptorType::UniformBuffer);
+	vpp::apply({gfx, comp});
 }
 
 void ParticleSystem::compute()
