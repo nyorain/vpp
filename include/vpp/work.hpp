@@ -7,6 +7,7 @@
 #include <vpp/commandBuffer.hpp>
 
 #include <memory>
+#include <iostream>
 
 namespace vpp
 {
@@ -76,7 +77,7 @@ class CommandWork : public Work<R>
 {
 public:
 	CommandWork() = default;
-	CommandWork(CommandBuffer&& buffer) : cmdBuffer_(std::move(buffer)) { queue(); }
+	CommandWork(CommandBuffer&& buffer) : cmdBuffer_(std::move(buffer)) {};
 
 	virtual void submit() override;
 	virtual void finish() override;
@@ -88,7 +89,7 @@ public:
 protected:
 	CommandBuffer cmdBuffer_;
 	CommandExecutionState executionState_;
-	WorkBase::State state_ {};
+	WorkBase::State state_ {WorkBase::State::none};
 };
 
 ///Manages (i.e. submits and waits) for multiple work objects.

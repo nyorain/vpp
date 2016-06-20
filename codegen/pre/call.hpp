@@ -45,7 +45,7 @@ namespace call
 
 inline bool success(Result result)
 {
-	return (static_cast<std::uint64_t>(result) >= 0);
+	return (static_cast<std::int64_t>(result) >= 0);
 }
 
 inline std::string resultErrorMsg(Result result)
@@ -85,7 +85,7 @@ inline vk::Result checkResultThrow(vk::Result result, const char* function, cons
 	if(success(result)) return result;
 
 	auto msg = resultErrorMsg(result);
-	auto ecode = static_cast<unsigned int>(result);
+	auto ecode = static_cast<std::int64_t>(result);
 	const std::string err = "Vulkan Error Code " + std::to_string(ecode) + ": " + msg +
 		"\t\nin function " + function + " ,calling " + called;
 
@@ -99,7 +99,7 @@ inline vk::Result checkResultWarn(vk::Result result, const char* function, const
 	if(success(result)) return result;
 
 	auto msg = resultErrorMsg(result);
-	auto ecode = static_cast<unsigned int>(result);
+	auto ecode = static_cast<std::int64_t>(result);
 	const std::string err = "Vulkan Error Code " + std::to_string(ecode) + ": " + msg +
 		"\n\tin function " + function + " ,calling " + called;
 
@@ -137,5 +137,6 @@ inline vk::Result checkResultWarn(vk::Result result, const char* function, const
 #elif defined(VPP_CALL_WARN)
  #define VPP_CALL(x) VPP_CALL_W(x)
 #else
+ #warning "no action taken..."
  #define VPP_CALL(x) x
 #endif

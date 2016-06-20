@@ -141,10 +141,6 @@ void mainLoop(App& app)
 //
 int main()
 {
-	const char* str = "sfkjs";
-	auto str2 = reinterpret_cast<const char*>(str);
-	std::cout << "s: " << str << " " << str2 << "\n";
-
 	{
 		std::uint32_t computeQF; //queueFamily
 
@@ -166,20 +162,19 @@ int main()
 		ParticleSystem particleSystem(app, 1024 * 3000);
 		app.particleSystem = &particleSystem;
 
-		context.device().memoryAllocator().allocate();
+		std::cout << "setup complete0.\n";
 
 		auto builder = std::make_unique<ParticleRenderer>(app);
 		vpp::SwapChainRenderer renderer(context.swapChain(), app.rendererInfo, std::move(builder));
 		app.renderer = &renderer;
 
-		context.device().memoryAllocator().allocate();
+		std::cout << "setup complete1.\n";
 
 		app.presentQueue = &context.presentQueue();
 		app.computeQueue = context.computeQueue();
 
 		std::cout << "qf: " << context.computeQueue()->family() << "\n";
-
-		std::cout << "setup complete.\n";
+		std::cout << "setup complete2.\n";
 
 	    mainLoop(app);
 

@@ -38,7 +38,7 @@ std::vector<std::uint32_t> readFile(const std::string& filename, bool binary)
 
 vk::ShaderModule loadShaderModule(vk::Device dev, const std::string& filename)
 {
-	auto code = readFile(filename, 1);
+	auto code = readFile(filename, true);
 	if(code.empty())
 	{
 		std::cerr << "vpp::ShaderStage::loadModule: failed to load " << filename << "\n";
@@ -51,7 +51,7 @@ vk::ShaderModule loadShaderModule(vk::Device dev, const std::string& filename)
 vk::ShaderModule loadShaderModule(vk::Device dev, const std::vector<std::uint32_t>& code)
 {
 	vk::ShaderModuleCreateInfo info;
-	info.codeSize = code.size();
+	info.codeSize = code.size() * 4;
 	info.pCode = code.data();
 
 	return vk::createShaderModule(dev, info);

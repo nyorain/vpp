@@ -44,6 +44,7 @@ public:
 	bool completed() const;
 
 	const Resource& resourceRef() const;
+	const CommandSubmissionPtr& submission() const { return submission_; }
 
 protected:
 	CommandSubmissionPtr submission_;

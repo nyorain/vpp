@@ -17,7 +17,12 @@ ParticleRenderer::ParticleRenderer(App& app) : app_(&app)
 
 ParticleRenderer::~ParticleRenderer()
 {
-	
+
+}
+
+void ParticleRenderer::init(vpp::SwapChainRenderer& renderer)
+{
+	renderer.record();
 }
 
 void ParticleRenderer::build(unsigned int, const vpp::RenderPassInstance& instance)
@@ -31,7 +36,7 @@ void ParticleRenderer::build(unsigned int, const vpp::RenderPassInstance& instan
 	vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::graphics,
 		ps().graphicsPipeline_.vkPipeline());
 	vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
-		ps().graphicsPipeline_.vkPipelineLayout(), 0, {gd}, {});
+		ps().graphicsPipeline_.vkPipelineLayout(), 0, {gd}, {0});
 	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf}, offsets);
 	vk::cmdDraw(cmdBuffer, ps().particles_.size(), 1, 0, 0);
 }
@@ -96,16 +101,21 @@ ParticleSystem::ParticleSystem(App& app, std::size_t count)
 	initParticles();
 	initParticleBuffer();
 
-	initGraphicsPipeline();
 	initComputePipeline();
+	initGraphicsPipeline();
 
 	//allocator_.allocate();
 	device().memoryAllocator().allocate();
 
+std::cout << ":0\n";
 	writeDescriptorSets();
+std::cout << ":1\n";
 	writeParticleBuffer();
+std::cout << ":2\n";
 	writeGraphicsUBO();
+std::cout << ":3\n";
 	buildComputeBuffer();
+std::cout << ":4\n";
 
 	lastUpdate_ = Clock::now();
 }
@@ -145,7 +155,7 @@ void ParticleSystem::initGraphicsPipeline()
 void ParticleSystem::initComputePipeline()
 {
 	vpp::ComputePipeline::CreateInfo info;
-	info.descriptorSetLayouts = {computeDescriptorSetLayout_};
+	info.descriptorSetLayouts = {&computeDescriptorSetLayout_};
 	info.shader = vpp::ShaderStage(device(), "particles.comp.spv", {vk::ShaderStageBits::compute});
 
 	computePipeline_ = vpp::ComputePipeline(device(), info);
@@ -228,7 +238,7 @@ void ParticleSystem::initParticleBuffer()
 {
 	vk::BufferCreateInfo bufInfo;
 	bufInfo.size = sizeof(Particle) * particles_.size();
-	bufInfo.usage = vk::BufferUsageBits::vertexBuffer | vk::BufferUsageBits::storageBuffer;
+	bufInfo.usage = vk::BufferUsageBits::vertexBuffer | vk::BufferUsageBits::storageBuffer | vk::BufferUsageBits::transferDst;
 
 	particlesBuffer_ = vpp::Buffer(device(), bufInfo, vk::MemoryPropertyBits::deviceLocal);
 }
@@ -238,6 +248,7 @@ void ParticleSystem::writeParticleBuffer()
 	// auto map = particlesBuffer_.memoryMap();
 	// std::memcpy(map.ptr(), particles_.data(), sizeof(Particle) * particles_.size());
 	auto work = particlesBuffer_.fill({particles_});
+	std::cout << "finish...\n";
 	work->finish();
 }
 
@@ -253,7 +264,7 @@ void ParticleSystem::buildComputeBuffer()
 
 	vk::cmdBindPipeline(computeBuffer_, vk::PipelineBindPoint::compute, computePipeline_.vkPipeline());
 	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::compute,
-		computePipeline_.vkPipelineLayout(), 0, {}, {});
+		computePipeline_.vkPipelineLayout(), 0, {cd}, {0});
 	vk::cmdDispatch(computeBuffer_, particles_.size() / 16, 1, 1);
 
 	vk::endCommandBuffer(computeBuffer_);
@@ -292,7 +303,15 @@ void ParticleSystem::writeDescriptorSets()
 {
 	//write buffers
 	// graphicsDescriptorSet_.writeBuffers(0, {{graphicsUBO_.vkBuffer(), 0, sizeof(nytl::Mat4f) * 2}}, vk::DescriptorType::UniformBuffer);
+	//vk::WriteDescriptorSets write(graphicsDescriptorSet_, 0, 0, 1, vk::DescriptorType::uniformBuffer, nullptr, )
+	vpp::WriteDescriptors gfxWrite(graphicsDescriptorSet_);
+	gfxWrite.uniform(0, {{graphicsUBO_, 0, sizeof(nytl::Mat4f) * 2}});
 
+
+	vpp::WriteDescriptors compWrite(computeDescriptorSet_);
+	compWrite.storage(0, {{particlesBuffer_, 0, sizeof(Particle) * particles_.size()}});
+	compWrite.uniform(1, {{computeUbo_, 0, sizeof(float) * 5}});
+	
 	// computeDescriptorSet_.writeBuffers(0, {{particlesBuffer_.vkBuffer(), 0, sizeof(Particle) * particles_.size()}}, vk::DescriptorType::StorageBuffer);
 	// computeDescriptorSet_.writeBuffers(1, {{computeUBO_.vkBuffer(), 0, sizeof(float) * 5}}, vk::DescriptorType::UniformBuffer);
 }

@@ -13,7 +13,7 @@ ComputePipeline::ComputePipeline(const Device& dev, const CreateInfo& createInfo
 	descriptorSetLayouts.reserve(createInfo.descriptorSetLayouts.size());
 
 	for(auto& layout : createInfo.descriptorSetLayouts)
-		descriptorSetLayouts.push_back(layout.get().vkDescriptorSetLayout());
+		descriptorSetLayouts.push_back(layout->vkDescriptorSetLayout());
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
 	pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
@@ -27,6 +27,7 @@ ComputePipeline::ComputePipeline(const Device& dev, const CreateInfo& createInfo
 	info.layout = pipelineLayout_;
 
 	vk::createComputePipelines(vkDevice(), {}, 1, info, nullptr, pipeline_);
+	//std::cout << vkCreateComputePipelines(reinterpret_cast<VkDevice>(vkDevice()), {}, 1, reinterpret_cast<const VkComputePipelineCreateInfo*>(&info), nullptr, reinterpret_cast<VkPipeline*>(&pipeline_)) << " mm\n";
 }
 
 ComputePipeline::ComputePipeline(ComputePipeline&& other) noexcept : Pipeline(std::move(other))

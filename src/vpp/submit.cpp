@@ -9,14 +9,13 @@ namespace vpp
 class CommandSubmission : public Resource
 {
 public:
-	vk::Queue queue;
+	CommandSubmission(const Device& dev) : Resource(dev) {}
+	~CommandSubmission();
+
+	vk::Queue queue {};
 	vk::SubmitInfo info;
 	vk::Fence fence {};
 	bool completed {}; //fence status cache
-
-public:
-	using Resource::Resource;
-	~CommandSubmission();
 };
 
 //lock typedef for easier lock_guard using
@@ -31,13 +30,17 @@ CommandSubmission::~CommandSubmission()
 //ExecutionState
 void CommandExecutionState::submit()
 {
+	if(submitted()) return;
 	device().submitManager().submit(submission_);
 }
 
 void CommandExecutionState::wait(std::uint64_t timeout)
 {
-	if(!submission_->fence) submit();
+	std::cout << "start\n";
+	if(completed()) return;
+	submit();
 	vk::waitForFences(vkDevice(), 1, submission_->fence, 0, timeout);
+	std::cout << "end\n";
 }
 
 bool CommandExecutionState::submitted() const
@@ -89,17 +92,19 @@ vk::Fence SubmitManager::submit(vk::Queue queue)
 		submission->fence = fence;
 
 	submissions_.erase(it);
+	return fence;
 }
 
 CommandExecutionState SubmitManager::add(vk::Queue queue, const vk::SubmitInfo& info)
 {
 	Lock lock(mutex_);
 
-	auto submission = std::make_shared<CommandSubmission>();
+	auto submission = std::make_shared<CommandSubmission>(device());
 	submission->info = info;
-	auto ret = CommandExecutionState(submission);
-	submissions_[queue].push_back(std::move(submission));
-	return ret;
+	submission->queue = queue;
+	submissions_[queue].push_back(submission);
+
+	return {submission};
 }
 
 CommandExecutionState SubmitManager::add(vk::Queue queue, const std::vector<vk::CommandBuffer>& buffer)
@@ -107,18 +112,19 @@ CommandExecutionState SubmitManager::add(vk::Queue queue, const std::vector<vk::
 	vk::SubmitInfo info;
 	info.commandBufferCount = buffer.size();
 	info.pCommandBuffers = buffer.data();
-	add(queue, info);
+	return add(queue, info);
 }
 
 void SubmitManager::submit(const CommandSubmissionPtr& ptr)
 {
-	Lock lock(mutex_);
+	std::unique_lock<std::mutex> lock(mutex_);
 
 	for(auto entry : submissions_)
 	{
 		auto it = std::find(entry.second.begin(), entry.second.end(), ptr);
 		if(it != entry.second.end())
 		{
+			lock.unlock(); //the next submit call will lock it again.
 			submit((*it)->queue);
 			return;
 		}

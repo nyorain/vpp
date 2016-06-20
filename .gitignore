@@ -1,5 +1,7 @@
 build/
 buildwin/
+buildwin2/
+buildwin3/
 test.cpp
 .idea/
 .clang_complete

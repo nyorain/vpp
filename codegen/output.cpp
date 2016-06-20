@@ -757,31 +757,36 @@ void CCOutputGenerator::printCmd(const Command& cmd)
 		callSepr = ", ";
 	}
 
-	std::string returnString = "";
-	std::string returnStringEnd = "";
+	std::string before = "";
+	std::string after = ";";
 	auto& retType = cmd.signature.returnType;
+
+	if(retType.type->name == "VkResult")
+	{
+		before = "VPP_CALL(static_cast<Result>(";
+		after = "));";
+	}
 
 	if(parsed.returnParam && !parsed.returnParam->countPar)
 	{
 		auto typeCpy = parsed.returnParam->param->type;
 		typeCpy.pointerlvl--;
-		returnString = typeName(typeCpy) + " ret = {};\n\t";
-		returnStringEnd = ";\n\treturn ret";
-	}
-	else if(retType.type->name == "VkResult")
-	{
-		returnString = "return VPP_CALL(static_cast<Result>(";
-		returnStringEnd = "))";
+		before = typeName(typeCpy) + " ret = {};\n\t" + before;
+		after = after + "\n\treturn ret;";
 	}
 	else if(retType.type->name != "void" || retType.pointerlvl > 0)
 	{
-		returnString = "return static_cast<" + typeName(cmd.signature.returnType) + ">(";
-		returnStringEnd = ")";
+		before = "return static_cast<" + typeName(cmd.signature.returnType) + ">(";
+		after = ");";
+	}
+	else
+	{
+		before = "return ";
 	}
 
 	functions_ << ")\n{\n\t";
-	functions_ << returnString << cmd.name << "(" << args;
-	functions_ << ")" << returnStringEnd << ";\n}\n";
+	functions_ << before << cmd.name << "(" << args;
+	functions_ << ")" << after << "\n}\n";
 
 	//if needed, output the std::vector version of the function
 	if(printVecVersion) printVecCmd(parsed, name);

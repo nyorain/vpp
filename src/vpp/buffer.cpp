@@ -113,6 +113,9 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bo
 		auto cmdBuffer = device().commandProvider().get(0);
 		auto vkcmdb = cmdBuffer.vkCommandBuffer();
 
+		vk::CommandBufferBeginInfo info;
+		vk::beginCommandBuffer(vkcmdb, info);
+
 		//use the vkCmdBufferUpdate command for small data with a matching size and offset
 		//only when requirements matched (directUpdate) and direct is preferred (prefdirect)
 		if(directUpdate && prefdirect)
@@ -121,9 +124,6 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bo
 			//the update data will be stored (memcpyd) here since it must be available when
 			//then command is called on device (AFTER recording)
 			std::vector<std::uint32_t> cpydata(totalSize / 4);
-
-			vk::CommandBufferBeginInfo info;
-			vk::beginCommandBuffer(vkcmdb, info);
 
 			auto bufferOffset = 0u; //current buffer offset to copy the data to
 			auto cpyOffset = 0u; //current offset in the copy buffer
@@ -208,13 +208,15 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bo
 			auto uploadBuf = uploadBuffer.vkBuffer();
 			vk::cmdCopyBuffer(vkcmdb, uploadBuf, vkBuffer(), regions);
 
+			vk::endCommandBuffer(vkcmdb);
+
 			//return a custom work implementation
 			struct WorkImpl : public CommandWork<void>
 			{
 				TransferRange uploadRange_; //reserve the bufferRange until the command is finished
 
 				WorkImpl(CommandBuffer&& buffer, TransferRange&& range)
-					: CommandWork(std::move(buffer)), uploadRange_(std::move(range)) {}
+					: CommandWork(std::move(buffer)), uploadRange_(std::move(range)) { queue(); }
 
 				virtual void finish() override { CommandWork::finish(); uploadRange_ = {}; }
 			};

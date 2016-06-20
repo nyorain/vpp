@@ -105,6 +105,7 @@ public:
 	ParticleRenderer(App& app);
 	~ParticleRenderer();
 
+	void init(vpp::SwapChainRenderer& renderer) override;
 	void build(unsigned int, const vpp::RenderPassInstance&) override;
 	std::vector<vk::ClearValue> clearValues(unsigned int) override;
 	void beforeRender(vk::CommandBuffer cmdBuffer) override;

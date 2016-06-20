@@ -103,10 +103,10 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 		bindingDescriptions.back().inputRate = vk::VertexInputRate::vertex;
 	}
 
-	// vertexInfo.vertexBindingDescriptionCount = bindingDescriptions.size();
-	// vertexInfo.pVertexBindingDescriptions = bindingDescriptions.data();
-	// vertexInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
-	// vertexInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+	vertexInfo.vertexBindingDescriptionCount = bindingDescriptions.size();
+	vertexInfo.pVertexBindingDescriptions = bindingDescriptions.data();
+	vertexInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
+	vertexInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 	//pipeline layout
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
@@ -116,8 +116,8 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 		descriptorSetLayouts.push_back(layout.get().vkDescriptorSetLayout());
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo {};
-	//pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
-	//pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+	pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
+	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
 	pipelineLayout_ = vk::createPipelineLayout(vkDevice(), pipelineLayoutInfo);
 

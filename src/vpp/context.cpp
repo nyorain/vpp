@@ -14,6 +14,14 @@ Context::~Context() = default;
 
 void Context::initInstance(const CreateInfo& info)
 {
+	std::vector<const char*> layers;
+	auto vec = vk::enumerateInstanceLayerProperties();
+	for(auto& layer : vec)
+	{
+		std::cout << "layer: " << layer.layerName.data() << "\n";
+		//layers.push_back(layer.layerName.data());
+	}
+
 	//appinfo
     auto eName = "vpp";
     auto aName = "unknown";
@@ -26,13 +34,11 @@ void Context::initInstance(const CreateInfo& info)
     appInfo.applicationVersion = aVersion;
     appInfo.pEngineName = eName;
     appInfo.engineVersion = eVersion;
-    appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 2); //use header version when working
+    appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 11); //use header version when working
 
 	//iniinfo
 	std::vector<const char*> extensions = info.instanceExtensions;
 	extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-
-	std::vector<const char*> layers;
 
 	if(info.debugFlags != 0)
 	{
@@ -48,6 +54,7 @@ void Context::initInstance(const CreateInfo& info)
     iniinfo.pApplicationInfo = &appInfo;
 
     instance_ = vk::createInstance(iniinfo);
+	std::cout << "ini: " << instance_ << "\n";
 
 	if(info.debugFlags != 0)
 	{

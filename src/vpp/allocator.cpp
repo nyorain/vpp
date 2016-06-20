@@ -110,6 +110,7 @@ void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequir
 	req.alignment = reqs.alignment;
 	req.memoryTypes = reqs.memoryTypeBits;
 	req.buffer = requestor;
+	req.entry = &entry;
 
 	requirements_.push_back(req);
 }
@@ -131,6 +132,7 @@ void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequire
 	req.alignment = reqs.alignment;
 	req.memoryTypes = reqs.memoryTypeBits;
 	req.image = requestor;
+	req.entry = &entry;
 
 	requirements_.push_back(req);
 }
@@ -223,6 +225,7 @@ void DeviceMemoryAllocator::allocate(unsigned int type)
 	allocate(type, reqs);
 
 	//remove allocated reqs
+	//TODO: use efficient algorithm
 	for(auto& req : reqs)
 	{
 		for(auto it = requirements_.begin(); it != requirements_.end();)

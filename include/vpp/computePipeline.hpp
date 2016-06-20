@@ -16,7 +16,7 @@ class ComputePipeline : public Pipeline
 public:
 	struct CreateInfo
 	{
-		std::vector<std::reference_wrapper<DescriptorSetLayout>> descriptorSetLayouts;
+		std::vector<DescriptorSetLayout*> descriptorSetLayouts;
 		ShaderStage shader;
 		vk::PipelineCreateFlags flags {};
 	};
