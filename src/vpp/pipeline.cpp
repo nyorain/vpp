@@ -56,8 +56,8 @@ void apply(const std::vector<std::reference_wrapper<DescriptorSetUpdate>>& updat
 
 void DescriptorSetUpdate::uniform(const BufferInfos& buffers, int binding, unsigned int elem)
 {
-	if(binding == -1) binding = ++currentBinding_;
-	else currentBinding_ = binding;
+	if(binding == -1) binding = currentBinding_++;
+	else currentBinding_ = binding + 1;
 
 	buffers_.emplace_back(buffers);
 	for(auto& b : buffers_.back()) if(b.range == 0) b.range = vk::wholeSize;
@@ -68,8 +68,8 @@ void DescriptorSetUpdate::uniform(const BufferInfos& buffers, int binding, unsig
 
 void DescriptorSetUpdate::storage(const BufferInfos& buffers, int binding, unsigned int elem)
 {
-	if(binding == -1) binding = ++currentBinding_;
-	else currentBinding_ = binding;
+	if(binding == -1) binding = currentBinding_++;
+	else currentBinding_ = binding + 1;
 
 	buffers_.emplace_back(buffers);
 	for(auto& b : buffers_.back()) if(b.range == 0) b.range = vk::wholeSize;
@@ -79,8 +79,8 @@ void DescriptorSetUpdate::storage(const BufferInfos& buffers, int binding, unsig
 }
 void DescriptorSetUpdate::uniformDynamic(const BufferInfos& buffers, int binding, unsigned int elem)
 {
-	if(binding == -1) binding = ++currentBinding_;
-	else currentBinding_ = binding;
+	if(binding == -1) binding = currentBinding_++;
+	else currentBinding_ = binding + 1;
 
 	buffers_.emplace_back(buffers);
 	for(auto& b : buffers_.back()) if(b.range == 0) b.range = vk::wholeSize;
@@ -90,8 +90,8 @@ void DescriptorSetUpdate::uniformDynamic(const BufferInfos& buffers, int binding
 }
 void DescriptorSetUpdate::storageDynamic(const BufferInfos& buffers, int binding, unsigned int elem)
 {
-	if(binding == -1) binding = ++currentBinding_;
-	else currentBinding_ = binding;
+	if(binding == -1) binding = currentBinding_++;
+	else currentBinding_ = binding + 1;
 
 	buffers_.emplace_back(buffers);
 	for(auto& b : buffers_.back()) if(b.range == 0) b.range = vk::wholeSize;
@@ -102,8 +102,8 @@ void DescriptorSetUpdate::storageDynamic(const BufferInfos& buffers, int binding
 
 void DescriptorSetUpdate::sampler(const ImageInfos& images, int binding, unsigned int elem)
 {
-	if(binding == -1) binding = ++currentBinding_;
-	else currentBinding_ = binding;
+	if(binding == -1) binding = currentBinding_++;
+	else currentBinding_ = binding + 1;
 
 	images_.emplace_back(images);
 
@@ -112,8 +112,8 @@ void DescriptorSetUpdate::sampler(const ImageInfos& images, int binding, unsigne
 }
 void DescriptorSetUpdate::sampled(const ImageInfos& images, int binding, unsigned int elem)
 {
-	if(binding == -1) binding = ++currentBinding_;
-	else currentBinding_ = binding;
+	if(binding == -1) binding = currentBinding_++;
+	else currentBinding_ = binding + 1;
 
 	images_.emplace_back(images);
 
@@ -122,8 +122,8 @@ void DescriptorSetUpdate::sampled(const ImageInfos& images, int binding, unsigne
 }
 void DescriptorSetUpdate::storage(const ImageInfos& images, int binding, unsigned int elem)
 {
-	if(binding == -1) binding = ++currentBinding_;
-	else currentBinding_ = binding;
+	if(binding == -1) binding = currentBinding_++;
+	else currentBinding_ = binding + 1;
 
 	images_.emplace_back(images);
 
@@ -132,8 +132,8 @@ void DescriptorSetUpdate::storage(const ImageInfos& images, int binding, unsigne
 }
 void DescriptorSetUpdate::combinedSampler(const ImageInfos& images, int binding, unsigned int elem)
 {
-	if(binding == -1) binding = ++currentBinding_;
-	else currentBinding_ = binding;
+	if(binding == -1) binding = currentBinding_++;
+	else currentBinding_ = binding + 1;
 
 	images_.emplace_back(images);
 
@@ -142,8 +142,8 @@ void DescriptorSetUpdate::combinedSampler(const ImageInfos& images, int binding,
 }
 void DescriptorSetUpdate::inputAttachment(const ImageInfos& images, int binding, unsigned int elem)
 {
-	if(binding == -1) binding = ++currentBinding_;
-	else currentBinding_ = binding;
+	if(binding == -1) binding = currentBinding_++;
+	else currentBinding_ = binding + 1;
 
 	images_.emplace_back(images);
 
@@ -153,8 +153,8 @@ void DescriptorSetUpdate::inputAttachment(const ImageInfos& images, int binding,
 
 void DescriptorSetUpdate::uniform(const BufferViewInfos& views, int binding, unsigned int elem)
 {
-	if(binding == -1) binding = ++currentBinding_;
-	else currentBinding_ = binding;
+	if(binding == -1) binding = currentBinding_++;
+	else currentBinding_ = binding + 1;
 
 	views_.emplace_back(views);
 
@@ -163,8 +163,8 @@ void DescriptorSetUpdate::uniform(const BufferViewInfos& views, int binding, uns
 }
 void DescriptorSetUpdate::storage(const BufferViewInfos& views, int binding, unsigned int elem)
 {
-	if(binding == -1) binding = ++currentBinding_;
-	else currentBinding_ = binding;
+	if(binding == -1) binding = currentBinding_++;
+	else currentBinding_ = binding + 1;
 
 	views_.emplace_back(views);
 

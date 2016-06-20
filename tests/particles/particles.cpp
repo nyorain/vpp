@@ -36,7 +36,7 @@ void ParticleRenderer::build(unsigned int, const vpp::RenderPassInstance& instan
 	vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::graphics,
 		ps().graphicsPipeline_.vkPipeline());
 	vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
-		ps().graphicsPipeline_.vkPipelineLayout(), 0, {gd}, {0});
+		ps().graphicsPipeline_.vkPipelineLayout(), 0, {gd}, {});
 	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf}, offsets);
 	vk::cmdDraw(cmdBuffer, ps().particles_.size(), 1, 0, 0);
 }
@@ -264,7 +264,7 @@ void ParticleSystem::buildComputeBuffer()
 
 	vk::cmdBindPipeline(computeBuffer_, vk::PipelineBindPoint::compute, computePipeline_.vkPipeline());
 	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::compute,
-		computePipeline_.vkPipelineLayout(), 0, {cd}, {0});
+		computePipeline_.vkPipelineLayout(), 0, {cd}, {});
 	vk::cmdDispatch(computeBuffer_, particles_.size() / 16, 1, 1);
 
 	vk::endCommandBuffer(computeBuffer_);
