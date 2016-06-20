@@ -97,10 +97,6 @@ public:
 
 class ParticleRenderer : public vpp::RendererBuilder
 {
-protected:
-	App* app_;
-	vk::Semaphore computeSemaphore_;
-
 public:
 	ParticleRenderer(App& app);
 	~ParticleRenderer();
@@ -112,6 +108,15 @@ public:
 	vk::SubmitInfo submit(vk::CommandBuffer cmd, vk::Semaphore wait, vk::Semaphore signal) override;
 
 	ParticleSystem& ps() const { return *app_->particleSystem; }
+
+protected:
+	App* app_;
+	vk::Semaphore computeSemaphore_;
+
+	std::vector<vk::PipelineStageFlags> waitMasks_;
+	std::vector<vk::CommandBuffer> buffers_;
+	std::vector<vk::Semaphore> waitSemaphores_;
+	std::vector<vk::Semaphore> signalSemaphores_;
 };
 
 //utility

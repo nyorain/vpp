@@ -91,7 +91,7 @@ void initWindow(App& app)
 //
 void render(App& app)
 {
-	app.renderer->render();
+	app.renderer->renderBlock();
 
 	POINT pos;
 	GetCursorPos(&pos);

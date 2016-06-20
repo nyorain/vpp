@@ -80,14 +80,18 @@ vk::SubmitInfo ParticleRenderer::submit(vk::CommandBuffer cmd, vk::Semaphore wai
 	dev.submitManager().add(*app_->context->computeQueue(), submitInfo);
 
 	//return default gfx submit
-	auto waitSemaphores = {wait, computeSemaphore_};
+	waitSemaphores_ = {wait, computeSemaphore_};
+	signalSemaphores_ = {signal};
+	waitMasks_ = {vk::PipelineStageBits::allCommands, vk::PipelineStageBits::allCommands};
+	buffers_ = {cmd};
 
 	submitInfo.waitSemaphoreCount = 2;
-	submitInfo.pWaitSemaphores = waitSemaphores.begin();
+	submitInfo.pWaitSemaphores = waitSemaphores_.data();
+	submitInfo.pWaitDstStageMask = waitMasks_.data();
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmd;
+	submitInfo.pCommandBuffers = buffers_.data();
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &signal;
+	submitInfo.pSignalSemaphores = signalSemaphores_.data();
 
 	return {submitInfo};
 }

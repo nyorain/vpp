@@ -24,7 +24,7 @@ using Lock = std::lock_guard<std::mutex>;
 //CommandSubmission
 CommandSubmission::~CommandSubmission()
 {
-	if(fence) vk::destroyFence(vkDevice(), fence, nullptr);
+	//if(fence) vk::destroyFence(vkDevice(), fence, nullptr);
 }
 
 //ExecutionState
@@ -109,9 +109,14 @@ CommandExecutionState SubmitManager::add(vk::Queue queue, const vk::SubmitInfo& 
 
 CommandExecutionState SubmitManager::add(vk::Queue queue, const std::vector<vk::CommandBuffer>& buffer)
 {
+	static std::vector<std::vector<vk::CommandBuffer>> buffers;
+	if(buffers.size() > 100) buffers.erase(buffers.begin(), buffers.begin() + 50);
+
+	buffers.push_back(buffer);
+
 	vk::SubmitInfo info;
 	info.commandBufferCount = buffer.size();
-	info.pCommandBuffers = buffer.data();
+	info.pCommandBuffers = buffers.back().data();
 	return add(queue, info);
 }
 

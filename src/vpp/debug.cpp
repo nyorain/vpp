@@ -44,7 +44,6 @@ vk::Bool32 defaultMessageCallback(std::uint32_t flags, vk::DebugReportObjectType
 	std::uint64_t srcObject, std::size_t location, std::int32_t msgCode, const char* pLayerPrefix,
 	const char* pMsg, void* pUserData)
 {
-	std::cout << "addr: " << &flags << "\n";
 	auto callback = static_cast<DebugCallback*>(pUserData);
 	auto sflags = static_cast<vk::DebugReportBitsEXT>(flags);
 	return callback->call({sflags, objType, srcObject, location, msgCode, pLayerPrefix, pMsg});

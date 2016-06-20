@@ -274,8 +274,11 @@ void SwapChainRenderer::record(int id)
 	vk::endCommandBuffer(vkbuf);
 }
 
-std::unique_ptr<Work<void>> SwapChainRenderer::render(Queue* present, Queue* gfx)
+std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, const Queue* gfx)
 {
+	if(present == nullptr) present = &device().queues()[0];
+	if(gfx == nullptr) gfx = &device().queues()[0];
+
     vk::SemaphoreCreateInfo semaphoreCI;
 	auto acquireComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 	auto renderComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
@@ -336,6 +339,37 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(Queue* present, Queue* gfx
 	};
 
 	return std::make_unique<WorkImpl>(acquireComplete, renderComplete, std::move(execState));
+}
+
+void SwapChainRenderer::renderBlock(const Queue* gfx, const Queue* present)
+{
+	if(present == nullptr) present = &device().queues()[0];
+	if(gfx == nullptr) gfx = &device().queues()[0];
+
+    vk::SemaphoreCreateInfo semaphoreCI;
+	auto acquireComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
+	auto renderComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
+
+    auto currentBuffer = swapChain().acquireNextImage(acquireComplete);
+	renderImpl_->frame(currentBuffer);
+
+	auto& cmdBuf = renderBuffers_[currentBuffer].commandBuffer;
+	auto submits = renderImpl_->submit(cmdBuf, acquireComplete, renderComplete);
+
+	auto execState = device().submitManager().add(*gfx, submits);
+
+	//TODO: which kind of submit makes sense here? submit ALL queued commands?
+	//execState.submit();
+	device().submitManager().submit();
+
+	//TODO: some kind of queue lock? must be synchronized.
+	//need some submitmanager improvements as general queue sync manager.
+    swapChain().present(*present, currentBuffer, renderComplete);
+
+	execState.wait();
+
+    vk::destroySemaphore(device(), acquireComplete, nullptr);
+	vk::destroySemaphore(device(), renderComplete, nullptr);
 }
 
 }

@@ -116,7 +116,15 @@ public:
 	///the family of the grahpics queue is not compatible with the recorded command buffers.
 	///\return A Work pointer that can be used to track the state or wait for the rendering
 	///to finish.
-	RenderWork render(Queue* present = nullptr, Queue* graphics = nullptr);
+	RenderWork render(const Queue* present = nullptr, const Queue* graphics = nullptr);
+
+	///Renders one frame and waits until all rendering operations are finished.
+	///The queue paramters are optional. If they are nullptr, a queue will automatically be selected.
+	///\param presentQueue The queue to submit the present commands to.
+	///\param graphicsQueue The queue to submit the graphics commands to.
+	///\exception std::logic_error If a valid present or graphics queue cannot be found or if
+	///the family of the grahpics queue is not compatible with the recorded command buffers.
+	void renderBlock(const Queue* present = nullptr, const Queue* graphics = nullptr);
 
 	///Calls the builder to build the commandBuffer with the given id.
 	///\param id The id of the render buffer to (re)record. If it is -1, all buffers will be recorded.
