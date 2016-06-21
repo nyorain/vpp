@@ -495,7 +495,7 @@ inline Result mergePipelineCaches(Device device, PipelineCache dstCache, const R
 }
 inline Result createGraphicsPipelines(Device device, PipelineCache pipelineCache, uint32_t createInfoCount, const GraphicsPipelineCreateInfo& pCreateInfos, const AllocationCallbacks* pAllocator, Pipeline& pPipelines)
 {
-	return static_cast<Result>(vkCreateGraphicsPipelines(reinterpret_cast<VkDevice>(device), reinterpret_cast<VkPipelineCache>(pipelineCache), createInfoCount, reinterpret_cast<const VkGraphicsPipelineCreateInfo*>(&pCreateInfos), reinterpret_cast<const VkAllocationCallbacks*>(&pAllocator), reinterpret_cast<VkPipeline*>(&pPipelines)));
+	return static_cast<Result>(vkCreateGraphicsPipelines(reinterpret_cast<VkDevice>(device), reinterpret_cast<VkPipelineCache>(pipelineCache), createInfoCount, reinterpret_cast<const VkGraphicsPipelineCreateInfo*>(&pCreateInfos), reinterpret_cast<const VkAllocationCallbacks*>(pAllocator), reinterpret_cast<VkPipeline*>(&pPipelines)));
 }
 inline std::vector<Pipeline> createGraphicsPipelines(Device device, PipelineCache pipelineCache, const Range<const GraphicsPipelineCreateInfo>& pCreateInfos, const AllocationCallbacks* pAllocator = {})
 {
@@ -506,7 +506,7 @@ inline std::vector<Pipeline> createGraphicsPipelines(Device device, PipelineCach
 }
 inline Result createComputePipelines(Device device, PipelineCache pipelineCache, uint32_t createInfoCount, const ComputePipelineCreateInfo& pCreateInfos, const AllocationCallbacks* pAllocator, Pipeline& pPipelines)
 {
-	return static_cast<Result>(vkCreateComputePipelines(reinterpret_cast<VkDevice>(device), reinterpret_cast<VkPipelineCache>(pipelineCache), createInfoCount, reinterpret_cast<const VkComputePipelineCreateInfo*>(&pCreateInfos), reinterpret_cast<const VkAllocationCallbacks*>(&pAllocator), reinterpret_cast<VkPipeline*>(&pPipelines)));
+	return static_cast<Result>(vkCreateComputePipelines(reinterpret_cast<VkDevice>(device), reinterpret_cast<VkPipelineCache>(pipelineCache), createInfoCount, reinterpret_cast<const VkComputePipelineCreateInfo*>(&pCreateInfos), reinterpret_cast<const VkAllocationCallbacks*>(pAllocator), reinterpret_cast<VkPipeline*>(&pPipelines)));
 }
 inline std::vector<Pipeline> createComputePipelines(Device device, PipelineCache pipelineCache, const Range<const ComputePipelineCreateInfo>& pCreateInfos, const AllocationCallbacks* pAllocator = {})
 {

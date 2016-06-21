@@ -27,7 +27,6 @@ ComputePipeline::ComputePipeline(const Device& dev, const CreateInfo& createInfo
 	info.layout = pipelineLayout_;
 
 	vk::createComputePipelines(vkDevice(), {}, 1, info, nullptr, pipeline_);
-	//std::cout << vkCreateComputePipelines(reinterpret_cast<VkDevice>(vkDevice()), {}, 1, reinterpret_cast<const VkComputePipelineCreateInfo*>(&info), nullptr, reinterpret_cast<VkPipeline*>(&pipeline_)) << " mm\n";
 }
 
 ComputePipeline::ComputePipeline(ComputePipeline&& other) noexcept : Pipeline(std::move(other))

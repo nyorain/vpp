@@ -1116,8 +1116,9 @@ std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify
 		optional |= (!rangeify && retParam && retParam->countPar && param.optionalWithRet);
 
 		const char* ref = "";
-		if(!optional && param.param->type.pointerlvl > 0 && param.param->type.type->name != "void"
-			&& param.param->type.type->name != "char") ref = "&";
+		if(!param.param->optional && param.param->type.pointerlvl > 0 &&
+			param.param->type.type->name != "void" && param.param->type.type->name != "char")
+		ref = "&";
 
 		ret += "reinterpret_cast<";
 		ret += typeName(param.param->type, false);
