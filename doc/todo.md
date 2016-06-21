@@ -10,3 +10,4 @@
 	- queue management
 		- easier querying/creation/using for commands
 	- some smaller improvements
+		- mapMemory: check valid usage (esp. alignment and stuff)

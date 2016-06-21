@@ -55,8 +55,6 @@ public:
 	Buffer(Buffer&& other) noexcept;
 	Buffer& operator=(Buffer&& other) noexcept;
 
-	void create(const Device& dv, const vk::BufferCreateInfo& inf, vk::MemoryPropertyFlags flgs = {});
-
 	///Fills the buffer with the given data.
 	///Does this either by memory mapping the buffer or by copying it via command buffer.
 	///Expects that buffer was created fillable, so either the buffer is memory mappable or

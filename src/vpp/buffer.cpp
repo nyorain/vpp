@@ -11,7 +11,11 @@ namespace vpp
 
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags)
 {
-	create(dev, info, mflags);
+	buffer_ = vk::createBuffer(dev.vkDevice(), info);
+	auto reqs = vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_);
+
+	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
+	dev.memoryAllocator().request(buffer_, reqs, info.usage, memoryEntry_);
 }
 
 Buffer::Buffer(Buffer&& other) noexcept
@@ -40,15 +44,6 @@ void swap(Buffer& a, Buffer& b) noexcept
 
 	swap(b.memoryEntry_, a.memoryEntry_);
 	swap(b.buffer_, a.buffer_);
-}
-
-void Buffer::create(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags flgs)
-{
-	buffer_ = vk::createBuffer(dev.vkDevice(), info);
-	auto reqs = vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_);
-
-	reqs.memoryTypeBits = dev.memoryTypeBits(flgs, reqs.memoryTypeBits);
-	dev.memoryAllocator().request(buffer_, reqs, memoryEntry_);
 }
 
 ///TODO: split up in smaller parts

@@ -38,14 +38,9 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 
 	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());
 	impl_->memoryProperties = vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
+	impl_->qFamilyProperties = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
 
 	device_ = vk::createDevice(vkPhysicalDevice(), info);
-
-	//retrieve/store requested queues
-	std::uint32_t size;
-	vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice(), size, nullptr);
-	impl_->qFamilyProperties.resize(size);
-	vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice(), size, impl_->qFamilyProperties.data());
 
 	std::map<std::uint32_t, unsigned int> familyIds;
 	impl_->queues.reserve(info.queueCreateInfoCount);

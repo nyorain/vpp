@@ -28,12 +28,13 @@ public:
 
 	///Requests memory for the given vulkan buffer and stores a (pending) reference to it into
 	///the given entry.
-	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs, MemoryEntry& entry);
+	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs, vk::BufferUsageFlags usage,
+		MemoryEntry& entry);
 
 	///Requests memory for the given vulkan image and stores a (pending) reference to it into
 	///the given entry. It additionally requires the tiling of the image to fulfill vulkans
 	///granularity requiremens.
-	void request(vk::Image requestor,  const vk::MemoryRequirements& reqs, vk::ImageTiling tiling,
+	void request(vk::Image requestor, const vk::MemoryRequirements& reqs, vk::ImageTiling tiling,
 		MemoryEntry& entry);
 
 	///Removes the (pending) request from this allocator. Returns false if the given entry could

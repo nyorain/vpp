@@ -205,15 +205,15 @@ void SwapChainRenderer::record(int id)
 	auto height = swapChain().size().height;
 
 	std::cout << ",0\n";
-	vk::ImageMemoryBarrier barrier;
-	barrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite;
-	barrier.dstAccessMask = vk::AccessFlags();
-	barrier.oldLayout = vk::ImageLayout::presentSrcKHR;
-	barrier.newLayout = vk::ImageLayout::colorAttachmentOptimal;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.subresourceRange = {vk::ImageAspectBits::color, 0, 1, 0, 1};
-	barrier.image = swapChain().renderBuffers()[id].image;
+	// vk::ImageMemoryBarrier barrier;
+	// barrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite;
+	// barrier.dstAccessMask = vk::AccessFlags();
+	// barrier.oldLayout = vk::ImageLayout::presentSrcKHR;
+	// barrier.newLayout = vk::ImageLayout::colorAttachmentOptimal;
+	// barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	// barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	// barrier.subresourceRange = {vk::ImageAspectBits::color, 0, 1, 0, 1};
+	// barrier.image = swapChain().renderBuffers()[id].image;
 
 	auto& renderer = renderBuffers_[id];
 	auto vkbuf = renderer.commandBuffer.vkCommandBuffer();
@@ -230,9 +230,9 @@ void SwapChainRenderer::record(int id)
 	vk::beginCommandBuffer(vkbuf, cmdBufInfo);
 	std::cout << ",2\n";
 
-	//present to attachment layout
-	vk::cmdPipelineBarrier(vkbuf, vk::PipelineStageBits::allCommands,
-		vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {barrier});
+	// //present to attachment layout
+	// vk::cmdPipelineBarrier(vkbuf, vk::PipelineStageBits::allCommands,
+	// 	vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {barrier});
 
 	std::cout << ",3\n";
 	renderImpl_->beforeRender(vkbuf);
@@ -263,12 +263,15 @@ void SwapChainRenderer::record(int id)
 
 	renderImpl_->afterRender(vkbuf);
 
-	barrier.oldLayout = vk::ImageLayout::colorAttachmentOptimal;
-	barrier.newLayout = vk::ImageLayout::presentSrcKHR;
+	//should not be needed. It is the responsibilty of the renderImpl (usually implicitly in the
+	//renderPass) to assure correct layouts (this class cant know the render pass reqs).
 
-	//attachment to present layout
-	vk::cmdPipelineBarrier(vkbuf, vk::PipelineStageBits::allCommands,
-		vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {barrier});
+	// barrier.oldLayout = vk::ImageLayout::colorAttachmentOptimal;
+	// barrier.newLayout = vk::ImageLayout::presentSrcKHR;
+	//
+	// //attachment to present layout
+	// vk::cmdPipelineBarrier(vkbuf, vk::PipelineStageBits::allCommands,
+	// 	vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {barrier});
 
 	std::cout << ",7\n";
 	vk::endCommandBuffer(vkbuf);
