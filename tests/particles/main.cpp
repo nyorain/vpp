@@ -126,9 +126,7 @@ void mainLoop(App& app)
             DispatchMessage(&msg);
         }
 
-		std::cout << "beforeRender\n";
         render(app);
-		std::cout << "afterRender\n";
 
 		++frames;
 		if(clock::now() - point > std::chrono::seconds(1))

@@ -11,21 +11,6 @@
 namespace vpp
 {
 
-//Builder
-vk::SubmitInfo
-RendererBuilder::submit(vk::CommandBuffer cmdBuf, vk::Semaphore wait, vk::Semaphore signal)
-{
-	vk::SubmitInfo submitInfo;
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &wait;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdBuf;
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &signal;
-
-	return {submitInfo};
-}
-
 //SwapChainRenderer
 SwapChainRenderer::SwapChainRenderer(const SwapChain& sc, const CreateInfo& inf, RenderImpl bld)
 {
@@ -194,17 +179,14 @@ void SwapChainRenderer::record(int id)
 {
 	if(id == -1)
 	{
-		std::cout << ",w\n";
 		for(std::size_t i(0); i < renderBuffers_.size(); ++i) record(i);
 		return;
 	}
 
-	std::cout << ",?\n";
 	auto clearValues = renderImpl_->clearValues(id);
 	auto width = swapChain().size().width;
 	auto height = swapChain().size().height;
 
-	std::cout << ",0\n";
 	// vk::ImageMemoryBarrier barrier;
 	// barrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite;
 	// barrier.dstAccessMask = vk::AccessFlags();
@@ -218,7 +200,6 @@ void SwapChainRenderer::record(int id)
 	auto& renderer = renderBuffers_[id];
 	auto vkbuf = renderer.commandBuffer.vkCommandBuffer();
 	vk::CommandBufferBeginInfo cmdBufInfo;
-	std::cout << ",1\n";
 
 	vk::RenderPassBeginInfo beginInfo;
 	beginInfo.renderPass = info_.renderPass;
@@ -228,17 +209,14 @@ void SwapChainRenderer::record(int id)
 	beginInfo.framebuffer = renderer.framebuffer.vkFramebuffer();
 
 	vk::beginCommandBuffer(vkbuf, cmdBufInfo);
-	std::cout << ",2\n";
 
 	// //present to attachment layout
 	// vk::cmdPipelineBarrier(vkbuf, vk::PipelineStageBits::allCommands,
 	// 	vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {barrier});
 
-	std::cout << ",3\n";
 	renderImpl_->beforeRender(vkbuf);
 
 	vk::cmdBeginRenderPass(vkbuf, beginInfo, vk::SubpassContents::eInline);
-	std::cout << ",4\n";
 
 	//Update dynamic viewport state
 	vk::Viewport viewport;
@@ -254,11 +232,9 @@ void SwapChainRenderer::record(int id)
 	scissor.offset = {0, 0};
 	vk::cmdSetScissor(vkbuf, 0, 1, scissor);
 
-	std::cout << ",5\n";
 	RenderPassInstance ini(vkbuf, info_.renderPass, renderer.framebuffer.vkFramebuffer());
 	renderImpl_->build(id, ini);
 
-	std::cout << ",6\n";
 	vk::cmdEndRenderPass(vkbuf);
 
 	renderImpl_->afterRender(vkbuf);
@@ -273,7 +249,6 @@ void SwapChainRenderer::record(int id)
 	// vk::cmdPipelineBarrier(vkbuf, vk::PipelineStageBits::allCommands,
 	// 	vk::PipelineStageBits::topOfPipe, vk::DependencyFlags(), {}, {}, {barrier});
 
-	std::cout << ",7\n";
 	vk::endCommandBuffer(vkbuf);
 }
 
@@ -290,9 +265,29 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, cons
 	renderImpl_->frame(currentBuffer);
 
 	auto& cmdBuf = renderBuffers_[currentBuffer].commandBuffer;
-	auto submits = renderImpl_->submit(cmdBuf, acquireComplete, renderComplete);
+	auto additionals = renderImpl_->submit(currentBuffer);
 
-	auto execState = device().submitManager().add(*gfx, submits);
+	std::vector<vk::Semaphore> semaphores {acquireComplete};
+	std::vector<vk::PipelineStageFlags> flags {vk::PipelineStageBits::colorAttachmentOutput};
+	semaphores.reserve(additionals.size() + 1);
+	flags.reserve(additionals.size() + 1);
+
+	for(auto& sem : additionals)
+	{
+		semaphores.push_back(sem.first);
+		flags.push_back(sem.second);
+	}
+
+	vk::SubmitInfo submitInfo;
+	submitInfo.waitSemaphoreCount = semaphores.size();
+	submitInfo.pWaitSemaphores = semaphores.data();
+	submitInfo.pWaitDstStageMask = flags.data();
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmdBuf.vkCommandBuffer();
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &renderComplete;
+
+	auto execState = device().submitManager().add(*gfx, submitInfo);
 
 	//TODO: which kind of submit makes sence here? submit ALL queued commands?
 	//execState.submit();
@@ -357,9 +352,29 @@ void SwapChainRenderer::renderBlock(const Queue* gfx, const Queue* present)
 	renderImpl_->frame(currentBuffer);
 
 	auto& cmdBuf = renderBuffers_[currentBuffer].commandBuffer;
-	auto submits = renderImpl_->submit(cmdBuf, acquireComplete, renderComplete);
+	auto additionals = renderImpl_->submit(currentBuffer);
 
-	auto execState = device().submitManager().add(*gfx, submits);
+	std::vector<vk::Semaphore> semaphores {acquireComplete};
+	std::vector<vk::PipelineStageFlags> flags {vk::PipelineStageBits::colorAttachmentOutput};
+	semaphores.reserve(additionals.size() + 1);
+	flags.reserve(additionals.size() + 1);
+
+	for(auto& sem : additionals)
+	{
+		semaphores.push_back(sem.first);
+		flags.push_back(sem.second);
+	}
+
+	vk::SubmitInfo submitInfo;
+	submitInfo.waitSemaphoreCount = semaphores.size();
+	submitInfo.pWaitSemaphores = semaphores.data();
+	submitInfo.pWaitDstStageMask = flags.data();
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmdBuf.vkCommandBuffer();
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &renderComplete;
+
+	auto execState = device().submitManager().add(*gfx, submitInfo);
 
 	//TODO: which kind of submit makes sense here? submit ALL queued commands?
 	//execState.submit();

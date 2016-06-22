@@ -3,6 +3,8 @@
 #include <vpp/fwd.hpp>
 #include <vpp/utility/nonCopyable.hpp>
 
+#include <mutex>
+
 namespace vpp
 {
 

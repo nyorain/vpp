@@ -17,6 +17,9 @@ namespace vpp
 class RendererBuilder
 {
 public:
+	using AdditionalSemaphores = std::vector<std::pair<vk::Semaphore, vk::PipelineStageBits>>;
+
+public:
 	///This function is called to record the render commands into the given renderpass instance.
 	virtual void build(unsigned int id, const RenderPassInstance& ini) = 0;
 
@@ -33,13 +36,19 @@ public:
 	///Will be called to record additional command buffer commands after rendering.
 	virtual void afterRender(vk::CommandBuffer) {};
 
-	///This function is called everytime the commands for a frame should be submitted
-	///to the gpu. It is called after a new image from the swapchain was acquired but before
-	///this image is presented.
-	///Usually the default implemention will suffice, modifications are usually only needed
-	///when additional command batches have to be submitted that must be in sync with the
-	///render commands (e.g. additional offscreen framebuffers).
-	virtual vk::SubmitInfo submit(vk::CommandBuffer cmdBuf, vk::Semaphore wait, vk::Semaphore signal);
+	///Will be called everytime the commands for a frame are submitted to the gpu.
+	///The the RendererBuilder then has the possibilty to queue e.g. additional command buffers
+	///and return a semaphores for that should be waited before beginning
+	///with the rendering commands.
+
+	///XXX: alternative function.
+	///+: greater flexibility, some things maybe not possible with 2nd version (?)
+	///-: way more complexity, renderer builder has to assure that command buffer array and
+	///		semaphore and stages mask remain valid. Worse interface.
+	//virtual CommandExecutionState submit(unsigned int, vk::CommandBuffer gfx, vk::Semaphore render,
+	//	vk::Semaphore& present);
+
+	virtual AdditionalSemaphores submit(unsigned int id) { return {}; }
 
 	///This function is called before every frame and allows the builder to execute/queue
 	///additional operations or to re-record the command buffer for the given id.

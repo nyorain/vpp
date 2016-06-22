@@ -375,7 +375,6 @@ DeviceMemoryAllocator::queryTypes()
 		//push all reqs that can be allocated on the type to ret and remove them from occurences
 		if(canBeRemoved)
 		{
-			std::cout << "canBeRemoved " << bestID << "\n";
 			//remove the bestID type bit from all requirement type bits,
 			//to reduce the problems complexity
 			for(auto& req : occurences[bestID])
@@ -387,7 +386,6 @@ DeviceMemoryAllocator::queryTypes()
 		}
 		else
 		{
-			std::cout << "! canBeRemoved " << bestID << "\n";
 			//set the requirements typebits to 0, indicating that it has a matching type
 			//this makes it no longer have any effect on countOccurences which makes sense,
 			//since we "removed" it

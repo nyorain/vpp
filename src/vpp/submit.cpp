@@ -16,6 +16,7 @@ public:
 	vk::SubmitInfo info;
 	vk::Fence fence {};
 	bool completed {}; //fence status cache
+	std::vector<vk::CommandBuffer> buffers {}; //to make the cmdBuffer member of info stay vaid
 };
 
 //lock typedef for easier lock_guard using
@@ -36,11 +37,9 @@ void CommandExecutionState::submit()
 
 void CommandExecutionState::wait(std::uint64_t timeout)
 {
-	std::cout << "start\n";
 	if(completed()) return;
 	submit();
 	vk::waitForFences(vkDevice(), 1, submission_->fence, 0, timeout);
-	std::cout << "end\n";
 }
 
 bool CommandExecutionState::submitted() const
@@ -97,27 +96,50 @@ vk::Fence SubmitManager::submit(vk::Queue queue)
 
 CommandExecutionState SubmitManager::add(vk::Queue queue, const vk::SubmitInfo& info)
 {
-	Lock lock(mutex_);
-
 	auto submission = std::make_shared<CommandSubmission>(device());
 	submission->info = info;
 	submission->queue = queue;
+
+	Lock lock(mutex_);
 	submissions_[queue].push_back(submission);
 
 	return {submission};
 }
 
-CommandExecutionState SubmitManager::add(vk::Queue queue, const std::vector<vk::CommandBuffer>& buffer)
+CommandExecutionState SubmitManager::add(vk::Queue queue, const std::vector<vk::CommandBuffer>& bufs)
 {
-	static std::vector<std::vector<vk::CommandBuffer>> buffers;
-	if(buffers.size() > 100) buffers.erase(buffers.begin(), buffers.begin() + 50);
-
-	buffers.push_back(buffer);
+	auto submission = std::make_shared<CommandSubmission>(device());
+	submission->buffers = bufs;
 
 	vk::SubmitInfo info;
-	info.commandBufferCount = buffer.size();
-	info.pCommandBuffers = buffers.back().data();
-	return add(queue, info);
+	info.commandBufferCount = submission->buffers.size();
+	info.pCommandBuffers = submission->buffers.data();
+
+	submission->info = info;
+	submission->queue = queue;
+
+	Lock lock(mutex_);
+	submissions_[queue].push_back(submission);
+
+	return {submission};
+}
+
+CommandExecutionState SubmitManager::add(vk::Queue queue, vk::CommandBuffer buffer)
+{
+	auto submission = std::make_shared<CommandSubmission>(device());
+	submission->buffers = {buffer};
+
+	vk::SubmitInfo info;
+	info.commandBufferCount = submission->buffers.size();
+	info.pCommandBuffers = submission->buffers.data();
+
+	submission->info = info;
+	submission->queue = queue;
+
+	Lock lock(mutex_);
+	submissions_[queue].push_back(submission);
+
+	return {submission};
 }
 
 void SubmitManager::submit(const CommandSubmissionPtr& ptr)

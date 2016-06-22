@@ -62,7 +62,8 @@ class SubmitManager : public Resource
 {
 public:
 	///Submits all CommandBuffers in the submission queue.
-	///To wait for their completion, one can simply wait for the device to become idle.
+	///There is no way directly check for completion, but in a single-threaded application,
+	///one could simply wait for the device to become idle.
 	void submit();
 
 	///Submits all command buffers waiting for submission for the given queue.
@@ -72,8 +73,11 @@ public:
 	///Adds a given vulkan submit info for exection of a commandBuffer on the given queue.
 	///Note that this function does NOT directly submits the given info. It will wait until there
 	///are many submissions batched together or a submit member function is called.
+	///Note that all pointers in the vk::SubmitInfo must remain valid until the submission
+	///submitted to the gpu.
 	CommandExecutionState add(vk::Queue, const vk::SubmitInfo& info);
-	CommandExecutionState add(vk::Queue, const std::vector<vk::CommandBuffer>& buffer);
+	CommandExecutionState add(vk::Queue, const std::vector<vk::CommandBuffer>& buffers);
+	CommandExecutionState add(vk::Queue, vk::CommandBuffer buffer);
 
 	///Function for ExecutionState
 	void submit(const CommandSubmissionPtr& ptr);

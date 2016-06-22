@@ -66,7 +66,7 @@ void ParticleRenderer::beforeRender(vk::CommandBuffer cmdBuffer)
 		vk::PipelineStageBits::topOfPipe, {}, {}, {&bufferBarrier}, {});
 }
 
-vk::SubmitInfo ParticleRenderer::submit(vk::CommandBuffer cmd, vk::Semaphore wait, vk::Semaphore signal)
+ParticleRenderer::AdditionalSemaphores ParticleRenderer::submit(unsigned int id)
 {
 	auto& dev = app_->context->device();
 
@@ -79,21 +79,7 @@ vk::SubmitInfo ParticleRenderer::submit(vk::CommandBuffer cmd, vk::Semaphore wai
 
 	dev.submitManager().add(*app_->context->computeQueue(), submitInfo);
 
-	//return default gfx submit
-	waitSemaphores_ = {wait, computeSemaphore_};
-	signalSemaphores_ = {signal};
-	waitMasks_ = {vk::PipelineStageBits::allCommands, vk::PipelineStageBits::allCommands};
-	buffers_ = {cmd};
-
-	submitInfo.waitSemaphoreCount = 2;
-	submitInfo.pWaitSemaphores = waitSemaphores_.data();
-	submitInfo.pWaitDstStageMask = waitMasks_.data();
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = buffers_.data();
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores_.data();
-
-	return {submitInfo};
+	return {{computeSemaphore_, vk::PipelineStageBits::allCommands}};
 }
 
 //ParticleSystem
@@ -113,15 +99,10 @@ ParticleSystem::ParticleSystem(App& app, std::size_t count)
 	//allocator_.allocate();
 	device().memoryAllocator().allocate();
 
-std::cout << ":0\n";
 	writeDescriptorSets();
-std::cout << ":1\n";
 	writeParticleBuffer();
-std::cout << ":2\n";
 	writeGraphicsUBO();
-std::cout << ":3\n";
 	buildComputeBuffer();
-std::cout << ":4\n";
 
 	lastUpdate_ = Clock::now();
 }

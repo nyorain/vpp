@@ -105,7 +105,7 @@ public:
 	void build(unsigned int, const vpp::RenderPassInstance&) override;
 	std::vector<vk::ClearValue> clearValues(unsigned int) override;
 	void beforeRender(vk::CommandBuffer cmdBuffer) override;
-	vk::SubmitInfo submit(vk::CommandBuffer cmd, vk::Semaphore wait, vk::Semaphore signal) override;
+	AdditionalSemaphores submit(unsigned int id) override;
 
 	ParticleSystem& ps() const { return *app_->particleSystem; }
 
