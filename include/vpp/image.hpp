@@ -17,10 +17,6 @@ namespace vpp
 class Image : public MemoryResource
 {
 public:
-	using EmptyWorkPtr = std::unique_ptr<Work<void>>;
-	using DataWorkPtr = std::unique_ptr<Work<std::uint8_t&>>;
-
-public:
 	Image() = default;
 	Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
 	~Image();
@@ -31,18 +27,10 @@ public:
 	///Creates the Image for two-step-initiazation.
 	void create(const Device& dev, const vk::ImageCreateInfo& inf, vk::MemoryPropertyFlags flgs = {});
 
-	//TODO: some functionality for layouts (storing the current layout reasonable?)
-	///Records a image layout change command into the given command buffer.
-	void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::ImageLayout oldlayout, vk::ImageLayout
-		newlayout) const;
-
-	///Queues up work on the device to change the image layout and returns the work handle.
-	EmptyWorkPtr changeLayout(vk::ImageLayout oldlayout, vk::ImageLayout newlayout) const;
-
 	///Fills the image with the given data.
 	///Expects that the image was either created with the host visible memory flag or
 	///with the transfer dst flag.
-	EmptyWorkPtr fill(const std::uint8_t& data, std::size_t size, vk::Format format,
+	WorkPtr fill(const std::uint8_t& data, std::size_t size, vk::Format format,
 		const vk::Extent3D& extent) const;
 
 	///Asynchronously retrieves the image data and returns the work handle.
@@ -56,6 +44,12 @@ public:
 protected:
 	vk::Image image_ {};
 };
+
+WorkPtr changeLayout(const Device& dev, vk::Image img, vk::ImageLayout ol, vk::ImageLayout nl,
+	vk::ImageAspectFlags aspect);
+
+inline WorkPtr changeLayout(const Image& img, vk::ImageLayout ol, vk::ImageLayout nl,
+	vk::ImageAspectFlags aspect) { return changeLayout(img.device(), img, ol, nl, aspect); }
 
 ///Viewable image, can be e.g. used as framebuffer attachment.
 class ViewableImage : public ResourceReference<ViewableImage>

@@ -55,6 +55,10 @@ class Work<void> : public WorkBase
 {
 };
 
+//Convinience typedefs
+using WorkPtr = std::unique_ptr<Work<void>>;
+using DataWorkPtr = std::unique_ptr<Work<std::uint8_t&>>;
+
 ///Work implementation that can be used (for void or derived from for other types) to signal that
 ///there is no work to be done. This may be used e.g. in cases where functions might require
 ///additional gpu work and therefore return a work pointer, but in some cases there is no extra

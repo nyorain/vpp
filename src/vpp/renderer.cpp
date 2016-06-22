@@ -128,6 +128,8 @@ void SwapChainRenderer::init(RenderImpl builder)
 			auto& statAttach = staticAttachments_[staticAttachmentID];
 			statAttach.init(ainfo.createInfo.viewInfo);
 			attachmentMap[attachmentMapID] = statAttach.vkImageView();
+			changeLayout(statAttach.image(), vk::ImageLayout::undefined, vk::ImageLayout::general,
+				ainfo.createInfo.viewInfo.subresourceRange.aspectMask)->finish();
 
 			attachmentMapID++;
 			staticAttachmentID++;

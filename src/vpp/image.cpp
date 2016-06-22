@@ -49,25 +49,7 @@ void Image::create(const Device& dev, const vk::ImageCreateInfo& info, vk::Memor
 	dev.memoryAllocator().request(image_, reqs, info.tiling, memoryEntry_);
 }
 
-void Image::changeLayoutCommand(vk::CommandBuffer buffer, vk::ImageLayout oldlayout, vk::ImageLayout
-	newlayout) const
-{
-	// vk::ImageMemoryBarrier barrier;
-	// barrier.oldLayout(oldlayout);
-	// barrier.newLayout(newlayout);
-	// barrier.image(vkImage());
-	//
-	// vkCmdPipelineMemory(cmdBuffer, {}, {}, {}, 0, nullptr, 0, nullptr, 1, &barrier);
-}
-
-std::unique_ptr<Work<void>> Image::changeLayout(vk::ImageLayout oldlayout, vk::ImageLayout newlayout) const
-{
-	// auto cmdBuffer = device().commandProvider().get(0);
-	// changeLayoutCommand(cmdBuffer.vkCommandBuffer(), oldlayout, newlayout);
-	// return std::make_unique<CommandWork<void>>(std::move(cmdBuffer));
-}
-
-std::unique_ptr<Work<void>> Image::fill(const std::uint8_t& data, std::size_t size,
+WorkPtr Image::fill(const std::uint8_t& data, std::size_t size,
 	vk::Format format, const vk::Extent3D& extent) const
 {
 	// assureMemory();
@@ -108,6 +90,71 @@ std::unique_ptr<Work<void>> Image::fill(const std::uint8_t& data, std::size_t si
 	//
 	// 	return std::make_unique<WorkImpl>(std::move(cmdBuffer), std::move(uploadBuffer));
 	// }
+}
+
+//free utility functions
+WorkPtr changeLayout(const Device& dev, vk::Image img, vk::ImageLayout ol, vk::ImageLayout nl,
+	vk::ImageAspectFlags aspect)
+{
+	vk::ImageMemoryBarrier barrier;
+	barrier.oldLayout = ol;
+	barrier.newLayout = nl;
+	barrier.image = img;
+	barrier.subresourceRange = {aspect, 0, 1, 0, 1};
+
+	switch(ol)
+	{
+	case vk::ImageLayout::undefined:
+		barrier.srcAccessMask = {}; break;
+	case vk::ImageLayout::preinitialized:
+		barrier.srcAccessMask = vk::AccessBits::hostWrite; break;
+	case vk::ImageLayout::colorAttachmentOptimal:
+		barrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite; break;
+	case vk::ImageLayout::depthStencilAttachmentOptimal:
+		barrier.srcAccessMask = vk::AccessBits::depthStencilAttachmentWrite; break;
+	case vk::ImageLayout::transferSrcOptimal:
+		barrier.srcAccessMask = vk::AccessBits::transferRead; break;
+	case vk::ImageLayout::transferDstOptimal:
+		barrier.srcAccessMask = vk::AccessBits::transferWrite; break;
+	case vk::ImageLayout::shaderReadOnlyOptimal:
+		barrier.srcAccessMask = vk::AccessBits::shaderRead; break;
+	}
+
+	switch(nl)
+	{
+	case vk::ImageLayout::transferDstOptimal:
+		barrier.dstAccessMask = vk::AccessBits::transferWrite; break;
+		break;
+
+	case vk::ImageLayout::transferSrcOptimal:
+		barrier.srcAccessMask |= vk::AccessBits::transferRead;
+		barrier.dstAccessMask = vk::AccessBits::transferRead;
+		break;
+
+	case vk::ImageLayout::colorAttachmentOptimal:
+		barrier.srcAccessMask = vk::AccessBits::transferRead;
+		barrier.dstAccessMask = vk::AccessBits::colorAttachmentWrite;
+		break;
+
+	case vk::ImageLayout::depthStencilAttachmentOptimal:
+		barrier.dstAccessMask |= vk::AccessBits::depthStencilAttachmentWrite;
+		break;
+
+	case vk::ImageLayout::shaderReadOnlyOptimal:
+		if(!barrier.srcAccessMask)
+			barrier.srcAccessMask = vk::AccessBits::hostWrite | vk::AccessBits::transferWrite;
+		barrier.dstAccessMask = vk::AccessBits::shaderRead;
+		break;
+	}
+
+	auto cmdBuffer = dev.commandProvider().get(0);
+	vk::beginCommandBuffer(cmdBuffer, {});
+
+	const auto stage = vk::PipelineStageBits::topOfPipe;
+	vk::cmdPipelineBarrier(cmdBuffer, stage, stage, {}, {}, {}, {barrier});
+	vk::endCommandBuffer(cmdBuffer);
+
+	return std::make_unique<CommandWork<void>>(std::move(cmdBuffer));
 }
 
 //static infos

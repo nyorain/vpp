@@ -47,7 +47,7 @@ void swap(Buffer& a, Buffer& b) noexcept
 }
 
 ///TODO: split up in smaller parts
-std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bool prefdirect) const
+WorkPtr Buffer::fill(const std::vector<BufferData>& data, bool prefdirect) const
 {
 	//TODO: check for overflow (too much data given?)
 	//when to use vkCmdUpdateBuffer (multiple times if needed) and when vkCmdCopyBuffer?
@@ -221,7 +221,7 @@ std::unique_ptr<Work<void>> Buffer::fill(const std::vector<BufferData>& data, bo
 	}
 }
 
-std::unique_ptr<Work<std::uint8_t&>> Buffer::retrieve() const
+DataWorkPtr Buffer::retrieve() const
 {
 	//needed here? or throw if not yet allocated? there cannot be data to retrieved if the
 	//memory is allocated by this call...

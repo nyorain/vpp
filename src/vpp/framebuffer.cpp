@@ -70,7 +70,6 @@ void Framebuffer::create(const Device& dev, const vk::Extent2D& size,
 	}
 }
 
-
 void Framebuffer::init(vk::RenderPass rp, const AttachmentsInfo& attachments,
 	const ExtAttachments& extAttachments)
 {
@@ -88,7 +87,11 @@ void Framebuffer::init(vk::RenderPass rp, const std::vector<vk::ImageViewCreateI
 		throw std::logic_error("vpp::Framebuffer::init: to few viewInfos");
 
 	for(std::size_t i(0); i < attachments_.size(); ++i)
+	{
 		attachments_[i].init(viewInfo[i]);
+		changeLayout(attachments_[i].image(), vk::ImageLayout::undefined, vk::ImageLayout::general,
+			viewInfo[i].subresourceRange.aspectMask)->finish();
+	}
 
 	//framebuffer
 	//attachments

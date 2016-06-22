@@ -54,7 +54,7 @@ std::vector<vk::ClearValue> ParticleRenderer::clearValues(unsigned int)
 void ParticleRenderer::beforeRender(vk::CommandBuffer cmdBuffer)
 {
 	vk::BufferMemoryBarrier bufferBarrier;
-	bufferBarrier.srcAccessMask = vk::AccessBits::shaderWrite;
+	bufferBarrier.srcAccessMask = vk::AccessBits::shaderWrite | vk::AccessBits::shaderRead;
 	bufferBarrier.dstAccessMask = vk::AccessBits::vertexAttributeRead;
 	bufferBarrier.buffer = ps().particlesBuffer_.vkBuffer();
 	bufferBarrier.offset = 0;
@@ -62,8 +62,8 @@ void ParticleRenderer::beforeRender(vk::CommandBuffer cmdBuffer)
 	bufferBarrier.srcQueueFamilyIndex = vk::queueFamilyIgnored;
 	bufferBarrier.dstQueueFamilyIndex = vk::queueFamilyIgnored;
 
-	vk::cmdPipelineBarrier(cmdBuffer, vk::PipelineStageBits::allCommands,
-		vk::PipelineStageBits::topOfPipe, {}, {}, {&bufferBarrier}, {});
+	vk::cmdPipelineBarrier(cmdBuffer, vk::PipelineStageBits::computeShader,
+		vk::PipelineStageBits::vertexShader, {}, {}, {&bufferBarrier}, {});
 }
 
 ParticleRenderer::AdditionalSemaphores ParticleRenderer::submit(unsigned int id)
@@ -80,6 +80,7 @@ ParticleRenderer::AdditionalSemaphores ParticleRenderer::submit(unsigned int id)
 	dev.submitManager().add(*app_->context->computeQueue(), submitInfo);
 
 	return {{computeSemaphore_, vk::PipelineStageBits::allCommands}};
+	//return {};
 }
 
 //ParticleSystem

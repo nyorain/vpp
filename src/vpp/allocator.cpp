@@ -238,7 +238,7 @@ void DeviceMemoryAllocator::allocate(unsigned int type)
 	allocate(type, reqs);
 
 	//remove allocated reqs
-	//TODO: use efficient algorithm
+	//TODO: use efficient std algorithm with less resize/moves
 	for(auto& req : reqs)
 	{
 		for(auto it = requirements_.begin(); it != requirements_.end();)
@@ -264,7 +264,7 @@ void DeviceMemoryAllocator::allocate(unsigned int type, const std::vector<Requir
 	//there. First all linear resources, then all optimal resources.
 	for(auto& req : requirements)
 	{
-		if(req->type != RequirementType::buffer)
+		if(req->type == RequirementType::optimalImage)
 		{
 			applyGran = true;
 			continue;
@@ -305,6 +305,8 @@ void DeviceMemoryAllocator::allocate(unsigned int type, const std::vector<Requir
 		auto isBuffer = (res.first->type == RequirementType::buffer);
 		if(isBuffer) vk::bindBufferMemory(vkDevice(), res.first->buffer, mem->vkDeviceMemory(), offset);
 		else vk::bindImageMemory(vkDevice(), res.first->image, mem->vkDeviceMemory(), offset);
+
+		std::cout << "buffer?: " << isBuffer << " " << res.first->buffer << "\n";
 	}
 
 	memories_.push_back(std::move(mem));
@@ -424,9 +426,12 @@ AllocationType DeviceMemoryAllocator::toAllocType(RequirementType type)
 	switch(type)
 	{
 		case RequirementType::buffer:
-		case RequirementType::linearImage: return AllocationType::linear;
-		case RequirementType::optimalImage: return AllocationType::optimal;
-		default: return AllocationType::none;
+		case RequirementType::linearImage:
+			return AllocationType::linear;
+		case RequirementType::optimalImage:
+			return AllocationType::optimal;
+		default:
+			return AllocationType::none;
 	}
 }
 

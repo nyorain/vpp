@@ -44,10 +44,6 @@ public:
 class Buffer : public MemoryResource
 {
 public:
-	using EmptyWorkPtr = std::unique_ptr<Work<void>>;
-	using DataWorkPtr = std::unique_ptr<Work<std::uint8_t&>>;
-
-public:
 	Buffer() = default;
 	Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
 	~Buffer();
@@ -66,7 +62,7 @@ public:
 	///\param direct Specifies whether direct transfer via cmdUpdateBuffer should be preferred over a
 	///uploadBuffer copy if possible. By default it is preferred. Will only be taken into account if
 	///the buffer is device local and the given data makes direct transfer possible.
-	EmptyWorkPtr fill(const std::vector<BufferData>& data, bool direct = true) const;
+	WorkPtr fill(const std::vector<BufferData>& data, bool direct = true) const;
 
 	//TODO: retrieve only specific range
 	///Retrives the data stored in the buffer.

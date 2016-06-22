@@ -252,7 +252,7 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	//be used. if an allocation fits a free segment between allocations really good, it should
 	//be chosen.
 	//
-	//e.g. --allocation---- || -----A) free 10MB----- || -----allocation---- || ----B) free 20---
+	//e.g. --allocation---- || -----A) free 10MB----- || -----allocation---- || ----B) free 20MB---
 	//1) first call to allocatable: size 9MB, would fit free segment A as well as B
 	//B is chosen since it results in less space waste
 	//2) first call to allocatable: size 15MB, does now fit if none of the free segments
@@ -271,7 +271,7 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	const AllocationEntry* old = &start;
 	for(auto& alloc : allocations_)
 	{
-		auto alignedOffset = old->allocation.offset;
+		auto alignedOffset = old->allocation.end();
 
 		//check for granularity between prev and to be inserted
 		if(old->type != AllocationType::none && old->type != type)
@@ -283,7 +283,7 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 		//check for granularity between next and to be inserted
 		auto end = alignedOffset + size;
 		if(alloc.type != AllocationType::none && alloc.type != type)
-			end = (alignedOffset + size + granularity) & ~(granularity - 1);
+			end = (end + granularity) & ~(granularity - 1);
 
 		if(end < alloc.allocation.offset)
 		{
@@ -302,13 +302,11 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	//check for segment AFTER the last allcation, since the loop just checks the segments
 	//between two allocations
 	//just copied from above with the "new allocation" alloc being an empty past-end allocation
-	auto alignedOffset = old->allocation.offset;
+	auto alignedOffset = old->allocation.end();
 
-	//check for granularity between prev and to be inserted
 	if(old->type != AllocationType::none && old->type != type)
 		alignedOffset = (alignedOffset + granularity) & ~(granularity - 1);
 
-	//apply alignment
 	alignedOffset = ((alignedOffset + alignment) & ~(alignment - 1));
 
 	if(alignedOffset + size < this->size())
