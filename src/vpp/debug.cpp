@@ -45,7 +45,6 @@ vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags, vk::DebugReport
 	const char* pMsg, void* pUserData)
 {
 	auto callback = static_cast<DebugCallback*>(pUserData);
-	//auto sflags = static_cast<vk::DebugReportBitsEXT>(flags);
 	return callback->call({flags, objType, srcObject, location, msgCode, pLayerPrefix, pMsg});
 }
 
@@ -56,8 +55,7 @@ DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flag
 	: instance_(instance)
 {
 	VPP_LOAD_PROC(vkInstance(), CreateDebugReportCallbackEXT);
-	auto ptr = reinterpret_cast<vk::PfnDebugReportCallbackEXT>(&defaultMessageCallback);
-	vk::DebugReportCallbackCreateInfoEXT createInfo(flags, ptr, this);
+	vk::DebugReportCallbackCreateInfoEXT createInfo(flags, &defaultMessageCallback, this);
 	VPP_CALL(pfCreateDebugReportCallbackEXT(vkInstance(), &createInfo, nullptr, &debugCallback_));
 }
 

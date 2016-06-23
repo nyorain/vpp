@@ -96,9 +96,6 @@ void SwapChain::initSwapChain()
     buffers_.reserve(count);
     for(auto& img : imgs)
 	{
-		changeLayout(device(), img, vk::ImageLayout::undefined, vk::ImageLayout::presentSrcKHR,
-			vk::ImageAspectBits::color)->finish();
-
 		vk::ComponentMapping components{
 			vk::ComponentSwizzle::r,
 			vk::ComponentSwizzle::g,

@@ -83,12 +83,7 @@ void Framebuffer::init(vk::RenderPass rp, const std::vector<vk::ImageViewCreateI
 	if(viewInfo.size() < attachments_.size())
 		throw std::logic_error("vpp::Framebuffer::init: to few viewInfos");
 
-	for(std::size_t i(0); i < attachments_.size(); ++i)
-	{
-		attachments_[i].init(viewInfo[i]);
-		changeLayout(attachments_[i].image(), vk::ImageLayout::undefined, vk::ImageLayout::general,
-			viewInfo[i].subresourceRange.aspectMask)->finish();
-	}
+	for(std::size_t i(0); i < attachments_.size(); ++i) attachments_[i].init(viewInfo[i]);
 
 	//framebuffer
 	//attachments

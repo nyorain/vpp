@@ -354,7 +354,7 @@ void initRenderPass(App& app)
 	attachments[0].storeOp = vk::AttachmentStoreOp::store;
 	attachments[0].stencilLoadOp = vk::AttachmentLoadOp::dontCare;
 	attachments[0].stencilStoreOp = vk::AttachmentStoreOp::dontCare;
-	attachments[0].initialLayout = vk::ImageLayout::presentSrcKHR;
+	attachments[0].initialLayout = vk::ImageLayout::undefined;
 	attachments[0].finalLayout = vk::ImageLayout::presentSrcKHR;
 
 	vk::AttachmentReference colorReference;
@@ -368,8 +368,8 @@ void initRenderPass(App& app)
 	attachments[1].storeOp = vk::AttachmentStoreOp::store;
 	attachments[1].stencilLoadOp = vk::AttachmentLoadOp::dontCare;
 	attachments[1].stencilStoreOp = vk::AttachmentStoreOp::dontCare;
-	attachments[1].initialLayout = vk::ImageLayout::general;
-	attachments[1].finalLayout = vk::ImageLayout::general;
+	attachments[1].initialLayout = vk::ImageLayout::undefined;
+	attachments[1].finalLayout = vk::ImageLayout::undefined;
 	// attachments[1].initialLayout = vk::ImageLayout::depthStencilAttachmentOptimal;
 	// attachments[1].finalLayout = vk::ImageLayout::depthStencilAttachmentOptimal;
 
