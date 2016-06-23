@@ -1,5 +1,6 @@
 #include <vpp/pipeline.hpp>
 #include <vpp/vk.hpp>
+#include <vpp/utility/file.hpp>
 
 namespace vpp
 {
@@ -203,39 +204,31 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 }
 DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& other) noexcept
 {
-	this->swap(other);
+	swap(*this, other);
 }
 
-DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout&& other) noexcept
+DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout other) noexcept
 {
 	destroy();
-	this->swap(other);
+	swap(*this, other);
 	return *this;
 }
 
 DescriptorSetLayout::~DescriptorSetLayout()
 {
-	destroy();
-}
-
-void DescriptorSetLayout::swap(DescriptorSetLayout& other) noexcept
-{
-	using std::swap;
-
-	swap(bindings_, other.bindings_);
-	swap(layout_, other.layout_);
-	swap(device_, other.device_);
-}
-
-void DescriptorSetLayout::destroy()
-{
 	if(device_ && vkDescriptorSetLayout())
 	{
 		vk::destroyDescriptorSetLayout(vkDevice(), layout_, nullptr);
 	}
+}
 
-	layout_ = {};
-	bindings_.clear();
+void swap(DescriptorSetLayout& a, DescriptorSetLayout& b) noexcept
+{
+	using std::swap;
+
+	swap(a.bindings_, b.bindings_);
+	swap(a.layout_, b.layout_);
+	swap(a.device_, b.device_);
 }
 
 //DescriptorSet
@@ -254,13 +247,12 @@ DescriptorSet::DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPo
 
 DescriptorSet::DescriptorSet(DescriptorSet&& other) noexcept
 {
-	this->swap(other);
+	swap(*this, other);
 }
 
-DescriptorSet& DescriptorSet::operator=(DescriptorSet&& other) noexcept
+DescriptorSet& DescriptorSet::operator=(DescriptorSet other) noexcept
 {
-	this->~DescriptorSet();
-	this->swap(other);
+	swap(*this, other);
 	return *this;
 }
 
@@ -270,13 +262,13 @@ DescriptorSet::~DescriptorSet()
 	descriptorSet_ = {};
 }
 
-void DescriptorSet::swap(DescriptorSet& other) noexcept
+void swap(DescriptorSet& a, DescriptorSet& b) noexcept
 {
 	using std::swap;
 
-	swap(descriptorSet_, other.descriptorSet_);
-	swap(layout_, other.layout_);
-	swap(device_, other.device_);
+	swap(a.descriptorSet_, b.descriptorSet_);
+	swap(a.layout_, b.layout_);
+	swap(a.device_, b.device_);
 }
 
 void DescriptorSet::update(const std::vector<vk::WriteDescriptorSet>& writes,
@@ -300,9 +292,8 @@ Pipeline::Pipeline(Pipeline&& other) noexcept
 	swap(*this, other);
 }
 
-Pipeline& Pipeline::operator=(Pipeline&& other) noexcept
+Pipeline& Pipeline::operator=(Pipeline other) noexcept
 {
-	this->~Pipeline();
 	swap(*this, other);
 	return *this;
 }
@@ -323,6 +314,24 @@ void swap(Pipeline& a, Pipeline& b) noexcept
 	swap(a.pipelineLayout_, b.pipelineLayout_);
 	swap(a.pipeline_, b.pipeline_);
 	swap(a.device_, b.device_);
+}
+
+//cache
+void savePipelineCache(vk::Device dev, vk::PipelineCache cache, const char* filename)
+{
+	auto data = vk::getPipelineCacheData(dev, cache);
+	writeFile(filename, data);
+}
+
+vk::PipelineCache loadPipelineCache(vk::Device dev, const char* filename)
+{
+	auto data = readFile(filename);
+
+	vk::PipelineCacheCreateInfo info;
+	info.initialDataSize = data.size();
+	info.pInitialData = data.data();
+
+	return vk::createPipelineCache(dev, info);
 }
 
 //utility -format size in bits

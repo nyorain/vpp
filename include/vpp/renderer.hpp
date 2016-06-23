@@ -108,7 +108,7 @@ public:
 	~SwapChainRenderer();
 
 	SwapChainRenderer(SwapChainRenderer&& other) noexcept;
-	SwapChainRenderer& operator=(SwapChainRenderer&& other) noexcept;
+	SwapChainRenderer& operator=(SwapChainRenderer other) noexcept;
 
 	///Creates all static attachments and all framebuffers.
 	void create(const SwapChain& swapChain, const CreateInfo& info);
@@ -157,10 +157,6 @@ protected:
 	std::vector<RenderBuffer> renderBuffers_;
 	std::vector<ViewableImage> staticAttachments_;
 	CreateInfo info_;
-
-protected:
-	void destroyRenderBuffers();
-	void buildCommandBuffers(RendererBuilder& builder);
 };
 
 }

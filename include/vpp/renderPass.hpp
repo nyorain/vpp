@@ -19,7 +19,7 @@ public:
 	~RenderPass();
 
 	RenderPass(RenderPass&& other) noexcept;
-	RenderPass& operator=(RenderPass&& other) noexcept;
+	RenderPass& operator=(RenderPass other) noexcept;
 
 	const std::vector<vk::AttachmentDescription>& attachments() const { return attachments_; }
 	const std::vector<vk::SubpassDependency>& dependencies() const { return dependencies_; }

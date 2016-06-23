@@ -21,7 +21,7 @@ public:
     virtual ~Surface();
 
 	Surface(Surface&& other) noexcept;
-	Surface& operator=(Surface&& other) noexcept;
+	Surface& operator=(Surface other) noexcept;
 
     const vk::Instance& vkInstance() const { return instance_; }
     const vk::SurfaceKHR& vkSurface() const { return surface_; }

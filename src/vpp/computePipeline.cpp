@@ -26,7 +26,7 @@ ComputePipeline::ComputePipeline(const Device& dev, const CreateInfo& createInfo
 	info.stage = createInfo.shader.vkStageInfo();
 	info.layout = pipelineLayout_;
 
-	vk::createComputePipelines(vkDevice(), {}, 1, info, nullptr, pipeline_);
+	vk::createComputePipelines(vkDevice(), createInfo.cache, 1, info, nullptr, pipeline_);
 }
 
 ComputePipeline::ComputePipeline(ComputePipeline&& other) noexcept : Pipeline(std::move(other))

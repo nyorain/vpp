@@ -24,9 +24,8 @@ Surface::Surface(Surface&& other) noexcept
 	swap(*this, other);
 }
 
-Surface& Surface::operator=(Surface&& other) noexcept
+Surface& Surface::operator=(Surface other) noexcept
 {
-	this->~Surface();
 	swap(*this, other);
 	return *this;
 }

@@ -41,22 +41,20 @@ RenderPass::RenderPass(const Device& dev, vk::RenderPass pass, const vk::RenderP
 RenderPass::~RenderPass()
 {
 	if(vkRenderPass()) vk::destroyRenderPass(vkDevice(), vkRenderPass());
-
-	renderPass_ = {};
-	attachments_.clear();
-	subpasses_.clear();
-	dependencies_.clear();
-	references_.clear();
 }
 
-RenderPass::RenderPass(RenderPass&& other) noexcept
+RenderPass::RenderPass(RenderPass&& other) noexcept : Resource(other)
 {
-	swap(*this, other);
+	attachments_ = std::move(other.attachments_);
+	references_ = std::move(other.references_);
+	subpasses_ = std::move(other.subpasses_);
+	dependencies_ = std::move(other.dependencies_);
+
+	std::swap(renderPass_, other.renderPass_);
 }
 
-RenderPass& RenderPass::operator=(RenderPass&& other) noexcept
+RenderPass& RenderPass::operator=(RenderPass other) noexcept
 {
-	this->~RenderPass();
 	swap(*this, other);
 	return *this;
 }

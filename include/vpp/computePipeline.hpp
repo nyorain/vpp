@@ -19,6 +19,7 @@ public:
 		std::vector<DescriptorSetLayout*> descriptorSetLayouts;
 		ShaderStage shader;
 		vk::PipelineCreateFlags flags {};
+		vk::PipelineCache cache {};
 	};
 
 public:

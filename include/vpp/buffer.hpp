@@ -49,7 +49,7 @@ public:
 	~Buffer();
 
 	Buffer(Buffer&& other) noexcept;
-	Buffer& operator=(Buffer&& other) noexcept;
+	Buffer& operator=(Buffer other) noexcept;
 
 	///Fills the buffer with the given data.
 	///Does this either by memory mapping the buffer or by copying it via command buffer.

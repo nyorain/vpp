@@ -24,7 +24,7 @@ public:
 	~DeviceMemoryAllocator();
 
 	DeviceMemoryAllocator(DeviceMemoryAllocator&& other) noexcept;
-	DeviceMemoryAllocator& operator=(DeviceMemoryAllocator&& other) noexcept;
+	DeviceMemoryAllocator& operator=(DeviceMemoryAllocator other) noexcept;
 
 	///Requests memory for the given vulkan buffer and stores a (pending) reference to it into
 	///the given entry.
@@ -105,7 +105,7 @@ public:
 	~MemoryEntry();
 
 	MemoryEntry(MemoryEntry&& other) noexcept;
-	MemoryEntry& operator=(MemoryEntry&& other) noexcept;
+	MemoryEntry& operator=(MemoryEntry other) noexcept;
 
 	///Will try to map the Memory and return a view to the location where this entry is placed.
 	///Throws a std::logic_error if the DeviceMemory is not mappable.

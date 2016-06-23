@@ -5,154 +5,217 @@
 namespace vpp
 {
 
-///CommandSubmission declaration
-class CommandSubmission : public Resource
+struct SubmitManager::Submission
 {
-public:
-	CommandSubmission(const Device& dev) : Resource(dev) {}
-	~CommandSubmission();
-
-	vk::Queue queue {};
 	vk::SubmitInfo info;
-	vk::Fence fence {};
-	bool completed {}; //fence status cache
-	std::vector<vk::CommandBuffer> buffers {}; //to make the cmdBuffer member of info stay vaid
+	std::vector<vk::CommandBuffer> buffers;
+	std::unique_ptr<CommandExecutionState*> state;
 };
 
 //lock typedef for easier lock_guard using
 using Lock = std::lock_guard<std::mutex>;
 
-//CommandSubmission
-CommandSubmission::~CommandSubmission()
+//Fence
+Fence::Fence(const Device& dev) : Fence(dev, {})
 {
-	//if(fence) vk::destroyFence(vkDevice(), fence, nullptr);
+}
+
+Fence::Fence(const Device& dev, const vk::FenceCreateInfo& info) : Resource(dev)
+{
+	fence_ = vk::createFence(device(), info);
+}
+
+Fence::~Fence()
+{
+	if(fence_) vk::destroyFence(device(), fence_);
+}
+
+void swap(Fence& a, Fence& b) noexcept
+{
+	std::swap(a.fence_, b.fence_);
+	std::swap(a.device_, b.device_);
 }
 
 //ExecutionState
+CommandExecutionState::CommandExecutionState(const Device& dev, CommandExecutionState** ptr)
+	: Resource(dev), self_(ptr)
+{
+	*self_ = this;
+}
+
+CommandExecutionState::~CommandExecutionState()
+{
+	if(self_) self_ = nullptr;
+}
+
+CommandExecutionState::CommandExecutionState(CommandExecutionState&& other) noexcept
+	: Resource(other), fence_(std::move(other.fence_)), self_(other.self_)
+{
+	if(self_) *self_ = this;
+	other.self_ = nullptr;
+}
+
+CommandExecutionState& CommandExecutionState::operator=(CommandExecutionState&& other) noexcept
+{
+	Resource::init(other.device());
+	if(self_) *self_ = nullptr;
+
+	fence_ = std::move(other.fence_);
+	self_ = other.self_;
+	if(self_) *self_ = this;
+	other.self_ = nullptr;
+}
+
 void CommandExecutionState::submit()
 {
 	if(submitted()) return;
-	device().submitManager().submit(submission_);
+	device().submitManager().submit(*this);
 }
 
 void CommandExecutionState::wait(std::uint64_t timeout)
 {
 	if(completed()) return;
 	submit();
-	vk::waitForFences(vkDevice(), 1, submission_->fence, 0, timeout);
+	vk::waitForFences(vkDevice(), 1, *fence_, 0, timeout);
 }
 
 bool CommandExecutionState::submitted() const
 {
-	return (submission_->fence);
+	return (fence_.get());
 }
 
 bool CommandExecutionState::completed() const
 {
 	if(!submitted()) return false;
-	if(submission_->completed) return true;
 
-	auto result = vk::getFenceStatus(vkDevice(), submission_->fence);
-	if(result == vk::Result::success) submission_->completed = true;
-
-	return submission_->completed;
-}
-
-const Resource& CommandExecutionState::resourceRef() const
-{
-	return *submission_;
+	auto result = vk::getFenceStatus(vkDevice(), *fence_);
+	return (result == vk::Result::success);
 }
 
 //SubmitManager
+SubmitManager::SubmitManager(const Device& dev) : Resource(dev)
+{
+}
+
+SubmitManager::~SubmitManager()
+{
+}
+
 void SubmitManager::submit()
 {
 	while(!submissions_.empty())
 		submit(submissions_.begin()->first);
 }
 
-vk::Fence SubmitManager::submit(vk::Queue queue)
+void SubmitManager::submit(vk::Queue queue)
 {
 	Lock lock(mutex_);
 
 	auto it = submissions_.find(queue);
-	if(it == submissions_.end()) return {};
+	if(it == submissions_.end()) return;
 
 	std::vector<vk::SubmitInfo> submitInfos;
 	submitInfos.reserve(it->second.size());
 
+	bool createFence = false;
 	for(auto& submission : it->second)
-		submitInfos.push_back(submission->info);
+	{
+		if(submission.state && *submission.state) createFence = true;
+		submitInfos.push_back(submission.info);
+	}
 
+	std::shared_ptr<Fence> fence;
 	vk::FenceCreateInfo fenceInfo {};
-	auto fence = vk::createFence(vkDevice(), fenceInfo);
-	vk::queueSubmit(queue, submitInfos, fence);
+	if(createFence)
+	{
+		fence = std::make_shared<Fence>(device(), fenceInfo);
+		vk::queueSubmit(queue, submitInfos, *fence);
+	}
+	else
+	{
+		vk::queueSubmit(queue, submitInfos);
+	}
 
-	for(auto& submission : it->second)
-		submission->fence = fence;
+	if(createFence)
+	{
+		for(auto& submission : it->second)
+		{
+			if(submission.state && *submission.state)
+				(*submission.state)->fence_ = fence;
+		}
+	}
 
 	submissions_.erase(it);
-	return fence;
 }
 
-CommandExecutionState SubmitManager::add(vk::Queue queue, const vk::SubmitInfo& info)
+void SubmitManager::add(vk::Queue queue, const vk::SubmitInfo& info, CommandExecutionState* state)
 {
-	auto submission = std::make_shared<CommandSubmission>(device());
-	submission->info = info;
-	submission->queue = queue;
+	Submission submission;
+	submission.info = info;
+	if(state)
+	{
+		submission.state = std::make_unique<CommandExecutionState*>();
+		*state = {device(), submission.state.get()};
+	}
 
 	Lock lock(mutex_);
-	submissions_[queue].push_back(submission);
-
-	return {submission};
+	submissions_[queue].emplace_back(std::move(submission));
 }
 
-CommandExecutionState SubmitManager::add(vk::Queue queue, const std::vector<vk::CommandBuffer>& bufs)
+void SubmitManager::add(vk::Queue queue, const std::vector<vk::CommandBuffer>& bufs,
+	CommandExecutionState* state)
 {
-	auto submission = std::make_shared<CommandSubmission>(device());
-	submission->buffers = bufs;
+	Submission submission;
+	submission.buffers = bufs;
+	if(state)
+	{
+		submission.state = std::make_unique<CommandExecutionState*>();
+		*state = {device(), submission.state.get()};
+	}
 
 	vk::SubmitInfo info;
-	info.commandBufferCount = submission->buffers.size();
-	info.pCommandBuffers = submission->buffers.data();
+	info.commandBufferCount = submission.buffers.size();
+	info.pCommandBuffers = submission.buffers.data();
 
-	submission->info = info;
-	submission->queue = queue;
+	submission.info = info;
 
 	Lock lock(mutex_);
-	submissions_[queue].push_back(submission);
-
-	return {submission};
+	submissions_[queue].emplace_back(std::move(submission));
 }
 
-CommandExecutionState SubmitManager::add(vk::Queue queue, vk::CommandBuffer buffer)
+void SubmitManager::add(vk::Queue queue, vk::CommandBuffer buffer, CommandExecutionState* state)
 {
-	auto submission = std::make_shared<CommandSubmission>(device());
-	submission->buffers = {buffer};
+	Submission submission;
+	submission.buffers = {buffer};
+	if(state)
+	{
+		submission.state = std::make_unique<CommandExecutionState*>();
+		*state = {device(), submission.state.get()};
+	}
 
 	vk::SubmitInfo info;
-	info.commandBufferCount = submission->buffers.size();
-	info.pCommandBuffers = submission->buffers.data();
+	info.commandBufferCount = submission.buffers.size();
+	info.pCommandBuffers = submission.buffers.data();
 
-	submission->info = info;
-	submission->queue = queue;
+	submission.info = info;
 
 	Lock lock(mutex_);
-	submissions_[queue].push_back(submission);
-
-	return {submission};
+	submissions_[queue].emplace_back(std::move(submission));
 }
 
-void SubmitManager::submit(const CommandSubmissionPtr& ptr)
+void SubmitManager::submit(const CommandExecutionState& id)
 {
 	std::unique_lock<std::mutex> lock(mutex_);
 
-	for(auto entry : submissions_)
+	for(auto& ent : submissions_)
 	{
-		auto it = std::find(entry.second.begin(), entry.second.end(), ptr);
-		if(it != entry.second.end())
+		auto it = std::find_if(ent.second.begin(), ent.second.end(),
+			[&](const Submission& subm) { return(subm.state && *subm.state == &id); });
+
+		if(it != ent.second.end())
 		{
 			lock.unlock(); //the next submit call will lock it again.
-			submit((*it)->queue);
+			submit(ent.first);
 			return;
 		}
 	}

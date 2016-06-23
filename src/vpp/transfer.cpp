@@ -70,13 +70,9 @@ TransferManager::BufferRange::BufferRange(BufferRange&& other) noexcept
 	swap(*this, other);
 }
 
-TransferRange& TransferManager::BufferRange::operator=(BufferRange&& other) noexcept
+TransferRange& TransferManager::BufferRange::operator=(BufferRange other) noexcept
 {
-	if(buffer_) buffer_->release(allocation());
-	buffer_ = {};
-	allocation_ = {};
 	swap(*this, other);
-
 	return *this;
 }
 

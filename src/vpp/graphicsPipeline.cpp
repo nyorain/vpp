@@ -145,8 +145,7 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 	pipelineInfo.pDepthStencilState = &createInfo.states.depthStencil;
 	pipelineInfo.pTessellationState = nullptr;
 
-	vk::createGraphicsPipelines(vkDevice(), {}, 1, pipelineInfo, nullptr, pipeline_);
-	//vkCreateGraphicsPipelines(reinterpret_cast<VkDevice>(vkDevice()), {}, 1, reinterpret_cast<VkGraphicsPipelineCreateInfo*>(&pipelineInfo), nullptr, reinterpret_cast<VkPipeline*>(&pipeline_));
+	vk::createGraphicsPipelines(vkDevice(), createInfo.cache, 1, pipelineInfo, nullptr, pipeline_);
 }
 
 GraphicsPipeline::GraphicsPipeline(GraphicsPipeline&& other) noexcept : Pipeline(std::move(other))

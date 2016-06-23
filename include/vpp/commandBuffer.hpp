@@ -28,15 +28,14 @@ public:
 	~CommandBuffer();
 
 	CommandBuffer(CommandBuffer&& other) noexcept;
-	CommandBuffer& operator=(CommandBuffer&& other) noexcept;
-
-	void swap(CommandBuffer& other) noexcept;
+	CommandBuffer& operator=(CommandBuffer other) noexcept;
 
 	const CommandPool& commandPool() const { return *commandPool_; }
 	const vk::CommandBuffer& vkCommandBuffer() const { return commandBuffer_; }
 
 	const CommandPool& resourceRef() const { return *commandPool_; }
 	operator vk::CommandBuffer() const { return vkCommandBuffer(); }
+	friend void swap(CommandBuffer& a, CommandBuffer& b) noexcept;
 
 protected:
 	vk::CommandBuffer commandBuffer_ {};
@@ -53,9 +52,7 @@ public:
 	~CommandPool();
 
 	CommandPool(CommandPool&& other) noexcept;
-	CommandPool& operator=(CommandPool&& other) noexcept;
-
-	void swap(CommandPool& other) noexcept;
+	CommandPool& operator=(CommandPool other) noexcept;
 
 	std::vector<CommandBuffer> allocate(std::size_t count,
 		vk::CommandBufferLevel lvl = fwd::commandBufferLevelPrimary);
@@ -68,6 +65,7 @@ public:
 	const vk::CommandPool& vkCommandPool() const { return commandPool_; }
 
 	operator vk::CommandPool() const { return vkCommandPool(); }
+	friend void swap(CommandPool& a, CommandPool& b) noexcept;
 
 protected:
 	vk::CommandPool commandPool_ {};

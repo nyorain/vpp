@@ -24,7 +24,7 @@ public:
 	~MemoryMap();
 
 	MemoryMap(MemoryMap&& other) noexcept;
-	MemoryMap& operator=(MemoryMap&& other) noexcept;
+	MemoryMap& operator=(MemoryMap other) noexcept;
 
 	///Might remaps the mapped range to assure it also includes the given allocation.
 	void remap(const Allocation& allocation);

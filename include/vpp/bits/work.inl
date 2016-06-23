@@ -35,14 +35,14 @@ void CommandWork<R>::finish()
 template<typename R>
 void CommandWork<R>::queue()
 {
-	if(executionState_.submission()) return; //was already queued
+	if(executionState_.valid()) return; //was already queued
 
 	//TODO: correct queues
 	auto buf = cmdBuffer_.vkCommandBuffer();
 	auto* queue = cmdBuffer_.device().queue(cmdBuffer_.commandPool().queueFamily());
 	if(!queue) throw std::logic_error("dummy1");
 
-	executionState_ = cmdBuffer_.device().submitManager().add(queue->vkQueue(), {buf});
+	cmdBuffer_.device().submitManager().add(queue->vkQueue(), {buf}, &executionState_);
 	state_ = WorkBase::State::pending;
 }
 

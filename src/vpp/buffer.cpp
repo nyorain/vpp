@@ -23,9 +23,8 @@ Buffer::Buffer(Buffer&& other) noexcept
 	swap(*this, other);
 }
 
-Buffer& Buffer::operator=(Buffer&& other) noexcept
+Buffer& Buffer::operator=(Buffer other) noexcept
 {
-	this->~Buffer();
 	swap(*this, other);
 	return *this;
 }
@@ -33,17 +32,14 @@ Buffer& Buffer::operator=(Buffer&& other) noexcept
 Buffer::~Buffer()
 {
 	if(vkBuffer()) vk::destroyBuffer(vkDevice(), vkBuffer(), nullptr);
-
-	memoryEntry_ = {};
-	buffer_ = {};
 }
 
 void swap(Buffer& a, Buffer& b) noexcept
 {
 	using std::swap;
 
-	swap(b.memoryEntry_, a.memoryEntry_);
-	swap(b.buffer_, a.buffer_);
+	swap(a.memoryEntry_, b.memoryEntry_);
+	swap(a.buffer_, b.buffer_);
 }
 
 ///TODO: split up in smaller parts

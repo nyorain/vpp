@@ -1,5 +1,6 @@
 #include "particles.hpp"
 #include <vpp/provider.hpp>
+#include <vpp/utility/file.hpp>
 
 #include <random>
 #include <type_traits>
@@ -124,11 +125,16 @@ void ParticleSystem::initGraphicsPipeline()
 		},
 	0}; //at binding 0
 
+	vk::PipelineCache cache;
+	if(vpp::fileExists("gfxCache")) cache = loadPipelineCache(device(), "gfxCache");
+	else cache = vk::createPipelineCache(device(), {});
+
 	vpp::GraphicsPipeline::CreateInfo info;
 	info.descriptorSetLayouts = {graphicsDescriptorSetLayout_};
 	info.vertexBufferLayouts = {vertexBufferLayout_};
 	info.dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
 	info.renderPass = app_.renderPass.vkRenderPass();
+	info.cache = cache;
 
 	info.shader = vpp::ShaderProgram(device());
 	info.shader.stage("particles.vert.spv", {vk::ShaderStageBits::vertex});
@@ -138,15 +144,30 @@ void ParticleSystem::initGraphicsPipeline()
 	info.states.rasterization.cullMode = vk::CullModeBits::none;
 	info.states.inputAssembly.topology = vk::PrimitiveTopology::pointList;
 
+	nytl::Timer timer;
 	graphicsPipeline_ = vpp::GraphicsPipeline(device(), info);
+	std::cout << timer.elapsedTime().milliseconds() << " to create the gfx pipeline.\n";
+
+	vpp::savePipelineCache(device(), cache, "gfxCache");
+	vk::destroyPipelineCache(device(), cache);
 }
 void ParticleSystem::initComputePipeline()
 {
+	vk::PipelineCache cache;
+	if(vpp::fileExists("compCache")) cache = loadPipelineCache(device(), "compCache");
+	else cache = vk::createPipelineCache(device(), {});
+
 	vpp::ComputePipeline::CreateInfo info;
 	info.descriptorSetLayouts = {&computeDescriptorSetLayout_};
 	info.shader = vpp::ShaderStage(device(), "particles.comp.spv", {vk::ShaderStageBits::compute});
+	info.cache = cache;
 
+	nytl::Timer timer;
 	computePipeline_ = vpp::ComputePipeline(device(), info);
+	std::cout << timer.elapsedTime().milliseconds() << " to create the compute pipeline.\n";
+
+	vpp::savePipelineCache(device(), cache, "compCache");
+	vk::destroyPipelineCache(device(), cache);
 }
 
 void ParticleSystem::initDescriptors()

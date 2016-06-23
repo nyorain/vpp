@@ -22,7 +22,7 @@ MemoryMap::MemoryMap(MemoryMap&& other) noexcept
 	swap(*this, other);
 }
 
-MemoryMap& MemoryMap::operator=(MemoryMap&& other) noexcept
+MemoryMap& MemoryMap::operator=(MemoryMap other) noexcept
 {
 	unmap();
 	swap(*this, other);
@@ -271,23 +271,20 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	const AllocationEntry* old = &start;
 	for(auto& alloc : allocations_)
 	{
-		auto alignedOffset = old->allocation.end();
+		vk::DeviceSize alignedOffset = std::ceil(old->allocation.end() / alignment) * alignment;
 
 		//check for granularity between prev and to be inserted
 		if(old->type != AllocationType::none && old->type != type)
-			alignedOffset = (alignedOffset + granularity) & ~(granularity - 1);
-
-		//apply alignment
-		alignedOffset = ((alignedOffset + alignment) & ~(alignment - 1));
+			alignedOffset = std::ceil(alignedOffset / granularity) * granularity;
 
 		//check for granularity between next and to be inserted
 		auto end = alignedOffset + size;
 		if(alloc.type != AllocationType::none && alloc.type != type)
-			end = (end + granularity) & ~(granularity - 1);
+			end = std::ceil(end / granularity) * granularity;
 
 		if(end < alloc.allocation.offset)
 		{
-			auto newWaste = alignedOffset - old->allocation.offset;
+			auto newWaste = alignedOffset - old->allocation.end();
 			newWaste += end - (alignedOffset + size);
 			if(newWaste < bestWaste)
 			{
@@ -302,14 +299,12 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	//check for segment AFTER the last allcation, since the loop just checks the segments
 	//between two allocations
 	//just copied from above with the "new allocation" alloc being an empty past-end allocation
-	auto alignedOffset = old->allocation.end();
+	vk::DeviceSize alignedOffset = std::ceil(old->allocation.end() / alignment) * alignment;
 
 	if(old->type != AllocationType::none && old->type != type)
-		alignedOffset = (alignedOffset + granularity) & ~(granularity - 1);
+		alignedOffset = std::ceil(alignedOffset / granularity) * granularity;
 
-	alignedOffset = ((alignedOffset + alignment) & ~(alignment - 1));
-
-	if(alignedOffset + size < this->size())
+	if(alignedOffset + size <= this->size())
 	{
 		auto newWaste = alignedOffset - old->allocation.offset;
 		if(newWaste < bestWaste)

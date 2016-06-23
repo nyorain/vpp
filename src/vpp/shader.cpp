@@ -1,5 +1,6 @@
 #include <vpp/shader.hpp>
 #include <vpp/vk.hpp>
+#include <vpp/utility/file.hpp>
 
 #include <string>
 #include <fstream>
@@ -10,61 +11,33 @@
 namespace vpp
 {
 
-std::vector<std::uint32_t> readFile(const std::string& filename, bool binary)
-{
-	 auto openmode = std::ios::ate;
-	 if(binary) openmode |= std::ios::binary;
-
-	std::ifstream ifs(filename, openmode);
-	if(!ifs.is_open())
-	{
-		std::cerr << "vpp::readFile: failed to open " << filename << ", " << strerror(errno) << "\n";
-		return {};
-	}
-
-	auto size = ifs.tellg();
-	ifs.seekg(0, std::ios::beg);
-
-	std::vector<std::uint32_t> buffer(std::ceil(size / 4));
-	auto data = reinterpret_cast<char*>(buffer.data());
-	if(!ifs.read(data, size))
-	{
-		std::cerr << "vpp::readFile: failed to read " << filename << ", " << strerror(errno) << "\n";
-		return {};
-	}
-
-	return buffer;
-}
-
-vk::ShaderModule loadShaderModule(vk::Device dev, const std::string& filename)
+vk::ShaderModule loadShaderModule(vk::Device dev, const char* filename)
 {
 	auto code = readFile(filename, true);
-	if(code.empty())
-	{
-		std::cerr << "vpp::ShaderStage::loadModule: failed to load " << filename << "\n";
-		return {};
-	}
-
 	return loadShaderModule(dev, code);
 }
 
-vk::ShaderModule loadShaderModule(vk::Device dev, const std::vector<std::uint32_t>& code)
+vk::ShaderModule loadShaderModule(vk::Device dev, const std::vector<std::uint8_t>& code)
 {
+	if(code.size() % 4) throw std::runtime_error("vpp::loadShaderModule: invalid code size");
+
 	vk::ShaderModuleCreateInfo info;
-	info.codeSize = code.size() * 4;
-	info.pCode = code.data();
+	info.codeSize = code.size();
+	info.pCode = reinterpret_cast<const std::uint32_t*>(code.data());
 
 	return vk::createShaderModule(dev, info);
 }
 
 //ShaderModule
-ShaderModule::ShaderModule(const Device& dev, const std::string& filename) : Resource(dev)
+ShaderModule::ShaderModule(const Device& dev, const char* filename) : Resource(dev)
 {
+	const static std::string errorMsg = "vpp::ShaderMoudle: failed to create from ";
+
 	module_ = loadShaderModule(dev, filename);
-	if(!module_) throw std::runtime_error("vpp::ShaderModule: failed to create from " + filename);
+	if(!module_) throw std::runtime_error(errorMsg + filename);
 }
 
-ShaderModule::ShaderModule(const Device& dev, const std::vector<std::uint32_t>& code) : Resource(dev)
+ShaderModule::ShaderModule(const Device& dev, const std::vector<std::uint8_t>& code) : Resource(dev)
 {
 	module_ = loadShaderModule(dev, code);
 	if(!module_) throw std::runtime_error("vpp::ShaderModule: failed to create from given code");
@@ -72,11 +45,7 @@ ShaderModule::ShaderModule(const Device& dev, const std::vector<std::uint32_t>& 
 
 ShaderModule::~ShaderModule()
 {
-	if(module_ && device())
-	{
-		vk::destroyShaderModule(vkDevice(), module_, nullptr);
-		std::cout << "destroy2 " << module_ << "\n";
-	}
+	if(module_ && device()) vk::destroyShaderModule(vkDevice(), module_, nullptr);
 }
 
 ShaderModule::ShaderModule(ShaderModule&& other) noexcept
@@ -84,9 +53,8 @@ ShaderModule::ShaderModule(ShaderModule&& other) noexcept
 	swap(*this, other);
 }
 
-ShaderModule& ShaderModule::operator=(ShaderModule&& other) noexcept
+ShaderModule& ShaderModule::operator=(ShaderModule other) noexcept
 {
-	this->~ShaderModule();
 	swap(*this, other);
 	return *this;
 }
@@ -99,14 +67,16 @@ void swap(ShaderModule& a, ShaderModule& b) noexcept
 }
 
 //ShaderStage
-ShaderStage::ShaderStage(const Device& dev, const std::string& filename, const CreateInfo& info)
+ShaderStage::ShaderStage(const Device& dev, const char* filename, const CreateInfo& info)
 	: Resource(dev), owned_(true), info_(info)
 {
+	const static std::string errorMsg = "vpp::ShaderMoudle: failed to create from ";
+
 	module_ = loadShaderModule(dev, filename);
-	if(!module_) throw std::runtime_error("vpp::ShaderModule: failed to create from " + filename);
+	if(!module_) throw std::runtime_error(errorMsg + filename);
 }
 
-ShaderStage::ShaderStage(const Device& dev, const std::vector<std::uint32_t>& code,
+ShaderStage::ShaderStage(const Device& dev, const std::vector<std::uint8_t>& code,
 	const CreateInfo& info) : Resource(dev), owned_(true), info_(info)
 {
 	module_ = loadShaderModule(dev, code);
@@ -137,9 +107,8 @@ ShaderStage::ShaderStage(ShaderStage&& other) noexcept
 	swap(*this, other);
 }
 
-ShaderStage& ShaderStage::operator=(ShaderStage&& other) noexcept
+ShaderStage& ShaderStage::operator=(ShaderStage other) noexcept
 {
-	this->~ShaderStage();
 	swap(*this, other);
 	return *this;
 }
@@ -169,7 +138,7 @@ ShaderProgram::ShaderProgram(const Device& device) : Resource(device)
 {
 }
 
-void ShaderProgram::stage(const std::string& filename, const ShaderStage::CreateInfo& createInfo)
+void ShaderProgram::stage(const char* filename, const ShaderStage::CreateInfo& createInfo)
 {
 	auto s = stage(createInfo.stage);
 	if(s) *s = {device(), filename, createInfo};

@@ -8,6 +8,8 @@
 #include <chrono>
 #include <cmath>
 
+void render(App& app);
+
 //
 LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
@@ -36,8 +38,10 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 				auto builder = std::make_unique<ParticleRenderer>(*gApp);
 				auto& swapChain = gApp->context->swapChain();
 				auto& info = gApp->rendererInfo;
+				*gApp->renderer = {};
 				*gApp->renderer = vpp::SwapChainRenderer(swapChain, info, std::move(builder));
-				gApp->renderer->render();
+				//gApp->renderer->renderBlock();
+				render(*gApp);
 
 				gApp->width = LOWORD(lparam);
 				gApp->height = HIWORD(lparam);
@@ -179,6 +183,7 @@ int main()
 	    mainLoop(app);
 
 		std::cout << "main loop exited sucessful.\n";
+		std::cout << app.context->device().memoryAllocator().memories().size() << " mems created\n";
 
 		//would otherwise be implicitly destructed on App::~App call when going out of scope
 		//but at that point the vulkan device would have been already destructed

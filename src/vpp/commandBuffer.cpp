@@ -24,21 +24,20 @@ CommandBuffer::~CommandBuffer()
 
 CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
 {
-	this->swap(other);
+	swap(*this, other);
 }
 
-CommandBuffer& CommandBuffer::operator=(CommandBuffer&& other) noexcept
+CommandBuffer& CommandBuffer::operator=(CommandBuffer other) noexcept
 {
-	this->~CommandBuffer();
-	this->swap(other);
+	swap(*this, other);
 	return *this;
 }
 
-void CommandBuffer::swap(CommandBuffer& other) noexcept
+void swap(CommandBuffer& a, CommandBuffer& b) noexcept
 {
 	using std::swap;
-	swap(commandPool_, other.commandPool_);
-	swap(commandBuffer_, other.commandBuffer_);
+	swap(a.commandPool_, b.commandPool_);
+	swap(a.commandBuffer_, b.commandBuffer_);
 }
 
 //CommandPool
@@ -59,21 +58,20 @@ CommandPool::~CommandPool()
 
 CommandPool::CommandPool(CommandPool&& other) noexcept
 {
-	this->swap(other);
+	swap(*this, other);
 }
-CommandPool& CommandPool::operator=(CommandPool&& other) noexcept
+CommandPool& CommandPool::operator=(CommandPool other) noexcept
 {
-	this->~CommandPool();
-	this->swap(other);
+	swap(*this, other);
 	return *this;
 }
 
-void CommandPool::swap(CommandPool& other) noexcept
+void swap(CommandPool& a, CommandPool& b) noexcept
 {
 	using std::swap;
 
-	swap(commandPool_, other.commandPool_);
-	swap(device_, other.device_);
+	swap(a.commandPool_, b.commandPool_);
+	swap(a.device_, b.device_);
 }
 
 std::vector<CommandBuffer> CommandPool::allocate(std::size_t count, vk::CommandBufferLevel lvl)

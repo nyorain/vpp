@@ -17,9 +17,8 @@ MemoryEntry::MemoryEntry(MemoryEntry&& other) noexcept
 	swap(*this, other);
 }
 
-MemoryEntry& MemoryEntry::operator=(MemoryEntry&& other) noexcept
+MemoryEntry& MemoryEntry::operator=(MemoryEntry other) noexcept
 {
-	this->~MemoryEntry();
 	swap(*this, other);
 	return *this;
 }
@@ -28,9 +27,6 @@ MemoryEntry::~MemoryEntry()
 {
 	if(!allocated() && allocator_) allocator_->removeRequest(*this);
 	else if(allocated()) memory_->free(allocation_);
-
-	allocation_ = {};
-	allocator_ = nullptr;
 }
 
 void swap(MemoryEntry& a, MemoryEntry& b) noexcept
@@ -79,9 +75,8 @@ DeviceMemoryAllocator::DeviceMemoryAllocator(DeviceMemoryAllocator&& other) noex
 {
 	swap(*this, other);
 }
-DeviceMemoryAllocator& DeviceMemoryAllocator::operator=(DeviceMemoryAllocator&& other) noexcept
+DeviceMemoryAllocator& DeviceMemoryAllocator::operator=(DeviceMemoryAllocator other) noexcept
 {
-	if(device_) allocate();
 	swap(*this, other);
 	return *this;
 }
@@ -183,6 +178,8 @@ DeviceMemory* DeviceMemoryAllocator::findMem(Requirement& req)
 		else
 			vk::bindImageMemory(vkDevice(), req.image, mem->vkDeviceMemory(), allocation.offset);
 
+		req.entry->allocation_ = allocation;
+		req.entry->memory_ = mem.get();
 		return mem.get();
 	}
 
@@ -198,6 +195,16 @@ DeviceMemoryAllocator::Requirements::iterator DeviceMemoryAllocator::findReq(con
 //TODO: all 4 allocate functions can be improved.
 void DeviceMemoryAllocator::allocate()
 {
+	//try to find space for them
+	for(auto it = requirements_.begin(); it != requirements_.end();)
+	{
+		if(findMem(*it)) it = requirements_.erase(it);
+		else ++it;
+	}
+
+	if(requirements_.empty()) return;
+
+	//allocate remaining types
 	auto map = queryTypes();
 	for(auto& type : map) allocate(type.first, type.second);
 	requirements_.clear(); //all requirements can be removed
@@ -219,7 +226,7 @@ bool DeviceMemoryAllocator::allocate(const MemoryEntry& entry)
 	//finding free memory failed, so query the memory type with the most requests and on
 	//which the given entry can be allocated and then alloc and bind all reqs for this type
 	//XXX: rather use here also queryTypes? could be more efficient seen for the whole amount
-	//	allocations that have to be done. At the moment it will chose the type bit that has
+	//	allocations that have to be done. At the moment it will choose the type bit that has
 	//	the highest amount of stored requirements, but some other type may be better (?) to reduce
 	//	the amount of different allocations that have to be done.
 	auto type = findBestType(req->memoryTypes);

@@ -25,7 +25,9 @@ set(vpp-sources
 	work.cpp
 	fwd.cpp
 	queue.cpp
-	provider.cpp)
+	provider.cpp
+
+	utility/file.cpp)
 
 #add backends
 if(${VPP_WINDOWS})

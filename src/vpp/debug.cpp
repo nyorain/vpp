@@ -16,7 +16,7 @@ std::vector<const char*> validationLayerNames =
 	"VK_LAYER_LUNARG_object_tracker",
 	"VK_LAYER_LUNARG_parameter_validation",
 	"VK_LAYER_LUNARG_swapchain",
-	//"VK_LAYER_GOOGLE_threading",
+	"VK_LAYER_GOOGLE_threading",
 	"VK_LAYER_GOOGLE_unique_objects",
 	//"VK_LAYER_LUNARG_mem_tracker",
 	//"VK_LAYER_LUNARG_draw_state",
@@ -40,13 +40,13 @@ std::vector<const char*> validationLayerNames =
 namespace
 {
 
-vk::Bool32 defaultMessageCallback(std::uint32_t flags, vk::DebugReportObjectTypeEXT objType,
+vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags, vk::DebugReportObjectTypeEXT objType,
 	std::uint64_t srcObject, std::size_t location, std::int32_t msgCode, const char* pLayerPrefix,
 	const char* pMsg, void* pUserData)
 {
 	auto callback = static_cast<DebugCallback*>(pUserData);
-	auto sflags = static_cast<vk::DebugReportBitsEXT>(flags);
-	return callback->call({sflags, objType, srcObject, location, msgCode, pLayerPrefix, pMsg});
+	//auto sflags = static_cast<vk::DebugReportBitsEXT>(flags);
+	return callback->call({flags, objType, srcObject, location, msgCode, pLayerPrefix, pMsg});
 }
 
 }

@@ -17,9 +17,8 @@ Image::Image(Image&& other) noexcept
 	swap(*this, other);
 }
 
-Image& Image::operator=(Image&& other) noexcept
+Image& Image::operator=(Image other) noexcept
 {
-	this->~Image();
 	swap(*this, other);
 	return *this;
 }
@@ -27,9 +26,6 @@ Image& Image::operator=(Image&& other) noexcept
 Image::~Image()
 {
 	if(vkImage()) vk::destroyImage(vkDevice(), vkImage());
-
-	memoryEntry_ = {};
-	image_ = {};
 }
 
 void swap(Image& a, Image& b) noexcept
@@ -44,6 +40,8 @@ void Image::create(const Device& dev, const vk::ImageCreateInfo& info, vk::Memor
 {
 	image_ = vk::createImage(dev.vkDevice(), info);
 	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), image_);
+
+	std::cout << "image: " << reqs.size << "\n";
 
 	reqs.memoryTypeBits = dev.memoryTypeBits(flags, reqs.memoryTypeBits);
 	dev.memoryAllocator().request(image_, reqs, info.tiling, memoryEntry_);
@@ -224,7 +222,6 @@ ViewableImage::ViewableImage(const Device& dev, const CreateInfo& info)
 ViewableImage::~ViewableImage()
 {
 	if(vkImageView()) vk::destroyImageView(vkDevice(), vkImageView(), nullptr);
-	image_ = {};
 }
 
 ViewableImage::ViewableImage(ViewableImage&& other) noexcept
@@ -232,9 +229,8 @@ ViewableImage::ViewableImage(ViewableImage&& other) noexcept
 	swap(*this, other);
 }
 
-ViewableImage& ViewableImage::operator=(ViewableImage&& other) noexcept
+ViewableImage& ViewableImage::operator=(ViewableImage other) noexcept
 {
-	this->~ViewableImage();
 	swap(*this, other);
 	return *this;
 }

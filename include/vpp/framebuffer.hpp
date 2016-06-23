@@ -34,7 +34,7 @@ public:
 	~Framebuffer();
 
 	Framebuffer(Framebuffer&& other) noexcept;
-	Framebuffer& operator=(Framebuffer&& other) noexcept;
+	Framebuffer& operator=(Framebuffer other) noexcept;
 
 	void create(const Device& dev, const vk::Extent2D& size, const std::vector<vk::ImageCreateInfo>&);
 	void create(const Device& dev, const vk::Extent2D& size, const AttachmentsInfo& info);

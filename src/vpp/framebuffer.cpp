@@ -18,17 +18,14 @@ Framebuffer::Framebuffer(const Device& dev, vk::RenderPass rp, const vk::Extent2
 Framebuffer::~Framebuffer()
 {
 	if(vkFramebuffer()) vk::destroyFramebuffer(vkDevice(), vkFramebuffer(), nullptr);
-	attachments_.clear();
-	framebuffer_ = {};
 }
 
 Framebuffer::Framebuffer(Framebuffer&& other) noexcept
 {
 	swap(*this, other);
 }
-Framebuffer& Framebuffer::operator=(Framebuffer&& other) noexcept
+Framebuffer& Framebuffer::operator=(Framebuffer other) noexcept
 {
-	this->~Framebuffer();
 	swap(*this, other);
 	return *this;
 }

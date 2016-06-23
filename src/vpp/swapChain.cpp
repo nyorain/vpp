@@ -35,9 +35,8 @@ SwapChain::SwapChain(SwapChain&& other) noexcept
 	swap(*this, other);
 }
 
-SwapChain& SwapChain::operator=(SwapChain&& other) noexcept
+SwapChain& SwapChain::operator=(SwapChain other) noexcept
 {
-	this->~SwapChain();
 	swap(*this, other);
 	return *this;
 }

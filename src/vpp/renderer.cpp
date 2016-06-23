@@ -20,22 +20,37 @@ SwapChainRenderer::SwapChainRenderer(const SwapChain& sc, const CreateInfo& inf,
 
 SwapChainRenderer::SwapChainRenderer(SwapChainRenderer&& other) noexcept
 {
-	swap(*this, other);
+	renderImpl_ = std::move(other.renderImpl_);
+	renderBuffers_ = std::move(other.renderBuffers_);
+	staticAttachments_ = std::move(other.staticAttachments_);
+	info_ = std::move(other.info_);
+
+	std::swap(swapChain_, other.swapChain_);
 }
 
-SwapChainRenderer& SwapChainRenderer::operator=(SwapChainRenderer&& other) noexcept
+SwapChainRenderer& SwapChainRenderer::operator=(SwapChainRenderer other) noexcept
 {
-	this->~SwapChainRenderer();
 	swap(*this, other);
 	return *this;
 }
 
 SwapChainRenderer::~SwapChainRenderer()
 {
-	destroyRenderBuffers();
-	staticAttachments_.clear();
+	///TODO: part of command buffer destruction rework
+	std::vector<vk::CommandBuffer> cmdBuffers;
+	cmdBuffers.reserve(renderBuffers_.size());
 
-	swapChain_ = nullptr;
+	for(auto& renderer : renderBuffers_)
+	{
+		auto vkbuf = renderer.commandBuffer.vkCommandBuffer();
+		if(vkbuf) cmdBuffers.push_back(vkbuf);
+	}
+
+	if(!cmdBuffers.empty())
+	{
+		auto vkpool = renderBuffers_[0].commandBuffer.commandPool().vkCommandPool();
+		vk::freeCommandBuffers(vkDevice(), vkpool, cmdBuffers);
+	}
 }
 
 void swap(SwapChainRenderer& a, SwapChainRenderer& b) noexcept
@@ -82,7 +97,8 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 		else
 		{
 			auto imgInfo = attachInfo.createInfo.imgInfo;
-			imgInfo.extent = {size.width, size.height, 1};
+			//imgInfo.extent = {size.width, size.height, 1};
+			imgInfo.extent = {2000, 1200, 1};
 			staticAttachments_.emplace_back();
 			staticAttachments_.back().create(device(), imgInfo, attachInfo.createInfo.memoryFlags);
 		}
@@ -155,26 +171,6 @@ void SwapChainRenderer::init(RenderImpl builder)
 	}
 
 	renderImpl_->init(*this);
-}
-
-void SwapChainRenderer::destroyRenderBuffers()
-{
-	std::vector<vk::CommandBuffer> cmdBuffers;
-	cmdBuffers.reserve(renderBuffers_.size());
-
-	for(auto& renderer : renderBuffers_)
-	{
-		auto vkbuf = renderer.commandBuffer.vkCommandBuffer();
-		if(vkbuf) cmdBuffers.push_back(vkbuf);
-	}
-
-	if(!cmdBuffers.empty())
-	{
-		auto vkpool = renderBuffers_[0].commandBuffer.commandPool().vkCommandPool();
-		vk::freeCommandBuffers(vkDevice(), vkpool, cmdBuffers);
-	}
-
-	renderBuffers_.clear();
 }
 
 void SwapChainRenderer::record(int id)
@@ -289,7 +285,8 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, cons
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &renderComplete;
 
-	auto execState = device().submitManager().add(*gfx, submitInfo);
+	CommandExecutionState execState;
+	device().submitManager().add(*gfx, submitInfo, &execState);
 
 	//TODO: which kind of submit makes sence here? submit ALL queued commands?
 	//execState.submit();
@@ -376,7 +373,8 @@ void SwapChainRenderer::renderBlock(const Queue* gfx, const Queue* present)
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &renderComplete;
 
-	auto execState = device().submitManager().add(*gfx, submitInfo);
+	CommandExecutionState execState;
+	device().submitManager().add(*gfx, submitInfo, &execState);
 
 	//TODO: which kind of submit makes sense here? submit ALL queued commands?
 	//execState.submit();

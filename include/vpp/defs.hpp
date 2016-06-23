@@ -48,7 +48,8 @@ struct GraphicsPipeline::States
 struct GraphicsPipeline::CreateInfo
 {
 	ShaderProgram shader;
-	vk::RenderPass renderPass;
+	vk::RenderPass renderPass {};
+	vk::PipelineCache cache {};
 
 	std::vector<std::reference_wrapper<DescriptorSetLayout>> descriptorSetLayouts;
 	std::vector<std::reference_wrapper<VertexBufferLayout>> vertexBufferLayouts;

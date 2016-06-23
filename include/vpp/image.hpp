@@ -22,7 +22,7 @@ public:
 	~Image();
 
 	Image(Image&& other) noexcept;
-	Image& operator=(Image&& other) noexcept;
+	Image& operator=(Image other) noexcept;
 
 	///Creates the Image for two-step-initiazation.
 	void create(const Device& dev, const vk::ImageCreateInfo& inf, vk::MemoryPropertyFlags flgs = {});
@@ -71,7 +71,7 @@ public:
 	~ViewableImage();
 
 	ViewableImage(ViewableImage&& other) noexcept;
-	ViewableImage& operator=(ViewableImage&& other) noexcept;
+	ViewableImage& operator=(ViewableImage other) noexcept;
 
 	void create(const Device& dev, const vk::ImageCreateInfo& img, vk::MemoryPropertyFlags flgs = {});
 	void init(const vk::ImageViewCreateInfo& info);

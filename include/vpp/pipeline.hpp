@@ -100,13 +100,13 @@ public:
 	~DescriptorSetLayout();
 
 	DescriptorSetLayout(DescriptorSetLayout&& other) noexcept;
-	DescriptorSetLayout& operator=(DescriptorSetLayout&& other) noexcept;
-
-	void swap(DescriptorSetLayout& other) noexcept;
-	void destroy();
+	DescriptorSetLayout& operator=(DescriptorSetLayout other) noexcept;
 
 	vk::DescriptorSetLayout vkDescriptorSetLayout() const { return layout_; }
 	const std::vector<DescriptorBinding>& bindings() const { return bindings_; }
+
+	operator vk::DescriptorSetLayout() const { return vkDescriptorSetLayout(); }
+	friend void swap(DescriptorSetLayout& a, DescriptorSetLayout& b) noexcept;
 
 protected:
 	std::vector<DescriptorBinding> bindings_;
@@ -122,7 +122,7 @@ public:
 	~DescriptorSet();
 
 	DescriptorSet(DescriptorSet&& other) noexcept;
-	DescriptorSet& operator=(DescriptorSet&& other) noexcept;
+	DescriptorSet& operator=(DescriptorSet other) noexcept;
 
 	///Updates the descriptorSet with the given writes and copies.
 	void update(const std::vector<vk::WriteDescriptorSet>& writes,
@@ -135,7 +135,7 @@ public:
 	const DescriptorSetLayout& layout() const { return *layout_; }
 
 	operator vk::DescriptorSet() const { return vkDescriptorSet(); }
-	void swap(DescriptorSet& other) noexcept;
+	friend void swap(DescriptorSet& a, DescriptorSet& b) noexcept;
 
 protected:
 	const DescriptorSetLayout* layout_;
@@ -147,6 +147,8 @@ class Pipeline : public Resource
 {
 public:
 	~Pipeline();
+	Pipeline(Pipeline&& other) noexcept;
+	Pipeline& operator=(Pipeline other) noexcept;
 
 	vk::Pipeline vkPipeline() const { return pipeline_; }
 	vk::PipelineLayout vkPipelineLayout() const { return pipelineLayout_; }
@@ -161,9 +163,12 @@ protected:
 protected:
 	Pipeline() = default;
 	Pipeline(const Device& dev);
-
-	Pipeline(Pipeline&& other) noexcept;
-	Pipeline& operator=(Pipeline&& other) noexcept;
 };
+
+///Can be used to load a pipeline cache from a file.
+vk::PipelineCache loadPipelineCache(vk::Device dev, const char* name);
+
+///Can be used to save a pipeline cache to a file.
+void savePipelineCache(vk::Device dev, vk::PipelineCache cache, const char* name);
 
 }

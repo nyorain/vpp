@@ -30,7 +30,7 @@ public:
 		~BufferRange();
 
 		BufferRange(BufferRange&& other) noexcept;
-		BufferRange& operator=(BufferRange&& other) noexcept;
+		BufferRange& operator=(BufferRange other) noexcept;
 
 		const Buffer& buffer() const { return buffer_->buffer(); }
 		vk::Buffer vkBuffer() const { return buffer().vkBuffer(); }

@@ -35,7 +35,7 @@ public:
 	Flags() = default;
 	Flags(T bit) : value_(static_cast<U>(bit)) {}
 	Flags(bool, T bit) : value_(~static_cast<U>(bit)) {}
-	Flags(const Flags& rhs) : value_(rhs.value()) {}
+	//Flags(const Flags& rhs) : value_(rhs.value()) {}
 
 	Flags& operator=(const Flags& rhs) { value_ = rhs.value(); return *this; }
 	Flags& operator|=(const Flags& rhs) { value_ |= rhs.value(); return *this; }
@@ -55,8 +55,6 @@ public:
 protected:
 	U value_ {};
 };
-
-static_assert(sizeof(Flags<int>) == sizeof(std::uint32_t), "Must be equal");
 
 template <typename T> Flags<T> operator|(T bit, const Flags<T>& flags) { return flags | bit; }
 template <typename T> Flags<T> operator&(T bit, const Flags<T>& flags) { return flags & bit; }

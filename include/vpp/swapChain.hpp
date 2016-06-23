@@ -32,7 +32,7 @@ public:
     ~SwapChain();
 
 	SwapChain(SwapChain&& other) noexcept;
-	SwapChain& operator=(SwapChain&& other) noexcept;
+	SwapChain& operator=(SwapChain other) noexcept;
 
 	///Resizes the swapchain to the given size. Should be called if the native window of the
 	///underlaying surface handle changes it size to make sure the swapchain fills the
@@ -62,6 +62,7 @@ public:
 	vk::Extent2D size() const;
     const std::vector<RenderBuffer>& renderBuffers() const { return buffers_; }
 
+	operator vk::SwapchainKHR() const { return vkSwapChain(); }
 	friend void swap(SwapChain& a, SwapChain& b) noexcept;
 
 protected:
