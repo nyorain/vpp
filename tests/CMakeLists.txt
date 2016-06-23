@@ -18,5 +18,4 @@ endfunction(add_shader)
 
 #add included tests
 add_subdirectory(particles)
-add_subdirectory(clouds)
-add_subdirectory(godrays)
+#add_subdirectory(clouds)

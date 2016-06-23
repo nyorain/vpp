@@ -1,14 +1,18 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 PROJECT(vpp)
 
+option(build-tests "Build Tests" OFF)
+
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+#to disable ninja byproduct warning
+cmake_policy(SET CMP0058 NEW)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if(WIN32 OR MSYS OR MINGW)
 	set(VPP_WINDOWS 1)
@@ -27,4 +31,7 @@ endif()
 add_subdirectory(codegen)
 add_subdirectory(include/vpp)
 add_subdirectory(src/vpp)
-add_subdirectory(tests)
+
+if(build-tests)
+	add_subdirectory(tests)
+endif()

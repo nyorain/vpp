@@ -38,6 +38,7 @@ endif()
 
 #library
 add_library(vpp SHARED ${vpp-sources})
+add_dependencies(vpp vkHeaders)
 
 #link to vulkan
 target_link_libraries(vpp ${vulkan-lib})
