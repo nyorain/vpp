@@ -46,18 +46,18 @@ void Context::initInstance(const CreateInfo& info)
 	}
 
 	//appinfo
-    auto eName = "vpp";
-    auto aName = "unknown";
+	auto eName = "vpp";
+	auto aName = "unknown";
 
 	auto aVersion = 0;
 	auto eVersion = 0;
 
-    vk::ApplicationInfo appInfo;
-    appInfo.pApplicationName = aName;
-    appInfo.applicationVersion = aVersion;
-    appInfo.pEngineName = eName;
-    appInfo.engineVersion = eVersion;
-    appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 11); //use header version when working
+	vk::ApplicationInfo appInfo;
+	appInfo.pApplicationName = aName;
+	appInfo.applicationVersion = aVersion;
+	appInfo.pEngineName = eName;
+	appInfo.engineVersion = eVersion;
+	appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 11); //use header version when working
 
 	//iniinfo
 	std::vector<const char*> extensions = info.instanceExtensions;
@@ -69,14 +69,14 @@ void Context::initInstance(const CreateInfo& info)
 		extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	}
 
-    vk::InstanceCreateInfo iniinfo;
+	vk::InstanceCreateInfo iniinfo;
 	iniinfo.enabledLayerCount = layers.size();
 	iniinfo.ppEnabledLayerNames = layers.data();
 	iniinfo.enabledExtensionCount = extensions.size();
 	iniinfo.ppEnabledExtensionNames = extensions.data();
-    iniinfo.pApplicationInfo = &appInfo;
+	iniinfo.pApplicationInfo = &appInfo;
 
-    instance_ = vk::createInstance(iniinfo);
+	instance_ = vk::createInstance(iniinfo);
 	std::cout << "ini: " << instance_ << "\n";
 
 	if(info.debugFlags != 0)
@@ -99,9 +99,9 @@ void Context::initDevice(const CreateInfo& info)
 	//phyiscal device
 	std::vector<vk::PhysicalDevice> phdevs;
 	auto size = 0u;
-    vk::enumeratePhysicalDevices(vkInstance(), size, nullptr);
+	vk::enumeratePhysicalDevices(vkInstance(), size, nullptr);
 	phdevs.resize(size);
-    vk::enumeratePhysicalDevices(vkInstance(), size, phdevs.data());
+	vk::enumeratePhysicalDevices(vkInstance(), size, phdevs.data());
 	auto phdev = choosePhysicalDevice(phdevs);
 
 	//extensions & layers
@@ -164,15 +164,15 @@ void Context::initDevice(const CreateInfo& info)
 	}
 
 	//create
-    vk::DeviceCreateInfo devinfo{};
-    devinfo.queueCreateInfoCount = queueInfos.size();
+	vk::DeviceCreateInfo devinfo{};
+	devinfo.queueCreateInfoCount = queueInfos.size();
 	devinfo.pQueueCreateInfos = queueInfos.data();
-    devinfo.enabledLayerCount = layers.size();
-    devinfo.ppEnabledLayerNames = layers.data();
+	devinfo.enabledLayerCount = layers.size();
+	devinfo.ppEnabledLayerNames = layers.data();
 	devinfo.enabledExtensionCount = extensions.size();
 	devinfo.ppEnabledExtensionNames = extensions.data();
 
-    device_.reset(new Device(vkInstance(), phdev, devinfo));
+	device_.reset(new Device(vkInstance(), phdev, devinfo));
 
 	presentQueue_ = device().queue(presentQueueFamily, presentQueueId);
 	if(!presentQueue_)

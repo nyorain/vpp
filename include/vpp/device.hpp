@@ -20,11 +20,11 @@ class Device : public NonMoveable
 {
 public:
 	Device();
-    Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info);
-    ~Device();
+	Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info);
+	~Device();
 
 	///Waits until all operations on this device are finished.
-    void waitIdle() const;
+	void waitIdle() const;
 
 	///Returns all available queues for the created device.
 	const std::vector<Queue>& queues() const;
@@ -70,16 +70,16 @@ public:
 	///Returns a deviceMemory allocator for the calling thread.
 	DeviceMemoryAllocator& memoryAllocator() const;
 
-    const vk::Instance& vkInstance() const { return instance_; }
-    const vk::PhysicalDevice& vkPhysicalDevice() const { return physicalDevice_; }
-    const vk::Device& vkDevice() const { return device_; }
+	const vk::Instance& vkInstance() const { return instance_; }
+	const vk::PhysicalDevice& vkPhysicalDevice() const { return physicalDevice_; }
+	const vk::Device& vkDevice() const { return device_; }
 
 	operator vk::Device() const { return vkDevice(); }
 
 protected:
-    vk::Instance instance_ {};
-    vk::PhysicalDevice physicalDevice_ {};
-    vk::Device device_ {};
+	vk::Instance instance_ {};
+	vk::PhysicalDevice physicalDevice_ {};
+	vk::Device device_ {};
 
 	struct Impl;
 	std::unique_ptr<Impl> impl_;

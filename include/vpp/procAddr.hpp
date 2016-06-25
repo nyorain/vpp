@@ -18,7 +18,7 @@ vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name);
 ///If the function pointer cannot be retrieved this macro will evaluate to nullptr,
 ///so direct calling should be used with care.
 #define VPP_PROC(iniOrDev, name) \
-    reinterpret_cast<::vk::Pfn##name>(::vpp::vulkanProc(iniOrDev, "vk"#name))
+	reinterpret_cast<::vk::Pfn##name>(::vpp::vulkanProc(iniOrDev, "vk"#name))
 
 ///Macro for storing a vulkan function pointer.
 ///\param iniOrDev vulkan instance or device (depending on which kind of function pointer).
@@ -26,4 +26,4 @@ vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name);
 ///This macro creates a variable in the current scope with the name pf<name> that
 ///holds a pointer to the vulkan function or a nullptr if it could not be retrieved.
 #define VPP_LOAD_PROC(iniOrDev, name) \
-        auto pf##name = reinterpret_cast<::vk::Pfn##name>(::vpp::vulkanProc(iniOrDev, "vk"#name))
+	auto pf##name = reinterpret_cast<::vk::Pfn##name>(::vpp::vulkanProc(iniOrDev, "vk"#name))

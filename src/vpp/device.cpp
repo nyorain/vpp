@@ -63,7 +63,7 @@ Device::~Device()
 
 void Device::waitIdle() const
 {
-    vk::deviceWaitIdle(vkDevice());
+	vk::deviceWaitIdle(vkDevice());
 }
 
 const std::vector<Queue>& Device::queues() const
