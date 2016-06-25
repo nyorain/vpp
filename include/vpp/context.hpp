@@ -43,7 +43,7 @@ public:
 	~Context();
 
 	Context(Context&& other) noexcept;
-	Context& operator=(Context&& other) noexcept;
+	Context& operator=(Context other) noexcept;
 
 	const Surface& surface() const { return surface_; }
 
@@ -67,6 +67,8 @@ public:
 	void initSurface(Surface&& surface) { surface_ = std::move(surface); }
 	void initSwapChain(const CreateInfo& info);
 	vk::PhysicalDevice choosePhysicalDevice(const std::vector<vk::PhysicalDevice>& devices) const;
+
+	friend void swap(Context& a, Context& b) noexcept;
 
 protected:
 	vk::Instance instance_ {};

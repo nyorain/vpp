@@ -12,6 +12,29 @@ namespace vpp
 Context::Context() = default;
 Context::~Context() = default;
 
+Context::Context(Context&& other) noexcept
+{
+	swap(*this, other);
+}
+
+Context& Context::operator=(Context other) noexcept
+{
+	swap(*this, other);
+	return *this;
+}
+
+void swap(Context& a, Context& b) noexcept
+{
+	using std::swap;
+
+	swap(a.device_, b.device_);
+	swap(a.instance_, b.instance_);
+	swap(a.surface_, b.surface_);
+	swap(a.swapChain_, b.swapChain_);
+	swap(a.presentQueue_, b.presentQueue_);
+	swap(a.debugCallback_, b.debugCallback_);
+}
+
 void Context::initInstance(const CreateInfo& info)
 {
 	std::vector<const char*> layers;

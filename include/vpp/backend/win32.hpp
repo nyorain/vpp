@@ -16,6 +16,7 @@ namespace vpp
 Surface createSurface(vk::Instance instance, HWND window, HINSTANCE module = nullptr);
 
 ///Creates a win32 context for the given window.
-Context createContext(HWND window, Context::CreateInfo info = {}, HINSTANCE module = nullptr);
+Context createContext(HWND window, Context::CreateInfo info, HINSTANCE module = nullptr);
+Context createContext(HWND window, HINSTANCE module = nullptr);
 
 }

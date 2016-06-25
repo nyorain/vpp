@@ -1,6 +1,6 @@
 #include <vpp/backend/win32.hpp>
 #include <vpp/procAddr.hpp>
-#include <vpp/vk.hpp>
+#include <vpp/defs.hpp>
 
 namespace vpp
 {
@@ -32,6 +32,11 @@ Context createContext(HWND window, Context::CreateInfo info, HINSTANCE module)
 	ret.initSwapChain(info);
 
 	return ret;
+}
+
+Context createContext(HWND window, HINSTANCE module)
+{
+	return createContext(window, {}, module);
 }
 
 }
