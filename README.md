@@ -214,7 +214,7 @@ For the newest changes and fixes, check out the dev git branch.
 ### Troubleshooting
 
 Compiling:
-* if you want to bulid the examples pass -D:build-samples=ON to cmake
+* if you want to bulid the examples pass -Dbuild-tests=ON to cmake
 * when installing (e.g. make install) make sure you have the needed rights for the install folder, on
 unix you may need to run the command as root and on windows you might have to execute cmd as admin.
 * to find the vulkan library, the build system guesses depending on the platform or uses the
