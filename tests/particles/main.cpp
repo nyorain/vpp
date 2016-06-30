@@ -145,6 +145,8 @@ void mainLoop(App& app)
 //
 int main()
 {
+	vpp::someFunc();
+
 	{
 		std::uint32_t computeQF; //queueFamily
 

@@ -9,6 +9,8 @@
 
 #include <memory>
 #include <type_traits>
+#include <cstring>
+#include <cmath>
 
 namespace vpp
 {
@@ -16,10 +18,10 @@ namespace vpp
 using vk::Range;
 
 struct UnalignedTag {};
-UnalignedTag unaligned;
+constexpr UnalignedTag unaligned;
 
 ///Vulkan shader data types.
-enum ShaderType
+enum class ShaderType
 {
 	scalar,
 	scalar_64,
@@ -29,17 +31,53 @@ enum ShaderType
 	vec2_64,
 	vec3_64,
 	vec4_64,
-	array
+	structure
 };
 
+inline unsigned int align(ShaderType type)
+{
+	switch(type)
+	{
+		case ShaderType::scalar: return 4;
+		case ShaderType::scalar_64:
+		case ShaderType::vec2: return 8;
+		case ShaderType::vec3:
+		case ShaderType::vec4:
+		case ShaderType::vec2_64: return 16;
+		case ShaderType::vec3_64:
+		case ShaderType::vec4_64: return 32;
+		default: return 0;
+	}
+}
+inline unsigned int align(const Range<ShaderType> types)
+{
+	auto max = 0u;
+	for(auto& t : types)
+		if(align(t) > max) max = align(t);
+	return std::max(max, 16u);
+}
+
 template<typename T> struct VulkanType;
+template<typename T> struct VulkanType<T&> : public VulkanType<T> {};
+template<typename T> struct VulkanType<const T> : public VulkanType<T> {};
+template<typename T> struct VulkanType<volatile T> : public VulkanType<T> {};
+template<typename T> struct VulkanType<const volatile T> : public VulkanType<T> {};
 template<> struct VulkanType<float> { static constexpr auto type = ShaderType::scalar; };
 template<> struct VulkanType<bool> { static constexpr auto type = ShaderType::scalar; };
 template<> struct VulkanType<std::uint32_t> { static constexpr auto type = ShaderType::scalar; };
 template<> struct VulkanType<std::int32_t> { static constexpr auto type = ShaderType::scalar; };
 template<> struct VulkanType<double> { static constexpr auto type = ShaderType::scalar_64; };
 
-template<typename T> using VulkanTypeT = typename VulkanType<T>::type;
+struct Vec2 { float x,y; };
+struct MyStruct { float a; Vec2 b; };
+template<> struct VulkanType<Vec2> { static constexpr auto type = ShaderType::vec2; };
+template<> struct VulkanType<MyStruct>
+{
+	static constexpr auto members = std::make_tuple(&MyStruct::a, &MyStruct::b);
+	static constexpr auto type = ShaderType::structure;
+};
+
+template<typename T> auto constexpr VulkanTypeV = VulkanType<T>::type;
 
 ///Utilty classes for filling a buffer with aligned data.
 struct DataType
@@ -64,7 +102,7 @@ public:
 	///Constructs the buffer data by directly storing an object.
 	template<typename T, typename = std::enable_if_t<std::is_standard_layout<T>::value>>
 	BufferData(const T& obj, std::size_t xoff = 0)
-		: data(&obj), size(sizeof(T)), offset(xoff) {}
+		: data(&obj), size(sizeof(T)), offset(xoff), type{VulkanType<T>::type} {}
 
 	///Constructs the buffer data for a given container, which must correctly implement
 	///a size and a data member function and must have its value type as first template param.
@@ -73,30 +111,179 @@ public:
 	template<template<typename, typename...> typename C, typename T, typename... A>
 	BufferData(const C<T, A...>& container, std::size_t xoff = 0)
 		: data(container.data()), size(container.size() * sizeof(T)), offset(xoff) {}
+			//type{VulkanType<T>::type, container.size()} {}
 
 	///Constructs the buffer data for a given array.
 	template<typename T, std::size_t S>
-	BufferData(const T (&array)[S])
-		: data(array), size(S * sizeof(T)), type{typename VulkanType<T>::type, S} {}
+	BufferData(const T (&array)[S], std::size_t xoff = 0)
+		: data(array), size(S * sizeof(T)), offset(xoff), type{VulkanType<T>::type, S} {}
 };
+
+template<typename T, ShaderType V>
+struct BufferWriter
+{
+	void operator()(std::uint8_t& data, std::size_t& offset, const T& obj, bool std140)
+	{
+		offset = std::ceil(offset / double(align(V))) * align(V);
+		std::memcpy(&data + offset, &obj, sizeof(obj));
+		offset += sizeof(obj);
+	}
+};
+
+template<typename T, std::size_t S, ShaderType V>
+struct BufferWriter<T[S], V>
+{
+	void operator()(std::uint8_t& data, std::size_t& offset, const T (&array)[S], bool std140)
+	{
+		auto sa = align(V);
+		if(std140) sa = std::max(sa, 16u);
+		offset = std::ceil(offset / double(sa)) * sa;
+		for(auto a : array)
+		{
+			if(std140) offset = std::ceil(offset / double(16)) * 16;
+			bufferWrite(data, offset, a, std140);
+		}
+
+		if(std140) offset = std::ceil(offset / double(sa)) * sa;
+	}
+};
+
+template<ShaderType V, typename T>
+void bufferWrite(std::uint8_t& data, std::size_t& offset, const T& obj, bool std140)
+{
+	BufferWriter<T, V> writer;
+	writer(data, offset, obj, std140);
+}
+
+template<typename T, ShaderType V = VulkanType<T>::type>
+void bufferWrite(std::uint8_t& data, std::size_t& offset, const T& obj, bool std140)
+{
+	BufferWriter<T, V> writer;
+	writer(data, offset, obj, std140);
+}
+
+template<typename T, typename = decltype(&T::begin), typename = decltype(&T::end)>
+void bufferWrite(std::uint8_t& data, std::size_t& offset, const T& obj, bool std140)
+{
+	static constexpr auto V = VulkanType<decltype(*obj.begin())>::type;
+
+	auto sa = align(V);
+	if(std140) sa = std::max(sa, 16u);
+	offset = std::ceil(offset / double(sa)) * sa;
+	for(auto& a : obj)
+	{
+		if(std140) offset = std::ceil(offset / double(16)) * 16;
+		bufferWrite(data, offset, a, std140);
+	}
+
+	if(std140) offset = std::ceil(offset / double(sa)) * sa;
+}
+
+template<typename T> struct PrintMembers;
+
+template<std::size_t... I>
+struct PrintMembers<std::index_sequence<I...>>
+{
+	template<typename T>
+	void operator()(std::uint8_t& data, std::size_t& offset, const T& obj, bool std140)
+	{
+		auto constexpr tup = VulkanType<T>::members;
+		auto sa = 0u;
+		if(std140) sa = 16u;
+		int expand1[] = {( sa = std::max(sa,
+			align(VulkanType<decltype(obj.*(std::get<I>(tup)))>::type)), 0)...};
+		offset = std::ceil(offset / sa) * sa;
+		int expand2[] = {( bufferWrite(data, offset, obj.*(std::get<I>(tup)), std140), 0) ...};
+	}
+};
+
+template<typename T>
+struct BufferWriter<T, ShaderType::structure>
+{
+	void operator()(std::uint8_t& data, std::size_t& offset, const T& obj, bool std140)
+	{
+		using V = VulkanType<T>;
+		PrintMembers<std::make_index_sequence<std::tuple_size<decltype(V::members)>::value>> printer;
+		printer(data, offset, obj, std140);
+	}
+};
+
+struct RandomStruct
+{
+	float a;
+	int b;
+	int c[2];
+};
+
+inline int someFunc()
+{
+	MyStruct a;
+	a.a = 100;
+	a.b = {23, 420};
+	std::uint8_t data[100] {0};
+
+	auto list = {4, 6, 3};
+
+	RandomStruct b;
+
+	std::size_t offset = 0u;
+	bufferWrite(*data, offset, a, true);
+	bufferWrite(*data, offset, list, true);
+	bufferWrite(*data, offset, list, true);
+	//bufferWrite(*(data + offset), offset, b);
+
+	std::cout << (float&) data[0] << "\n";
+	std::cout << (float&) data[8] << "\n";
+	std::cout << (float&) data[12] << "\n";
+	std::cout << (int&) data[16] << "\n";
+	std::cout << (int&) data[20] << "\n";
+
+	std::cout << "offset: " << offset << "\n";
+
+	offset = 0u;
+	bufferWrite(*data, offset, a, false);
+	bufferWrite(*data, offset, list, false);
+	bufferWrite(*data, offset, list, false);
+
+	std::cout << "offset: " << offset << "\n";
+}
 
 
 class BufferFill
 {
 public:
-	BufferFill(const Buffer& buffer);
+	enum class Align
+	{
+		std140,
+		std430
+	};
+
+public:
+	BufferFill(const Buffer& buffer, Align align);
 	~BufferFill();
 
-	void add(DataType type, const BufferData& data);
+	template<typename T>
+	void add(const T& obj){ offset_ += bufferWrite(data(), offset, obj, true); }
+
+	// template<typename T>
+	// void add(const T& obj){ offset_ += structWrite(data(), obj); }
+
+	void offset(std::size_t size){ offset_ += size; }
+
 	void alignUniform();
 	void alignStorage();
 	void alignTexel();
+	void alignStruct();
 
 	WorkPtr apply();
+
+	void write(const std::uint8_t& data, const std::size_t size);
+	std::uint8_t& data();
 
 protected:
 	const Buffer* buffer_ {};
 	WorkPtr work_ {};
+	std::size_t offset_ {};
 };
 
 class BufferRead
