@@ -110,15 +110,15 @@ void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequir
 	//apply additional device limits alignments
 	auto align = device().properties().limits.minUniformBufferOffsetAlignment;
 	if(usage & vk::BufferUsageBits::uniformBuffer && align > 0)
-		req.alignment = std::ceil(req.alignment / align) * align;
+		req.alignment = std::ceil(req.alignment / double(align)) * align;
 
 	align = device().properties().limits.minTexelBufferOffsetAlignment;
 	if(usage & vk::BufferUsageBits::uniformTexelBuffer && align > 0)
-		req.alignment = std::ceil(req.alignment / align) * align;
+		req.alignment = std::ceil(req.alignment / double(align)) * align;
 
 	align = device().properties().limits.minStorageBufferOffsetAlignment;
 	if(usage & vk::BufferUsageBits::storageBuffer && align > 0)
-		req.alignment = std::ceil(req.alignment / align) * align;
+		req.alignment = std::ceil(req.alignment / double(align)) * align;
 
 	requirements_.push_back(req);
 }
@@ -312,8 +312,6 @@ void DeviceMemoryAllocator::allocate(unsigned int type, const std::vector<Requir
 		auto isBuffer = (res.first->type == RequirementType::buffer);
 		if(isBuffer) vk::bindBufferMemory(vkDevice(), res.first->buffer, mem->vkDeviceMemory(), offset);
 		else vk::bindImageMemory(vkDevice(), res.first->image, mem->vkDeviceMemory(), offset);
-
-		std::cout << "buffer?: " << isBuffer << " " << res.first->buffer << "\n";
 	}
 
 	memories_.push_back(std::move(mem));

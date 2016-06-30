@@ -90,11 +90,7 @@ ShaderStage::ShaderStage(const Device& dev, vk::ShaderModule module, const Creat
 
 ShaderStage::~ShaderStage()
 {
-	if(owned_ && module_)
-	{
-		vk::destroyShaderModule(vkDevice(), module_, nullptr);
-		std::cout << "destroy " << module_ << "\n";
-	}
+	if(owned_ && module_) vk::destroyShaderModule(vkDevice(), module_, nullptr);
 
 	info_ = {};
 	module_ = {};

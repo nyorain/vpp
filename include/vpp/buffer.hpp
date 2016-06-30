@@ -5,11 +5,48 @@
 #include <vpp/allocator.hpp>
 #include <vpp/commandBuffer.hpp>
 #include <vpp/work.hpp>
+#include <vpp/vulkan/range.hpp>
 
 #include <memory>
+#include <type_traits>
 
 namespace vpp
 {
+
+using vk::Range;
+
+struct UnalignedTag {};
+UnalignedTag unaligned;
+
+///Vulkan shader data types.
+enum ShaderType
+{
+	scalar,
+	scalar_64,
+	vec2,
+	vec3,
+	vec4,
+	vec2_64,
+	vec3_64,
+	vec4_64,
+	array
+};
+
+template<typename T> struct VulkanType;
+template<> struct VulkanType<float> { static constexpr auto type = ShaderType::scalar; };
+template<> struct VulkanType<bool> { static constexpr auto type = ShaderType::scalar; };
+template<> struct VulkanType<std::uint32_t> { static constexpr auto type = ShaderType::scalar; };
+template<> struct VulkanType<std::int32_t> { static constexpr auto type = ShaderType::scalar; };
+template<> struct VulkanType<double> { static constexpr auto type = ShaderType::scalar_64; };
+
+template<typename T> using VulkanTypeT = typename VulkanType<T>::type;
+
+///Utilty classes for filling a buffer with aligned data.
+struct DataType
+{
+	ShaderType type;
+	unsigned int count = 1;
+};
 
 ///Utility class for filling buffers with mulitple data segments.
 class BufferData
@@ -17,13 +54,15 @@ class BufferData
 public:
 	const void* data = nullptr; //a pointer to the data
 	std::size_t size = 0; //size of the given data
-	std::size_t offset = 0; //relative (!) offset to the previous given data segment
+	std::size_t offset = 0; //additional relative (!) offset to the previous given data segment
+
+	DataType type;
 
 public:
 	BufferData() = default;
 
 	///Constructs the buffer data by directly storing an object.
-	template<typename T>
+	template<typename T, typename = std::enable_if_t<std::is_standard_layout<T>::value>>
 	BufferData(const T& obj, std::size_t xoff = 0)
 		: data(&obj), size(sizeof(T)), offset(xoff) {}
 
@@ -34,7 +73,40 @@ public:
 	template<template<typename, typename...> typename C, typename T, typename... A>
 	BufferData(const C<T, A...>& container, std::size_t xoff = 0)
 		: data(container.data()), size(container.size() * sizeof(T)), offset(xoff) {}
+
+	///Constructs the buffer data for a given array.
+	template<typename T, std::size_t S>
+	BufferData(const T (&array)[S])
+		: data(array), size(S * sizeof(T)), type{typename VulkanType<T>::type, S} {}
 };
+
+
+class BufferFill
+{
+public:
+	BufferFill(const Buffer& buffer);
+	~BufferFill();
+
+	void add(DataType type, const BufferData& data);
+	void alignUniform();
+	void alignStorage();
+	void alignTexel();
+
+	WorkPtr apply();
+
+protected:
+	const Buffer* buffer_ {};
+	WorkPtr work_ {};
+};
+
+class BufferRead
+{
+public:
+	BufferRead(const Buffer& buffer);
+};
+
+void alignedWrite(std::uint8_t* ptr, const Range<BufferData>& datas);
+void alignedRead(const std::uint8_t* ptr, Range<BufferData>& datas);
 
 ///Representing a vulkan buffer on a device.
 ///Can be filled and read, and stores a handle to the memory location it is allocated on (or
