@@ -81,12 +81,12 @@ public:
 	///Makes sure the mapped data is visibile on the device.
 	///Not needed when memory is coherent, look at vkFlushMappedMemoryRanges.
 	///Can be checked with coherent().
-	void flushRanges() const;
+	void flushRanges() const; //XXX: raname flush?
 
 	///Reloads the device memory into mapped memory, i.e. makes sure writes by the device
 	///are made visible. Not needed when memory is coherent, look at vkInvalidateMappedMemoryRanges.
 	///Can be checked with coherent().
-	void invalidateRanges() const;
+	void invalidateRanges() const; //XXX: rename invalidte/reload?
 
 	MemoryMap& memoryMap() const { return *memoryMap_; }
 	const DeviceMemory& memory() const { return memoryMap().memory(); }
@@ -186,7 +186,7 @@ public:
 	MemoryMapView map(const Allocation& allocation);
 
 	const vk::DeviceMemory& vkDeviceMemory() const { return memory_; }
-	vk::MemoryPropertyFlags propertyFlags() const { return flags_; }
+	vk::MemoryPropertyFlags propertyFlags() const { return flags_; } //XXX rename properties
 	unsigned int typeIndex() const { return typeIndex_; }
 	const std::vector<AllocationEntry> allocations() const { return allocations_; }
 

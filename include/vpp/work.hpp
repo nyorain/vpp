@@ -90,7 +90,7 @@ public:
 
 	virtual void queue();
 
-protected:
+public:
 	CommandBuffer cmdBuffer_;
 	CommandExecutionState executionState_;
 	WorkBase::State state_ {WorkBase::State::none};

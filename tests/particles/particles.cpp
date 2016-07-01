@@ -9,6 +9,27 @@
 
 App* gApp;
 
+namespace vpp
+{
+
+template<> struct VulkanType<nytl::Mat4f> { static constexpr auto type = vpp::ShaderType::mat4; };
+template<> struct VulkanType<nytl::Mat3f> { static constexpr auto type = vpp::ShaderType::mat3; };
+template<> struct VulkanType<nytl::Mat2f> { static constexpr auto type = vpp::ShaderType::mat2; };
+template<> struct VulkanType<nytl::Vec2f> { static constexpr auto type = vpp::ShaderType::vec2; };
+template<> struct VulkanType<nytl::Vec3f> { static constexpr auto type = vpp::ShaderType::vec3; };
+template<> struct VulkanType<nytl::Vec4f> { static constexpr auto type = vpp::ShaderType::vec4; };
+
+template<> struct VulkanType<Particle>
+{
+	static constexpr auto type = vpp::ShaderType::structure;
+	static constexpr auto members = std::make_tuple(
+		&Particle::position,
+		&Particle::velocity,
+		&Particle::color);
+};
+
+}
+
 //Renderer
 ParticleRenderer::ParticleRenderer(App& app) : app_(&app)
 {
@@ -104,6 +125,7 @@ ParticleSystem::ParticleSystem(App& app, std::size_t count)
 	writeDescriptorSets();
 	writeParticleBuffer();
 	writeGraphicsUBO();
+
 	buildComputeBuffer();
 
 	lastUpdate_ = Clock::now();
@@ -256,9 +278,14 @@ void ParticleSystem::writeParticleBuffer()
 {
 	// auto map = particlesBuffer_.memoryMap();
 	// std::memcpy(map.ptr(), particles_.data(), sizeof(Particle) * particles_.size());
-	auto work = particlesBuffer_.fill({particles_});
-	std::cout << "finish...\n";
-	work->finish();
+	// auto work = particlesBuffer_.fill({particles_});
+	//std::cout << "finish...\n";
+	// work->finish();
+
+	// vpp::BufferUpdate update(particlesBuffer_);
+	// update.add(particles_);
+
+	particlesBuffer_.fill140(particles_);
 }
 
 void ParticleSystem::buildComputeBuffer()
@@ -302,10 +329,12 @@ void ParticleSystem::writeGraphicsUBO()
 {
 	auto pMat = nytl::perspective3(45.f, 900.f / 900.f, 0.1f, 100.f);
 	auto vMat = nytl::identityMat<4, float>();
-
 	auto map = graphicsUBO_.memoryMap();
-	std::memcpy(map.ptr(), &pMat, sizeof(nytl::Mat4f));
-	std::memcpy(map.ptr() + sizeof(nytl::Mat4f), &vMat, sizeof(nytl::Mat4f));
+	// std::memcpy(map.ptr(), &pMat, sizeof(nytl::Mat4f));
+	// std::memcpy(map.ptr() + sizeof(nytl::Mat4f), &vMat, sizeof(nytl::Mat4f));
+
+	vpp::BufferUpdate update(graphicsUBO_);
+	update.add(pMat, vMat);
 }
 
 void ParticleSystem::writeDescriptorSets()

@@ -34,7 +34,7 @@ public:
 	const MemoryEntry& memoryEntry() const { return memoryEntry_; }
 
 	///Returns the size in bytes this resource takes in gpu memory.
-	std::size_t size() const { return memoryEntry().size(); }
+	std::size_t size() const { return memoryEntry().size(); } //XXX rename memorySize?
 
 	const MemoryEntry& resourceRef() const { return memoryEntry(); }
 

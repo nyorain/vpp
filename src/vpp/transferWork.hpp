@@ -7,6 +7,9 @@
 namespace vpp
 {
 
+//Those classes are used internally (buffer and image fill/retrieve) but might also be useful
+//for custom upload/download work implementations
+
 ///Utility template base class for all transfer work implementations using a TransferRange.
 template<typename T>
 class TransferWork : public CommandWork<T>
@@ -15,7 +18,7 @@ public:
 	TransferWork(CommandBuffer&& cmdBuf, TransferRange&& range)
 		: CommandWork<T>(std::move(cmdBuf)), transferRange_(std::move(range)) {}
 
-protected:
+public:
 	TransferRange transferRange_;
 };
 
@@ -31,7 +34,7 @@ public:
 		return bufferData_->data();
 	}
 
-protected:
+public:
 	std::unique_ptr<Work<std::uint8_t&>> bufferData_;
 };
 
