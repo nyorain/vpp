@@ -79,8 +79,8 @@ protected:
 
 protected:
 	static AllocationType toAllocType(RequirementType reqType);
-	static bool suppportsType(const Requirement& req, unsigned int type);
-	static bool suppportsType(std::uint32_t bits, unsigned int type);
+	static bool supportsType(const Requirement& req, unsigned int type);
+	static bool supportsType(std::uint32_t bits, unsigned int type);
 
 	//utility allocation functions
 	void allocate(unsigned int type);

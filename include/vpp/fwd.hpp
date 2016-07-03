@@ -2,8 +2,11 @@
 
 #include <vpp/vulkan/fwd.hpp>
 
+namespace vk { namespace range{} }
 namespace vpp
 {
+
+using namespace vk::range;
 
 class Context;
 class Device;

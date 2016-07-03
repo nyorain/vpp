@@ -91,14 +91,17 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 		else if(attachInfo.dynamic)
 		{
 			auto imgInfo = attachInfo.createInfo.imgInfo;
-			imgInfo.extent = {size.width, size.height, 1};
+			imgInfo.extent.width = std::max(swapChain.size().width, info.maxWidth);
+			imgInfo.extent.height = std::max(swapChain.size().height, info.maxHeight);
+			imgInfo.extent.depth = 1;
 			dynamic.push_back(attachInfo.createInfo);
 		}
 		else
 		{
 			auto imgInfo = attachInfo.createInfo.imgInfo;
-			//imgInfo.extent = {size.width, size.height, 1};
-			imgInfo.extent = {2000, 1200, 1};
+			imgInfo.extent.width = std::max(swapChain.size().width, info.maxWidth);
+			imgInfo.extent.height = std::max(swapChain.size().height, info.maxHeight);
+			imgInfo.extent.depth = 1;
 			staticAttachments_.emplace_back();
 			staticAttachments_.back().create(device(), imgInfo, attachInfo.createInfo.memoryFlags);
 		}

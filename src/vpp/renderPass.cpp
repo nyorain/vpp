@@ -1,6 +1,5 @@
 #include <vpp/renderPass.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/utility/range.hpp>
 
 namespace vpp
 {
@@ -26,10 +25,10 @@ RenderPass::RenderPass(const Device& dev, vk::RenderPass pass, const vk::RenderP
 
 		if(sub.pDepthStencilAttachment) references_.push_back(*sub.pDepthStencilAttachment);
 
-		for(auto& ref : makeRange(sub.pColorAttachments, sub.colorAttachmentCount))
+		for(auto& ref : makeRange(*sub.pColorAttachments, sub.colorAttachmentCount))
 			references_.push_back(ref);
 
-		for(auto& ref : makeRange(sub.pInputAttachments, sub.inputAttachmentCount))
+		for(auto& ref : makeRange(*sub.pInputAttachments, sub.inputAttachmentCount))
 			references_.push_back(ref);
 	}
 

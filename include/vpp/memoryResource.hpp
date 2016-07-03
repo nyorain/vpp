@@ -13,9 +13,6 @@ namespace vpp
 class MemoryResource : public ResourceReference<MemoryResource>
 {
 public:
-	///Assures that there is device memory associated with this resource.
-	void init() const;
-
 	///Checks if this memory resource was initialized yet and if not it will be initialized.
 	///Will be implicitly called on member functions that require it.
 	void assureMemory() const;

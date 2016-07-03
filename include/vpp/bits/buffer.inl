@@ -1,10 +1,19 @@
 #pragma once
 
-struct DataBuffer
+struct RawBufferData
 {
-	std::uint8_t& data;
+public:
+	const std::uint8_t& data;
 	std::size_t size;
+
+public:
+	template<typename T>
+	RawBufferData(const T& obj, std::size_t count = 1)
+		: data(reinterpret_cast<std::uint8_t&>(obj)), size(sizeof(T) * count) {}
 };
+
+template<typename T>
+constexpr RawBufferData raw(const T& obj) { return {reinterpret_cast<std::uint8_t&>(obj), sizeof(T)}; }
 
 template<typename T> struct VulkanType { static constexpr auto type = ShaderType::none; };
 template<typename T> struct VulkanType<T&> : public VulkanType<T> {};
@@ -16,12 +25,25 @@ template<> struct VulkanType<bool> { static constexpr auto type = ShaderType::sc
 template<> struct VulkanType<std::uint32_t> { static constexpr auto type = ShaderType::scalar; };
 template<> struct VulkanType<std::int32_t> { static constexpr auto type = ShaderType::scalar; };
 template<> struct VulkanType<double> { static constexpr auto type = ShaderType::scalar_64; };
-template<> struct VulkanType<DataBuffer> { static constexpr auto type = ShaderType::buffer; };
+template<> struct VulkanType<RawBufferData> { static constexpr auto type = ShaderType::buffer; };
 
 template<typename T> auto constexpr VulkanTypeV = VulkanType<T>::type;
 
-unsigned int align(ShaderType type);
-unsigned int align(const Range<ShaderType> types);
+constexpr unsigned int align(ShaderType type)
+{
+	switch(type)
+	{
+		case ShaderType::scalar: return 4;
+		case ShaderType::scalar_64:
+		case ShaderType::vec2: return 8;
+		case ShaderType::vec3:
+		case ShaderType::vec4:
+		case ShaderType::vec2_64: return 16;
+		case ShaderType::vec3_64:
+		case ShaderType::vec4_64: return 32;
+		default: return 0;
+	}
+}
 
 namespace detail
 {
@@ -48,9 +70,11 @@ struct PrintMembers<std::index_sequence<I...>>
 
 		auto sa = 0u;
 		if(update.std140()) sa = 16u;
-		int e1[] = {(sa = std::max(sa, align(VulkanType<decltype(obj.*(std::get<I>(tup)))>::type)), 0)...};
+		int e1[] = {(sa = std::max(sa,
+			align(VulkanType<decltype(obj.*(std::get<I>(tup)))>::type)), 0)...};
 		update.align(sa);
 		int e2[] = {(bufferWrite(update, obj.*(std::get<I>(tup))), 0) ...};
+		update.align(sa);
 	}
 };
 
@@ -71,6 +95,57 @@ struct BufferWriter<T, ShaderType::buffer>
 	void operator()(BufferUpdate& update, const T& obj)
 	{
 		update.write(&obj.data, obj.size);
+	}
+};
+
+template<typename T>
+struct BufferWriter<T, ShaderType::matrix>
+{
+	void operator()(BufferUpdate& update, const T& obj)
+	{
+		using VT = std::decay_t<decltype(obj[0][0])>;
+
+		static constexpr auto major = VulkanType<T>::major;
+		static constexpr auto minor = VulkanType<T>::minor;
+		static constexpr auto transpose = VulkanType<T>::transpose;
+		static constexpr auto aligno = align(VulkanType<VT>::type) * (minor > 2 ? 4 : 2);
+
+		auto sa = (update.std140()) ? aligno : std::max(aligno, 16u);
+
+		static_assert(std::is_same<VT, float>::value || std::is_same<VT, double>::value,
+			"vpp::BufferUpdate::add(matrix): Only floating point value types are supported!");
+		static_assert(major > 1 && minor > 1 && major < 5 && minor < 5,
+			"vpp::BufferUpdate::add(matrix): Invalid matrix dimensions!");
+
+		update.align(sa);
+		if(sa == sizeof(VT) && sizeof(obj) == major * minor * sizeof(VT) && !transpose)
+		{
+			update.write(&obj, sizeof(obj));
+		}
+		else if(transpose)
+		{
+			for(auto mj = 0u; mj < major; ++mj)
+			{
+				update.align(sa);
+				for(auto mn = 0u; mn < minor; ++mn)
+				{
+					update.write(&obj[mj][mn], sizeof(VT));
+				}
+			}
+		}
+		else
+		{
+			for(auto mn = 0u; mn < minor; ++mn)
+			{
+				update.align(sa);
+				for(auto mj = 0u; mj < major; ++mj)
+				{
+					update.write(&obj[mj][mn], sizeof(VT));
+				}
+			}
+		}
+
+		update.align(sa);
 	}
 };
 
@@ -107,25 +182,11 @@ struct BufferWriter<T, ShaderType::none>
 	}
 };
 
-//foreach tuple
-// template<typename T> struct AddTuple;
-// template<std::size_t... I> struct AddTuple<std::index_sequence<I...>>
-// {
-// 	template<typename... T>
-// 	void operator()(BufferUpdate& update, const std::tuple<T...>& tup)
-// 	{
-// 		int e1[] = {(update.add(std::get<I>(tup)), 0)...};
-// 	}
-// };
-
 } //namespace detail
 
 template<typename T>
 void BufferUpdate::addSingle(const T& obj)
 {
-	// static_assert(sizeof(VulkanType<T>) > 0,
-	// 	"Unkown vulkan type! Provide a specialization for vpp::VulkanType or use raw write!");
-
 	detail::bufferWrite(*this, obj);
 }
 
@@ -133,11 +194,4 @@ template<typename... T>
 void BufferUpdate::add(const T&... objs)
 {
 	int e1[] = {(addSingle(objs), 0)...};
-}
-
-
-template<typename T, typename>
-void BufferUpdate::write(const T& obj, std::size_t count, std::size_t align)
-{
-	write(&obj, count * sizeof(T), align);
 }

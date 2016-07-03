@@ -5,11 +5,6 @@
 namespace vpp
 {
 
-void MemoryResource::init() const
-{
-	memoryEntry().allocate();
-}
-
 void MemoryResource::assureMemory() const
 {
 	if(!memoryEntry().allocated()) memoryEntry().allocate();

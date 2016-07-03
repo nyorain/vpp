@@ -186,8 +186,8 @@ public:
 	MemoryMapView map(const Allocation& allocation);
 
 	const vk::DeviceMemory& vkDeviceMemory() const { return memory_; }
-	vk::MemoryPropertyFlags propertyFlags() const { return flags_; } //XXX rename properties
-	unsigned int typeIndex() const { return typeIndex_; }
+	vk::MemoryPropertyFlags properties() const;
+	unsigned int type() const { return type_; }
 	const std::vector<AllocationEntry> allocations() const { return allocations_; }
 
 	operator vk::DeviceMemory() const { return vkDeviceMemory(); }
@@ -197,8 +197,7 @@ protected:
 	vk::DeviceMemory memory_ {};
 	std::size_t size_ {};
 
-	unsigned int typeIndex_ {};
-	vk::MemoryPropertyFlags flags_ {};
+	unsigned int type_ {};
 	MemoryMap memoryMap_ {}; //the current memory map, or invalid object
 };
 

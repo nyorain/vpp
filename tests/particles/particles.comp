@@ -36,8 +36,8 @@ https://github.com/SaschaWillems/Vulkan/blob/master/data/shaders/computeparticle
 
 struct Particle
 {
-	vec4 pos;
-	vec4 vel;
+	vec2 pos;
+	vec2 vel;
 	vec4 col;
 };
 
@@ -77,13 +77,13 @@ void main()
 		return;
 
     // Read position and velocity
-    vec3 vPos = particles[index].pos.xyz;
-    vec3 vVel = particles[index].vel.xyz;
+    vec2 vPos = particles[index].pos;
+    vec2 vVel = particles[index].vel;
 
 	vec3 destPos = vec3(ubo.attractorX, ubo.attractorY, 0.0);
 
     // Calculate new velocity depending on attraction point
-	if(ubo.attract != 0.0) vVel += ubo.deltaT * attraction(vPos, destPos.xyz) * 100;
+	if(ubo.attract != 0.0) vVel += ubo.deltaT * attraction(vec3(vPos, 0.0), destPos.xyz).xy * 100;
 	vVel *= 1 - (0.05 * ubo.deltaT * 10);
 
     // Move by velocity
@@ -93,16 +93,13 @@ void main()
 		vVel.x -= vVel.x;
 
 	//color
-	vec3 color = particles[index].col.xyz;
-	color.r = 1.0;
-	color.g = 1.0 - clamp(150 * length(vVel), 0., 1.);
-	color.b = 0.0;
+	vec3 color = vec3(1.0, 1.0 - clamp(150 * length(vVel), 0., 1.), 0.0);
 
 	//col.r = 1 - clamp(7 * sqrt(abs(vVel.x) + abs(vVel.y)), 0., 1.);
 
     // Write back
-    particles[index].pos.xyz = vPos;
-    particles[index].vel.xyz = vVel;
+    particles[index].pos = vPos;
+    particles[index].vel = vVel;
 	particles[index].col.xyz = color;
 
 }

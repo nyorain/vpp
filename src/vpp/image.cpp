@@ -9,7 +9,20 @@ namespace vpp
 
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags)
 {
-	create(dev, info, mflags);
+	image_ = vk::createImage(dev.vkDevice(), info);
+	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), image_);
+
+	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
+	dev.memoryAllocator().request(image_, reqs, info.tiling, memoryEntry_);
+}
+
+Image::Image(const Device& dev, const vk::ImageCreateInfo& info, std::uint32_t memoryTypeBits)
+{
+	image_ = vk::createImage(dev.vkDevice(), info);
+	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), image_);
+
+	reqs.memoryTypeBits &= memoryTypeBits;
+	dev.memoryAllocator().request(image_, reqs, info.tiling, memoryEntry_);
 }
 
 Image::Image(Image&& other) noexcept
@@ -34,17 +47,6 @@ void swap(Image& a, Image& b) noexcept
 
 	swap(a.image_, b.image_);
 	swap(a.memoryEntry_, b.memoryEntry_);
-}
-
-void Image::create(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags flags)
-{
-	image_ = vk::createImage(dev.vkDevice(), info);
-	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), image_);
-
-	std::cout << "image: " << reqs.size << "\n";
-
-	reqs.memoryTypeBits = dev.memoryTypeBits(flags, reqs.memoryTypeBits);
-	dev.memoryAllocator().request(image_, reqs, info.tiling, memoryEntry_);
 }
 
 WorkPtr Image::fill(const std::uint8_t& data, std::size_t size,

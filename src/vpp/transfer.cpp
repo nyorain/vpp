@@ -14,6 +14,7 @@ TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t s
 	info.usage = vk::BufferUsageBits::transferDst | vk::BufferUsageBits::transferSrc;
 
 	buffer_ = Buffer(dev, info, vk::MemoryPropertyBits::hostVisible);
+	buffer_.assureMemory();
 }
 
 TransferManager::TransferBuffer::~TransferBuffer()

@@ -1,6 +1,7 @@
 #include "particles.hpp"
 #include <vpp/backend/win32.hpp>
 #include <vpp/commandBuffer.hpp>
+#include <vpp/transfer.hpp>
 
 #include <string>
 #include <iostream>
@@ -143,8 +144,10 @@ void mainLoop(App& app)
 }
 
 //
-int main()
+int main(int argc, char** argv)
 {
+	if(argc < 2) return 0;
+	
 	{
 		std::uint32_t computeQF; //queueFamily
 
@@ -163,10 +166,13 @@ int main()
 		app.rendererInfo.renderPass = app.renderPass;
 		app.rendererInfo.attachments = {{vpp::ViewableImage::defaultDepth2D()}};
 
-		ParticleSystem particleSystem(app, 1024 * 3000);
+		//ParticleSystem particleSystem(app, 1024 * 3200);
+		ParticleSystem particleSystem(app, std::stoi(argv[1]));
 		app.particleSystem = &particleSystem;
 
 		std::cout << "setup complete0.\n";
+
+		app.context->device().transferManager().shrink();
 
 		auto builder = std::make_unique<ParticleRenderer>(app);
 		vpp::SwapChainRenderer renderer(context.swapChain(), app.rendererInfo, std::move(builder));

@@ -22,9 +22,17 @@ struct ViewableImage::CreateInfo
 
 struct SwapChainRenderer::AttachmentInfo
 {
-	ViewableImage::CreateInfo createInfo; //static/dynamic attachments
-	bool dynamic = false; //dynamic or static attachment?
-	vk::ImageView external = {}; //if != VK_NULL_HANDLE all other members will be ignored
+	//will be used to create static/dynamic attachments
+	ViewableImage::CreateInfo createInfo;
+
+	//specifies whether it is a dynamic or static attachment.
+	//Each framebuffer (for the different swapChain attachments) has its own dyanmic attachments
+	//while static attachments are shared among them
+	bool dynamic = false;
+
+	//if valid all other members will be ignored and this will be used as some additional
+	//external attachment. Note that it must have at least the size of the swapChain
+	vk::ImageView external = {};
 };
 
 struct GraphicsPipeline::States

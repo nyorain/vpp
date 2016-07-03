@@ -80,8 +80,13 @@ public:
 	{
 		vk::RenderPass renderPass; //the render pass to use for the rendering
 		unsigned int queueFamily; //the queue family for graphical operations
-		std::vector<SwapChainRenderer::AttachmentInfo> attachments; //additional attachments
+		std::vector<AttachmentInfo> attachments; //additional attachments
 		unsigned int swapChainAttachment = 0; //id of the swapChain attachment in the fbs
+
+		//Those parameters are used to make resizing (i.e. recreating) more efficient in
+		//terms of memory allocation
+		unsigned int maxWidth = 1920;
+		unsigned int maxHeight = 1080;
 	};
 
 	///The RenderBuffer class hold a framebuffer for each swapChain image as well a

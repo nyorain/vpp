@@ -12,9 +12,14 @@ App* gApp;
 namespace vpp
 {
 
-template<> struct VulkanType<nytl::Mat4f> { static constexpr auto type = vpp::ShaderType::mat4; };
-template<> struct VulkanType<nytl::Mat3f> { static constexpr auto type = vpp::ShaderType::mat3; };
-template<> struct VulkanType<nytl::Mat2f> { static constexpr auto type = vpp::ShaderType::mat2; };
+template<std::size_t R, std::size_t C, typename V> struct VulkanType<nytl::Mat<R, C, V>>
+{
+	static constexpr auto type = vpp::ShaderType::matrix;
+	static constexpr auto major = R;
+	static constexpr auto minor = C;
+	static constexpr auto transpose = true;
+};
+
 template<> struct VulkanType<nytl::Vec2f> { static constexpr auto type = vpp::ShaderType::vec2; };
 template<> struct VulkanType<nytl::Vec3f> { static constexpr auto type = vpp::ShaderType::vec3; };
 template<> struct VulkanType<nytl::Vec4f> { static constexpr auto type = vpp::ShaderType::vec4; };
@@ -55,14 +60,28 @@ void ParticleRenderer::build(unsigned int id, const vpp::RenderPassInstance& ins
 	VkDeviceSize offsets[1] = { 0 };
 
 	auto gd = ps().graphicsDescriptorSet_.vkDescriptorSet();
-	auto buf = ps().particlesBuffer_.vkBuffer();
+	auto buf1 = ps().particlesBuffer1_.vkBuffer();
+	auto buf2 = ps().particlesBuffer2_.vkBuffer();
+	auto buf3 = ps().particlesBuffer3_.vkBuffer();
+	auto buf4 = ps().particlesBuffer4_.vkBuffer();
 
 	vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::graphics,
 		ps().graphicsPipeline_.vkPipeline());
 	vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
 		ps().graphicsPipeline_.vkPipelineLayout(), 0, {gd}, {});
-	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf}, offsets);
-	vk::cmdDraw(cmdBuffer, ps().particles_.size(), 1, 0, 0);
+
+	auto size = ps().particles_.size() / 4;
+	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf1}, offsets);
+	vk::cmdDraw(cmdBuffer, size * 4, 1, 0, 0);
+
+	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf2}, offsets);
+	vk::cmdDraw(cmdBuffer, size, 1, 0, 0);
+
+	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf3}, offsets);
+	vk::cmdDraw(cmdBuffer, size, 1, 0, 0);
+
+	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf4}, offsets);
+	vk::cmdDraw(cmdBuffer, size, 1, 0, 0);
 }
 
 std::vector<vk::ClearValue> ParticleRenderer::clearValues(unsigned int)
@@ -78,9 +97,9 @@ void ParticleRenderer::beforeRender(vk::CommandBuffer cmdBuffer)
 	vk::BufferMemoryBarrier bufferBarrier;
 	bufferBarrier.srcAccessMask = vk::AccessBits::shaderWrite | vk::AccessBits::shaderRead;
 	bufferBarrier.dstAccessMask = vk::AccessBits::vertexAttributeRead;
-	bufferBarrier.buffer = ps().particlesBuffer_.vkBuffer();
+	bufferBarrier.buffer = ps().particlesBuffer1_.vkBuffer();
 	bufferBarrier.offset = 0;
-	bufferBarrier.size = sizeof(Particle) * ps().particles_.size();
+	bufferBarrier.size = sizeof(Particle) * ps().particles_.size() / 4;
 	bufferBarrier.srcQueueFamilyIndex = vk::queueFamilyIgnored;
 	bufferBarrier.dstQueueFamilyIndex = vk::queueFamilyIgnored;
 
@@ -141,8 +160,8 @@ void ParticleSystem::initGraphicsPipeline()
 	//vertexBufferLayout
 	vertexBufferLayout_ = {
 		{
-			vk::Format::r32g32b32a32Sfloat, //position
-			vk::Format::r32g32b32a32Sfloat, //velocity
+			vk::Format::r32g32Sfloat, //position
+			vk::Format::r32g32Sfloat, //velocity
 			vk::Format::r32g32b32a32Sfloat //color
 		},
 	0}; //at binding 0
@@ -197,15 +216,15 @@ void ParticleSystem::initDescriptors()
 	//init pool
 	vk::DescriptorPoolSize typeCounts[2] {};
 	typeCounts[0].type = vk::DescriptorType::uniformBuffer;
-	typeCounts[0].descriptorCount = 2;
+	typeCounts[0].descriptorCount = 5;
 
 	typeCounts[1].type = vk::DescriptorType::storageBuffer;
-	typeCounts[1].descriptorCount = 1;
+	typeCounts[1].descriptorCount = 4;
 
 	vk::DescriptorPoolCreateInfo descriptorPoolInfo;
 	descriptorPoolInfo.poolSizeCount = 2;
 	descriptorPoolInfo.pPoolSizes = typeCounts;
-	descriptorPoolInfo.maxSets = 2;
+	descriptorPoolInfo.maxSets = 5;
 
 	descriptorPool_ = vk::createDescriptorPool(vkDevice(), descriptorPoolInfo);
 
@@ -228,7 +247,11 @@ void ParticleSystem::initDescriptors()
 	};
 
 	computeDescriptorSetLayout_ = vpp::DescriptorSetLayout(device(), compBindings);
-	computeDescriptorSet_ = vpp::DescriptorSet(computeDescriptorSetLayout_, descriptorPool_);
+
+	computeDescriptorSet1_ = vpp::DescriptorSet(computeDescriptorSetLayout_, descriptorPool_);
+	computeDescriptorSet2_ = vpp::DescriptorSet(computeDescriptorSetLayout_, descriptorPool_);
+	computeDescriptorSet3_ = vpp::DescriptorSet(computeDescriptorSetLayout_, descriptorPool_);
+	computeDescriptorSet4_ = vpp::DescriptorSet(computeDescriptorSetLayout_, descriptorPool_);
 }
 
 void ParticleSystem::initDescriptorBuffers()
@@ -252,40 +275,66 @@ void ParticleSystem::initParticles()
 {
 	std::mt19937 rgen;
 	rgen.seed(time(nullptr));
-	std::uniform_real_distribution<float> distr(-0.5f, 0.5f);
+	std::uniform_real_distribution<float> distr(-0.85f, 0.85f);
 
 	for(auto& particle : particles_)
 	{
 		particle.position.x = distr(rgen);
 		particle.position.y = distr(rgen);
-		particle.position.z = 0.f;
-		particle.position.w = 1.f;
 
-		particle.velocity = nytl::Vec4f{0.f, 0.f, 0.f, 0.f};
+		particle.velocity = nytl::Vec2f{0.f, 0.f};
 		particle.color = nytl::Vec4f(0.0, 0.0, 1.0, 1.0);
 	}
 }
 void ParticleSystem::initParticleBuffer()
 {
 	vk::BufferCreateInfo bufInfo;
-	bufInfo.size = sizeof(Particle) * particles_.size();
+	bufInfo.size = sizeof(Particle) * particles_.size() / 4;
 	bufInfo.usage = vk::BufferUsageBits::vertexBuffer | vk::BufferUsageBits::storageBuffer | vk::BufferUsageBits::transferDst;
 
-	particlesBuffer_ = vpp::Buffer(device(), bufInfo, vk::MemoryPropertyBits::deviceLocal);
+	particlesBuffer1_ = vpp::Buffer(device(), bufInfo, 1);
+	particlesBuffer2_ = vpp::Buffer(device(), bufInfo, 1);
+	particlesBuffer3_ = vpp::Buffer(device(), bufInfo, 1);
+	particlesBuffer4_ = vpp::Buffer(device(), bufInfo, 1);
 }
 
 void ParticleSystem::writeParticleBuffer()
 {
+	// particlesBuffer1_.assureMemory();
+	// std::cout << "deviceLocal: " << (particlesBuffer_.memoryEntry().memory()->propertyFlags() & vk::MemoryPropertyBits::deviceLocal) << "\n";
+	// std::cout << "size: " << particlesBuffer_.size() << "\n";
 	// auto map = particlesBuffer_.memoryMap();
 	// std::memcpy(map.ptr(), particles_.data(), sizeof(Particle) * particles_.size());
-	// auto work = particlesBuffer_.fill({particles_});
-	//std::cout << "finish...\n";
+	auto size = particles_.size() / 4;
+	// auto work = particlesBuffer1_.fill({particles_.data(), sizeof(Particle) * size});
+	// auto work2 = particlesBuffer2_.fill({particles_.data() + size, sizeof(Particle) * size});
+	// auto work3 = particlesBuffer3_.fill({particles_.data() + 2 * size, sizeof(Particle) * size});
+	// auto work4 = particlesBuffer4_.fill({particles_.data() + 3 * size, sizeof(Particle) * size});
+	//
+	// //std::cout << "finish...\n";
 	// work->finish();
+	//  work2->finish();
+	//  work3->finish();
+	//  work4->finish();
 
-	// vpp::BufferUpdate update(particlesBuffer_);
-	// update.add(particles_);
+	std::vector<Particle> p1(particles_.begin(), particles_.begin() + size);
+	std::vector<Particle> p2(particles_.begin() + size, particles_.begin() + 2 * size);
+	std::vector<Particle> p3(particles_.begin() + 2 * size, particles_.begin() + 3 * size);
+	std::vector<Particle> p4(particles_.begin() + 3 * size, particles_.begin() + 4 * size);
 
-	particlesBuffer_.fill140(particles_);
+	vpp::BufferUpdate u1(particlesBuffer1_);
+	u1.add(p1);
+
+	vpp::BufferUpdate u2(particlesBuffer2_);
+	u2.add(p2);
+
+	vpp::BufferUpdate u3(particlesBuffer3_);
+	u3.add(p3);
+
+	vpp::BufferUpdate u4(particlesBuffer4_);
+	u4.add(p4);
+
+	//particlesBuffer1_.fill140(particles_);
 }
 
 void ParticleSystem::buildComputeBuffer()
@@ -296,12 +345,28 @@ void ParticleSystem::buildComputeBuffer()
 	vk::CommandBufferBeginInfo cmdBufInfo;
 	vk::beginCommandBuffer(computeBuffer_, cmdBufInfo);
 
-	auto cd = computeDescriptorSet_.vkDescriptorSet();
+	auto cd1 = computeDescriptorSet1_.vkDescriptorSet();
+	auto cd2 = computeDescriptorSet2_.vkDescriptorSet();
+	auto cd3 = computeDescriptorSet3_.vkDescriptorSet();
+	auto cd4 = computeDescriptorSet4_.vkDescriptorSet();
 
 	vk::cmdBindPipeline(computeBuffer_, vk::PipelineBindPoint::compute, computePipeline_.vkPipeline());
+
 	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::compute,
-		computePipeline_.vkPipelineLayout(), 0, {cd}, {});
-	vk::cmdDispatch(computeBuffer_, particles_.size() / 16, 1, 1);
+		computePipeline_.vkPipelineLayout(), 0, {cd1}, {});
+	vk::cmdDispatch(computeBuffer_, particles_.size() / 64, 1, 1);
+
+	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::compute,
+		computePipeline_.vkPipelineLayout(), 0, {cd2}, {});
+	vk::cmdDispatch(computeBuffer_, particles_.size() / 64, 1, 1);
+
+	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::compute,
+		computePipeline_.vkPipelineLayout(), 0, {cd3}, {});
+	vk::cmdDispatch(computeBuffer_, particles_.size() / 64, 1, 1);
+
+	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::compute,
+		computePipeline_.vkPipelineLayout(), 0, {cd4}, {});
+	vk::cmdDispatch(computeBuffer_, particles_.size() / 64, 1, 1);
 
 	vk::endCommandBuffer(computeBuffer_);
 }
@@ -342,11 +407,23 @@ void ParticleSystem::writeDescriptorSets()
 	vpp::DescriptorSetUpdate gfx(graphicsDescriptorSet_);
 	gfx.uniform({{graphicsUBO_, 0, sizeof(nytl::Mat4f) * 2}});
 
-	vpp::DescriptorSetUpdate comp(computeDescriptorSet_);
-	comp.storage({{particlesBuffer_, 0, sizeof(Particle) * particles_.size()}});
-	comp.uniform({{computeUBO_, 0, sizeof(float) * 5}});
+	vpp::DescriptorSetUpdate comp1(computeDescriptorSet1_);
+	comp1.storage({{particlesBuffer1_, 0, sizeof(Particle) * particles_.size() / 4}});
+	comp1.uniform({{computeUBO_, 0, sizeof(float) * 5}});
 
-	vpp::apply({gfx, comp});
+	vpp::DescriptorSetUpdate comp2(computeDescriptorSet2_);
+	comp2.storage({{particlesBuffer2_, 0, sizeof(Particle) * particles_.size() / 4}});
+	comp2.uniform({{computeUBO_, 0, sizeof(float) * 5}});
+
+	vpp::DescriptorSetUpdate comp3(computeDescriptorSet3_);
+	comp3.storage({{particlesBuffer3_, 0, sizeof(Particle) * particles_.size() / 4}});
+	comp3.uniform({{computeUBO_, 0, sizeof(float) * 5}});
+
+	vpp::DescriptorSetUpdate comp4(computeDescriptorSet4_);
+	comp4.storage({{particlesBuffer4_, 0, sizeof(Particle) * particles_.size() / 4}});
+	comp4.uniform({{computeUBO_, 0, sizeof(float) * 5}});
+
+	vpp::apply({gfx, comp1, comp2, comp3, comp4});
 }
 
 void ParticleSystem::compute()
@@ -366,7 +443,6 @@ void ParticleSystem::ParticleSystem::update(const nytl::Vec2ui& mousePos)
 	updateUBOs(mousePos);
 	//compute();
 }
-
 
 //utility
 void initRenderPass(App& app)

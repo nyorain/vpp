@@ -166,7 +166,7 @@ DeviceMemory* DeviceMemoryAllocator::findMem(Requirement& req)
 {
 	for(auto& mem : memories_)
 	{
-		if(!(req.memoryTypes & (1 << mem->typeIndex()))) continue;
+		if(!supportsType(req, mem->type())) continue;
 		auto allocation = mem->allocatable(req.size, req.alignment, toAllocType(req.type));
 		if(allocation.size == 0) continue;
 
@@ -240,7 +240,7 @@ void DeviceMemoryAllocator::allocate(unsigned int type)
 	std::vector<Requirement*> reqs;
 
 	for(auto& req : requirements_)
-		if(suppportsType(req, type)) reqs.push_back(&req);
+		if(supportsType(req, type)) reqs.push_back(&req);
 
 	allocate(type, reqs);
 
@@ -255,7 +255,6 @@ void DeviceMemoryAllocator::allocate(unsigned int type)
 		}
 	}
 }
-
 
 void DeviceMemoryAllocator::allocate(unsigned int type, const std::vector<Requirement*>& requirements)
 {
@@ -339,7 +338,7 @@ DeviceMemoryAllocator::queryTypes()
 				occurences.clear();
 				for(auto& req : requirements_)
 					for(auto i = 0u; i < 32; ++i)
-						if(suppportsType(req, i)) occurences[i].push_back(&req);
+						if(supportsType(req, i)) occurences[i].push_back(&req);
 			};
 
 	//initial occurences count
@@ -365,7 +364,7 @@ DeviceMemoryAllocator::queryTypes()
 		auto othersSupported = [](const Requirement& req, unsigned int type)
 			{
 				for(auto i = 0u; i < 32; ++i)
-					if(i != type && suppportsType(req, i)) return true;
+					if(i != type && supportsType(req, i)) return true;
 				return false;
 			};
 
@@ -450,8 +449,8 @@ unsigned int DeviceMemoryAllocator::findBestType(std::uint32_t typeBits) const
 		//start with one, so even if there are no matching reqs at all, at least a supported
 		//type bit is returned.
 		auto count = 1;
-		if(!suppportsType(typeBits, i)) continue;
-		for(auto& req : requirements_) if(suppportsType(req, i)) ++count;
+		if(!supportsType(typeBits, i)) continue;
+		for(auto& req : requirements_) if(supportsType(req, i)) ++count;
 
 		if(count > best)
 		{
@@ -463,14 +462,14 @@ unsigned int DeviceMemoryAllocator::findBestType(std::uint32_t typeBits) const
 	return bestID;
 }
 
-bool DeviceMemoryAllocator::suppportsType(std::uint32_t typeBits, unsigned int type)
+bool DeviceMemoryAllocator::supportsType(std::uint32_t typeBits, unsigned int type)
 {
 	return (typeBits & (1 << type));
 }
 
-bool DeviceMemoryAllocator::suppportsType(const Requirement& req, unsigned int type)
+bool DeviceMemoryAllocator::supportsType(const Requirement& req, unsigned int type)
 {
-	return suppportsType(req.memoryTypes, type);
+	return supportsType(req.memoryTypes, type);
 }
 
 }

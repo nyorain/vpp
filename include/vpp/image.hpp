@@ -19,13 +19,11 @@ class Image : public MemoryResource
 public:
 	Image() = default;
 	Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
+	Image(const Device& dev, const vk::ImageCreateInfo& info, std::uint32_t memoryTypeBits);
 	~Image();
 
 	Image(Image&& other) noexcept;
 	Image& operator=(Image other) noexcept;
-
-	///Creates the Image for two-step-initiazation.
-	void create(const Device& dev, const vk::ImageCreateInfo& inf, vk::MemoryPropertyFlags flgs = {});
 
 	///Fills the image with the given data.
 	///Expects that the image was either created with the host visible memory flag or

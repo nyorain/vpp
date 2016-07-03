@@ -8,9 +8,8 @@
 namespace vpp
 {
 
-//must be resource since it might be created without internal manages attachments
+//NOTE: must be resource since it might be created without internal manages attachments
 
-//TODO: max size paramter to reuse memory when the framebuffer is resized (bigger)
 ///Vulkan Framebuffer consisting of multiple image attachments.
 ///Can be initialized with two step initialization.
 ///Stores its own size and is able to create and manage its own attachments but does

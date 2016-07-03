@@ -30,7 +30,7 @@ public:
 	virtual std::uint8_t& data() override
 	{
 		finish();
-		if(!bufferData_) bufferData_ = transferRange_.buffer().retrieve();
+		if(!bufferData_) bufferData_ = retrieve(transferRange_.buffer());
 		return bufferData_->data();
 	}
 

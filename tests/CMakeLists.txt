@@ -7,7 +7,6 @@ function(add_shader name project)
 		COMMAND glslangValidator
 					-V "${CMAKE_CURRENT_SOURCE_DIR}/${name}"
 					-o "${name}.spv"
-					-s
 		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${name}"
 		WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
 	COMMENT "Building spirv shader - ${name}")

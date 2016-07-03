@@ -88,20 +88,22 @@ void Context::initInstance(const CreateInfo& info)
 
 vk::PhysicalDevice Context::choosePhysicalDevice(const std::vector<vk::PhysicalDevice>& phdevs) const
 {
-	if(phdevs.empty()) throw std::runtime_error("vpp::Context: no physical devices");
-
-	//TODO - algorithm for choosing, presetnation support
-	return phdevs[0];
+	for(auto& phdev : phdevs)
+	{
+		auto queues = surface().supportedQueueFamilies(phdev);
+		if(!queues.empty())
+		{
+			return phdev;
+		}
+	}
+	
+	throw std::runtime_error("vpp::Context: no valid physical devices");
 }
 
 void Context::initDevice(const CreateInfo& info)
 {
 	//phyiscal device
-	std::vector<vk::PhysicalDevice> phdevs;
-	auto size = 0u;
-	vk::enumeratePhysicalDevices(vkInstance(), size, nullptr);
-	phdevs.resize(size);
-	vk::enumeratePhysicalDevices(vkInstance(), size, phdevs.data());
+	auto phdevs = vk::enumeratePhysicalDevices(vkInstance());
 	auto phdev = choosePhysicalDevice(phdevs);
 
 	//extensions & layers
@@ -114,11 +116,7 @@ void Context::initDevice(const CreateInfo& info)
 	if(info.debugFlags != 0) layers = validationLayerNames;
 
 	//queues
-	std::vector<vk::QueueFamilyProperties> queueProps;
-	size = 0u;
-	vk::getPhysicalDeviceQueueFamilyProperties(phdev, size, nullptr);
-	queueProps.reserve(size);
-	vk::getPhysicalDeviceQueueFamilyProperties(phdev, size, queueProps.data());
+	auto queueProps = vk::getPhysicalDeviceQueueFamilyProperties(phdev);
 
 	//present queue
 	auto queues = surface().supportedQueueFamilies(phdev);

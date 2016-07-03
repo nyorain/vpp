@@ -35,8 +35,8 @@ extern App* gApp;
 
 struct Particle
 {
-	nytl::Vec4f position;
-	nytl::Vec4f velocity;
+	nytl::Vec2f position;
+	nytl::Vec2f velocity;
 	nytl::Vec4f color;
 };
 
@@ -47,7 +47,11 @@ protected:
 	vpp::DeviceMemoryAllocator allocator_;
 
 	std::vector<Particle> particles_;
-	vpp::Buffer particlesBuffer_;
+
+	vpp::Buffer particlesBuffer1_;
+	vpp::Buffer particlesBuffer2_;
+	vpp::Buffer particlesBuffer3_;
+	vpp::Buffer particlesBuffer4_;
 
 	vpp::VertexBufferLayout vertexBufferLayout_;
 	vpp::ComputePipeline computePipeline_;
@@ -58,7 +62,10 @@ protected:
 	vk::DescriptorPool descriptorPool_;
 
 	vpp::DescriptorSetLayout computeDescriptorSetLayout_;
-	vpp::DescriptorSet computeDescriptorSet_;
+	vpp::DescriptorSet computeDescriptorSet1_;
+	vpp::DescriptorSet computeDescriptorSet2_;
+	vpp::DescriptorSet computeDescriptorSet3_;
+	vpp::DescriptorSet computeDescriptorSet4_;
 	vpp::Buffer computeUBO_;
 
 	vpp::DescriptorSetLayout graphicsDescriptorSetLayout_;

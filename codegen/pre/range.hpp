@@ -6,6 +6,9 @@
 namespace vk
 {
 
+namespace range
+{
+
 template<typename T>
 class Range
 {
@@ -23,8 +26,8 @@ public:
 	constexpr const T* data() const { return data_; }
 	constexpr std::size_t size() const { return size_; }
 
-	constexpr T* begin() { return data_; }
-	constexpr T* end() { return data_ + size_; }
+	constexpr const T* begin() { return data_; }
+	constexpr const T* end() { return data_ + size_; }
 
 	constexpr const T* begin() const { return data_; }
 	constexpr const T* end() const { return data_ + size_; }
@@ -36,5 +39,10 @@ protected:
 	const T* data_ = nullptr;
 	std::size_t size_ = 0;
 };
+
+template<typename T>
+Range<T> makeRange(T& value, std::size_t size = 1){ return Range<T>(value, size); }
+
+}
 
 }

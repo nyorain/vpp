@@ -11,7 +11,7 @@ namespace vpp
 MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
 	: memory_(&memory), allocation_(alloc)
 {
-	if(!(memory.propertyFlags() & vk::MemoryPropertyBits::hostVisible))
+	if(!(memory.properties() & vk::MemoryPropertyBits::hostVisible))
 		throw std::logic_error("vpp::MemoryMap: trying to map device local memory");
 
 	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
@@ -96,7 +96,7 @@ void MemoryMap::invalidateRanges() const
 
 bool MemoryMap::coherent() const
 {
-	return memory().propertyFlags() & vk::MemoryPropertyBits::hostCoherent;
+	return memory().properties() & vk::MemoryPropertyBits::hostCoherent;
 }
 
 void MemoryMap::unmap()
@@ -171,7 +171,7 @@ std::uint8_t* MemoryMapView::ptr() const
 
 bool MemoryMapView::coherent() const
 {
-	return memory().propertyFlags() & vk::MemoryPropertyBits::hostCoherent;
+	return memory().properties() & vk::MemoryPropertyBits::hostCoherent;
 }
 
 void swap(MemoryMapView& a, MemoryMapView& b) noexcept
@@ -186,35 +186,32 @@ void swap(MemoryMapView& a, MemoryMapView& b) noexcept
 DeviceMemory::DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info)
 	: Resource(dev)
 {
-	typeIndex_ = info.memoryTypeIndex;
+	type_ = info.memoryTypeIndex;
 	size_ = info.allocationSize;
-	flags_ = dev.memoryProperties().memoryTypes[typeIndex_].propertyFlags;
 
 	memory_ = vk::allocateMemory(vkDevice(), info);
 }
 DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, std::uint32_t typeIndex)
 	: Resource(dev)
 {
-	typeIndex_ = typeIndex;
+	type_ = typeIndex;
 	size_ = size;
-	flags_ = dev.memoryProperties().memoryTypes[typeIndex_].propertyFlags;
 
 	vk::MemoryAllocateInfo info;
 	info.allocationSize = size_;
-	info.memoryTypeIndex = typeIndex_;
+	info.memoryTypeIndex = type_;
 
 	memory_ = vk::allocateMemory(vkDevice(), info);
 }
 DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryPropertyFlags flags)
 	: Resource(dev)
 {
-	flags_ = flags;
-	typeIndex_ = device().memoryType(flags);
+	type_ = device().memoryType(flags);
 	size_ = size;
 
 	vk::MemoryAllocateInfo info;
 	info.allocationSize = size_;
-	info.memoryTypeIndex = typeIndex_;
+	info.memoryTypeIndex = type_;
 
 	memory_ = vk::allocateMemory(vkDevice(), info);
 }
@@ -258,6 +255,10 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	//2) first call to allocatable: size 15MB, does now fit if none of the free segments
 	//if the first allocation had chosen segment A this second allocation would now
 	//fit in B.
+	//
+	//as new measurement the new sizes on both sides divided by the old (bigger) size could be
+	//a taken in account (smaller = better) since the new sizes on both sides should be as small as
+	//possible. true?
 
 	static constexpr AllocationEntry start = {{0, 0}, AllocationType::none};
 	auto granularity = device().properties().limits.bufferImageGranularity;
@@ -355,13 +356,18 @@ std::size_t DeviceMemory::size() const
 
 MemoryMapView DeviceMemory::map(const Allocation& allocation)
 {
-	if(!(propertyFlags() & vk::MemoryPropertyBits::hostVisible))
+	if(!(properties() & vk::MemoryPropertyBits::hostVisible))
 		throw std::logic_error("vpp::DeviceMemory::map: not mappable.");
 
 	if(!mapped()) memoryMap_ = MemoryMap(*this, allocation);
 	else memoryMap_.remap(allocation);
 
 	return MemoryMapView(memoryMap_, allocation);
+}
+
+vk::MemoryPropertyFlags DeviceMemory::properties() const
+{
+	return device().memoryProperties().memoryTypes[type()].propertyFlags;
 }
 
 }

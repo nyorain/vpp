@@ -15,7 +15,30 @@
 namespace vpp
 {
 
-using vk::Range;
+///Representing a vulkan buffer on a device.
+///Can be filled and read, and stores a handle to the memory location it is allocated on (or
+///the allocator that will take care of its allocation).
+///Does not store additional information such as buffer usage type or memory layout, this
+///must be handled by the application for best performance.
+class Buffer : public MemoryResource
+{
+public:
+	Buffer() = default;
+	Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
+	Buffer(const Device& dev, const vk::BufferCreateInfo& info, std::uint32_t memoryTypesBits);
+	~Buffer();
+
+	Buffer(Buffer&& other) noexcept;
+	Buffer& operator=(Buffer other) noexcept;
+
+	const vk::Buffer& vkBuffer() const { return buffer_; }
+
+	operator vk::Buffer() const { return vkBuffer(); }
+	friend void swap(Buffer& a, Buffer& b) noexcept;
+
+protected:
+	vk::Buffer buffer_ {};
+};
 
 ///Vulkan shader data types.
 enum class ShaderType
@@ -30,58 +53,27 @@ enum class ShaderType
 	vec2_64,
 	vec3_64,
 	vec4_64,
-	mat4,
-	mat3,
-	mat2,
-	structure
+	matrix, //Vulkan type has additional "major" and "minor" and "transpose" members
+	structure //Vulkan type has additional "member" tuples with member pointers
 };
 
-///Utility class for filling buffers with mulitple data segments.
-class BufferData
+///Specifies the different buffer alignment methods.
+enum class BufferAlign
 {
-public:
-	const void* data = nullptr; //a pointer to the data
-	std::size_t size = 0; //size of the given data
-	std::size_t offset = 0; //additional relative (!) offset to the previous given data segment
-
-public:
-	BufferData() = default;
-
-	///Constructs the buffer data by directly storing an object.
-	template<typename T, typename = std::enable_if_t<std::is_standard_layout<T>::value>>
-	BufferData(const T& obj, std::size_t xoff = 0)
-		: data(&obj), size(sizeof(T)), offset(xoff) {}
-
-	///Constructs the buffer data for a given container, which must correctly implement
-	///a size and a data member function and must have its value type as first template param.
-	///The container must be contigous.
-	///Can be e.g. be used to create a BufferData object diretly from a std::vector or std::string.
-	template<template<typename, typename...> typename C, typename T, typename... A>
-	BufferData(const C<T, A...>& container, std::size_t xoff = 0)
-		: data(container.data()), size(container.size() * sizeof(T)), offset(xoff) {}
-			//type{VulkanType<T>::type, container.size()} {}
+	std140,
+	std430
 };
 
 class BufferUpdate : public ResourceReference<BufferUpdate>
 {
 public:
-	enum class Align
-	{
-		std140,
-		std430
-	};
-
-public:
-	BufferUpdate(const Buffer& buffer, Align align = Align::std140, bool direct = false);
+	BufferUpdate(const Buffer& buffer, BufferAlign align = BufferAlign::std140, bool direct = false);
 	~BufferUpdate();
 
 	template<typename T> void addSingle(const T& obj);
 	template<typename... T> void add(const T&... obj);
 
-	template<typename T, typename = std::enable_if_t<!std::is_pointer<T>::value>> void
-	write(const T& obj, std::size_t count = 1, std::size_t align = 0);
 	void write(const void* ptr, std::size_t size);
-
 	void offset(std::size_t size, bool update = true);
 	void align(std::size_t align);
 
@@ -91,21 +83,24 @@ public:
 
 	WorkPtr apply();
 
-	std::uint8_t& data();
 	const Buffer& buffer() const { return *buffer_; }
 	std::size_t bufferOffset() const { return bufferOffset_; }
 	std::size_t internalOffset() const { return internalOffset_; }
-	Align alignType() const { return align_; }
+	BufferAlign alignType() const { return align_; }
 
-	bool std140() const { return align_ == Align::std140; }
-	bool std430() const { return align_ == Align::std430; }
+	bool std140() const { return align_ == BufferAlign::std140; }
+	bool std430() const { return align_ == BufferAlign::std430; }
 
 	const Buffer& resourceRef() const { return *buffer_; }
 
 protected:
+	void checkCopies();
+	std::uint8_t& data();
+
+protected:
 	const Buffer* buffer_ {};
 	WorkPtr work_ {};
-	Align align_;
+	BufferAlign align_;
 
 	MemoryMapView map_ {}; //for mapping (buffer/transfer)
 	std::vector<std::uint8_t> data_; //for direct copying
@@ -119,71 +114,53 @@ protected:
 
 #include <vpp/bits/buffer.inl>
 
-// class BufferRead
-// {
-// public:
-// 	BufferRead(const Buffer& buffer);
-// };
-//
-// void alignedWrite(std::uint8_t* ptr, const Range<BufferData>& datas);
-// void alignedRead(const std::uint8_t* ptr, Range<BufferData>& datas);
+///TODO: function for aligned buffer reading
+//template<typename... T>
+//void alignedRead(const std::uint8_t& data, T... args);
 
-///Representing a vulkan buffer on a device.
-///Can be filled and read, and stores a handle to the memory location it is allocated on (or
-///the allocator that will take care of its allocation).
-///Does not store additional information such as buffer usage type or memory layout, this
-///must be handled by the application for best performance.
-class Buffer : public MemoryResource
+
+///Fills the buffer with the given data.
+///Does this either by memory mapping the buffer or by copying it via command buffer.
+///Expects that buffer was created fillable, so either the buffer is memory mappable or
+///it is allowed to copy data into it and the device was created with a matching queue.
+///Note that this operation may be asnyc, therefore a work unique ptr is returned.
+///If multiple (device local) buffers are to fill it brings usually huge performace gains
+///to first call fill() on them all and then make sure that the needed work finishes.
+///\param buf The Buffer to fill.
+///\param align Specifies the align of the data to update (either std140 or std430).
+///\param args The arguments to fill the buffer with. Notice that this function is just a
+///utility wrapper around the BufferUpdate class (which may be used for more detailed updates)
+///and therefore expects all given arguments to have a specialization for the VulkanType
+///template which is used to specify their matching shader type.
+///If raw (un- or custom-aligned) data should be written into the buffer, the vpp::raw() function
+///can be used
+///\sa BufferUpdate
+///\sa ShaderType
+///\sa fill140
+///\sa fill430
+template<typename... T>
+WorkPtr fill(const Buffer& buf, BufferAlign align, const T&... args)
 {
-public:
-	Buffer() = default;
-	Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
-	~Buffer();
+	BufferUpdate update(buf, align);
+	update.add(args...);
+	return update.apply();
+}
 
-	Buffer(Buffer&& other) noexcept;
-	Buffer& operator=(Buffer other) noexcept;
+///Utilty shortcut for filling the buffer with data using the std140 layout.
+///\sa fill
+///\sa BufferUpdate
+template<typename... T> WorkPtr
+fill140(const T&... args){ return fill(BufferAlign::std140, args...); }
 
-	///Fills the buffer with the given data.
-	///Does this either by memory mapping the buffer or by copying it via command buffer.
-	///Expects that buffer was created fillable, so either the buffer is memory mappable or
-	///it is allowed to copy data into it and the device was created with a matching queue.
-	///Note that this operation may be asnyc, therefore a work unique ptr is returned.
-	///If multiple (device local) buffers are to fill it brings usually huge performace gains
-	///to first call fill() on them all and then make sure that the needed work finishes.
-	///\param data The data the buffer should be filled with (may be multiple data segments)
-	///\param direct Specifies whether direct transfer via cmdUpdateBuffer should be preferred over a
-	///uploadBuffer copy if possible. By default it is preferred. Will only be taken into account if
-	///the buffer is device local and the given data makes direct transfer possible.
-	WorkPtr fill(const std::vector<BufferData>& data, bool direct = true) const;
+///Utilty shortcut for filling the buffer with data using the std430 layout.
+///\sa fill
+///\sa BufferUpdate
+template<typename... T> WorkPtr
+fill430(const T&... args){ return fill(BufferAlign::std430, args...); }
 
-	template<typename... T>
-	WorkPtr fill2(BufferUpdate::Align align, const T&... args)
-	{
-		BufferUpdate update(*this, align);
-		update.add(args...);
-		return update.apply();
-	}
-
-	///Utilty shortcut for filling the buffer with data using the std140 layout.
-	template<typename... T> WorkPtr
-	fill140(const T&... args){ return fill2(BufferUpdate::Align::std140, args...); }
-
-	///Utilty shortcut for filling the buffer with data using the std430 layout.
-	template<typename... T> WorkPtr
-	fill430(const T&... args){ return fill2(BufferUpdate::Align::std430, args...); }
-
-	//TODO: retrieve only specific range
-	///Retrives the data stored in the buffer.
-	///\return A Work ptr that is able to retrive an array of std::uint8_t values storing the data.
-	DataWorkPtr retrieve() const;
-
-	const vk::Buffer& vkBuffer() const { return buffer_; }
-
-	operator vk::Buffer() const { return vkBuffer(); }
-	friend void swap(Buffer& a, Buffer& b) noexcept;
-
-protected:
-	vk::Buffer buffer_ {};
-};
+//TODO: retrieve only specific range
+///Retrives the data stored in the buffer.
+///\return A Work ptr that is able to retrive an array of std::uint8_t values storing the data.
+DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset = 0, vk::DeviceSize size = 0);
 
 };
