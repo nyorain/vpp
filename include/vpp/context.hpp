@@ -14,6 +14,7 @@ namespace vpp
 namespace fwd { extern const vk::DebugReportFlagsEXT defaultDebugFlags; }
 
 //TODO: correct graphics/compute/present queue support -- holy shit one bugfest atm
+//TODO: correct layer management
 //TODO: do not public expose init functions. Needed for createContext funcionts.
 //rather do some friend class Backend and then create backend implementations using the
 //functionality.

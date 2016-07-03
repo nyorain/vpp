@@ -70,25 +70,29 @@ const vk::DeviceMemory& MemoryMap::vkMemory() const
 	return memory_->vkDeviceMemory();
 }
 
-void MemoryMap::flushRanges() const
+void MemoryMap::flush() const
 {
+#ifndef NDEBUG
 	if(coherent())
 	{
-		std::cout << "vpp::MemoryMap::flushRanges: called but not needed, mem coherent\n";
+		std::cerr << "vpp::MemoryMap::flushRanges: called but not needed, mem coherent\n";
 		return;
 	}
+#endif
 
 	auto range = mappedMemoryRange();
 	vk::flushMappedMemoryRanges(vkDevice(), 1, range);
 }
 
-void MemoryMap::invalidateRanges() const
+void MemoryMap::reload() const
 {
+#ifndef NDEBUG
 	if(coherent())
 	{
-		std::cout << "vpp::MemoryMap::invalidateRanges: called but not needed, mem coherent\n";
+		std::cerr << "vpp::MemoryMap::invalidateRanges: called but not needed, mem coherent\n";
 		return;
 	}
+#endif
 
 	auto range = mappedMemoryRange();
 	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);
@@ -148,17 +152,29 @@ vk::MappedMemoryRange MemoryMapView::mappedMemoryRange() const
 	return {vkMemory(), offset(), size()};
 }
 
-void MemoryMapView::flushRanges() const
+void MemoryMapView::flush() const
 {
-	if(coherent()) return;
+#ifndef NDEBUG
+	if(coherent())
+	{
+		std::cerr << "vpp::MemoryMap::invalidateRanges: called but not needed, mem coherent\n";
+		return;
+	}
+#endif
 
 	auto range = mappedMemoryRange();
 	vk::flushMappedMemoryRanges(vkDevice(), 1, range);
 }
 
-void MemoryMapView::invalidateRanges() const
+void MemoryMapView::reload() const
 {
-	if(coherent()) return;
+#ifndef NDEBUG
+	if(coherent())
+	{
+		std::cerr << "vpp::MemoryMap::invalidateRanges: called but not needed, mem coherent\n";
+		return;
+	}
+#endif
 
 	auto range = mappedMemoryRange();
 	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);
@@ -217,8 +233,9 @@ DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryProp
 }
 DeviceMemory::~DeviceMemory()
 {
-	if(!allocations_.empty())
-		std::cerr << "vpp::~DeviceMemory: there are " << allocations_.size() << "allocs left\n";
+#ifndef NDEBUG
+	if(!allocations_.empty()) std::cerr << "vpp::~DevMem: " << allocations_.size() << "allocs left\n";
+#endif
 
 	if(vkDeviceMemory()) vk::freeMemory(vkDevice(), memory_, nullptr);
 }

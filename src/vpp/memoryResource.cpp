@@ -21,7 +21,7 @@ MemoryMapView MemoryResource::memoryMap() const
 bool MemoryResource::mappable() const
 {
 	if(!memoryEntry().memory()) return false;
-	return memoryEntry().memory()->propertyFlags() & vk::MemoryPropertyBits::hostVisible;
+	return memoryEntry().memory()->properties() & vk::MemoryPropertyBits::hostVisible;
 }
 
 }

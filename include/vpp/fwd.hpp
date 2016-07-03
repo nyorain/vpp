@@ -2,6 +2,15 @@
 
 #include <vpp/vulkan/fwd.hpp>
 
+//The VPP_DEBUG macro controls whether additional checks should be performed or not.
+#ifndef VPP_DEBUG
+ #ifdef NDEBUG
+  #define VPP_DEBUG 0
+ #else
+  #define VPP_DEBUG 1
+ #endif
+#endif
+
 namespace vk { namespace range{} }
 namespace vpp
 {

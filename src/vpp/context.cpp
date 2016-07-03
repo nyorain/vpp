@@ -39,11 +39,6 @@ void Context::initInstance(const CreateInfo& info)
 {
 	std::vector<const char*> layers;
 	auto vec = vk::enumerateInstanceLayerProperties();
-	for(auto& layer : vec)
-	{
-		std::cout << "layer: " << layer.layerName.data() << "\n";
-		//layers.push_back(layer.layerName.data());
-	}
 
 	//appinfo
 	auto eName = "vpp";
@@ -77,8 +72,6 @@ void Context::initInstance(const CreateInfo& info)
 	iniinfo.pApplicationInfo = &appInfo;
 
 	instance_ = vk::createInstance(iniinfo);
-	std::cout << "ini: " << instance_ << "\n";
-
 	if(info.debugFlags != 0)
 	{
 		auto flags = info.debugFlags;
@@ -96,7 +89,7 @@ vk::PhysicalDevice Context::choosePhysicalDevice(const std::vector<vk::PhysicalD
 			return phdev;
 		}
 	}
-	
+
 	throw std::runtime_error("vpp::Context: no valid physical devices");
 }
 

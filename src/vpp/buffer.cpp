@@ -54,7 +54,7 @@ void swap(Buffer& a, Buffer& b) noexcept
 
 DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize size)
 {
-	//needed here? or throw if not yet allocated? there cannot be data to retrieved if the
+	//XXX: needed here? or throw if not yet allocated? there cannot be data to retrieved if the
 	//memory is allocated by this call...
 	buf.assureMemory();
 	if(size == vk::wholeSize) size = buf.memoryEntry().size() - offset;
@@ -62,24 +62,15 @@ DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize si
 	//retrieve by mapping
 	if(buf.mappable())
 	{
-		//mappable
-		//XXX TODO: alternative to use extra host buffer: just use the mapped range as return data
-		//would have to ensure that the buffer stays alive until data is retrieved.
-		//has to be done anyway...
-
-		auto map = buf.memoryEntry().map();
-		std::vector<std::uint8_t> buffer(size); //buffer to fill the data with
-		std::memcpy(buffer.data(), map.ptr(), map.size());
-
 		struct WorkImpl : public FinishedWork<std::uint8_t&>
 		{
-			std::vector<std::uint8_t> buffer_;
+			MemoryMapView map_;
 
-			WorkImpl(std::vector<std::uint8_t>&& buffer) : buffer_(std::move(buffer)) {}
-			virtual std::uint8_t& data() override { return *buffer_.data(); }
+			WorkImpl(const Buffer& buf) : map_(buf.memoryMap()) {}
+			virtual std::uint8_t& data() override { return *map_.ptr(); }
 		};
 
-		return std::make_unique<WorkImpl>(std::move(buffer));
+		return std::make_unique<WorkImpl>(buf);
 	}
 	else
 	{
@@ -93,23 +84,7 @@ DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize si
 		vk::cmdCopyBuffer(cmdBuffer, buf, downloadBuffer.buffer(), {region});
 		vk::endCommandBuffer(cmdBuffer);
 
-		struct WorkImpl : public CommandWork<std::uint8_t&>
-		{
-			TransferRange downloadRange_;
-			std::unique_ptr<Work<std::uint8_t&>> bufferData_;
-
-			WorkImpl(CommandBuffer&& cmdBuf, TransferRange&& range)
-				: CommandWork(std::move(cmdBuf)), downloadRange_(std::move(range)) {}
-
-			virtual std::uint8_t& data() override
-			{
-				finish();
-				bufferData_ = retrieve(downloadRange_.buffer());
-				return bufferData_->data();
-			}
-		};
-
-		return std::make_unique<WorkImpl>(std::move(cmdBuffer), std::move(downloadBuffer));
+		return std::make_unique<DownloadWork>(std::move(cmdBuffer), std::move(downloadBuffer));
 	}
 }
 
@@ -216,7 +191,7 @@ std::uint8_t& BufferUpdate::data()
 
 WorkPtr BufferUpdate::apply()
 {
-	if(!direct_ && !map_.coherent()) map_.flushRanges();
+	if(!direct_ && !map_.coherent()) map_.flush();
 
 	auto uploadWork = dynamic_cast<UploadWork*>(work_.get()); //transfer
 	auto commandWork = dynamic_cast<CommandWork<void>*>(work_.get()); //direct

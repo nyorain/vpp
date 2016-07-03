@@ -117,7 +117,9 @@ void Allocator::free(void* buffer)
 		}
 	}
 
+#ifndef NDEBUG
 	std::cerr << "vpp::Allocator::free: could not find " << buffer << "\n";
+#endif
 }
 
 void* Allocator::realloc(void* buffer, Size size)
@@ -149,7 +151,10 @@ void* Allocator::realloc(void* buffer, Size size)
 		}
 	}
 
+#ifndef NDEBUG
 	std::cerr << "vpp::Allocator::realloc: could not find " << buffer << "\n";
+#endif
+
 	return nullptr;
 }
 

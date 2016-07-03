@@ -31,12 +31,12 @@ public:
 
 	///Makes sure the mapped data is visibile on the device.
 	///If memory is coherent, this function will have no effect.
-	void flushRanges() const;
+	void flush() const;
 
 	///Reloads the device memory into mapped memory, i.e. makes sure writes by the device
 	///are made visible.
 	///If the memory is coherent, this function will have no effect.
-	void invalidateRanges() const;
+	void reload() const;
 
 	const vk::DeviceMemory& vkMemory() const;
 	const Allocation& allocation() const { return allocation_; }
@@ -81,12 +81,12 @@ public:
 	///Makes sure the mapped data is visibile on the device.
 	///Not needed when memory is coherent, look at vkFlushMappedMemoryRanges.
 	///Can be checked with coherent().
-	void flushRanges() const; //XXX: raname flush?
+	void flush() const; //XXX: raname flush?
 
 	///Reloads the device memory into mapped memory, i.e. makes sure writes by the device
 	///are made visible. Not needed when memory is coherent, look at vkInvalidateMappedMemoryRanges.
 	///Can be checked with coherent().
-	void invalidateRanges() const; //XXX: rename invalidte/reload?
+	void reload() const; //XXX: rename invalidte/reload?
 
 	MemoryMap& memoryMap() const { return *memoryMap_; }
 	const DeviceMemory& memory() const { return memoryMap().memory(); }

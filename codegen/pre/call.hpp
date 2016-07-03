@@ -48,33 +48,33 @@ inline bool success(Result result)
 	return (static_cast<std::int64_t>(result) >= 0);
 }
 
-inline std::string resultErrorMsg(Result result)
+inline std::string to_string(Result result)
 {
     switch(result)
     {
-	    case Result::success: return "Success";
-	    case Result::notReady: return "NotReady";
-	    case Result::timeout: return "Timeout";
-	    case Result::eventSet: return "EventSet";
-	    case Result::eventReset: return "EventReset";
-	    case Result::incomplete: return "Incomplete";
-	    case Result::errorOutOfHostMemory: return "ErrorOutOfHostMemory";
-	    case Result::errorOutOfDeviceMemory: return "ErrorOutOfDeviceMemory";
-	    case Result::errorInitializationFailed: return "ErrorInitializationFailed";
-	    case Result::errorDeviceLost: return "ErrorDeviceLost";
-	    case Result::errorMemoryMapFailed: return "ErrorMemoryMapFailed";
-	    case Result::errorLayerNotPresent: return "ErrorLayerNotPresent";
-	    case Result::errorExtensionNotPresent: return "ErrorExtensionNotPresent";
-	    case Result::errorFeatureNotPresent: return "ErrorFeatureNotPresent";
-	    case Result::errorIncompatibleDriver: return "ErrorIncompatibleDriver";
-	    case Result::errorTooManyObjects: return "ErrorTooManyObjects";
-	    case Result::errorFormatNotSupported: return "ErrorFormatNotSupported";
-	    case Result::errorSurfaceLostKHR: return "ErrorSurfaceLostKHR";
-	    case Result::errorNativeWindowInUseKHR: return "ErrorNativeWindowInUseKHR";
-	    case Result::suboptimalKHR: return "SuboptimalKHR";
-	    case Result::errorOutOfDateKHR: return "ErrorOutOfDateKHR";
-	    case Result::errorIncompatibleDisplayKHR: return "ErrorIncompatibleDisplayKHR";
-	    case Result::errorValidationFailedEXT: return "ErrorValidationFailedEXT";
+	    case Result::success: return "success";
+	    case Result::notReady: return "notReady";
+	    case Result::timeout: return "timeout";
+	    case Result::eventSet: return "eventSet";
+	    case Result::eventReset: return "eventReset";
+	    case Result::incomplete: return "incomplete";
+	    case Result::errorOutOfHostMemory: return "errorOutOfHostMemory";
+	    case Result::errorOutOfDeviceMemory: return "errorOutOfDeviceMemory";
+	    case Result::errorInitializationFailed: return "errorInitializationFailed";
+	    case Result::errorDeviceLost: return "errorDeviceLost";
+	    case Result::errorMemoryMapFailed: return "errorMemoryMapFailed";
+	    case Result::errorLayerNotPresent: return "errorLayerNotPresent";
+	    case Result::errorExtensionNotPresent: return "errorExtensionNotPresent";
+	    case Result::errorFeatureNotPresent: return "errorFeatureNotPresent";
+	    case Result::errorIncompatibleDriver: return "errorIncompatibleDriver";
+	    case Result::errorTooManyObjects: return "errorTooManyObjects";
+	    case Result::errorFormatNotSupported: return "errorFormatNotSupported";
+	    case Result::errorSurfaceLostKHR: return "errorSurfaceLostKHR";
+	    case Result::errorNativeWindowInUseKHR: return "errorNativeWindowInUseKHR";
+	    case Result::suboptimalKHR: return "suboptimalKHR";
+	    case Result::errorOutOfDateKHR: return "errorOutOfDateKHR";
+	    case Result::errorIncompatibleDisplayKHR: return "errorIncompatibleDisplayKHR";
+	    case Result::errorValidationFailedEXT: return "errorValidationFailedEXT";
 	    default: return "unknown";
     }
 }
@@ -84,7 +84,7 @@ inline vk::Result checkResultThrow(vk::Result result, const char* function, cons
 {
 	if(success(result)) return result;
 
-	auto msg = resultErrorMsg(result);
+	auto msg = to_string(result);
 	auto ecode = static_cast<std::int64_t>(result);
 	const std::string err = "Vulkan Error Code " + std::to_string(ecode) + ": " + msg +
 		"\t\nin function " + function + " ,calling " + called;
@@ -98,7 +98,7 @@ inline vk::Result checkResultWarn(vk::Result result, const char* function, const
 {
 	if(success(result)) return result;
 
-	auto msg = resultErrorMsg(result);
+	auto msg = to_string(result);
 	auto ecode = static_cast<std::int64_t>(result);
 	const std::string err = "Vulkan Error Code " + std::to_string(ecode) + ": " + msg +
 		"\n\tin function " + function + " ,calling " + called;

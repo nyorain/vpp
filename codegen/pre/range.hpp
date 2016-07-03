@@ -45,4 +45,6 @@ Range<T> makeRange(T& value, std::size_t size = 1){ return Range<T>(value, size)
 
 }
 
+using namespace range;
+
 }

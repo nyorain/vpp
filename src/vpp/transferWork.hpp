@@ -30,12 +30,12 @@ public:
 	virtual std::uint8_t& data() override
 	{
 		finish();
-		if(!bufferData_) bufferData_ = retrieve(transferRange_.buffer());
-		return bufferData_->data();
+		downloadWork_ = retrieve(transferRange_.buffer());
+		return downloadWork_->data();
 	}
 
 public:
-	std::unique_ptr<Work<std::uint8_t&>> bufferData_;
+	DataWorkPtr downloadWork_;
 };
 
 ///Upload work implementation.

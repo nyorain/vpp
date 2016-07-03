@@ -20,7 +20,9 @@ TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t s
 TransferManager::TransferBuffer::~TransferBuffer()
 {
 	auto rc = ranges_.size();
+#ifndef NDEBUG
 	if(rc > 0) std::cerr << "vpp::TransferManager::~TransferBuffer: " << rc << " allocations left\n";
+#endif
 }
 
 Allocation TransferManager::TransferBuffer::use(std::size_t size)

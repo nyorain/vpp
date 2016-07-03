@@ -327,7 +327,9 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, cons
 		}
 		virtual void submit() override
 		{
+#ifndef NDEBUG
 			std::cerr << "vpp::SwapChainRenderer::WorkImpl::submit, was already submitted\n";
+#endif
 		}
 		virtual void wait() override
 		{
