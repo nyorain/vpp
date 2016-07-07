@@ -3,10 +3,13 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/memory.hpp>
+#include <vpp/vulkan/range.hpp>
 #include <vpp/utility/allocation.hpp>
 
+#include <vpp/utility/pmr/map.hpp>
+#include <vpp/utility/pmr/vector.hpp>
+
 #include <memory>
-#include <map>
 #include <vector>
 
 namespace vpp
@@ -84,10 +87,10 @@ protected:
 
 	//utility allocation functions
 	void allocate(unsigned int type);
-	void allocate(unsigned int type, const std::vector<Requirement*>& requirements);
+	void allocate(unsigned int type, const Range<Requirement*>& requirements);
 	DeviceMemory* findMem(Requirement& req);
 	Requirements::iterator findReq(const MemoryEntry& entry);
-	std::map<unsigned int, std::vector<Requirement*>> queryTypes();
+	spm::map<unsigned int, std::pmr::vector<Requirement*>> queryTypes();
 	unsigned int findBestType(std::uint32_t typeBits) const;
 
 protected:

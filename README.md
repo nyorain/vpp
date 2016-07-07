@@ -208,13 +208,18 @@ __vpp does not have any external dependencies (excluding vulkan headers and load
 It does require a solid C++14 compiler though which means that it is (at the moment) not
 buildable with MSVC, but it works with newer clang versions and gcc 5/6.
 
-Just download the repository or clone it with git, run cmake and then build it.
-For the newest changes and fixes, check out the dev git branch.
+At the moment, vpp does compile a small part of boost (boost::container::pmr) within its own library for
+more efficient host memory allocations, but since this feature will part of the c++17 standard,
+this will then no longer be needed (and note that you do not have to have boost installed, the needed
+files will be compiled together with the vpp source files).
+
+Just download the repository or clone it with git, run cmake and then build it (with make/ninja/...).
+For the newest changes and fixes, check out the dev git branch, which might be broken (i.e. not
+compiling or not running) at times.
 
 ### Troubleshooting
 
 Compiling:
-* if you want to bulid the examples pass -Dbuild-tests=ON to cmake
 * when installing (e.g. make install) make sure you have the needed rights for the install folder, on
 unix you may need to run the command as root and on windows you might have to execute cmd as admin.
 * to find the vulkan library, the build system guesses depending on the platform or uses the

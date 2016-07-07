@@ -58,4 +58,14 @@ std::vector<CommandBuffer> CommandProvider::get(std::uint32_t family, unsigned i
 	 return pools.back().allocate(count, lvl);
 }
 
+//HMProvider
+std::pmr::memory_resource& HostMemoryProvider::get()
+{
+	std::lock_guard<std::mutex> guard(mutex_);
+	// if(resources_.find(std::this_thread::get_id()) == resources_.end())
+	// 	resources_[std::this_thread::get_id()] = {};
+
+	return resources_[std::this_thread::get_id()];
+}
+
 }

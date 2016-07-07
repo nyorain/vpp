@@ -80,13 +80,17 @@ void initWindow(App& app)
         throw std::runtime_error("Failed to register window class");
     }
 
-    app.window = CreateWindowEx(0, name.c_str(), name.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+	auto flags = WS_EX_COMPOSITED | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_OVERLAPPEDWINDOW;
+    app.window = CreateWindowEx(0, name.c_str(), name.c_str(), flags, CW_USEDEFAULT,
         CW_USEDEFAULT, app.width, app.height, nullptr, nullptr, app.hinstance, nullptr);
 
     if(!app.window)
     {
         throw std::runtime_error("Failed to create window");
     }
+
+	COLORREF RRR = RGB(255, 0, 255);
+	SetLayeredWindowAttributes(app.window, RRR, (BYTE)0, LWA_COLORKEY);
 
     ShowWindow(app.window, SW_SHOW);
     SetForegroundWindow(app.window);
@@ -146,8 +150,9 @@ void mainLoop(App& app)
 //
 int main(int argc, char** argv)
 {
-	if(argc < 2) return 0;
-	
+	auto count = 500;
+	if(argc > 1) count = std::stoi(argv[1]);
+
 	{
 		std::uint32_t computeQF; //queueFamily
 
@@ -157,7 +162,7 @@ int main(int argc, char** argv)
 	    app.hinstance = GetModuleHandle(nullptr);
 	    initWindow(app);
 
-		auto context = vpp::createContext(app.window, {});
+		auto context = vpp::createContext(app.window, {app.width, app.height});
 		app.context = &context;
 
 		initRenderPass(app);
@@ -167,7 +172,7 @@ int main(int argc, char** argv)
 		app.rendererInfo.attachments = {{vpp::ViewableImage::defaultDepth2D()}};
 
 		//ParticleSystem particleSystem(app, 1024 * 3200);
-		ParticleSystem particleSystem(app, std::stoi(argv[1]));
+		ParticleSystem particleSystem(app, 1024 * count);
 		app.particleSystem = &particleSystem;
 
 		std::cout << "setup complete0.\n";
@@ -189,7 +194,7 @@ int main(int argc, char** argv)
 	    mainLoop(app);
 
 		std::cout << "main loop exited sucessful.\n";
-		std::cout << app.context->device().memoryAllocator().memories().size() << " mems created\n";
+		std::cout << app.context->device().deviceAllocator().memories().size() << " mems created\n";
 
 		//would otherwise be implicitly destructed on App::~App call when going out of scope
 		//but at that point the vulkan device would have been already destructed

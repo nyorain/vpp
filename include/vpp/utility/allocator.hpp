@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vpp/utility/allocation.hpp>
+#include <vpp/utility/nonCopyable.hpp>
 #include <vector>
 #include <cstdint>
 
@@ -7,58 +9,118 @@ namespace vpp
 {
 
 ///Custom host allocator class. Holds an internal allocated memory pool.
-///Could be used for faste host memory allocations.
+///Can be used for fast host memory allocations.
 ///For device memory allocation see DeviceMemory and DeviceMemoryAllocator.
-class Allocator
+///\sa TypeAllocator
+class Allocator : public NonCopyable
 {
 public:
 	using Size = std::size_t;
 	using Value = std::uint8_t;
 	using Pointer = Value*;
 
-protected:
-	struct Allocation
-	{
-		Pointer position {nullptr};
-		Size size {0};
-		Size alignment {0};
+	static constexpr auto defaultBufferSize = 20000;
+	static constexpr auto defaultAllocsSize = 100;
+	static constexpr auto defaultAllocsIncrease = 50;
 
-		Pointer end() const { return position + size - 1; }
+	struct Settings
+	{
+		Size bufferSize = defaultBufferSize;
+		Size allocsSize = defaultAllocsSize;
+		Size allocsIncrease = defaultAllocsIncrease;
 	};
 
+public:
+	Settings settings;
+
+public:
+	Allocator() { addBuffer(); }
+	Allocator(const Settings& xsettings) : settings(xsettings) { addBuffer(); }
+	~Allocator();
+
+	//Move functions should only be used when there is no TypeAllocator referencing this allocator
+	Allocator(Allocator&& other) noexcept = default;
+	Allocator& operator=(Allocator&& other) noexcept = default;
+
+	///\exception std::bad_alloc If the allocation fails.
+	///\return Always a valid pointer to size bytes, aligned with the given alignment.
+	void* alloc(Size size, Size alignment);
+
+	///\return nullptr on failure, a valid ptr otherwise.
+	void* allocNothrow(Size size, Size alignment);
+
+	void* realloc(const void* buffer, Size size, Size alignment);
+	void free(const void* buffer);
+
+	Size size() const;
+	Size allocated() const;
+	Size numberAllocations() const;
+	void addBuffer();
+
+protected:
 	struct Buffer
 	{
-		Allocation biggest; //biggest free block, just uses Allocation struct
 		std::vector<Value> buffer;
 		std::vector<Allocation> allocs;
 
-		void recalcBiggest(const Allocation* freed = nullptr);
+		void* alloc(Size size, Size alignment);
 	};
 
 protected:
 	std::vector<Buffer> buffers_ {};
+};
+
+///Template allocator class
+///This class can be used e.g. as custom allocators for stl classes such as vector or string.
+template<typename T>
+class TypeAllocator
+{
+public:
+	using Size = std::size_t;
+	using Value = T;
+	using Pointer = Value*;
+
+	//std
+	using size_type = Size;
+	using value_type = Value;
+	using pointer = Pointer;
+	using const_pointer = const Value*;
+	using void_pointer = void*;
+	using difference_type = std::ptrdiff_t;
+	using is_always_equal = std::true_type;
+
+	template<typename O> struct rebind { using other = TypeAllocator<O>; };
+
+public:
+	TypeAllocator(Allocator& allocator) : allocator_(&allocator) {}
+	~TypeAllocator() = default;
+
+	template<typename O>
+	TypeAllocator(const TypeAllocator<O>& other) noexcept : allocator_(&other.allocator()) {}
+
+	template<typename O> TypeAllocator&
+	operator=(const TypeAllocator<O>& other) noexcept { allocator_ = &other.allocator(); }
+
+	Pointer allocate(Size n) const
+		{ return reinterpret_cast<Pointer>(allocator_->alloc(n * sizeof(T), alignof(T))); }
+	void deallocate(Pointer ptr, Size) const noexcept { allocator_->free(ptr); }
+
+	Allocator& allocator() const { return *allocator_; }
 
 protected:
-	Allocation& nextAllocation(Buffer& buf);
-	void addBuffer();
-
-public:
-	Size bufferSize;
-	Size allocsSize;
-	Size allocsIncrease;
-
-public:
-	Allocator(Size pbufferSize = 20000, Size pallocsSize = 100, Size pallocsIncrease = 50);
-	~Allocator();
-
-	void* alloc(Size size, Size alignment);
-	void free(void* buffer);
-	void* realloc(void* buffer, Size size);
-
-	Size size() const;
-	Size allocated() const;
-	Size biggestBlock() const;
-	Size numberAllocations() const;
+	Allocator* allocator_;
 };
+
+template<typename A, typename B>
+bool operator==(const TypeAllocator<A>& a, const TypeAllocator<B>& b)
+{
+	return (&a.allocator() == &b.allocator());
+}
+
+template<typename A, typename B>
+bool operator!=(const TypeAllocator<A>& a, const TypeAllocator<B>& b)
+{
+	return (&a.allocator() != &b.allocator());
+}
 
 }

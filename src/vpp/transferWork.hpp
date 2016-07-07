@@ -3,6 +3,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/work.hpp>
 #include <vpp/transfer.hpp>
+#include <vpp/memoryResource.hpp>
 
 namespace vpp
 {
@@ -36,6 +37,16 @@ public:
 
 public:
 	DataWorkPtr downloadWork_;
+};
+
+///Download work implementation for mappable memory resources.
+class MappableDownloadWork : public FinishedWork<std::uint8_t&>
+{
+public:
+	MemoryMapView map_;
+
+	MappableDownloadWork(const MemoryResource& res) : map_(res.memoryMap()) {}
+	virtual std::uint8_t& data() override { return *map_.ptr(); }
 };
 
 ///Upload work implementation.

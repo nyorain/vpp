@@ -11,7 +11,7 @@
  #endif
 #endif
 
-namespace vk { namespace range{} }
+namespace vk { namespace range {} }
 namespace vpp
 {
 
@@ -48,6 +48,7 @@ class Texture;
 class Allocator;
 class CommandProvider;
 class DeviceMemoryProvider;
+class HostMemoryProvider;
 class CommandPool;
 class CommandBuffer;
 class SubmitManager;

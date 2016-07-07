@@ -16,7 +16,7 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPr
 	auto reqs = vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_);
 
 	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
-	dev.memoryAllocator().request(buffer_, reqs, info.usage, memoryEntry_);
+	dev.deviceAllocator().request(buffer_, reqs, info.usage, memoryEntry_);
 }
 
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, std::uint32_t memoryTypeBits)
@@ -25,7 +25,7 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, std::uint32_
 	auto reqs = vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_);
 
 	reqs.memoryTypeBits &= memoryTypeBits;
-	dev.memoryAllocator().request(buffer_, reqs, info.usage, memoryEntry_);
+	dev.deviceAllocator().request(buffer_, reqs, info.usage, memoryEntry_);
 }
 
 Buffer::Buffer(Buffer&& other) noexcept
@@ -54,23 +54,20 @@ void swap(Buffer& a, Buffer& b) noexcept
 
 DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize size)
 {
-	//XXX: needed here? or throw if not yet allocated? there cannot be data to retrieved if the
-	//memory is allocated by this call...
-	buf.assureMemory();
+#ifndef NDEBUG
+	if(!buf.memoryEntry().allocated())
+	{
+		std::cerr << "vpp::retrieve(buffer): image has no memory. Calling assureMemory()\n";
+		buf.assureMemory();
+	}
+#endif //NDEBUG
+
 	if(size == vk::wholeSize) size = buf.memoryEntry().size() - offset;
 
 	//retrieve by mapping
 	if(buf.mappable())
 	{
-		struct WorkImpl : public FinishedWork<std::uint8_t&>
-		{
-			MemoryMapView map_;
-
-			WorkImpl(const Buffer& buf) : map_(buf.memoryMap()) {}
-			virtual std::uint8_t& data() override { return *map_.ptr(); }
-		};
-
-		return std::make_unique<WorkImpl>(buf);
+		return std::make_unique<MappableDownloadWork>(buf);
 	}
 	else
 	{

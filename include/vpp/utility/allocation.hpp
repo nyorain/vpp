@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <cmath>
 
 namespace vpp
 {
@@ -14,5 +15,9 @@ struct Allocation
 
 	std::size_t end() const { return offset + size; }
 };
+
+///Aligns an offset.
+template<typename T>
+T align(T offset, T alignment) { return std::ceil(offset / double(alignment)) * alignment; }
 
 }

@@ -162,7 +162,8 @@ public:
 
 	///Frees the given allocation. Will throw a std::logic_error if the given allocation is not
 	///part of this Memory object.
-	void free(const Allocation& alloc);
+	///\return false if the allocation could not be found, true otherwise.
+	bool free(const Allocation& alloc);
 
 	///Returns the the biggest (continuously) allocatable block.
 	///This does not mean that an allocation of this size can be made, since there are also

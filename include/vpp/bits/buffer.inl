@@ -9,11 +9,11 @@ public:
 public:
 	template<typename T>
 	RawBufferData(const T& obj, std::size_t count = 1)
-		: data(reinterpret_cast<std::uint8_t&>(obj)), size(sizeof(T) * count) {}
+		: data(reinterpret_cast<const std::uint8_t&>(obj)), size(sizeof(T) * count) {}
 };
 
 template<typename T>
-constexpr RawBufferData raw(const T& obj) { return {reinterpret_cast<std::uint8_t&>(obj), sizeof(T)}; }
+constexpr RawBufferData raw(const T& obj, std::size_t count = 1) { return {obj, count}; }
 
 template<typename T> struct VulkanType { static constexpr auto type = ShaderType::none; };
 template<typename T> struct VulkanType<T&> : public VulkanType<T> {};

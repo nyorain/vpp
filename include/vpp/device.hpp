@@ -2,6 +2,8 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/utility/nonCopyable.hpp>
+#include <vpp/utility/memory_resource.hpp> ///XXX: this must go. pulls in MAAANY boost headers.
+#include <vpp/vulkan/range.hpp>
 
 #include <memory>
 #include <vector>
@@ -16,7 +18,7 @@ namespace vpp
 ///valid.
 ///Notice that Device is one of the few classes that are NOT movable since it is references by
 ///all resources.
-class Device : public NonMoveable
+class Device : public NonMovable
 {
 public:
 	Device();
@@ -27,7 +29,7 @@ public:
 	void waitIdle() const;
 
 	///Returns all available queues for the created device.
-	const std::vector<Queue>& queues() const;
+	Range<Queue> queues() const;
 
 	///Returns a queue for the given family or nullptr if there is none.
 	const Queue* queue(std::uint32_t family) const;
@@ -58,6 +60,9 @@ public:
 	///current thread.
 	DeviceMemoryProvider& memoryProvider() const;
 
+	///Returns the host memory provider/ memory pool.
+	HostMemoryProvider& hostMemoryProvider() const;
+
 	///Returns the submit manager for this device.
 	SubmitManager& submitManager() const;
 
@@ -68,7 +73,10 @@ public:
 	void finishSetup() const;
 
 	///Returns a deviceMemory allocator for the calling thread.
-	DeviceMemoryAllocator& memoryAllocator() const;
+	DeviceMemoryAllocator& deviceAllocator() const;
+
+	///Returns a HostMemoryAllocator for the calling thread.
+	std::pmr::memory_resource& hostMemoryResource() const;
 
 	const vk::Instance& vkInstance() const { return instance_; }
 	const vk::PhysicalDevice& vkPhysicalDevice() const { return physicalDevice_; }

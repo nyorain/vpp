@@ -150,13 +150,13 @@ WorkPtr fill(const Buffer& buf, BufferAlign align, const T&... args)
 ///\sa fill
 ///\sa BufferUpdate
 template<typename... T> WorkPtr
-fill140(const T&... args){ return fill(BufferAlign::std140, args...); }
+fill140(const Buffer& buf, const T&... args){ return fill(buf, BufferAlign::std140, args...); }
 
 ///Utilty shortcut for filling the buffer with data using the std430 layout.
 ///\sa fill
 ///\sa BufferUpdate
 template<typename... T> WorkPtr
-fill430(const T&... args){ return fill(BufferAlign::std430, args...); }
+fill430(const Buffer& buf, const T&... args){ return fill(buf, BufferAlign::std430, args...); }
 
 //TODO: retrieve only specific range
 ///Retrives the data stored in the buffer.

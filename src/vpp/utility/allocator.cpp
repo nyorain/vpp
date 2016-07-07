@@ -1,4 +1,5 @@
 #include <vpp/utility/allocator.hpp>
+
 #include <memory>
 #include <algorithm>
 #include <iostream>
@@ -7,112 +8,87 @@ namespace vpp
 {
 
 //Buffer
-void Allocator::Buffer::recalcBiggest(const Allocation* freed)
+void* Allocator::Buffer::alloc(Size size, Size alignment)
 {
-	if(freed && freed->position == biggest.end() + 1)
-	{
-		biggest.size += freed->size;
-	}
-	else if(freed && freed->end() == biggest.position - 1)
-	{
-		biggest.position = freed->position;
-		biggest.size += freed->size;
-	}
-	else
-	{
-		Pointer oldEnd = nullptr;
-		for(auto& alloc : allocs)
-		{
-			if(oldEnd != nullptr)
-			{
-				if(alloc.position - oldEnd > biggest.size)
-				{
-					biggest.size = alloc.position - oldEnd;
-					biggest.position = oldEnd + 1;
-				}
-			}
+	const Allocation start = {reinterpret_cast<std::size_t>(buffer.data()), 0};
 
-			oldEnd = alloc.end();
-		}
+	const auto* old = &start;
+	for(auto& alloc : allocs)
+	{
+		auto offset = align(old->end(), alignment);
+		old = &alloc;
+		if(offset + size > alloc.offset) continue;
+
+		allocs.push_back({offset, size});
+		return reinterpret_cast<void*>(offset);
 	}
+
+	//last block
+	auto offset = align(old->end(), alignment);
+	if(offset + size > reinterpret_cast<std::size_t>(buffer.data() + buffer.size())) return nullptr;
+
+	allocs.push_back({offset, size});
+	return reinterpret_cast<void*>(offset);
 }
 
 //Allocator
-Allocator::Allocator(Size pbufferSize, Size pallocsSize, Size pallocsIncrease)
-	: bufferSize(pbufferSize), allocsSize(pallocsSize), allocsIncrease(pallocsIncrease)
-{
-	addBuffer();
-}
-
 Allocator::~Allocator()
 {
+#ifndef NDEBUG
 	if(numberAllocations() > 0) std::cerr << "vpp::~Allocator: allocations left\n.";
+#endif //ndebug
 }
 
 void Allocator::addBuffer()
 {
 	buffers_.push_back({});
 
-	buffers_.back().buffer.resize(bufferSize);
-	buffers_.back().allocs.resize(allocsSize);
-	buffers_.back().biggest = {buffers_.back().buffer.data(), bufferSize};
-}
-
-Allocator::Allocation& Allocator::nextAllocation(Buffer& buf)
-{
-	for(auto& alloc : buf.allocs)
-	{
-		if(alloc.position == nullptr) return alloc;
-	}
-
-	buf.allocs.resize(buf.allocs.size() + allocsIncrease);
-	return nextAllocation(buf); //try again!
+	buffers_.back().buffer.resize(settings.bufferSize);
+	buffers_.back().allocs.reserve(settings.allocsSize);
 }
 
 void* Allocator::alloc(Size size, Size alignment)
 {
+	auto ptr = allocNothrow(size, alignment);
+	if(!ptr) throw std::bad_alloc {};
+	return ptr;
+}
+
+void* Allocator::allocNothrow(Size size, Size alignment)
+{
+	void* ret = nullptr;
 	for(auto& buf : buffers_)
 	{
-		void* pos = buf.biggest.position;
-		pos = std::align(alignment, size, pos, buf.biggest.size);
-		auto ptr = static_cast<Pointer>(pos);
-
-		if(ptr)
+		ret = buf.alloc(size, alignment);
+		if(ret)
 		{
-			auto& al = nextAllocation(buf);
-			al.position = ptr;
-			al.size = size;
-			al.alignment = alignment;
-
-			buf.recalcBiggest();
-			std::sort(buf.allocs.begin(), buf.allocs.end(),
-				[](const Allocation& a, const Allocation& b) { return (a.position < b.position); });
-
-			return ptr;
+			auto capacity = buf.allocs.capacity();
+			if(buf.allocs.size() == capacity) buf.allocs.reserve(capacity + settings.allocsIncrease);
+			return ret;
 		}
 	}
 
-	if(size > bufferSize)
-	{
-		bufferSize = size * 2;
-	}
-
+	if(size > settings.bufferSize) settings.bufferSize = size * 2;
 	addBuffer();
-	return this->alloc(size, alignment); //try again!
+	auto ptr = buffers_.back().alloc(size, alignment);
+	return ptr;
 }
 
-void Allocator::free(void* buffer)
+void Allocator::free(const void* buffer)
 {
 	for(auto& buf : buffers_)
 	{
+		//check if in range
+		if(buf.buffer.data() > buffer || buf.buffer.data() + buf.buffer.size() < buffer) continue;
+
+		auto intBuffer = reinterpret_cast<std::size_t>(buffer);
 		auto it = std::find_if(buf.allocs.cbegin(), buf.allocs.cend(),
-			[=](const Allocation& alloc) { return alloc.position == buffer; });
+			[=](const Allocation& alloc) { return alloc.offset == intBuffer; });
 
 		if(it != buf.allocs.end())
 		{
 			auto a = *it;
 			buf.allocs.erase(it);
-			buf.recalcBiggest(&a);
 			return;
 		}
 	}
@@ -122,31 +98,33 @@ void Allocator::free(void* buffer)
 #endif
 }
 
-void* Allocator::realloc(void* buffer, Size size)
+void* Allocator::realloc(const void* buffer, Size size, Size align)
 {
 	for(auto& buf : buffers_)
 	{
+		//check if in range
+		if(buf.buffer.data() > buffer || buf.buffer.data() + buf.buffer.size() < buffer) continue;
+
+		auto intBuffer = reinterpret_cast<std::size_t>(buffer);
 		auto it = std::find_if(buf.allocs.begin(), buf.allocs.end(),
-			[=](const Allocation& alloc) { return alloc.position == buffer; });
+			[=](const Allocation& alloc) { return alloc.offset == intBuffer; });
 
 		if(it != buf.allocs.end())
 		{
-			auto nextPos = buf.buffer.data() + buf.buffer.size();
-			if((it + 1) != buf.allocs.end()) nextPos = (it + 1)->position;
+			auto nextPos = reinterpret_cast<std::size_t>(buf.buffer.data() + buf.buffer.size());
+			if((it + 1) != buf.allocs.end()) nextPos = (it + 1)->offset;
 
-			if((nextPos - it->position) > size)
+			//check if the space after the allocation is enough to extend it to the size
+			if((nextPos - it->offset) >= size)
 			{
-				bool recalc = (buf.biggest.position == it->end() + 1);
 				it->size = size;
-				if(recalc) buf.recalcBiggest();
-				return buffer;
+				return reinterpret_cast<void*>(it->offset);
 			}
 			else
 			{
 				auto a = *it;
 				buf.allocs.erase(it);
-				buf.recalcBiggest(&a);
-				return alloc(a.size, a.alignment);
+				return alloc(a.size, align);
 			}
 		}
 	}
@@ -183,26 +161,11 @@ std::size_t Allocator::allocated() const
 	return ret;
 }
 
-std::size_t Allocator::biggestBlock() const
-{
-	std::size_t ret = 0;
-	for(auto& buf : buffers_)
-	{
-		if(buf.biggest.size > ret)
-			ret = buf.biggest.size;
-	}
-}
-
 std::size_t Allocator::numberAllocations() const
 {
 	std::size_t ret = 0;
 	for(auto& buf : buffers_)
-	{
-		for(auto& alloc : buf.allocs)
-		{
-			if(alloc.position != nullptr) ++ret;
-		}
-	}
+		ret += buf.allocs.size();
 
 	return ret;
 }

@@ -3,6 +3,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/allocator.hpp>
 #include <vpp/commandBuffer.hpp>
+#include <vpp/utility/memory_resource.hpp>
 
 #include <vector>
 #include <string>
@@ -57,6 +58,20 @@ public:
 protected:
 	std::map<std::thread::id, std::vector<CommandPool>> commandPools_;
 	std::mutex mutex_;
+};
+
+///Threadsafe host memory pool manager.
+class HostMemoryProvider : public NonCopyable
+{
+public:
+	std::pmr::memory_resource& get();
+
+protected:
+	std::map<std::thread::id, std::pmr::synchronized_pool_resource> resources_;
+	std::mutex mutex_;
+
+	//alternative:
+	//std::pmr::unsynchronized_memory_resource resource_;
 };
 
 // ///XXX: concept atm

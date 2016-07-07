@@ -16,7 +16,7 @@ namespace vpp
 //e.g. CommandBuffers must be destroyed in the same thread as they were constructed.
 
 class CommandPool;
-namespace fwd{ extern const vk::CommandBufferLevel commandBufferLevelPrimary; }
+namespace fwd { extern const vk::CommandBufferLevel commandBufferLevelPrimary; }
 
 ///XXX: this class really needed?
 //CommandBuffer

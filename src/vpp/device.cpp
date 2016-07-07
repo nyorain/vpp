@@ -6,27 +6,35 @@
 #include <vpp/submit.hpp>
 #include <vpp/transfer.hpp>
 
+#include <vpp/utility/pmr/unique_ptr.hpp>
+
+#include <cstdlib>
+
 namespace vpp
 {
 
 //Device Impl
 struct Device::Impl
 {
-	vk::PhysicalDeviceProperties physicalDeviceProperties;
-	vk::PhysicalDeviceMemoryProperties memoryProperties;
-
-	std::vector<Queue> queues;
-	std::vector<vk::QueueFamilyProperties> qFamilyProperties;
-
 	CommandProvider commandProvider;
-	DeviceMemoryProvider memoryProvider;
+	DeviceMemoryProvider deviceMemoryProvider;
+	HostMemoryProvider hostMemoryProvider;
+
 	SubmitManager submitManager;
 	TransferManager transferManager;
 
-	Impl(const Device& dev) : commandProvider(dev), memoryProvider(dev), submitManager(dev),
-		transferManager(dev) {}
-};
+	vk::PhysicalDeviceProperties physicalDeviceProperties;
+	vk::PhysicalDeviceMemoryProperties memoryProperties;
 
+	std::size_t queueCount;
+	spm::unique_ptr<Queue[]> queues;
+
+	std::vector<vk::QueueFamilyProperties> qFamilyProperties;
+
+
+	Impl(const Device& dev, std::size_t i) : commandProvider(dev), deviceMemoryProvider(dev), hostMemoryProvider(),
+		submitManager(dev), transferManager(dev), queues(nullptr, {hostMemoryProvider.get(), i}) {}
+};
 
 //Device
 Device::Device() = default;
@@ -34,16 +42,18 @@ Device::Device() = default;
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info)
 	: instance_(ini), physicalDevice_(phdev)
 {
-	impl_.reset(new Impl(*this));
+	device_ = vk::createDevice(vkPhysicalDevice(), info);
 
+	impl_.reset(new Impl(*this, info.queueCreateInfoCount));
 	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());
 	impl_->memoryProperties = vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
 	impl_->qFamilyProperties = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
 
-	device_ = vk::createDevice(vkPhysicalDevice(), info);
-
 	std::map<std::uint32_t, unsigned int> familyIds;
-	impl_->queues.reserve(info.queueCreateInfoCount);
+
+	auto ptr = hostMemoryResource().allocate(sizeof(Queue) * info.queueCreateInfoCount, alignof(Queue));
+	impl_->queues.reset(reinterpret_cast<Queue*>(ptr));
+	impl_->queueCount = info.queueCreateInfoCount;
 
 	for(std::size_t i(0); i < info.queueCreateInfoCount; ++i)
 	{
@@ -51,7 +61,11 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 		auto idx = familyIds[queueInfo.queueFamilyIndex]++;
 		auto queue = vk::getDeviceQueue(vkDevice(), queueInfo.queueFamilyIndex, idx);
 
-		impl_->queues.push_back({queue, impl_->qFamilyProperties[i], queueInfo.queueFamilyIndex, idx});
+		auto* ptr = new(&impl_->queues[i]) Queue(queue, impl_->qFamilyProperties[i],
+			queueInfo.queueFamilyIndex, idx);
+
+		std::cout << queue << " vs " << impl_->queues[i].vkQueue() << "\n";
+		std::cout << &impl_->queues[i] << "\n";
 	}
 }
 
@@ -66,9 +80,9 @@ void Device::waitIdle() const
 	vk::deviceWaitIdle(vkDevice());
 }
 
-const std::vector<Queue>& Device::queues() const
+Range<Queue> Device::queues() const
 {
-	return impl_->queues;
+	return {impl_->queues.get(), impl_->queueCount};
 }
 
 const Queue* Device::queue(std::uint32_t family) const
@@ -139,14 +153,24 @@ void Device::finishSetup() const
 	waitIdle();
 }
 
-DeviceMemoryAllocator& Device::memoryAllocator() const
+DeviceMemoryAllocator& Device::deviceAllocator() const
 {
 	return memoryProvider().get();
 }
 
+std::pmr::memory_resource& Device::hostMemoryResource() const
+{
+	return hostMemoryProvider().get();
+}
+
+HostMemoryProvider& Device::hostMemoryProvider() const
+{
+	return impl_->hostMemoryProvider;
+}
+
 DeviceMemoryProvider& Device::memoryProvider() const
 {
-	return impl_->memoryProvider;
+	return impl_->deviceMemoryProvider;
 }
 
 CommandProvider& Device::commandProvider() const

@@ -2,6 +2,7 @@
 #include <vpp/defs.hpp>
 #include <vpp/provider.hpp>
 #include <vpp/transfer.hpp>
+#include <vpp/transferWork.hpp>
 #include <utility>
 
 namespace vpp
@@ -13,7 +14,7 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPrope
 	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), image_);
 
 	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
-	dev.memoryAllocator().request(image_, reqs, info.tiling, memoryEntry_);
+	dev.deviceAllocator().request(image_, reqs, info.tiling, memoryEntry_);
 }
 
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info, std::uint32_t memoryTypeBits)
@@ -22,7 +23,7 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, std::uint32_t m
 	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), image_);
 
 	reqs.memoryTypeBits &= memoryTypeBits;
-	dev.memoryAllocator().request(image_, reqs, info.tiling, memoryEntry_);
+	dev.deviceAllocator().request(image_, reqs, info.tiling, memoryEntry_);
 }
 
 Image::Image(Image&& other) noexcept
@@ -49,52 +50,79 @@ void swap(Image& a, Image& b) noexcept
 	swap(a.memoryEntry_, b.memoryEntry_);
 }
 
-WorkPtr Image::fill(const std::uint8_t& data, std::size_t size,
-	vk::Format format, const vk::Extent3D& extent) const
+WorkPtr fill(const Image& image, const std::uint8_t& data, vk::ImageLayout layout,
+	const vk::Extent3D& extent, const vk::ImageSubresourceLayers& subres, vk::DeviceSize size,
+	vk::DeviceSize offset, bool allowMap)
 {
-	// assureMemory();
-	//
-	// if(mappable())
-	// {
-	// 	auto map = memoryEntry().map();
-	// 	std::memcpy(map.ptr(), &data, size);
-	// 	if(!map.coherent()) map.flushRanges();
-	// 	return std::make_unique<FinishedWork<void>>();
-	// }
-	// else
-	// {
-	// 	auto cmdBuffer = device().commandProvider().get(0);
-	// 	auto vkcmdb = cmdBuffer.vkCommandBuffer();
-	// 	auto uploadBuffer = device().transferManager().buffer(size);
-	// 	uploadBuffer.buffer().fill(data);
-	//
-	// 	vk::BufferImageCopy region;
-	//
-	// 	if(layout != vk::ImageLayout::TransferDstOptimal && layout != vk::ImageLayout::General)
-	// 	{
-	// 		changeLayout(vkcmdb, layout, vk::ImageLayout::TransferDstOptimal);
-	// 	}
-	//
-	// 	vk::cmdCopyBufferToImage(vkcmb, vkbuf, vkImage(), layout, 1, &region);
-	//
-	// 	//custom work implementation
-	// 	struct WorkImpl : public CommandWork<void>
-	// 	{
-	// 		TransferRange uploadRange_;
-	//
-	// 		WorkImpl(CommandBuffer&& buffer, TransferRange&& range)
-	// 			: CommandWork(std::move(buffer)), uploadRange_(std::move(range)) {}
-	//
-	// 		virtual void finish() override { CommandWork::finish(); uploadRange_ = {}; }
-	// 	};
-	//
-	// 	return std::make_unique<WorkImpl>(std::move(cmdBuffer), std::move(uploadBuffer));
-	// }
+	image.assureMemory();
+	if(size = vk::wholeSize) size = image.size() - offset;
+
+	if(image.mappable() && allowMap)
+	{
+		auto map = image.memoryEntry().map();
+		std::memcpy(map.ptr(), &data, size);
+		if(!map.coherent()) map.flush();
+		return std::make_unique<FinishedWork<void>>();
+	}
+	else
+	{
+		auto cmdBuffer = image.device().commandProvider().get(0);
+		auto uploadBuffer = image.device().transferManager().buffer(size);
+		fill140(uploadBuffer.buffer(), raw(data, size));
+
+		vk::BufferImageCopy region;
+		region.imageExtent = extent;
+		region.imageSubresource = subres;
+
+		vk::beginCommandBuffer(cmdBuffer, {});
+
+		//change layout if needed
+		if(layout != vk::ImageLayout::transferDstOptimal && layout != vk::ImageLayout::general)
+			changeLayoutCommand(cmdBuffer, image, layout, vk::ImageLayout::transferDstOptimal,
+				subres.aspectMask);
+
+		vk::cmdCopyBufferToImage(cmdBuffer, uploadBuffer.buffer(), image, layout, {region});
+		vk::endCommandBuffer(cmdBuffer);
+
+		return std::make_unique<UploadWork>(std::move(cmdBuffer), std::move(uploadBuffer));
+	}
+}
+
+DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, const vk::Extent3D& extent,
+	const vk::ImageSubresourceLayers& subres, bool allowMap)
+{
+#ifndef NDEBUG
+	if(!image.memoryEntry().allocated())
+	{
+		std::cerr << "vpp::retrieve(image): image has no memory. Calling assureMemory()\n";
+		image.assureMemory();
+	}
+#endif //NDEBUG
+
+	if(image.mappable() && allowMap)
+	{
+		return std::make_unique<MappableDownloadWork>(image);
+	}
+	else
+	{
+		auto cmdBuffer = image.device().commandProvider().get(0);
+		auto downloadBuffer = image.device().transferManager().buffer(image.size());
+
+		vk::beginCommandBuffer(cmdBuffer, {});
+
+		//change layout if needed
+		if(layout != vk::ImageLayout::transferSrcOptimal && layout != vk::ImageLayout::general)
+			changeLayoutCommand(cmdBuffer, image, layout, vk::ImageLayout::transferSrcOptimal,
+				subres.aspectMask);
+
+		vk::endCommandBuffer(cmdBuffer);
+		return std::make_unique<DownloadWork>(std::move(cmdBuffer), std::move(downloadBuffer));
+	}
 }
 
 //free utility functions
-WorkPtr changeLayout(const Device& dev, vk::Image img, vk::ImageLayout ol, vk::ImageLayout nl,
-	vk::ImageAspectFlags aspect)
+void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::Image img, vk::ImageLayout ol,
+	vk::ImageLayout nl, vk::ImageAspectFlags aspect)
 {
 	vk::ImageMemoryBarrier barrier;
 	barrier.oldLayout = ol;
@@ -147,11 +175,17 @@ WorkPtr changeLayout(const Device& dev, vk::Image img, vk::ImageLayout ol, vk::I
 		break;
 	}
 
-	auto cmdBuffer = dev.commandProvider().get(0);
-	vk::beginCommandBuffer(cmdBuffer, {});
-
 	const auto stage = vk::PipelineStageBits::topOfPipe;
 	vk::cmdPipelineBarrier(cmdBuffer, stage, stage, {}, {}, {}, {barrier});
+}
+
+WorkPtr changeLayout(const Device& dev, vk::Image img, vk::ImageLayout ol, vk::ImageLayout nl,
+	vk::ImageAspectFlags aspect)
+{
+
+	auto cmdBuffer = dev.commandProvider().get(0);
+	vk::beginCommandBuffer(cmdBuffer, {});
+	changeLayoutCommand(cmdBuffer, img, ol, nl, aspect);
 	vk::endCommandBuffer(cmdBuffer);
 
 	return std::make_unique<CommandWork<void>>(std::move(cmdBuffer));

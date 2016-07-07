@@ -1,5 +1,6 @@
 #include <vpp/memory.hpp>
 #include <vpp/vk.hpp>
+#include <vpp/utility/debug.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -12,7 +13,7 @@ MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
 	: memory_(&memory), allocation_(alloc)
 {
 	if(!(memory.properties() & vk::MemoryPropertyBits::hostVisible))
-		throw std::logic_error("vpp::MemoryMap: trying to map device local memory");
+		throw std::logic_error("vpp::MemoryMap: trying to map unmappable memory");
 
 	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
 }
@@ -72,13 +73,14 @@ const vk::DeviceMemory& MemoryMap::vkMemory() const
 
 void MemoryMap::flush() const
 {
-#ifndef NDEBUG
-	if(coherent())
+	VPP_DEBUG_CHECK(vpp::MemoryMap::flush,
 	{
-		std::cerr << "vpp::MemoryMap::flushRanges: called but not needed, mem coherent\n";
-		return;
-	}
-#endif
+		if(coherent())
+		{
+			VPP_DEBUG_OUTPUT("Called on coherent memory. Not needed.");
+			return;
+		}
+	})
 
 	auto range = mappedMemoryRange();
 	vk::flushMappedMemoryRanges(vkDevice(), 1, range);
@@ -86,13 +88,14 @@ void MemoryMap::flush() const
 
 void MemoryMap::reload() const
 {
-#ifndef NDEBUG
-	if(coherent())
+	VPP_DEBUG_CHECK(vpp::MemoryMap::invalidateRanges,
 	{
-		std::cerr << "vpp::MemoryMap::invalidateRanges: called but not needed, mem coherent\n";
-		return;
-	}
-#endif
+		if(coherent())
+		{
+			VPP_DEBUG_OUTPUT("Called on coherent memory. Not needed.");
+			return;
+		}
+	})
 
 	auto range = mappedMemoryRange();
 	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);
@@ -154,13 +157,14 @@ vk::MappedMemoryRange MemoryMapView::mappedMemoryRange() const
 
 void MemoryMapView::flush() const
 {
-#ifndef NDEBUG
-	if(coherent())
+	VPP_DEBUG_CHECK(vpp::MemoryMapView::flush,
 	{
-		std::cerr << "vpp::MemoryMap::invalidateRanges: called but not needed, mem coherent\n";
-		return;
-	}
-#endif
+		if(coherent())
+		{
+			VPP_DEBUG_OUTPUT("Called on coherent memory. Not needed.");
+			return;
+		}
+	})
 
 	auto range = mappedMemoryRange();
 	vk::flushMappedMemoryRanges(vkDevice(), 1, range);
@@ -168,13 +172,14 @@ void MemoryMapView::flush() const
 
 void MemoryMapView::reload() const
 {
-#ifndef NDEBUG
-	if(coherent())
+	VPP_DEBUG_CHECK(vpp::MemoryMapView::reload,
 	{
-		std::cerr << "vpp::MemoryMap::invalidateRanges: called but not needed, mem coherent\n";
-		return;
-	}
-#endif
+		if(coherent())
+		{
+			VPP_DEBUG_OUTPUT("Called on coherent memory. Not needed.");
+			return;
+		}
+	})
 
 	auto range = mappedMemoryRange();
 	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);
@@ -233,9 +238,10 @@ DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryProp
 }
 DeviceMemory::~DeviceMemory()
 {
-#ifndef NDEBUG
-	if(!allocations_.empty()) std::cerr << "vpp::~DevMem: " << allocations_.size() << "allocs left\n";
-#endif
+	VPP_DEBUG_CHECK(vpp::DeviceMemory::~DeviceMemory,
+	{
+		if(!allocations_.empty()) VPP_DEBUG_OUTPUT(allocations_.size(), "allocations left.");
+	})
 
 	if(vkDeviceMemory()) vk::freeMemory(vkDevice(), memory_, nullptr);
 }
@@ -250,6 +256,29 @@ Allocation DeviceMemory::alloc(std::size_t size, std::size_t alignment, Allocati
 
 Allocation DeviceMemory::allocSpecified(std::size_t offset, std::size_t size, AllocationType type)
 {
+	VPP_DEBUG_CHECK(vpp::DeviceMemory::allocSpecified,
+	{
+		if(size == 0)
+		{
+			VPP_DEBUG_OUTPUT("size is not allowed to be 0");
+			return {};
+		}
+
+		for(auto& alloc : allocations_)
+		{
+			const auto& a = alloc.allocation;
+			const auto& overlapping = (a.offset < offset) != (a.offset + a.size <= offset);
+			const auto& inside = (a.offset >= offset) && (a.offset < offset + size);
+			if(overlapping || inside)
+			{
+				VPP_DEBUG_OUTPUT("invalid params ", offset, ' ', size, ' ', a.offset, ' ', a.size);
+				return {};
+			}
+		}
+
+		if(type == AllocationType::none) VPP_DEBUG_OUTPUT("type is none. Could later cause aliasing");
+	})
+
 	AllocationEntry allocation = {{offset, size}, type};
 	auto it = std::lower_bound(allocations_.begin(), allocations_.end(), allocation,
 		[](auto& a, auto& b){ return a.allocation.offset < b.allocation.offset; });
@@ -277,6 +306,24 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	//a taken in account (smaller = better) since the new sizes on both sides should be as small as
 	//possible. true?
 
+	//some additional checks/warning
+	VPP_DEBUG_CHECK(vpp::DeviceMemory::allocatable,
+	{
+		if(type == AllocationType::none) VPP_DEBUG_OUTPUT("type is none. Can cause aliasing");
+
+		if(alignment % 2)
+		{
+			VPP_DEBUG_OUTPUT("alignment param ", alignment, "not a power of 2");
+			return {};
+		}
+
+		if(size == 0)
+		{
+			VPP_DEBUG_OUTPUT("size is not allowed to be 0");
+			return {};
+		}
+	})
+
 	static constexpr AllocationEntry start = {{0, 0}, AllocationType::none};
 	auto granularity = device().properties().limits.bufferImageGranularity;
 
@@ -289,16 +336,16 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	const AllocationEntry* old = &start;
 	for(auto& alloc : allocations_)
 	{
-		vk::DeviceSize alignedOffset = std::ceil(old->allocation.end() / alignment) * alignment;
+		vk::DeviceSize alignedOffset = align(old->allocation.end(), alignment);
 
 		//check for granularity between prev and to be inserted
 		if(old->type != AllocationType::none && old->type != type)
-			alignedOffset = std::ceil(alignedOffset / granularity) * granularity;
+			alignedOffset = align(alignedOffset, granularity);
 
 		//check for granularity between next and to be inserted
 		auto end = alignedOffset + size;
 		if(alloc.type != AllocationType::none && alloc.type != type)
-			end = std::ceil(end / granularity) * granularity;
+			end = align(end, granularity);
 
 		if(end < alloc.allocation.offset)
 		{
@@ -317,10 +364,10 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	//check for segment AFTER the last allcation, since the loop just checks the segments
 	//between two allocations
 	//just copied from above with the "new allocation" alloc being an empty past-end allocation
-	vk::DeviceSize alignedOffset = std::ceil(old->allocation.end() / alignment) * alignment;
+	vk::DeviceSize alignedOffset = align(old->allocation.end(), alignment);
 
 	if(old->type != AllocationType::none && old->type != type)
-		alignedOffset = std::ceil(alignedOffset / granularity) * granularity;
+		alignedOffset = align(alignedOffset, granularity);
 
 	if(alignedOffset + size <= this->size())
 	{
@@ -335,14 +382,19 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	return best;
 }
 
-void DeviceMemory::free(const Allocation& alloc)
+bool DeviceMemory::free(const Allocation& alloc)
 {
-	for(auto it = allocations_.cbegin(); it != allocations_.cend(); ++it) {
-		if(it->allocation.offset == alloc.offset && it->allocation.size == alloc.size) {
+	for(auto it = allocations_.cbegin(); it != allocations_.cend(); ++it)
+	{
+		if(it->allocation.offset == alloc.offset && it->allocation.size == alloc.size)
+		{
 			allocations_.erase(it);
-			return;
+			return true;
 		}
 	}
+
+	VPP_DEBUG_OUTPUT_NOCHECK("vpp::DeviceMemory::free: could not find the given allocation");
+	return false;
 }
 
 std::size_t DeviceMemory::biggestBlock() const

@@ -10,6 +10,30 @@
 namespace vpp
 {
 
+namespace fwd { extern const vk::Extent2D defaultSize; }
+
+struct SwapChainSettings
+{
+	virtual vk::SwapchainCreateInfoKHR parse(const vk::SurfaceCapabilitiesKHR& caps,
+		const Range<vk::PresentModeKHR>& modes,
+		const Range<vk::SurfaceFormatKHR>& formats,
+		const vk::Extent2D& size) const;
+};
+
+struct DefaultSwapChainSettings final : public SwapChainSettings
+{
+	mutable vk::Format prefFormat;
+	mutable vk::PresentModeKHR prefPresentMode;
+	mutable vk::CompositeAlphaBitsKHR prefAlpha;
+	mutable vk::SurfaceTransformFlagsKHR prefTransform;
+	mutable vk::ImageUsageFlags prefUsage;
+
+	vk::SwapchainCreateInfoKHR parse(const vk::SurfaceCapabilitiesKHR& caps,
+		const Range<vk::PresentModeKHR>& modes,
+		const Range<vk::SurfaceFormatKHR>& formats,
+		const vk::Extent2D& size) const override;
+};
+
 ///TODO: more settings, especially related to blocking, presentation mode (vsync) etc.
 ///TODO: synchronization for acquire and present commands. Handle acquire -> out_of_date
 ///Represents Vulkan swap chain and associated images/frameBuffers.
@@ -22,13 +46,21 @@ public:
         vk::ImageView imageView;
     };
 
+	struct CreateInfo
+	{
+		vk::Format preferredFormat;
+		vk::PresentModeKHR preferredPresentMode;
+	};
+
 public:
 	SwapChain() = default;
+
 	///Constructs the swap chain for a given vulkan surface.
 	///Note that the given size is only used if the backend does not provide
 	///a surface size (e.g. wayland backend). Usually the swapChain will have the same size
 	///as the underlaying native surface, then the size parameter is ignored.
-	SwapChain(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& size);
+	SwapChain(const Device& device, vk::SurfaceKHR surface,
+		const vk::Extent2D& size = fwd::defaultSize, const SwapChainSettings& = {});
     ~SwapChain();
 
 	SwapChain(SwapChain&& other) noexcept;
@@ -40,7 +72,7 @@ public:
 	///Note that the size paramter is only used when the backend does not provide a fixed
 	///surface size. Otherwise the swapchain will simply be resized to the current surface
 	///size and the given size paramter is ignored.
-	void resize(const vk::Extent2D& size);
+	void resize(const vk::Extent2D& size = fwd::defaultSize, const SwapChainSettings& = {});
 
 	///Acquires the next swapchain image (i.e. the next render buffer).
 	///\param sem Semaphore to be signaled when acquiring is complete or nullHandle.
@@ -58,7 +90,6 @@ public:
 	const vk::SurfaceKHR& vkSurface() const { return surface_; }
 
 	vk::Format format() const { return format_; }
-	vk::ColorSpaceKHR colorSpace() const { return colorSpace_; }
 	vk::Extent2D size() const;
     const std::vector<RenderBuffer>& renderBuffers() const { return buffers_; }
 
@@ -66,21 +97,17 @@ public:
 	friend void swap(SwapChain& a, SwapChain& b) noexcept;
 
 protected:
-	void initSwapChain();
-    void queryFormats();
-    vk::SwapchainCreateInfoKHR swapChainCreateInfo();
 	void destroyBuffers();
 
 protected:
     vk::SwapchainKHR swapChain_ {};
-    vk::Format format_;
-    vk::ColorSpaceKHR colorSpace_;
-
-	unsigned int width_ = 0;
-	unsigned int height_ = 0;
-
 	vk::SurfaceKHR surface_ {};
 	std::vector<RenderBuffer> buffers_;
+
+	//not needed to store these parameters. just done for convinience. reasonable?
+	unsigned int width_ = 0;
+	unsigned int height_ = 0;
+    vk::Format format_;
 };
 
 }

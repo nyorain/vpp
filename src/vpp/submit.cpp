@@ -1,4 +1,5 @@
 #include <vpp/submit.hpp>
+#include <vpp/queue.hpp>
 #include <vpp/vk.hpp>
 #include <algorithm>
 
@@ -13,7 +14,7 @@ struct SubmitManager::Submission
 };
 
 //lock typedef for easier lock_guard using
-using Lock = std::lock_guard<std::mutex>;
+using LockGuard = std::lock_guard<std::mutex>;
 
 //Fence
 Fence::Fence(const Device& dev) : Fence(dev, {})
@@ -109,7 +110,8 @@ void SubmitManager::submit()
 
 void SubmitManager::submit(vk::Queue queue)
 {
-	Lock lock(mutex_);
+	//lock own mutex and mutex of all queues
+	LockGuard lock(mutex_);
 
 	auto it = submissions_.find(queue);
 	if(it == submissions_.end()) return;
@@ -126,14 +128,18 @@ void SubmitManager::submit(vk::Queue queue)
 
 	std::shared_ptr<Fence> fence;
 	vk::FenceCreateInfo fenceInfo {};
-	if(createFence)
+
 	{
-		fence = std::make_shared<Fence>(device(), fenceInfo);
-		vk::queueSubmit(queue, submitInfos, *fence);
-	}
-	else
-	{
-		vk::queueSubmit(queue, submitInfos);
+		auto&& lock = acquire();
+		if(createFence)
+		{
+			fence = std::make_shared<Fence>(device(), fenceInfo);
+			vk::queueSubmit(queue, submitInfos, *fence);
+		}
+		else
+		{
+			vk::queueSubmit(queue, submitInfos);
+		}
 	}
 
 	if(createFence)
@@ -158,7 +164,7 @@ void SubmitManager::add(vk::Queue queue, const vk::SubmitInfo& info, CommandExec
 		*state = {device(), submission.state.get()};
 	}
 
-	Lock lock(mutex_);
+	LockGuard lock(mutex_);
 	submissions_[queue].emplace_back(std::move(submission));
 }
 
@@ -179,7 +185,7 @@ void SubmitManager::add(vk::Queue queue, const std::vector<vk::CommandBuffer>& b
 
 	submission.info = info;
 
-	Lock lock(mutex_);
+	LockGuard lock(mutex_);
 	submissions_[queue].emplace_back(std::move(submission));
 }
 
@@ -199,11 +205,11 @@ void SubmitManager::add(vk::Queue queue, vk::CommandBuffer buffer, CommandExecut
 
 	submission.info = info;
 
-	Lock lock(mutex_);
+	LockGuard lock(mutex_);
 	submissions_[queue].emplace_back(std::move(submission));
 }
 
-void SubmitManager::submit(const CommandExecutionState& id)
+bool SubmitManager::submit(const CommandExecutionState& id)
 {
 	std::unique_lock<std::mutex> lock(mutex_);
 
@@ -216,11 +222,31 @@ void SubmitManager::submit(const CommandExecutionState& id)
 		{
 			lock.unlock(); //the next submit call will lock it again.
 			submit(ent.first);
-			return;
+			return true;
 		}
 	}
 
+#ifndef NDEBUG
 	std::cerr << "vpp::SubmitManager::submit: could not find the given commandSubmission\n";
+#endif
+
+	return false;
+}
+
+SubmitManager::Lock SubmitManager::acquire() const
+{
+	return {device()};
+}
+
+//Lock
+SubmitManager::Lock::Lock(const Device& dev) : Resource(dev)
+{
+	for(auto& q : device().queues()) q.mutex().lock();
+}
+
+SubmitManager::Lock::~Lock()
+{
+	for(auto& q : device().queues()) q.mutex().unlock();
 }
 
 }

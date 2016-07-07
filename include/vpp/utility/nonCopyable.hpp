@@ -19,17 +19,17 @@ public:
 };
 
 ///Utility base class that cannot copied nor moved.
-class NonMoveable
+class NonMovable
 {
 private:
-	NonMoveable(const NonMoveable&) = delete;
-	NonMoveable& operator =(const NonMoveable&) = delete;
-	NonMoveable(NonMoveable&&) = delete;
-	NonMoveable& operator=(NonMoveable&&) = delete;
+	NonMovable(const NonMovable&) = delete;
+	NonMovable& operator =(const NonMovable&) = delete;
+	NonMovable(NonMovable&&) = delete;
+	NonMovable& operator=(NonMovable&&) = delete;
 
 protected:
-	NonMoveable() noexcept = default;
-	~NonMoveable() noexcept = default;
+	constexpr NonMovable() noexcept = default;
+	~NonMovable() noexcept = default;
 };
 
 }

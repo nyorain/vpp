@@ -27,7 +27,16 @@ set(vpp-sources
 	queue.cpp
 	provider.cpp
 
-	utility/file.cpp)
+	../../external/boost/src/global_resource.cpp
+	../../external/boost/src/pool_resource.cpp
+	../../external/boost/src/synchronized_pool_resource.cpp
+	../../external/boost/src/unsynchronized_pool_resource.cpp
+	../../external/boost/src/monotonic_buffer_resource.cpp
+	../../external/boost/src/alloc_lib.c
+	../../external/boost/src/dlmalloc.cpp
+
+	utility/file.cpp
+	utility/allocator.cpp)
 
 #add backends
 if(${VPP_WINDOWS})
@@ -41,6 +50,7 @@ add_library(vpp SHARED ${vpp-sources})
 add_dependencies(vpp vkHeaders)
 
 #link to vulkan
+link_directories("${CMAKE_SOURCE_DIR}/external/lib")
 target_link_libraries(vpp ${vulkan-lib})
 
 #install

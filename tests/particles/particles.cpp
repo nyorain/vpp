@@ -51,6 +51,7 @@ void ParticleRenderer::init(vpp::SwapChainRenderer& renderer)
 {
 	std::cout << "init\n";
 	renderer.record();
+	ps().particles_.clear();
 }
 
 void ParticleRenderer::build(unsigned int id, const vpp::RenderPassInstance& instance)
@@ -70,7 +71,7 @@ void ParticleRenderer::build(unsigned int id, const vpp::RenderPassInstance& ins
 	vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
 		ps().graphicsPipeline_.vkPipelineLayout(), 0, {gd}, {});
 
-	auto size = ps().particles_.size() / 4;
+	auto size = ps().count_ / 4;
 	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf1}, offsets);
 	vk::cmdDraw(cmdBuffer, size * 4, 1, 0, 0);
 
@@ -87,7 +88,7 @@ void ParticleRenderer::build(unsigned int id, const vpp::RenderPassInstance& ins
 std::vector<vk::ClearValue> ParticleRenderer::clearValues(unsigned int)
 {
 	std::vector<vk::ClearValue> ret(2, vk::ClearValue{});
-	ret[0].color = {{0.f, 0.f, 0.f, 1.f}};
+	ret[0].color = {{0.f, 0.f, 0.f, 0.5f}};
 	ret[1].depthStencil = {1.f, 0};
 	return ret;
 }
@@ -129,6 +130,7 @@ ParticleSystem::ParticleSystem(App& app, std::size_t count)
 	: Resource(app.context->device()), app_(app), allocator_(app.context->device())
 {
 	particles_.resize(count);
+	count_ = count;
 
 	initDescriptors();
 	initDescriptorBuffers();
@@ -139,7 +141,7 @@ ParticleSystem::ParticleSystem(App& app, std::size_t count)
 	initGraphicsPipeline();
 
 	//allocator_.allocate();
-	device().memoryAllocator().allocate();
+	device().deviceAllocator().allocate();
 
 	writeDescriptorSets();
 	writeParticleBuffer();

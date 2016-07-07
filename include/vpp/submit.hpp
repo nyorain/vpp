@@ -75,6 +75,13 @@ protected:
 class SubmitManager : public Resource
 {
 public:
+	struct Lock : public NonMovable, public Resource
+	{
+		Lock(const Device& dev);
+		~Lock();
+	};
+
+public:
 	///Submits all CommandBuffers in the submission queue.
 	///There is no way directly check for completion, but in a single-threaded application,
 	///one could simply wait for the device to become idle.
@@ -93,17 +100,23 @@ public:
 	void add(vk::Queue, vk::CommandBuffer buffer, CommandExecutionState* state = nullptr);
 
 	///Function for ExecutionState
-	void submit(const CommandExecutionState& state);
+	bool submit(const CommandExecutionState& state);
+
+	///This function must be called before submitting command buffers to the device.
+	///All queues will be acquired as long as the return Lock object is alive.
+	Lock acquire() const;
 
 protected:
-	friend class Device;
 	struct Submission;
+	friend class Device;
+	friend class Lock;
+
+protected:
 	SubmitManager(const Device& dev);
 	~SubmitManager();
 
 protected:
 	std::mutex mutex_;
-	std::size_t autoSubmitThreshold_; //XXX: needed?
 	std::unordered_map<vk::Queue, std::vector<Submission>> submissions_;
 };
 

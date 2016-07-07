@@ -15,7 +15,7 @@ struct App
     HINSTANCE hinstance = nullptr;
     HWND window = nullptr;
 
-    unsigned int width = 900;
+    unsigned int width = 1400;
     unsigned int height = 900;
 
     vpp::Context* context = nullptr;
@@ -71,6 +71,8 @@ protected:
 	vpp::DescriptorSetLayout graphicsDescriptorSetLayout_;
 	vpp::DescriptorSet graphicsDescriptorSet_;
 	vpp::Buffer graphicsUBO_;
+
+	std::size_t count_;
 
 	//ubo values
 	nytl::Mat4f viewMatrix_; //camera

@@ -16,8 +16,8 @@ public:
 	///Never call these functions manually.
 	///They are used by the device just for being able to store them, not used after creation
 	~Queue() = default;
-	Queue(Queue&& other) noexcept = default;
-	Queue& operator=(Queue&& other) noexcept = default;
+	// Queue(Queue&& other) noexcept = default;
+	// Queue& operator=(Queue&& other) noexcept = default;
 
 	///Return the queueFamily of this queue
 	unsigned int family() const { return family_; }
@@ -33,10 +33,18 @@ public:
 	///Returns the vulkan queue handle.
 	vk::Queue vkQueue() const { return queue_; }
 
+	///The queue must be locked before performing any operations (such as presenting or sparse
+	///binding) on the queue.
+	///Note that locking the queues mutex is not enough for submitting command buffers to the queue,
+	///since while submitting, no operation on ANY queue is allowed.
+	///To submit command buffers to a queue, use the SubmitManager class.
+	///\sa SubmitManager
+	std::mutex& mutex() const { return mutex_; }
+
 	operator vk::Queue() const { return vkQueue(); }
 
 protected:
-	friend Device;
+	friend class Device;
 	Queue(vk::Queue queue, const vk::QueueFamilyProperties& props, unsigned int fam, unsigned int id);
 
 protected:
@@ -44,6 +52,7 @@ protected:
 	const vk::QueueFamilyProperties& properties_;
 	unsigned int family_;
 	unsigned int id_;
+	mutable std::mutex mutex_;
 };
 
 }
