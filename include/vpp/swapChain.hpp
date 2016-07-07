@@ -34,7 +34,6 @@ struct DefaultSwapChainSettings final : public SwapChainSettings
 		const vk::Extent2D& size) const override;
 };
 
-///TODO: more settings, especially related to blocking, presentation mode (vsync) etc.
 ///TODO: synchronization for acquire and present commands. Handle acquire -> out_of_date
 ///Represents Vulkan swap chain and associated images/frameBuffers.
 class SwapChain : public Resource
