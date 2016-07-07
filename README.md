@@ -57,7 +57,7 @@ class MyRendererBuilder : public vpp::RendererBuilder
 		vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::Graphics, <some pipeline>);
 		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::Graphics, <some descriptors>);
 		vk::cmdBindVertexBuffers(cmdBuffer, <some vertex buffers>);
-		vk::cmdDraw(cmdBuffer, <some draw optins>);
+		vk::cmdDraw(cmdBuffer, <some draw params>);
 	}
 
 	//Clear the color attachment in black and the depth attachment with value 1.
