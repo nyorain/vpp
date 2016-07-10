@@ -12,9 +12,9 @@ void MemoryResource::assureMemory() const
 
 MemoryMapView MemoryResource::memoryMap() const
 {
+	assureMemory();
 	if(!mappable()) throw std::logic_error("vpp::MemoryResource::memoryMap: not mappable");
 
-	assureMemory();
 	return memoryEntry().map();
 }
 

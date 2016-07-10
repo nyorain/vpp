@@ -27,6 +27,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external)
 
+install(DIRECTORY external/boost DESTINATION include)
+
 if(WIN32 OR MSYS OR MINGW)
 	set(VPP_WINDOWS 1)
 else()

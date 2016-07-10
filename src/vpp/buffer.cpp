@@ -3,6 +3,7 @@
 #include <vpp/provider.hpp>
 #include <vpp/transfer.hpp>
 #include <vpp/transferWork.hpp>
+#include <vpp/utility/debug.hpp>
 
 #include <utility>
 #include <cstring>
@@ -54,13 +55,14 @@ void swap(Buffer& a, Buffer& b) noexcept
 
 DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize size)
 {
-#ifndef NDEBUG
-	if(!buf.memoryEntry().allocated())
+	VPP_DEBUG_CHECK(vpp::retrive(buffer),
 	{
-		std::cerr << "vpp::retrieve(buffer): image has no memory. Calling assureMemory()\n";
-		buf.assureMemory();
-	}
-#endif //NDEBUG
+		if(!buf.memoryEntry().allocated())
+		{
+			VPP_DEBUG_OUTPUT("Image has no memory. Undefined data retrived. Calling assureMemory()");
+			buf.assureMemory();
+		}
+	});
 
 	if(size == vk::wholeSize) size = buf.memoryEntry().size() - offset;
 
@@ -171,6 +173,11 @@ void BufferUpdate::write(const void* ptr, std::size_t size)
 
 void BufferUpdate::checkCopies()
 {
+	VPP_DEBUG_CHECK(vpp::BufferUpdate::checkCopies,
+	{
+		if(bufferOffset_ > buffer().size()) VPP_DEBUG_OUTPUT("Buffer write overflow.");
+	});
+
 	while(direct_ && copies_.back().size > 65536)
 	{
 		auto delta = copies_.back().size - 65536;

@@ -121,19 +121,22 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 
 	pipelineLayout_ = vk::createPipelineLayout(vkDevice(), pipelineLayoutInfo);
 
-	//dynamic state
-	vk::PipelineDynamicStateCreateInfo dynamicState;
-	dynamicState.pDynamicStates = createInfo.dynamicStates.data();
-	dynamicState.dynamicStateCount = createInfo.dynamicStates.size();
-
 	//create it
-	auto infos = createInfo.shader.vkStageInfos();
-
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
+
+	//dynamic state
+	if(createInfo.dynamicStates.size() > 0)
+	{
+		vk::PipelineDynamicStateCreateInfo dynamicState;
+		dynamicState.pDynamicStates = createInfo.dynamicStates.data();
+		dynamicState.dynamicStateCount = createInfo.dynamicStates.size();
+		pipelineInfo.pDynamicState = &dynamicState;
+	}
+
+	auto infos = createInfo.shader.vkStageInfos();
 
 	pipelineInfo.layout = pipelineLayout_;
 	pipelineInfo.pVertexInputState = &vertexInfo;
-	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.renderPass = createInfo.renderPass;
 	pipelineInfo.stageCount = infos.size();
 	pipelineInfo.pStages = infos.data();
