@@ -52,10 +52,10 @@ void swap(Image& a, Image& b) noexcept
 
 WorkPtr fill(const Image& image, const std::uint8_t& data, vk::ImageLayout layout,
 	const vk::Extent3D& extent, const vk::ImageSubresourceLayers& subres, vk::DeviceSize size,
-	vk::DeviceSize offset, bool allowMap)
+	bool allowMap)
 {
 	image.assureMemory();
-	if(size = vk::wholeSize) size = image.size() - offset;
+	if(size == vk::wholeSize) size = image.size();
 
 	if(image.mappable() && allowMap)
 	{

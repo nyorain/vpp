@@ -46,10 +46,13 @@ GraphicsPipeline::States::States(const vk::Viewport& viewportinfo)
 	colorBlend.attachmentCount = blendAttachments.size();
 	colorBlend.pAttachments = blendAttachments.data();
 
-	viewport.viewportCount = viewports.size();
-	viewport.pViewports = viewports.data();
-	viewport.scissorCount = scissors.size();
-	viewport.pScissors = scissors.data();
+	// viewport.viewportCount = viewports.size();
+	// viewport.pViewports = viewports.data();
+	// viewport.scissorCount = scissors.size();
+	// viewport.pScissors = scissors.data();
+
+	viewport.viewportCount = 1;
+	viewport.scissorCount = 1;
 
 	depthStencil.depthTestEnable = true;
 	depthStencil.depthWriteEnable = true;
@@ -125,7 +128,7 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
 
 	//dynamic state
-	if(createInfo.dynamicStates.size() > 0)
+	if(!createInfo.dynamicStates.empty())
 	{
 		vk::PipelineDynamicStateCreateInfo dynamicState;
 		dynamicState.pDynamicStates = createInfo.dynamicStates.data();
@@ -133,18 +136,26 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 		pipelineInfo.pDynamicState = &dynamicState;
 	}
 
+	//viewport
+	vk::PipelineViewportStateCreateInfo viewportInfo;
+	viewportInfo.viewportCount = createInfo.states.viewports.size();
+	viewportInfo.pViewports = createInfo.states.viewports.data();
+	viewportInfo.scissorCount = createInfo.states.scissors.size();
+	viewportInfo.pScissors = createInfo.states.scissors.data();
+	pipelineInfo.pViewportState = &viewportInfo;
+
 	auto infos = createInfo.shader.vkStageInfos();
+	pipelineInfo.stageCount = infos.size();
+	pipelineInfo.pStages = infos.data();
 
 	pipelineInfo.layout = pipelineLayout_;
 	pipelineInfo.pVertexInputState = &vertexInfo;
 	pipelineInfo.renderPass = createInfo.renderPass;
-	pipelineInfo.stageCount = infos.size();
-	pipelineInfo.pStages = infos.data();
+	pipelineInfo.subpass = createInfo.subpass;
 	pipelineInfo.pInputAssemblyState = &createInfo.states.inputAssembly;
 	pipelineInfo.pRasterizationState = &createInfo.states.rasterization;
 	pipelineInfo.pColorBlendState = &createInfo.states.colorBlend;
 	pipelineInfo.pMultisampleState = &createInfo.states.multisample;
-	pipelineInfo.pViewportState = &createInfo.states.viewport;
 	pipelineInfo.pDepthStencilState = &createInfo.states.depthStencil;
 	pipelineInfo.pTessellationState = nullptr;
 

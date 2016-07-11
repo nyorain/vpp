@@ -1,13 +1,31 @@
-#include "particles.hpp"
+#include <example.hpp> //defnitions for initApp and mainLoop as well as the App declaration
+
 #include <vpp/provider.hpp>
 #include <vpp/utility/file.hpp>
+#include <vpp/defs.hpp>
+#include <vpp/buffer.hpp>
+#include <vpp/graphicsPipeline.hpp>
+#include <vpp/computePipeline.hpp>
+
+#include <nytl/nytl.hpp>
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h> //srsly microsoft? "near" and "far" macros? WTF man hoooly shit
 
 #include <random>
 #include <type_traits>
 #include <cassert>
 #include <cstring>
+#include <chrono>
+using Clock = std::chrono::high_resolution_clock;
 
-App* gApp;
+//types
+struct Particle
+{
+	nytl::Vec2f position;
+	nytl::Vec2f velocity;
+	nytl::Vec4f color;
+};
 
 namespace vpp
 {
@@ -35,10 +53,98 @@ template<> struct VulkanType<Particle>
 
 }
 
-//Renderer
-ParticleRenderer::ParticleRenderer(App& app) : app_(&app)
+class ParticleSystem : public vpp::Resource
 {
-	auto& dev = app.context->device();
+protected:
+	App& app_;
+	std::vector<Particle> particles_;
+
+	vpp::Buffer particlesBuffer1_;
+	vpp::Buffer particlesBuffer2_;
+	vpp::Buffer particlesBuffer3_;
+	vpp::Buffer particlesBuffer4_;
+
+	vpp::VertexBufferLayout vertexBufferLayout_;
+	vpp::ComputePipeline computePipeline_;
+	vpp::GraphicsPipeline graphicsPipeline_;
+
+	vk::CommandBuffer computeBuffer_;
+
+	vk::DescriptorPool descriptorPool_;
+
+	vpp::DescriptorSetLayout computeDescriptorSetLayout_;
+	vpp::DescriptorSet computeDescriptorSet1_;
+	vpp::DescriptorSet computeDescriptorSet2_;
+	vpp::DescriptorSet computeDescriptorSet3_;
+	vpp::DescriptorSet computeDescriptorSet4_;
+	vpp::Buffer computeUBO_;
+
+	vpp::DescriptorSetLayout graphicsDescriptorSetLayout_;
+	vpp::DescriptorSet graphicsDescriptorSet_;
+	vpp::Buffer graphicsUBO_;
+
+	std::size_t count_;
+	bool initialized_ = false;
+
+	//ubo values
+	nytl::Mat4f viewMatrix_; //camera
+	Clock::time_point lastUpdate_;
+
+protected:
+	void init();
+	void buildComputeBuffer();
+
+	void initGraphicsPipeline();
+	void initComputePipeline();
+
+	void initDescriptors();
+	void initDescriptorBuffers();
+	void initParticles();
+	void initParticleBuffer();
+
+	void writeDescriptorSets();
+	void writeParticleBuffer();
+	void writeGraphicsUBO();
+
+	void updateUBOs(const nytl::Vec2ui& mousePos);
+	void compute();
+
+public:
+	ParticleSystem(App& app, std::size_t count);
+	~ParticleSystem();
+
+	void update(const nytl::Vec2ui& mousePos);
+	friend class ParticleRenderer;
+};
+
+class ParticleRenderer : public vpp::RendererBuilder
+{
+public:
+	ParticleRenderer(ParticleSystem& sys);
+	~ParticleRenderer();
+
+	void init(vpp::SwapChainRenderer& renderer) override;
+	void build(unsigned int, const vpp::RenderPassInstance&) override;
+	std::vector<vk::ClearValue> clearValues(unsigned int) override;
+	void beforeRender(vk::CommandBuffer cmdBuffer) override;
+	AdditionalSemaphores submit(unsigned int id) override;
+
+	ParticleSystem& ps() const { return *system_; }
+
+protected:
+	ParticleSystem* system_;
+	vk::Semaphore computeSemaphore_;
+
+	std::vector<vk::PipelineStageFlags> waitMasks_;
+	std::vector<vk::CommandBuffer> buffers_;
+	std::vector<vk::Semaphore> waitSemaphores_;
+	std::vector<vk::Semaphore> signalSemaphores_;
+};
+
+//Renderer
+ParticleRenderer::ParticleRenderer(ParticleSystem& sys) : system_(&sys)
+{
+	auto& dev = ps().app_.context.device();
 	computeSemaphore_ = vk::createSemaphore(dev, {});
 }
 
@@ -50,6 +156,8 @@ ParticleRenderer::~ParticleRenderer()
 void ParticleRenderer::init(vpp::SwapChainRenderer& renderer)
 {
 	std::cout << "init\n";
+	if(!ps().initialized_)ps().init();
+	ps().initialized_ = true;
 	renderer.record();
 	ps().particles_.clear();
 }
@@ -110,7 +218,7 @@ void ParticleRenderer::beforeRender(vk::CommandBuffer cmdBuffer)
 
 ParticleRenderer::AdditionalSemaphores ParticleRenderer::submit(unsigned int id)
 {
-	auto& dev = app_->context->device();
+	auto& dev = ps().app_.context.device();
 
 	//submit command buffer
 	vk::SubmitInfo submitInfo;
@@ -119,7 +227,7 @@ ParticleRenderer::AdditionalSemaphores ParticleRenderer::submit(unsigned int id)
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &computeSemaphore_;
 
-	dev.submitManager().add(*app_->context->computeQueue(), submitInfo);
+	dev.submitManager().add(*ps().app_.context.computeQueue(), submitInfo);
 
 	return {{computeSemaphore_, vk::PipelineStageBits::allCommands}};
 	//return {};
@@ -127,10 +235,19 @@ ParticleRenderer::AdditionalSemaphores ParticleRenderer::submit(unsigned int id)
 
 //ParticleSystem
 ParticleSystem::ParticleSystem(App& app, std::size_t count)
-	: Resource(app.context->device()), app_(app), allocator_(app.context->device())
+	: Resource(), app_(app)
 {
-	particles_.resize(count);
 	count_ = count;
+}
+
+ParticleSystem::~ParticleSystem()
+{
+}
+
+void ParticleSystem::init()
+{
+	Resource::init(app_.context.device());
+	particles_.resize(count_);
 
 	initDescriptors();
 	initDescriptorBuffers();
@@ -151,11 +268,6 @@ ParticleSystem::ParticleSystem(App& app, std::size_t count)
 
 	lastUpdate_ = Clock::now();
 }
-
-ParticleSystem::~ParticleSystem()
-{
-}
-
 
 void ParticleSystem::initGraphicsPipeline()
 {
@@ -447,63 +559,23 @@ void ParticleSystem::ParticleSystem::update(const nytl::Vec2ui& mousePos)
 }
 
 //utility
-void initRenderPass(App& app)
+
+int main(int argc, char** argv)
 {
-	auto& dev = app.context->device();
-	auto& swapChain = app.context->swapChain();
+	auto count = 500;
+	if(argc > 1) count = std::stoi(argv[1]);
 
-	vk::AttachmentDescription attachments[2] {};
+	App app;
+	ParticleSystem system(app, count * 1024);
+	initApp(app, [&](){ return std::make_unique<ParticleRenderer>(system); });
+	mainLoop(app, [&](){
+		POINT pos;
+		GetCursorPos(&pos);
+		ScreenToClient(app.window, &pos);
 
-	//color from swapchain
-	attachments[0].format = swapChain.format();
-	attachments[0].samples = vk::SampleCountBits::e1;
-	attachments[0].loadOp = vk::AttachmentLoadOp::clear;
-	attachments[0].storeOp = vk::AttachmentStoreOp::store;
-	attachments[0].stencilLoadOp = vk::AttachmentLoadOp::dontCare;
-	attachments[0].stencilStoreOp = vk::AttachmentStoreOp::dontCare;
-	attachments[0].initialLayout = vk::ImageLayout::undefined;
-	attachments[0].finalLayout = vk::ImageLayout::presentSrcKHR;
+		auto vec = nytl::Vec2ui(pos.x, pos.y);
+		vec = nytl::clamp(vec, nytl::Vec2ui(0, 0), nytl::Vec2ui(app.width, app.height));
 
-	vk::AttachmentReference colorReference;
-	colorReference.attachment = 0;
-	colorReference.layout = vk::ImageLayout::colorAttachmentOptimal;
-
-	//depth from own depth stencil
-	attachments[1].format = vk::Format::d16UnormS8Uint;
-	attachments[1].samples = vk::SampleCountBits::e1;
-	attachments[1].loadOp = vk::AttachmentLoadOp::clear;
-	attachments[1].storeOp = vk::AttachmentStoreOp::store;
-	attachments[1].stencilLoadOp = vk::AttachmentLoadOp::dontCare;
-	attachments[1].stencilStoreOp = vk::AttachmentStoreOp::dontCare;
-	attachments[1].initialLayout = vk::ImageLayout::undefined;
-	attachments[1].finalLayout = vk::ImageLayout::undefined;
-	// attachments[1].initialLayout = vk::ImageLayout::depthStencilAttachmentOptimal;
-	// attachments[1].finalLayout = vk::ImageLayout::depthStencilAttachmentOptimal;
-
-	vk::AttachmentReference depthReference;
-	depthReference.attachment = 1;
-	depthReference.layout = vk::ImageLayout::depthStencilAttachmentOptimal;
-
-	//only subpass
-	vk::SubpassDescription subpass;
-	subpass.pipelineBindPoint = vk::PipelineBindPoint::graphics;
-	subpass.flags = {};
-	subpass.inputAttachmentCount = 0;
-	subpass.pInputAttachments = nullptr;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorReference;
-	subpass.pResolveAttachments = nullptr;
-	subpass.pDepthStencilAttachment = &depthReference;
-	subpass.preserveAttachmentCount = 0;
-	subpass.pPreserveAttachments = nullptr;
-
-	vk::RenderPassCreateInfo renderPassInfo;
-	renderPassInfo.attachmentCount = 2;
-	renderPassInfo.pAttachments = attachments;
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpass;
-	renderPassInfo.dependencyCount = 0;
-	renderPassInfo.pDependencies = nullptr;
-
-	app.renderPass = vpp::RenderPass(dev, renderPassInfo);
+		system.update(vec);
+	});
 }

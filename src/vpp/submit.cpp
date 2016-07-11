@@ -241,12 +241,12 @@ SubmitManager::Lock SubmitManager::acquire() const
 //Lock
 SubmitManager::Lock::Lock(const Device& dev) : Resource(dev)
 {
-	for(auto& q : device().queues()) q.mutex().lock();
+	for(auto& q : device().queues()) q->mutex().lock();
 }
 
 SubmitManager::Lock::~Lock()
 {
-	for(auto& q : device().queues()) q.mutex().unlock();
+	for(auto& q : device().queues()) q->mutex().unlock();
 }
 
 }

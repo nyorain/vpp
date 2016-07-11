@@ -29,7 +29,7 @@ public:
 	void waitIdle() const;
 
 	///Returns all available queues for the created device.
-	Range<Queue> queues() const;
+	Range<std::unique_ptr<Queue>> queues() const;
 
 	///Returns a queue for the given family or nullptr if there is none.
 	const Queue* queue(std::uint32_t family) const;

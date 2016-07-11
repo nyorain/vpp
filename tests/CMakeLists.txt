@@ -1,4 +1,4 @@
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}") #mainly for nytl
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}") #mainly for nytl, example.hpp
 
 #function to easily bake shaders using glslandValidator
 function(add_shader name project)
@@ -17,4 +17,5 @@ endfunction(add_shader)
 
 #add included tests
 add_subdirectory(particles)
-#add_subdirectory(clouds)
+add_subdirectory(fragment)
+add_subdirectory(texture)

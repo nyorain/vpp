@@ -5,13 +5,12 @@
 
 layout(binding = 0, location = 0) uniform ubo
 {
+	vec2 iResolution;
+	vec2 iMouse;
 	float iGlobalTime;
 };
 
 layout(location = 0) out vec4 outFragColor;
-
-vec2 iResolution = vec2(900, 900);
-vec2 iMouse = vec2(450, 450);
 
 //by JoshP
 //https://www.shadertoy.com/view/lslGWr

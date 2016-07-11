@@ -6,8 +6,6 @@
 #include <vpp/submit.hpp>
 #include <vpp/transfer.hpp>
 
-#include <vpp/utility/pmr/unique_ptr.hpp>
-
 #include <cstdlib>
 
 namespace vpp
@@ -26,14 +24,11 @@ struct Device::Impl
 	vk::PhysicalDeviceProperties physicalDeviceProperties;
 	vk::PhysicalDeviceMemoryProperties memoryProperties;
 
-	std::size_t queueCount;
-	spm::unique_ptr<Queue[]> queues;
-
+	std::vector<std::unique_ptr<Queue>> queues;
 	std::vector<vk::QueueFamilyProperties> qFamilyProperties;
 
-
-	Impl(const Device& dev, std::size_t i) : commandProvider(dev), deviceMemoryProvider(dev), hostMemoryProvider(),
-		submitManager(dev), transferManager(dev), queues(nullptr, {hostMemoryProvider.get(), i}) {}
+	Impl(const Device& dev, std::size_t i) : commandProvider(dev), deviceMemoryProvider(dev),
+		hostMemoryProvider(), submitManager(dev), transferManager(dev) {}
 };
 
 //Device
@@ -49,11 +44,8 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 	impl_->memoryProperties = vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
 	impl_->qFamilyProperties = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
 
-	std::map<std::uint32_t, unsigned int> familyIds;
-
-	auto ptr = hostMemoryResource().allocate(sizeof(Queue) * info.queueCreateInfoCount, alignof(Queue));
-	impl_->queues.reset(reinterpret_cast<Queue*>(ptr));
-	impl_->queueCount = info.queueCreateInfoCount;
+	std::map<std::uint32_t, unsigned int> familyIds; //for counting (and passing) the correct ids
+	impl_->queues.resize(info.queueCreateInfoCount);
 
 	for(std::size_t i(0); i < info.queueCreateInfoCount; ++i)
 	{
@@ -61,11 +53,8 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 		auto idx = familyIds[queueInfo.queueFamilyIndex]++;
 		auto queue = vk::getDeviceQueue(vkDevice(), queueInfo.queueFamilyIndex, idx);
 
-		auto* ptr = new(&impl_->queues[i]) Queue(queue, impl_->qFamilyProperties[i],
-			queueInfo.queueFamilyIndex, idx);
-
-		std::cout << queue << " vs " << impl_->queues[i].vkQueue() << "\n";
-		std::cout << &impl_->queues[i] << "\n";
+		impl_->queues[i].reset(new Queue(queue, impl_->qFamilyProperties[queueInfo.queueFamilyIndex],
+			queueInfo.queueFamilyIndex, idx));
 	}
 }
 
@@ -80,15 +69,15 @@ void Device::waitIdle() const
 	vk::deviceWaitIdle(vkDevice());
 }
 
-Range<Queue> Device::queues() const
+Range<std::unique_ptr<Queue>> Device::queues() const
 {
-	return {impl_->queues.get(), impl_->queueCount};
+	return {impl_->queues};
 }
 
 const Queue* Device::queue(std::uint32_t family) const
 {
 	for(auto& queue : queues())
-		if(queue.family() == family) return &queue;
+		if(queue->family() == family) return queue.get();
 
 	return nullptr;
 }
@@ -96,7 +85,7 @@ const Queue* Device::queue(std::uint32_t family) const
 const Queue* Device::queue(std::uint32_t family, std::uint32_t id) const
 {
 	for(auto& queue : queues())
-		if(queue.family() == family && queue.id() == id) return &queue;
+		if(queue->family() == family && queue->id() == id) return queue.get();
 
 	return nullptr;
 }
@@ -104,7 +93,7 @@ const Queue* Device::queue(std::uint32_t family, std::uint32_t id) const
 const Queue* Device::queue(vk::QueueFlags flags) const
 {
 	for(auto& queue : queues())
-		if(queue.properties().queueFlags & flags) return &queue;
+		if(queue->properties().queueFlags & flags) return queue.get();
 
 	return nullptr;
 }

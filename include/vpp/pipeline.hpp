@@ -157,13 +157,14 @@ public:
 	friend void swap(Pipeline& a, Pipeline& b) noexcept;
 
 protected:
-	vk::PipelineLayout pipelineLayout_ {};
+	vk::PipelineLayout pipelineLayout_ {}; ///XXX: make ownership optional
 	vk::Pipeline pipeline_ {};
 
 protected:
 	Pipeline() = default;
 	Pipeline(const Device& dev);
 };
+
 
 ///Can be used to load a pipeline cache from a file.
 vk::PipelineCache loadPipelineCache(vk::Device dev, const char* name);

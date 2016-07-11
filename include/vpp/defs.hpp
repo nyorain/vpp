@@ -55,9 +55,14 @@ struct GraphicsPipeline::States
 
 struct GraphicsPipeline::CreateInfo
 {
+	CreateInfo() = default;
+	//CreateInfo(const Device& dev, const Range<vk::DynamicState>& dyanmic = {});
+
 	ShaderProgram shader;
-	vk::RenderPass renderPass {};
 	vk::PipelineCache cache {};
+
+	vk::RenderPass renderPass {};
+	unsigned int subpass {};
 
 	std::vector<std::reference_wrapper<DescriptorSetLayout>> descriptorSetLayouts;
 	std::vector<std::reference_wrapper<VertexBufferLayout>> vertexBufferLayouts;
