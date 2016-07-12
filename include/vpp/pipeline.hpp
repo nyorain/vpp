@@ -37,7 +37,7 @@ public:
 	///\}
 
 	void sampler(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
-	void sampled(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
+	void image(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
 	void storage(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
 	void combinedSampler(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
 	void inputAttachment(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
@@ -50,7 +50,7 @@ public:
 	///Will be automatically triggered on destruction.
 	void apply();
 
-	// more convinient copy function?
+	//XXX: more convinient copy function?
 	// void copy(const DescriptorSet& set, const std::uint32_t (&binding)[2],
 	// 	const std::uint32_t (&elem)[2] = {0, 0}, unsigned int count = 1);
 
@@ -131,7 +131,7 @@ public:
 	///Updates the descriptorSet with the given copies.
 	void update(const std::vector<vk::CopyDescriptorSet>& copies) const;
 
-	vk::DescriptorSet vkDescriptorSet() const { return descriptorSet_; }
+	const vk::DescriptorSet& vkDescriptorSet() const { return descriptorSet_; }
 	const DescriptorSetLayout& layout() const { return *layout_; }
 
 	operator vk::DescriptorSet() const { return vkDescriptorSet(); }
@@ -141,6 +141,53 @@ protected:
 	const DescriptorSetLayout* layout_;
 	vk::DescriptorSet descriptorSet_ {};
 };
+
+///RAII vulkan descriptor pool wrapper
+class DescriptorPool : public Resource
+{
+public:
+	DescriptorPool() = default;
+	DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info);
+	~DescriptorPool();
+
+	DescriptorPool(DescriptorPool&& other) noexcept;
+	DescriptorPool& operator=(DescriptorPool&& other) noexcept;
+
+	const vk::DescriptorPool& vkDescriptorPool() const { return descriptorPool_; }
+
+	operator vk::DescriptorPool() const { return vkDescriptorPool(); }
+	friend void swap(DescriptorPool& a, DescriptorPool& b) noexcept;
+
+protected:
+	vk::DescriptorPool descriptorPool_;
+};
+
+//RAII vulkan pipeline layout wrapper
+// class PipelineLayout : public Resource
+// {
+// public:
+// 	PipelineLayout() = default;
+// 	PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info);
+// 	~PipelineLayout();
+//
+// 	PipelineLayout(PipelineLayout&& other) noexcept;
+// 	PipelineLayout& operator=(PipelineLayout&& other) noexcept;
+//
+// 	const vk::PipelineLayout& vkPipelineLayout() const { return pipelineLayout_; }
+//
+// 	operator vk::PipelineLayout() const { return vkPipelineLayout(); }
+// 	friend void swap(PipelineLayout& a, PipelineLayout& b) noexcept;
+//
+// protected:
+// 	vk::PipelineLayout pipelineLayout_;
+// };
+// 
+// class PipelineLayout : public ResourceHandle<vk::PipelineLayout>
+// {
+// public:
+// 	PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info);
+// 	~PipelineLayout();
+// };
 
 ///Pipeline base class.
 class Pipeline : public Resource
@@ -157,7 +204,9 @@ public:
 	friend void swap(Pipeline& a, Pipeline& b) noexcept;
 
 protected:
-	vk::PipelineLayout pipelineLayout_ {}; ///XXX: make ownership optional
+	vk::PipelineLayout pipelineLayout_ {};
+	bool layoutOwned_ = false;
+
 	vk::Pipeline pipeline_ {};
 
 protected:

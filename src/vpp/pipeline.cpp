@@ -111,7 +111,7 @@ void DescriptorSetUpdate::sampler(const ImageInfos& images, int binding, unsigne
 	writes_.emplace_back(*set_, binding, elem, images.size(),
 		vk::DescriptorType::sampler, images_.back().data(), nullptr, nullptr);
 }
-void DescriptorSetUpdate::sampled(const ImageInfos& images, int binding, unsigned int elem)
+void DescriptorSetUpdate::image(const ImageInfos& images, int binding, unsigned int elem)
 {
 	if(binding == -1) binding = currentBinding_++;
 	else currentBinding_ = binding + 1;

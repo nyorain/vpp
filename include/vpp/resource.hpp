@@ -63,6 +63,31 @@ public:
 };
 
 
+template<typename T>
+class ResourceHandle : public Resource
+{
+public:
+	ResourceHandle(ResourceHandle&& other) noexcept { swap(*this, other); }
+	ResourceHandle& operator=(ResourceHandle other) noexcept { swap(*this, other); }
+
+	const T& vkHandle() const noexcept { return handle_; }
+	operator T() const noexcept { return vkHandle(); }
+
+	friend void swap(ResourceHandle<T>& a, ResourceHandle<T>& b) noexcept
+	{
+		std::swap(a.device_, b.device_);
+		std::swap(a.handle_, b.handle_);
+	}
+
+protected:
+	ResourceHandle() = default;
+	ResourceHandle(const T& handle) : handle_(handle) {}
+	~ResourceHandle() = default;
+
+protected:
+	T handle_;
+};
+
 ///Concept for a default move implementation using a custom swap function.
 // template<typename T>
 // class DefaultMovable
