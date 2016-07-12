@@ -2,7 +2,7 @@
 #include <vpp/memory.hpp>
 #include <vpp/defs.hpp>
 #include <vpp/renderPass.hpp>
-#include <vpp/utility/range.hpp>
+#include <vpp/range.hpp>
 
 namespace vpp
 {

@@ -4,7 +4,6 @@
 #include <vpp/resource.hpp>
 #include <vpp/framebuffer.hpp>
 #include <vpp/renderPass.hpp>
-#include <vpp/vk.hpp>
 
 #include <memory>
 #include <vector>

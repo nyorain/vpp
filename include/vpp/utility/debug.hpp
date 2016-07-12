@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vpp/config.hpp>
 #include <sstream>
 #include <stdexcept>
 #include <iostream>

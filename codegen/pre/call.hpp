@@ -24,9 +24,12 @@
 #pragma once
 
 #include "enums.hpp"
-#include <stdexcept>
+#include "config.hpp"
+
 #include <string>
+#include <stdexcept>
 #include <iostream>
+#include <sstream>
 
 namespace vk
 {
@@ -42,6 +45,18 @@ public:
 
 namespace call
 {
+
+template<typename... Args>
+void outputDebugMsg(Args... args)
+{
+	std::stringstream stream;
+	int e1[] = {(stream << args, 0)...};
+	std::cerr << stream.str() << '\n';
+
+	#ifdef VPP_DEBUG_THROW
+	 throw std::runtime_error(stream.str());
+	#endif //throw
+}
 
 inline bool success(Result result)
 {
@@ -84,6 +99,7 @@ inline vk::Result checkResultThrow(vk::Result result, const char* function, cons
 {
 	if(success(result)) return result;
 
+
 	auto msg = to_string(result);
 	auto ecode = static_cast<std::int64_t>(result);
 	const std::string err = "Vulkan Error Code " + std::to_string(ecode) + ": " + msg +
@@ -122,21 +138,11 @@ inline vk::Result checkResultWarn(vk::Result result, const char* function, const
 #define VPP_CALL_W(x) ::vk::call::checkResultWarn(static_cast<vk::Result>(x), VPP_FUNC_NAME, #x)
 #define VPP_CALL_T(x) ::vk::call::checkResultThrow(static_cast<vk::Result>(x), VPP_FUNC_NAME, #x)
 
-//default selection
-#if !defined(VPP_CALL_THROW) && !defined(VPP_CALL_WARN) && !defined(VPP_CALL_NOCHECK)
- #ifdef NDEBUG
-  #define VPP_CALL_WARN
- #else
-  #define VPP_CALL_THROW
- #endif
-#endif
-
 //default call macro based on given option macros (throw/warn/nocheck)
 #ifdef VPP_CALL_THROW
  #define VPP_CALL(x) VPP_CALL_T(x)
 #elif defined(VPP_CALL_WARN)
  #define VPP_CALL(x) VPP_CALL_W(x)
 #else
- #warning "no action taken..."
  #define VPP_CALL(x) x
 #endif

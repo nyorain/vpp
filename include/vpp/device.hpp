@@ -3,7 +3,6 @@
 #include <vpp/fwd.hpp>
 #include <vpp/utility/nonCopyable.hpp>
 #include <vpp/utility/memory_resource.hpp> ///XXX: this must go. pulls in MAAANY boost headers.
-#include <vpp/vulkan/range.hpp>
 
 #include <memory>
 #include <vector>

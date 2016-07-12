@@ -5,7 +5,7 @@
 #include <vpp/allocator.hpp>
 #include <vpp/commandBuffer.hpp>
 #include <vpp/work.hpp>
-#include <vpp/vulkan/range.hpp>
+#include <vpp/range.hpp>
 
 #include <memory>
 #include <type_traits>

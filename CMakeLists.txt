@@ -1,9 +1,13 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 PROJECT(vpp)
 
-option(build-tests "Build Tests" OFF)
-option(debug "Compile in debug mode" ON)
-option(debug-throw "Throw debug exceptions instead of printing warnings" ON)
+set(VMajor 0)
+set(VMinor 1)
+set(VPatch 0)
+
+option(BuildTests "Build Tests" OFF)
+option(Debug "Compile in debug mode" ON)
+option(DebugThrow "Throw debug exceptions instead of printing warnings" ON)
 
 if(debug)
 	set(CMAKE_BUILD_TYPE Debug)
@@ -46,6 +50,11 @@ endif()
 add_subdirectory(codegen)
 add_subdirectory(include/vpp)
 add_subdirectory(src/vpp)
+
+#config file
+configure_file(
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/vpp/config.hpp.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/vpp/vulkan/config.hpp")
 
 if(build-tests)
 	add_subdirectory(tests)

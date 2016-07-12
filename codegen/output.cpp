@@ -228,7 +228,8 @@ void CCOutputGenerator::generate()
 	outputAllHeader("namespace vk\n{\n\n");
 
 	//fwd dummy enum
-	fwd_ << "enum class DummyEnum : int32_t {};\n\n";
+	fwd_ << "enum class DummyEnum : int32_t {};\n";
+	fwd_ << "template<typename T> class Range; //range.hpp\n\n";
 
 	//all printed requirements
 	Requirements fulfilled;
