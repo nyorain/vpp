@@ -23,6 +23,7 @@ public:
 			//load image
 			int width, height, comp;
 			auto data = stbi_load("image.png", &width, &height, &comp, 4);
+			if(!data) throw std::runtime_error("Failed to load image image.png");
 
 			//assert(comp = 4); //assert rgba
 			vk::Extent3D extent;
@@ -101,7 +102,7 @@ public:
 			info.shader = vpp::ShaderProgram(device());
 			info.shader.stage("texture.vert.spv", {vk::ShaderStageBits::vertex});
 			info.shader.stage("texture.frag.spv", {vk::ShaderStageBits::fragment});
-			
+
 			info.states = {{0, 0, 900, 900}};
 			info.states.rasterization.cullMode = vk::CullModeBits::none;
 			info.states.inputAssembly.topology = vk::PrimitiveTopology::triangleList;

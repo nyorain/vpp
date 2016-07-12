@@ -155,7 +155,6 @@ ParticleRenderer::~ParticleRenderer()
 
 void ParticleRenderer::init(vpp::SwapChainRenderer& renderer)
 {
-	std::cout << "init\n";
 	if(!ps().initialized_)ps().init();
 	ps().initialized_ = true;
 	renderer.record();
@@ -164,7 +163,6 @@ void ParticleRenderer::init(vpp::SwapChainRenderer& renderer)
 
 void ParticleRenderer::build(unsigned int id, const vpp::RenderPassInstance& instance)
 {
-	std::cout << "building: " << id << "\n";
 	auto cmdBuffer = instance.vkCommandBuffer();
 	VkDeviceSize offsets[1] = { 0 };
 
@@ -301,7 +299,7 @@ void ParticleSystem::initGraphicsPipeline()
 
 	nytl::Timer timer;
 	graphicsPipeline_ = vpp::GraphicsPipeline(device(), info);
-	std::cout << timer.elapsedTime().milliseconds() << " to create the gfx pipeline.\n";
+	// std::cout << timer.elapsedTime().milliseconds() << " to create the gfx pipeline.\n";
 
 	vpp::savePipelineCache(device(), cache, "gfxCache");
 	vk::destroyPipelineCache(device(), cache);
@@ -319,7 +317,7 @@ void ParticleSystem::initComputePipeline()
 
 	nytl::Timer timer;
 	computePipeline_ = vpp::ComputePipeline(device(), info);
-	std::cout << timer.elapsedTime().milliseconds() << " to create the compute pipeline.\n";
+	// std::cout << timer.elapsedTime().milliseconds() << " to create the compute pipeline.\n";
 
 	vpp::savePipelineCache(device(), cache, "compCache");
 	vk::destroyPipelineCache(device(), cache);

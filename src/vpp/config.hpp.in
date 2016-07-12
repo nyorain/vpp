@@ -15,12 +15,20 @@
 #define VPP_VMINOR @VMinor@
 #define VPP_VPATCH @VPatch@
 
-#ifndef VPP_DEBUG
- #define VPP_DEBUG @Debug@
+#if !defined(VPP_DEBUG) && !defined(VPP_NDEBUG)
+ #cmakedefine VPP_DEBUG
 #endif
 
-#ifndef VPP_DEBUG_THROW
- #define VPP_DEBUG_THROW @DebugThrow@
+#if !defined(VPP_DEBUG) && !defined(VPP_NDEBUG)
+ #define VPP_NDEBUG
+#endif
+
+#if !defined(VPP_DEBUG_THROW) && !defined(VPP_DEBUG_NOTHROW)
+ #cmakedefine VPP_DEBUG_THROW
+#endif
+
+#if !defined(VPP_DEBUG_THROW) && !defined(VPP_NDEBUG_NOTHROW)
+ #define VPP_DEBUG_NOTHROW
 #endif
 
 #if !defined(VPP_CALL_THROW) && !defined(VPP_CALL_WARN) && !defined(VPP_CALL_NOCHECK)

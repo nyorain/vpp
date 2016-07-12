@@ -128,26 +128,19 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, const CreateInfo& creat
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
 
 	//dynamic state
+	vk::PipelineDynamicStateCreateInfo dynamicState;
 	if(!createInfo.dynamicStates.empty())
 	{
-		vk::PipelineDynamicStateCreateInfo dynamicState;
 		dynamicState.pDynamicStates = createInfo.dynamicStates.data();
 		dynamicState.dynamicStateCount = createInfo.dynamicStates.size();
 		pipelineInfo.pDynamicState = &dynamicState;
 	}
 
-	//viewport
-	vk::PipelineViewportStateCreateInfo viewportInfo;
-	viewportInfo.viewportCount = createInfo.states.viewports.size();
-	viewportInfo.pViewports = createInfo.states.viewports.data();
-	viewportInfo.scissorCount = createInfo.states.scissors.size();
-	viewportInfo.pScissors = createInfo.states.scissors.data();
-	pipelineInfo.pViewportState = &viewportInfo;
-
 	auto infos = createInfo.shader.vkStageInfos();
 	pipelineInfo.stageCount = infos.size();
 	pipelineInfo.pStages = infos.data();
 
+	pipelineInfo.pViewportState = &createInfo.states.viewport;
 	pipelineInfo.layout = pipelineLayout_;
 	pipelineInfo.pVertexInputState = &vertexInfo;
 	pipelineInfo.renderPass = createInfo.renderPass;

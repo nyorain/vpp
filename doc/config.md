@@ -12,6 +12,10 @@ the library) should throw errors or outputs warnings.
 Usually, one wants to keep the vpp compile time settings for inlined code for consistency. Therefore
 all headers include vpp/config.hpp which will define the compile-time settings.
 
+Note that the generated vulkan headers do not pull in the config file, so it must be included
+manually before including somthing from vpp/vulkan/ or vpp/vk.hpp must be used to pull in the
+generated vulkan api bindings.
+
 Those can be overridden though, see src/vpp/config.hpp.in (or include/vpp/config.hpp
 if the library was already compiled).
 

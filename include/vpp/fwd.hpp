@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vpp/vulkan/fwd.hpp>
-#include <vpp/vulkan/config.hpp>
+#include <vpp/config.hpp>
 
 namespace vpp
 {

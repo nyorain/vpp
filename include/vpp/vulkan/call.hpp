@@ -24,7 +24,6 @@
 #pragma once
 
 #include "enums.hpp"
-#include "config.hpp"
 
 #include <string>
 #include <stdexcept>
@@ -138,11 +137,38 @@ inline vk::Result checkResultWarn(vk::Result result, const char* function, const
 #define VPP_CALL_W(x) ::vk::call::checkResultWarn(static_cast<vk::Result>(x), VPP_FUNC_NAME, #x)
 #define VPP_CALL_T(x) ::vk::call::checkResultThrow(static_cast<vk::Result>(x), VPP_FUNC_NAME, #x)
 
+//default selection
+//if neither debug or ndebug is defined, define it depending on NDEBUG
+#if !defined(VPP_DEBUG) && !defined(VPP_NDEBUG)
+ #ifndef NDEBUG
+  #define VPP_DEBUG
+ #endif
+#endif
+
+//if debug is defined but neither debugThrow or debugNothrow default it to defined
+#if defined(VPP_DEBUG) && !defined(VPP_DEBUG_THROW) && !defined(VPP_DEBUG_NOTHROW)
+ #define VPP_DEBUG_THROW
+#endif
+
+//if no call operation is defined, chose it depending on debug and debugThrow
+#if !defined(VPP_CALL_THROW) && !defined(VPP_CALL_WARN) && !defined(VPP_CALL_NOCHECK)
+ #ifdef VPP_DEBUG
+  #define VPP_CALL_WARN
+  #ifdef VPP_DEBUG_THROW
+   #define VPP_CALL_THROW
+  #endif
+ #else
+  #define VPP_CALL_NOCHECK
+ #endif
+#endif
+
 //default call macro based on given option macros (throw/warn/nocheck)
 #ifdef VPP_CALL_THROW
  #define VPP_CALL(x) VPP_CALL_T(x)
 #elif defined(VPP_CALL_WARN)
  #define VPP_CALL(x) VPP_CALL_W(x)
-#else
- #define VPP_CALL(x) x
+#elif defined(VPP_CALL_NOCHECK)
+ #define VPP_CALL(x) static_cast<vk::Result>(x)
+#else //in this case neither warn, throw nor nocheck is defined.
+ #error "Configuration error"
 #endif

@@ -1,5 +1,5 @@
 #include <vpp/vulkan/enums.hpp>
-#include <vpp/vulkan/config.hpp>
+#include <vpp/config.hpp>
 
 namespace vpp
 {

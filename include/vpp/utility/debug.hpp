@@ -26,7 +26,7 @@ void outputDebugMsg(Args... args)
  #define VPP_DEBUG_OUTPUT(...) outputDebugMsg(vpp_local_debug_check_name_, __VA_ARGS__)
  #define VPP_DEBUG_OUTPUT_NOCHECK(...) outputDebugMsg(__VA_ARGS__)
 #else
- #define VPP_DEBUG_CHECK(x)
+ #define VPP_DEBUG_CHECK(...)
  #define VPP_DEBUG_OUTPUT(...)
  #define VPP_DEBUG_OUTPUT_NOCHECK(...)
 #endif
