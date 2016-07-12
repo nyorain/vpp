@@ -27,7 +27,7 @@ struct Device::Impl
 	std::vector<std::unique_ptr<Queue>> queues;
 	std::vector<vk::QueueFamilyProperties> qFamilyProperties;
 
-	Impl(const Device& dev, std::size_t i) : commandProvider(dev), deviceMemoryProvider(dev),
+	Impl(const Device& dev) : commandProvider(dev), deviceMemoryProvider(dev),
 		hostMemoryProvider(), submitManager(dev), transferManager(dev) {}
 };
 
@@ -37,12 +37,13 @@ Device::Device() = default;
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info)
 	: instance_(ini), physicalDevice_(phdev)
 {
+	auto qProps = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
 	device_ = vk::createDevice(vkPhysicalDevice(), info);
 
-	impl_.reset(new Impl(*this, info.queueCreateInfoCount));
+	impl_.reset(new Impl(*this));
 	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());
 	impl_->memoryProperties = vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
-	impl_->qFamilyProperties = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
+	impl_->qFamilyProperties = qProps;
 
 	std::map<std::uint32_t, unsigned int> familyIds; //for counting (and passing) the correct ids
 	impl_->queues.resize(info.queueCreateInfoCount);

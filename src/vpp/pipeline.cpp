@@ -27,7 +27,7 @@ void DescriptorSetUpdate::apply()
 	views_.clear();
 }
 
-void apply(const std::vector<std::reference_wrapper<DescriptorSetUpdate>>& updates)
+void apply(const Range<std::reference_wrapper<DescriptorSetUpdate>>& updates)
 {
 	if(updates.empty()) return;
 
@@ -49,9 +49,11 @@ void apply(const std::vector<std::reference_wrapper<DescriptorSetUpdate>>& updat
 
 	for(auto& updateRef : updates)
 	{
-		updateRef.get().buffers_.clear();
-		updateRef.get().images_.clear();
-		updateRef.get().views_.clear();
+		auto& update = updateRef.get();
+
+		update.buffers_.clear();
+		update.images_.clear();
+		update.views_.clear();
 	}
 }
 

@@ -3,6 +3,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/shader.hpp>
+#include <vpp/range.hpp>
 
 #include <vector>
 #include <functional>
@@ -69,12 +70,12 @@ protected:
 	unsigned int currentBinding_ = 0;
 	const DescriptorSet* set_;
 
-	friend void apply(const std::vector<std::reference_wrapper<DescriptorSetUpdate>>& updates);
+	friend void apply(const Range<std::reference_wrapper<DescriptorSetUpdate>>& updates);
 };
 
 ///Applies multiple descriptor set updates.
 ///May be a bit more efficient than updating them individually.
-void apply(const std::vector<std::reference_wrapper<DescriptorSetUpdate>>& updates);
+void apply(const Range<std::reference_wrapper<DescriptorSetUpdate>>& updates);
 
 struct DescriptorBinding
 {
@@ -142,25 +143,24 @@ protected:
 	vk::DescriptorSet descriptorSet_ {};
 };
 
-///RAII vulkan descriptor pool wrapper
-class DescriptorPool : public Resource
-{
-public:
-	DescriptorPool() = default;
-	DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info);
-	~DescriptorPool();
-
-	DescriptorPool(DescriptorPool&& other) noexcept;
-	DescriptorPool& operator=(DescriptorPool&& other) noexcept;
-
-	const vk::DescriptorPool& vkDescriptorPool() const { return descriptorPool_; }
-
-	operator vk::DescriptorPool() const { return vkDescriptorPool(); }
-	friend void swap(DescriptorPool& a, DescriptorPool& b) noexcept;
-
-protected:
-	vk::DescriptorPool descriptorPool_;
-};
+// class DescriptorPool : public Resource
+// {
+// public:
+// 	DescriptorPool() = default;
+// 	DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info);
+// 	~DescriptorPool();
+//
+// 	DescriptorPool(DescriptorPool&& other) noexcept;
+// 	DescriptorPool& operator=(DescriptorPool&& other) noexcept;
+//
+// 	const vk::DescriptorPool& vkDescriptorPool() const { return descriptorPool_; }
+//
+// 	operator vk::DescriptorPool() const { return vkDescriptorPool(); }
+// 	friend void swap(DescriptorPool& a, DescriptorPool& b) noexcept;
+//
+// protected:
+// 	vk::DescriptorPool descriptorPool_;
+// };
 
 //RAII vulkan pipeline layout wrapper
 // class PipelineLayout : public Resource
@@ -181,14 +181,33 @@ protected:
 // protected:
 // 	vk::PipelineLayout pipelineLayout_;
 // };
-// 
-// class PipelineLayout : public ResourceHandle<vk::PipelineLayout>
-// {
-// public:
-// 	PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info);
-// 	~PipelineLayout();
-// };
+//
 
+///RAII vulkan pipeline layout wrapper
+class PipelineLayout : public ResourceHandle<vk::PipelineLayout>
+{
+public:
+	PipelineLayout() = default;
+	PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info);
+	~PipelineLayout();
+
+	PipelineLayout(PipelineLayout&& other) noexcept = default;
+	PipelineLayout& operator=(PipelineLayout&& other) noexcept = default;
+};
+
+///RAII vulkan descriptor pool wrapper
+class DescriptorPool : public ResourceHandle<vk::DescriptorPool>
+{
+public:
+	DescriptorPool() = default;
+	DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info);
+	~DescriptorPool();
+
+	DescriptorPool(DescriptorPool&& other) noexcept = default;
+	DescriptorPool& operator=(DescriptorPool&& other) noexcept = default;
+};
+
+//TODO: functions to create multiple pipelines (may be more efficient)
 ///Pipeline base class.
 class Pipeline : public Resource
 {
@@ -205,7 +224,7 @@ public:
 
 protected:
 	vk::PipelineLayout pipelineLayout_ {};
-	bool layoutOwned_ = false;
+	// bool layoutOwned_ = false; //TODO: not owned layout
 
 	vk::Pipeline pipeline_ {};
 

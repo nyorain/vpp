@@ -72,6 +72,7 @@ public:
 	friend void swap(Context& a, Context& b) noexcept;
 
 protected:
+	///XXX: better use pImpl idion instead of 2 unique ptrs
 	vk::Instance instance_ {};
 	std::unique_ptr<Device> device_;
 	Surface surface_;

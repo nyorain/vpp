@@ -51,6 +51,9 @@ public:
 	constexpr Range(const T* value, std::size_t size = 1) noexcept : data_(value), size_(size) {}
 	template<std::size_t N> constexpr Range(const T (&value)[N]) noexcept : data_(value), size_(N) {}
 
+	constexpr Range(const std::initializer_list<T>& list) noexcept
+		: data_(list.begin()), size_(list.size()) {}
+
 	template<typename C, typename = typename detail::ValidContainer<T, C>::type>
 	Range(const C& con) noexcept : data_(&(*con.begin())), size_(con.end() - con.begin()) {}
 
@@ -78,10 +81,18 @@ public:
 	constexpr ConstReference at(Size i) const
 		{ if(i >= size_) throw std::out_of_range("Range::at"); return data_[i]; }
 
-	ConstReference front() const { return *data_; }
-	ConstReference back() const { return *(data_ + size_); }
+	constexpr ConstReference front() const { return *data_; }
+	constexpr ConstReference back() const { return *(data_ + size_); }
 
 	constexpr Range<T> slice(Size pos, Size size) const noexcept { return{data_ + pos, size}; }
+
+	///\{
+	///Those function can be used to copy the range to an owned container.
+	///range.as<std::vector>() will convert into an vector of the range type (T).
+	///range.as<std::vector<float>>() will convert into an float-vector (if possible).
+	template<typename C> C as() const { return C(data_, data_ + size_); }
+	template<template<class...> typename C> C<T> as() const { return C<T>(data_, data_ + size_); }
+	///\}
 
 protected:
 	ConstPointer data_ = nullptr;

@@ -63,12 +63,16 @@ public:
 };
 
 
+///Utility template base class that makes RAII wrappers easier.
+///Derives from Resource and holds a vulkan handle of type T.
+///Implements the conversion and move operators/constructors.
 template<typename T>
 class ResourceHandle : public Resource
 {
 public:
 	ResourceHandle(ResourceHandle&& other) noexcept { swap(*this, other); }
 	ResourceHandle& operator=(ResourceHandle other) noexcept { swap(*this, other); }
+	~ResourceHandle() = default;
 
 	const T& vkHandle() const noexcept { return handle_; }
 	operator T() const noexcept { return vkHandle(); }
@@ -82,29 +86,9 @@ public:
 protected:
 	ResourceHandle() = default;
 	ResourceHandle(const T& handle) : handle_(handle) {}
-	~ResourceHandle() = default;
 
 protected:
 	T handle_;
 };
-
-///Concept for a default move implementation using a custom swap function.
-// template<typename T>
-// class DefaultMovable
-// {
-// public:
-// 	DefaultMovable(T&& other) { swap(tSelf(), other); }
-// 	T& operator=(T&& other) { tSelf().~T(); swap(tSelf(), other); return tSelf(); }
-//
-// private:
-// 	T& tSelf() { return static_cast<T>(*this); }
-// };
-//
-// class SomeResourceHandle : public DefaultMovable<SomeResourceHandle>
-// {
-// public:
-// 	using DefaultMovable::DefaultMovable;
-// 	using DefaultMovable::operator=;
-// };
 
 }

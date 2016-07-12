@@ -51,6 +51,9 @@ public:
 	constexpr Range(const T* value, std::size_t size = 1) noexcept : data_(value), size_(size) {}
 	template<std::size_t N> constexpr Range(const T (&value)[N]) noexcept : data_(value), size_(N) {}
 
+	constexpr Range(const std::initializer_list<T>& list) noexcept
+		: data_(list.begin()), size_(list.size()) {}
+
 	template<typename C, typename = typename detail::ValidContainer<T, C>::type>
 	Range(const C& con) noexcept : data_(&(*con.begin())), size_(con.end() - con.begin()) {}
 

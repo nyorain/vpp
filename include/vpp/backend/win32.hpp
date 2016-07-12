@@ -12,7 +12,7 @@ namespace vpp
 {
 
 ///Creates a win32 surface for the given vulkan instance, win32 window and module [optional].
-///Does require the needed extensions to be enables for the given instance.
+///Does require the needed extensions to be enabled for the given instance.
 Surface createSurface(vk::Instance instance, HWND window, HINSTANCE module = nullptr);
 
 ///Creates a win32 context for the given window.
