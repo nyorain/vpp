@@ -1,12 +1,3 @@
-//Macros:
-//If none of the three macros defined above if defined by the user, VPP_CALL_NOCHECK will be
-//defined by default if (!defined(VPP_DEBUG)), VPP_CALL_WARN will be defined by default
-//if (defined(VPP_DEBUG)) and VPP_CALL_THROW will be defined by default
-//if (defined(VPP_DEBUG) && defined(VPP_DEBUG_THROW)).
-//
-//VPP_CALL_WARN will be defined
-//by default in non-debug mode (VPP_DEBUG = 0) and VPP_CALL_THROW by default if
-//
 //For more information on vpp configuration, see doc/config.md
 
 #pragma once
@@ -15,22 +6,34 @@
 #define VPP_VMINOR @VMinor@
 #define VPP_VPATCH @VPatch@
 
+//If this macro is enabled vpp will only allow one Device instance but nearly all objects
+//will consume one word less memory. For more information see resource.hpp
+#cmakedefine VPP_ONE_DEVICE_OPTIMIZATION
+
+//If this macro is defined, additional checks will be performed (maybe worse performance)
 #if !defined(VPP_DEBUG) && !defined(VPP_NDEBUG)
  #cmakedefine VPP_DEBUG
 #endif
 
+//Opposite of VPP_DEBUG
 #if !defined(VPP_DEBUG) && !defined(VPP_NDEBUG)
  #define VPP_NDEBUG
 #endif
 
+//If this macro and VPP_DEBUG are defined, an exception will be thrown if some additional check
+//fails, otherwise a warning will be outputted to cerr and maybe instantly returned (if the
+//error would lead to some invalid state).
 #if !defined(VPP_DEBUG_THROW) && !defined(VPP_DEBUG_NOTHROW)
  #cmakedefine VPP_DEBUG_THROW
 #endif
 
+//Opposite of VPP_DEBUG_THROW
 #if !defined(VPP_DEBUG_THROW) && !defined(VPP_NDEBUG_NOTHROW)
  #define VPP_DEBUG_NOTHROW
 #endif
 
+//These macros control if vulkan api calls should be error-checked and if so what should be done
+//when an error occurs.
 #if !defined(VPP_CALL_THROW) && !defined(VPP_CALL_WARN) && !defined(VPP_CALL_NOCHECK)
  #ifdef VPP_DEBUG
   #define VPP_CALL_WARN

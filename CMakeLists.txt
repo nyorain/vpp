@@ -15,6 +15,8 @@ cmake_dependent_option(DebugThrow
 	"Throw debug exceptions instead of printing warnings" ON
 	"Debug" OFF)
 
+option(OneDevice "Enable the one device optimization. Not recommended" OFF)
+
 if(Debug)
 	set(CMAKE_BUILD_TYPE Debug)
 else()
@@ -56,6 +58,7 @@ add_subdirectory(src/vpp)
 #config file
 set(VPP_DEBUG ${Debug})
 set(VPP_DEBUG_THROW ${DebugThrow})
+set(VPP_ONE_DEVICE_OPTIMIZATION ${OneDevice})
 
 configure_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/vpp/config.hpp.in"

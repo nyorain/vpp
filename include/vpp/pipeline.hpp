@@ -13,7 +13,17 @@ namespace vpp
 
 namespace fwd { extern const vk::ShaderStageFlags allShaderStages; }
 
+///Returns the size in bytes of the given format.
+///E.g. vk::Format::r8g8b8a8* will return 4, since it has a size of 4 * 8 bits = 32 bits = 4 bytes.
+///For compressed formats this function will return the size of one block in bytes.
+///\sa blockSize
 unsigned int formatSize(vk::Format format);
+
+///Returns the size of one compressed block of a compressed vulkan format.
+///If the given format is not a compressed format, {1, 1} is returned.
+///For vk::Format::undefined, {0, 0} is returned
+///\sa formatSize
+vk::Extent2D blockSize(vk::Format format);
 
 ///Allows convinient descriptorSet updates.
 ///Does not perform any checking.
@@ -31,20 +41,20 @@ public:
 	///\{
 	///When the range member of any buffer info is 0 (default constructed), it will
 	///be automatically set to vk::wholeSize.
-	void uniform(const BufferInfos& buffers, int binding = -1, unsigned int elem = 0);
-	void storage(const BufferInfos& buffers, int binding = -1, unsigned int elem = 0);
-	void uniformDynamic(const BufferInfos& buffers, int binding = -1, unsigned int elem = 0);
-	void storageDynamic(const BufferInfos& buffers, int binding = -1, unsigned int elem = 0);
+	void uniform(BufferInfos buffers, int binding = -1, unsigned int elem = 0);
+	void storage(BufferInfos buffers, int binding = -1, unsigned int elem = 0);
+	void uniformDynamic(BufferInfos buffers, int binding = -1, unsigned int elem = 0);
+	void storageDynamic(BufferInfos buffers, int binding = -1, unsigned int elem = 0);
 	///\}
 
-	void sampler(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
-	void image(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
-	void storage(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
-	void combinedSampler(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
-	void inputAttachment(const ImageInfos& images, int binding = -1, unsigned int elem = 0);
+	void sampler(ImageInfos images, int binding = -1, unsigned int elem = 0);
+	void image(ImageInfos images, int binding = -1, unsigned int elem = 0);
+	void storage(ImageInfos images, int binding = -1, unsigned int elem = 0);
+	void combinedSampler(ImageInfos images, int binding = -1, unsigned int elem = 0);
+	void inputAttachment(ImageInfos images, int binding = -1, unsigned int elem = 0);
 
-	void uniform(const BufferViewInfos& views, int binding = -1, unsigned int elem = 0);
-	void storage(const BufferViewInfos& views, int binding = -1, unsigned int elem = 0);
+	void uniform(BufferViewInfos views, int binding = -1, unsigned int elem = 0);
+	void storage(BufferViewInfos views, int binding = -1, unsigned int elem = 0);
 
 	void copy(const vk::CopyDescriptorSet& copySet);
 
@@ -77,12 +87,10 @@ protected:
 ///May be a bit more efficient than updating them individually.
 void apply(const Range<std::reference_wrapper<DescriptorSetUpdate>>& updates);
 
-struct DescriptorBinding
-{
-	vk::DescriptorType type;
-	vk::ShaderStageFlags stages { fwd::allShaderStages };
-	unsigned int count {1};
-};
+///Alternative vk::DescriptorSetLayoutBinding constructor.
+vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
+	vk::ShaderStageFlags stages,unsigned int count = 1, unsigned int binding = -1,
+	const vk::Sampler* samplers = nullptr);
 
 struct VertexBufferLayout
 {
@@ -97,20 +105,20 @@ class DescriptorSetLayout : public Resource
 {
 public:
 	DescriptorSetLayout() = default;
-	DescriptorSetLayout(const Device& dev, const std::vector<DescriptorBinding>& bindings);
+	DescriptorSetLayout(const Device& dev, const Range<vk::DescriptorSetLayoutBinding>& bindings);
 	~DescriptorSetLayout();
 
 	DescriptorSetLayout(DescriptorSetLayout&& other) noexcept;
 	DescriptorSetLayout& operator=(DescriptorSetLayout other) noexcept;
 
 	vk::DescriptorSetLayout vkDescriptorSetLayout() const { return layout_; }
-	const std::vector<DescriptorBinding>& bindings() const { return bindings_; }
+	const std::vector<vk::DescriptorSetLayoutBinding>& bindings() const { return bindings_; }
 
 	operator vk::DescriptorSetLayout() const { return vkDescriptorSetLayout(); }
 	friend void swap(DescriptorSetLayout& a, DescriptorSetLayout& b) noexcept;
 
 protected:
-	std::vector<DescriptorBinding> bindings_;
+	std::vector<vk::DescriptorSetLayoutBinding> bindings_;
 	vk::DescriptorSetLayout layout_;
 };
 
@@ -125,15 +133,7 @@ public:
 	DescriptorSet(DescriptorSet&& other) noexcept;
 	DescriptorSet& operator=(DescriptorSet other) noexcept;
 
-	///Updates the descriptorSet with the given writes and copies.
-	void update(const std::vector<vk::WriteDescriptorSet>& writes,
-		const std::vector<vk::CopyDescriptorSet>& copies = {}) const;
-
-	///Updates the descriptorSet with the given copies.
-	void update(const std::vector<vk::CopyDescriptorSet>& copies) const;
-
 	const vk::DescriptorSet& vkDescriptorSet() const { return descriptorSet_; }
-	const DescriptorSetLayout& layout() const { return *layout_; }
 
 	operator vk::DescriptorSet() const { return vkDescriptorSet(); }
 	friend void swap(DescriptorSet& a, DescriptorSet& b) noexcept;
@@ -142,46 +142,6 @@ protected:
 	const DescriptorSetLayout* layout_;
 	vk::DescriptorSet descriptorSet_ {};
 };
-
-// class DescriptorPool : public Resource
-// {
-// public:
-// 	DescriptorPool() = default;
-// 	DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info);
-// 	~DescriptorPool();
-//
-// 	DescriptorPool(DescriptorPool&& other) noexcept;
-// 	DescriptorPool& operator=(DescriptorPool&& other) noexcept;
-//
-// 	const vk::DescriptorPool& vkDescriptorPool() const { return descriptorPool_; }
-//
-// 	operator vk::DescriptorPool() const { return vkDescriptorPool(); }
-// 	friend void swap(DescriptorPool& a, DescriptorPool& b) noexcept;
-//
-// protected:
-// 	vk::DescriptorPool descriptorPool_;
-// };
-
-//RAII vulkan pipeline layout wrapper
-// class PipelineLayout : public Resource
-// {
-// public:
-// 	PipelineLayout() = default;
-// 	PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info);
-// 	~PipelineLayout();
-//
-// 	PipelineLayout(PipelineLayout&& other) noexcept;
-// 	PipelineLayout& operator=(PipelineLayout&& other) noexcept;
-//
-// 	const vk::PipelineLayout& vkPipelineLayout() const { return pipelineLayout_; }
-//
-// 	operator vk::PipelineLayout() const { return vkPipelineLayout(); }
-// 	friend void swap(PipelineLayout& a, PipelineLayout& b) noexcept;
-//
-// protected:
-// 	vk::PipelineLayout pipelineLayout_;
-// };
-//
 
 ///RAII vulkan pipeline layout wrapper
 class PipelineLayout : public ResourceHandle<vk::PipelineLayout>
@@ -209,30 +169,25 @@ public:
 
 //TODO: functions to create multiple pipelines (may be more efficient)
 ///Pipeline base class.
-class Pipeline : public Resource
+class Pipeline : public ResourceHandle<vk::Pipeline>
 {
 public:
 	~Pipeline();
+
 	Pipeline(Pipeline&& other) noexcept;
 	Pipeline& operator=(Pipeline other) noexcept;
 
-	vk::Pipeline vkPipeline() const { return pipeline_; }
 	vk::PipelineLayout vkPipelineLayout() const { return pipelineLayout_; }
-
-	operator vk::Pipeline() const { return vkPipeline(); }
 	friend void swap(Pipeline& a, Pipeline& b) noexcept;
 
 protected:
 	vk::PipelineLayout pipelineLayout_ {};
-	// bool layoutOwned_ = false; //TODO: not owned layout
-
-	vk::Pipeline pipeline_ {};
+	bool layoutOwned_ = false; //TODO: not owned layout
 
 protected:
 	Pipeline() = default;
 	Pipeline(const Device& dev);
 };
-
 
 ///Can be used to load a pipeline cache from a file.
 vk::PipelineCache loadPipelineCache(vk::Device dev, const char* name);
