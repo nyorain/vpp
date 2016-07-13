@@ -38,7 +38,7 @@ void CommandWork<R>::queue()
 	if(executionState_.valid()) return; //was already queued
 
 	//TODO: correct queues
-	auto buf = cmdBuffer_.vkCommandBuffer();
+	auto buf = cmdBuffer_.vkHandle();
 	auto* queue = cmdBuffer_.device().queue(cmdBuffer_.commandPool().queueFamily());
 	if(!queue) throw std::logic_error("dummy1");
 

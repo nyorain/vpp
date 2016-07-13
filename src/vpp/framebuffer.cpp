@@ -2,7 +2,7 @@
 #include <vpp/memory.hpp>
 #include <vpp/defs.hpp>
 #include <vpp/renderPass.hpp>
-#include <vpp/range.hpp>
+#include <vpp/utility/range.hpp>
 
 namespace vpp
 {
@@ -17,26 +17,7 @@ Framebuffer::Framebuffer(const Device& dev, vk::RenderPass rp, const vk::Extent2
 
 Framebuffer::~Framebuffer()
 {
-	if(vkFramebuffer()) vk::destroyFramebuffer(vkDevice(), vkFramebuffer(), nullptr);
-}
-
-Framebuffer::Framebuffer(Framebuffer&& other) noexcept
-{
-	swap(*this, other);
-}
-Framebuffer& Framebuffer::operator=(Framebuffer other) noexcept
-{
-	swap(*this, other);
-	return *this;
-}
-
-void swap(Framebuffer& a, Framebuffer& b) noexcept
-{
-	using std::swap;
-
-	swap(a.framebuffer_, b.framebuffer_);
-	swap(a.attachments_, b.attachments_);
-	swap(a.device_, b.device_);
+	if(vkHandle()) vk::destroyFramebuffer(vkDevice(), vkHandle(), nullptr);
 }
 
 void Framebuffer::create(const Device& dev, const vk::Extent2D& size,
@@ -116,7 +97,7 @@ void Framebuffer::init(vk::RenderPass rp, const std::vector<vk::ImageViewCreateI
 	createInfo.height = height_;
 	createInfo.layers = 1; ///XXX: should be paramterized?
 
-	framebuffer_ = vk::createFramebuffer(vkDevice(), createInfo);
+	vkHandle() = vk::createFramebuffer(vkDevice(), createInfo);
 }
 
 vk::Extent2D Framebuffer::size() const

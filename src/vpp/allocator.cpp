@@ -1,13 +1,14 @@
 #include <vpp/allocator.hpp>
 #include <vpp/vk.hpp>
+#include <vpp/utility/debug.hpp>
 #include <algorithm>
 
 namespace vpp
 {
 
 //Entry
-MemoryEntry::MemoryEntry(DeviceMemory* memory, const Allocation& alloc)
-	: memory_(memory), allocation_(alloc)
+MemoryEntry::MemoryEntry(DeviceMemory& memory, const Allocation& alloc)
+	: memory_(&memory), allocation_(alloc)
 {
 }
 
@@ -67,7 +68,10 @@ DeviceMemoryAllocator::DeviceMemoryAllocator(const Device& dev) : Resource(dev)
 
 DeviceMemoryAllocator::~DeviceMemoryAllocator()
 {
-	if(device_) allocate();
+	VPP_DEBUG_CHECK(vpp::~DeviceMemoryAllocator,
+	{
+		if(!requirements_.empty()) VPP_DEBUG_OUTPUT("There are requirements left");
+	});
 }
 
 DeviceMemoryAllocator::DeviceMemoryAllocator(DeviceMemoryAllocator&& other) noexcept
@@ -84,8 +88,8 @@ void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept
 {
 	using std::swap;
 
+	swap(a.resourceBase(), b.resourceBase());
 	swap(a.requirements_, b.requirements_);
-	swap(a.device_, b.device_);
 	swap(a.memories_, b.memories_);
 }
 
@@ -186,9 +190,9 @@ DeviceMemory* DeviceMemoryAllocator::findMem(Requirement& req)
 
 		//can be allocated on memory, allocate and bind it
 		if(req.type == RequirementType::buffer)
-			vk::bindBufferMemory(vkDevice(), req.buffer, mem->vkDeviceMemory(), allocation.offset);
+			vk::bindBufferMemory(device(), req.buffer, *mem, allocation.offset);
 		else
-			vk::bindImageMemory(vkDevice(), req.image, mem->vkDeviceMemory(), allocation.offset);
+			vk::bindImageMemory(device(), req.image, *mem, allocation.offset);
 
 		req.entry->allocation_ = allocation;
 		req.entry->memory_ = mem.get();
@@ -327,8 +331,8 @@ void DeviceMemoryAllocator::allocate(unsigned int type, const Range<Requirement*
 		entry.memory_ = mem.get();
 
 		auto isBuffer = (res.first->type == RequirementType::buffer);
-		if(isBuffer) vk::bindBufferMemory(vkDevice(), res.first->buffer, mem->vkDeviceMemory(), offset);
-		else vk::bindImageMemory(vkDevice(), res.first->image, mem->vkDeviceMemory(), offset);
+		if(isBuffer) vk::bindBufferMemory(device(), res.first->buffer, *mem, offset);
+		else vk::bindImageMemory(vkDevice(), res.first->image, *mem, offset);
 	}
 
 	memories_.push_back(std::move(mem));

@@ -33,7 +33,7 @@ public:
 		BufferRange& operator=(BufferRange other) noexcept;
 
 		const Buffer& buffer() const { return buffer_->buffer(); }
-		vk::Buffer vkBuffer() const { return buffer().vkBuffer(); }
+		vk::Buffer vkBuffer() const { return buffer(); }
 		const Allocation& allocation() const { return allocation_; }
 		std::size_t offset() const { return allocation().offset; }
 		std::size_t size() const { return allocation().size; }

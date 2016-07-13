@@ -45,7 +45,7 @@ class MappableDownloadWork : public FinishedWork<std::uint8_t&>
 public:
 	MemoryMapView map_;
 
-	MappableDownloadWork(const MemoryResource& res) : map_(res.memoryMap()) {}
+	MappableDownloadWork(MemoryMapView&& view) : map_(std::move(view)) {}
 	virtual std::uint8_t& data() override { return *map_.ptr(); }
 };
 

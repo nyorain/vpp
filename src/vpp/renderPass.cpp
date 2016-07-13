@@ -1,5 +1,5 @@
 #include <vpp/renderPass.hpp>
-#include <vpp/range.hpp>
+#include <vpp/utility/range.hpp>
 #include <vpp/vk.hpp>
 
 namespace vpp
@@ -12,7 +12,7 @@ RenderPass::RenderPass(const Device& dev, const vk::RenderPassCreateInfo& info)
 }
 
 RenderPass::RenderPass(const Device& dev, vk::RenderPass pass, const vk::RenderPassCreateInfo& info)
-	: Resource(dev), renderPass_(pass)
+	: ResourceHandle(dev, pass)
 {
 	attachments_.reserve(info.attachmentCount);
 	for(std::size_t i(0); i < info.attachmentCount; ++i)
@@ -40,35 +40,7 @@ RenderPass::RenderPass(const Device& dev, vk::RenderPass pass, const vk::RenderP
 
 RenderPass::~RenderPass()
 {
-	if(vkRenderPass()) vk::destroyRenderPass(vkDevice(), vkRenderPass());
-}
-
-RenderPass::RenderPass(RenderPass&& other) noexcept : Resource(other)
-{
-	attachments_ = std::move(other.attachments_);
-	references_ = std::move(other.references_);
-	subpasses_ = std::move(other.subpasses_);
-	dependencies_ = std::move(other.dependencies_);
-
-	std::swap(renderPass_, other.renderPass_);
-}
-
-RenderPass& RenderPass::operator=(RenderPass other) noexcept
-{
-	swap(*this, other);
-	return *this;
-}
-
-void swap(RenderPass& a, RenderPass& b) noexcept
-{
-	using std::swap;
-
-	swap(a.renderPass_, b.renderPass_);
-	swap(a.attachments_, b.attachments_);
-	swap(a.subpasses_, b.subpasses_);
-	swap(a.dependencies_, b.dependencies_);
-	swap(a.references_, b.references_);
-	swap(a.device_, b.device_);
+	if(vkHandle()) vk::destroyRenderPass(vkDevice(), vkHandle());
 }
 
 //XXX: could make this RAII wrapper for render pass instances later on

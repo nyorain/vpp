@@ -29,41 +29,24 @@ vk::ShaderModule loadShaderModule(vk::Device dev, const std::vector<std::uint8_t
 }
 
 //ShaderModule
-ShaderModule::ShaderModule(const Device& dev, const char* filename) : Resource(dev)
+ShaderModule::ShaderModule(const Device& dev, const char* filename) : ResourceHandle(dev)
 {
 	const static std::string errorMsg = "vpp::ShaderMoudle: failed to create from ";
 
-	module_ = loadShaderModule(dev, filename);
-	if(!module_) throw std::runtime_error(errorMsg + filename);
+	vkHandle() = loadShaderModule(dev, filename);
+	if(!vkHandle()) throw std::runtime_error(errorMsg + filename);
 }
 
-ShaderModule::ShaderModule(const Device& dev, const std::vector<std::uint8_t>& code) : Resource(dev)
+ShaderModule::ShaderModule(const Device& dev, const std::vector<std::uint8_t>& code)
+	: ResourceHandle(dev)
 {
-	module_ = loadShaderModule(dev, code);
-	if(!module_) throw std::runtime_error("vpp::ShaderModule: failed to create from given code");
+	vkHandle() = loadShaderModule(dev, code);
+	if(!vkHandle()) throw std::runtime_error("vpp::ShaderModule: failed to create from given code");
 }
 
 ShaderModule::~ShaderModule()
 {
-	if(module_ && device()) vk::destroyShaderModule(vkDevice(), module_, nullptr);
-}
-
-ShaderModule::ShaderModule(ShaderModule&& other) noexcept
-{
-	swap(*this, other);
-}
-
-ShaderModule& ShaderModule::operator=(ShaderModule other) noexcept
-{
-	swap(*this, other);
-	return *this;
-}
-
-void swap(ShaderModule& a, ShaderModule& b) noexcept
-{
-	using std::swap;
-	swap(a.module_, b.module_);
-	swap(a.device_, b.device_);
+	if(vkHandle()) vk::destroyShaderModule(device(), vkHandle());
 }
 
 //ShaderStage
@@ -94,7 +77,6 @@ ShaderStage::~ShaderStage()
 
 	info_ = {};
 	module_ = {};
-	device_ = {};
 	owned_ = {};
 }
 
@@ -112,7 +94,7 @@ ShaderStage& ShaderStage::operator=(ShaderStage other) noexcept
 void swap(ShaderStage& a, ShaderStage& b) noexcept
 {
 	using std::swap;
-	swap(a.device_, b.device_);
+	swap(a.resourceBase(), b.resourceBase());
 	swap(a.info_, b.info_);
 	swap(a.owned_, b.owned_);
 	swap(a.module_, b.module_);

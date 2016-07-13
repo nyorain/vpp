@@ -61,7 +61,7 @@ public:
 	const vk::Instance& vkInstance() const { return instance_; }
 	const vk::SurfaceKHR& vkSurface() const { return surface_.vkSurface(); }
 	const vk::Device& vkDevice() const;
-	const vk::SwapchainKHR& vkSwapChain() const { return swapChain_.vkSwapChain(); }
+	const vk::SwapchainKHR& vkSwapChain() const { return swapChain().vkHandle(); }
 
 	void initInstance(const CreateInfo& info);
 	void initDevice(const CreateInfo& info);

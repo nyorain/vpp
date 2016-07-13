@@ -20,7 +20,7 @@ namespace vpp
 ///the allocator that will take care of its allocation).
 ///Does not store additional information such as buffer usage type or memory layout, this
 ///must be handled by the application for best performance.
-class Buffer : public MemoryResource
+class Buffer : public MemoryResource<vk::Buffer>
 {
 public:
 	Buffer() = default;
@@ -29,16 +29,8 @@ public:
 		vk::MemoryPropertyFlags mflags = {});
 	~Buffer();
 
-	Buffer(Buffer&& other) noexcept;
-	Buffer& operator=(Buffer other) noexcept;
-
-	const vk::Buffer& vkBuffer() const { return buffer_; }
-
-	operator vk::Buffer() const { return vkBuffer(); }
-	friend void swap(Buffer& a, Buffer& b) noexcept;
-
-protected:
-	vk::Buffer buffer_ {};
+	Buffer(Buffer&& other) noexcept = default;
+	Buffer& operator=(Buffer&& other) noexcept = default;
 };
 
 ///Vulkan shader data types.

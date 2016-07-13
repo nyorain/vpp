@@ -42,13 +42,13 @@ SwapChainRenderer::~SwapChainRenderer()
 
 	for(auto& renderer : renderBuffers_)
 	{
-		auto vkbuf = renderer.commandBuffer.vkCommandBuffer();
+		auto vkbuf = renderer.commandBuffer.vkHandle();
 		if(vkbuf) cmdBuffers.push_back(vkbuf);
 	}
 
 	if(!cmdBuffers.empty())
 	{
-		auto vkpool = renderBuffers_[0].commandBuffer.commandPool().vkCommandPool();
+		auto vkpool = renderBuffers_[0].commandBuffer.commandPool().vkHandle();
 		vk::freeCommandBuffers(vkDevice(), vkpool, cmdBuffers);
 	}
 }
@@ -197,7 +197,7 @@ void SwapChainRenderer::record(int id)
 	// barrier.image = swapChain().renderBuffers()[id].image;
 
 	auto& renderer = renderBuffers_[id];
-	auto vkbuf = renderer.commandBuffer.vkCommandBuffer();
+	auto vkbuf = renderer.commandBuffer.vkHandle();
 	vk::CommandBufferBeginInfo cmdBufInfo;
 
 	vk::RenderPassBeginInfo beginInfo;
@@ -205,7 +205,7 @@ void SwapChainRenderer::record(int id)
 	beginInfo.renderArea = {{0, 0}, {width, height}};
 	beginInfo.clearValueCount = clearValues.size();
 	beginInfo.pClearValues = clearValues.data();
-	beginInfo.framebuffer = renderer.framebuffer.vkFramebuffer();
+	beginInfo.framebuffer = renderer.framebuffer;
 
 	vk::beginCommandBuffer(vkbuf, cmdBufInfo);
 
@@ -231,7 +231,7 @@ void SwapChainRenderer::record(int id)
 	scissor.offset = {0, 0};
 	vk::cmdSetScissor(vkbuf, 0, 1, scissor);
 
-	RenderPassInstance ini(vkbuf, info_.renderPass, renderer.framebuffer.vkFramebuffer());
+	RenderPassInstance ini(vkbuf, info_.renderPass, renderer.framebuffer);
 	renderImpl_->build(id, ini);
 
 	vk::cmdEndRenderPass(vkbuf);
@@ -282,7 +282,7 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, cons
 	submitInfo.pWaitSemaphores = semaphores.data();
 	submitInfo.pWaitDstStageMask = flags.data();
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdBuf.vkCommandBuffer();
+	submitInfo.pCommandBuffers = &cmdBuf.vkHandle();
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &renderComplete;
 
@@ -372,7 +372,7 @@ void SwapChainRenderer::renderBlock(const Queue* gfx, const Queue* present)
 	submitInfo.pWaitSemaphores = semaphores.data();
 	submitInfo.pWaitDstStageMask = flags.data();
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdBuf.vkCommandBuffer();
+	submitInfo.pCommandBuffers = &cmdBuf.vkHandle();
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &renderComplete;
 

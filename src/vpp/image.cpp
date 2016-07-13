@@ -3,6 +3,8 @@
 #include <vpp/provider.hpp>
 #include <vpp/transfer.hpp>
 #include <vpp/transferWork.hpp>
+#include <vpp/utility/debug.hpp>
+
 #include <utility>
 
 namespace vpp
@@ -10,44 +12,25 @@ namespace vpp
 
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags)
 {
-	image_ = vk::createImage(dev.vkDevice(), info);
-	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), image_);
+	vkHandle() = vk::createImage(dev.vkDevice(), info);
+	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), vkHandle());
 
 	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
-	dev.deviceAllocator().request(image_, reqs, info.tiling, memoryEntry_);
+	dev.deviceAllocator().request(vkHandle(), reqs, info.tiling, memoryEntry_);
 }
 
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info, std::uint32_t memoryTypeBits)
 {
-	image_ = vk::createImage(dev.vkDevice(), info);
-	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), image_);
+	vkHandle() = vk::createImage(dev.vkDevice(), info);
+	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), vkHandle());
 
 	reqs.memoryTypeBits &= memoryTypeBits;
-	dev.deviceAllocator().request(image_, reqs, info.tiling, memoryEntry_);
-}
-
-Image::Image(Image&& other) noexcept
-{
-	swap(*this, other);
-}
-
-Image& Image::operator=(Image other) noexcept
-{
-	swap(*this, other);
-	return *this;
+	dev.deviceAllocator().request(vkHandle(), reqs, info.tiling, memoryEntry_);
 }
 
 Image::~Image()
 {
-	if(vkImage()) vk::destroyImage(vkDevice(), vkImage());
-}
-
-void swap(Image& a, Image& b) noexcept
-{
-	using std::swap;
-
-	swap(a.image_, b.image_);
-	swap(a.memoryEntry_, b.memoryEntry_);
+	if(vkHandle()) vk::destroyImage(device(), vkHandle());
 }
 
 WorkPtr fill(const Image& image, const std::uint8_t& data, vk::ImageLayout layout,
@@ -91,7 +74,7 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::ImageLayout layou
 DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, const vk::Extent3D& extent,
 	const vk::ImageSubresourceLayers& subres, bool allowMap)
 {
-	VPP_DEBUG_CHECK(vpp::retrive(image),
+	VPP_DEBUG_CHECK(vpp::retrieve(image),
 	{
 		if(!image.memoryEntry().allocated())
 		{
@@ -103,7 +86,7 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, const vk::Exten
 
 	if(image.mappable() && allowMap)
 	{
-		return std::make_unique<MappableDownloadWork>(image);
+		return std::make_unique<MappableDownloadWork>(image.memoryMap());
 	}
 	else
 	{

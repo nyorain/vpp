@@ -90,8 +90,8 @@ public:
 	GraphicsPipelineBuilder(const GraphicsPipelineBuilder& other);
 	GraphicsPipelineBuilder& operator=(const GraphicsPipelineBuilder& other);
 
-	Pipeline build(vk::PipelineCache cache = {}) const;
-	vk::PipelineLayout parse(vk::GraphicsPipelineCreateInfo& createInfo) const;
+	Pipeline build(vk::PipelineCache cache = {});
+	vk::GraphicsPipelineCreateInfo parse();
 
 public:
 	ShaderProgram shader;

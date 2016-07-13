@@ -188,7 +188,8 @@ public:
 ///Saves a pipeline cache to the given filename.
 ///\exception std::runtime_error if opening/writing the file fails
 void save(vk::Device dev, vk::PipelineCache cache, const StringParam& filename);
-void save(const PipelineCache& cache, const StringParam& file){ save(cache.device(), cache, file); }
+inline void save(const PipelineCache& cache, const StringParam& file)
+	{ save(cache.device(), cache, file); }
 ///\}
 
 ///XXX: resourceRef: pipeline layout

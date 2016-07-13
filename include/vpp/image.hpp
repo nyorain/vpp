@@ -14,7 +14,7 @@ namespace vpp
 ///Representing a vulkan image on a device and having its own memory allocation bound to it.
 ///The Image class does not store further information like size, type, format or layout.
 ///All of this must be handled by the application to guarantee the best performance.
-class Image : public MemoryResource
+class Image : public MemoryResource<vk::Image>
 {
 public:
 	Image() = default;
@@ -22,16 +22,8 @@ public:
 	Image(const Device& dev, const vk::ImageCreateInfo& info, std::uint32_t memoryTypeBits);
 	~Image();
 
-	Image(Image&& other) noexcept;
-	Image& operator=(Image other) noexcept;
-
-	const vk::Image& vkImage() const { return image_; }
-
-	operator vk::Image() const { return vkImage(); }
-	friend void swap(Image& a, Image& b) noexcept;
-
-protected:
-	vk::Image image_ {};
+	Image(Image&& other) noexcept = default;
+	Image& operator=(Image&& other) noexcept = default;
 };
 
 ///Fills the given image with data.
@@ -98,7 +90,7 @@ public:
 
 	const Image& image() const { return image_; }
 	vk::ImageView vkImageView() const { return imageView_; }
-	vk::Image vkImage() const { return image_.vkImage(); }
+	vk::Image vkImage() const { return image(); }
 
 	const Image& resourceRef() const { return image_; }
 	friend void swap(ViewableImage& a, ViewableImage& b) noexcept;

@@ -34,7 +34,7 @@ Fence::~Fence()
 void swap(Fence& a, Fence& b) noexcept
 {
 	std::swap(a.fence_, b.fence_);
-	std::swap(a.device_, b.device_);
+	std::swap(a.resourceBase(), b.resourceBase());
 }
 
 //ExecutionState

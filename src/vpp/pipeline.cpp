@@ -216,6 +216,17 @@ DescriptorSet::~DescriptorSet()
 	///XXX: something about descriptorSet desctruction/freeing
 }
 
+//DescriptorPool
+DescriptorPool::DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info)
+	: ResourceHandle(dev)
+{
+	vkHandle() = vk::createDescriptorPool(dev, info);
+}
+DescriptorPool::~DescriptorPool()
+{
+	if(vkHandle()) vk::destroyDescriptorPool(device(), vkHandle());
+}
+
 //pipelineLayout
 PipelineLayout::PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info)
 	: ResourceHandle(dev)
@@ -264,22 +275,17 @@ PipelineCache::PipelineCache(const Device& dev, const StringParam& filename)
 	vkHandle() = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
 }
 
-void save(vk::Device dev, vk::PipelineCache cache, const char* filename)
+void save(vk::Device dev, vk::PipelineCache cache, const StringParam& filename)
 {
 	auto data = vk::getPipelineCacheData(dev, cache);
 	writeFile(filename, data);
 }
 
 //Pipeline
-Pipeline::Pipeline(const Device& dev, vk::Pipeline pipeline) : ResourceHandle(dev, pipeline)
-{
-}
-
 Pipeline::~Pipeline()
 {
 	if(vkHandle()) vk::destroyPipeline(device(), vkHandle());
 }
-
 
 //utility. format size in bits
 unsigned int formatSizeBits(vk::Format format)

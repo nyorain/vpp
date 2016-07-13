@@ -107,7 +107,6 @@ protected:
 	Allocation allocation_ {};
 };
 
-
 ///Specifies the different types of allocation on a memory object.
 enum class AllocationType
 {
@@ -121,7 +120,7 @@ enum class AllocationType
 ///Note that there are additional rules for allocating device memory on vulkan (like e.g. needed
 ///offsets between image and buffer allocations) which are not checked/stored by this class, this
 ///has to be done externally.
-class DeviceMemory : public Resource
+class DeviceMemory : public ResourceHandle<vk::DeviceMemory>
 {
 public:
 	struct AllocationEntry
@@ -136,6 +135,11 @@ public:
 	DeviceMemory(const Device& dev, std::uint32_t size, std::uint32_t typeIndex);
 	DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryPropertyFlags flgs);
 	~DeviceMemory();
+
+	///DeviceMemory is NonMovable since all memory resources will keep references to
+	///their memory objects. Therfore its location has not to change.
+	DeviceMemory(DeviceMemory&& other) noexcept = delete;
+	DeviceMemory& operator=(DeviceMemory&& other) noexcept = delete;
 
 	///Tries to allocate a memory part that matches the given size and aligment requirements.
 	///If there is not enough free space left, a std::runtime_error will be thrown.
@@ -186,16 +190,14 @@ public:
 	///Will throw a std::logic_error if this memory is not mappeble.
 	MemoryMapView map(const Allocation& allocation);
 
-	const vk::DeviceMemory& vkDeviceMemory() const { return memory_; }
 	vk::MemoryPropertyFlags properties() const;
+	bool mappable() const;
+
 	unsigned int type() const { return type_; }
 	const std::vector<AllocationEntry> allocations() const { return allocations_; }
 
-	operator vk::DeviceMemory() const { return vkDeviceMemory(); }
-
 protected:
 	std::vector<AllocationEntry> allocations_ {}; //use sorted container?
-	vk::DeviceMemory memory_ {};
 	std::size_t size_ {};
 
 	unsigned int type_ {};

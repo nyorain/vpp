@@ -3,7 +3,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/memory.hpp>
-#include <vpp/vulkan/range.hpp>
+#include <vpp/utility/range.hpp>
 #include <vpp/utility/allocation.hpp>
 
 #include <vpp/utility/pmr/map.hpp>
@@ -31,8 +31,8 @@ public:
 
 	///Requests memory for the given vulkan buffer and stores a (pending) reference to it into
 	///the given entry.
-	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs, vk::BufferUsageFlags usage,
-		MemoryEntry& entry);
+	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
+		vk::BufferUsageFlags usage, MemoryEntry& entry);
 
 	///Requests memory for the given vulkan image and stores a (pending) reference to it into
 	///the given entry. It additionally requires the tiling of the image to fulfill vulkans
@@ -104,7 +104,7 @@ class MemoryEntry : public ResourceReference<MemoryEntry>
 {
 public:
 	MemoryEntry() = default;
-	MemoryEntry(DeviceMemory* memory, const Allocation& alloc); //XXX: needed? allowed? reasonable?
+	MemoryEntry(DeviceMemory& memory, const Allocation& alloc);
 	~MemoryEntry();
 
 	MemoryEntry(MemoryEntry&& other) noexcept;

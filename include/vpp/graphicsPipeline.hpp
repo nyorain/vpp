@@ -13,7 +13,8 @@ namespace vpp
 std::vector<Pipeline> createGraphicsPipelines(const Device& dev,
 	const Range<vk::GraphicsPipelineCreateInfo>& infos, vk::PipelineCache cache = {});
 
-std::vector<Pipeline> createGraphicsPipelines(const Range<GraphicsPipelineBuilder>& builder,
+std::vector<Pipeline> createGraphicsPipelines(
+	const Range<std::reference_wrapper<GraphicsPipelineBuilder>>& builder,
 	vk::PipelineCache cache = {});
 ///\}
 

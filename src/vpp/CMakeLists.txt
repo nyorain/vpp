@@ -2,8 +2,7 @@
 set(vpp-sources
 	allocator.cpp
     context.cpp
-    surface.cpp
-    swapChain.cpp
+    device.cpp
     procAddr.cpp
 	renderer.cpp
 	memory.cpp
@@ -18,9 +17,10 @@ set(vpp-sources
 	graphicsPipeline.cpp
 	computePipeline.cpp
 	renderPass.cpp
-	memoryResource.cpp
 	commandBuffer.cpp
 	submit.cpp
+    surface.cpp
+    swapChain.cpp
 	transfer.cpp
 	work.cpp
 	fwd.cpp
@@ -42,7 +42,7 @@ set(vpp-sources
 if(${VPP_WINDOWS})
 	set(vpp-sources ${vpp-sources} backend/win32.cpp)
 elseif(UNIX)
-	set(vpp-sources ${vpp-sources} backend/xcb.cpp backend/wayland.cpp)
+	set(vpp-sources ${vpp-sources} backend/xcb.cpp backend/wayland.cpp backend/xlib.cpp)
 endif()
 
 #library

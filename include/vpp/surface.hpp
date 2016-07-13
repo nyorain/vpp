@@ -10,9 +10,9 @@ namespace vpp
 {
 
 ///Base class for vulkan surfaces.
-///The different backend have their own surface classes derived from this one.
 ///There is only a vulkan instance needed to create a Surface, so it is not considered a
 ///Resource class.
+///The different backends provide functions for create surfaces from native window handles.
 class Surface
 {
 public:

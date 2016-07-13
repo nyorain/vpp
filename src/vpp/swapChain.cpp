@@ -98,44 +98,19 @@ vk::SwapchainCreateInfoKHR SwapChainSettings::parse(const vk::SurfaceCapabilitie
 }
 
 //SwapChain
-SwapChain::SwapChain(const Device& device, vk::SurfaceKHR surface, const vk::Extent2D& size,
-	const SwapChainSettings& settings) : Resource(device), surface_(surface)
+SwapChain::SwapChain(const Device& dev, vk::SurfaceKHR surface, const vk::Extent2D& size,
+	const SwapChainSettings& settings) : ResourceHandle(dev), surface_(surface)
 {
 	resize(size, settings);
 }
 
 SwapChain::~SwapChain()
 {
-	if(!vkSwapChain()) return;
+	if(!vkHandle()) return;
 	destroyBuffers();
 
-	VPP_LOAD_PROC(vkDevice(), DestroySwapchainKHR);
-	pfDestroySwapchainKHR(vkDevice(), vkSwapChain(), nullptr);
-	swapChain_ = {};
-}
-
-SwapChain::SwapChain(SwapChain&& other) noexcept
-{
-	swap(*this, other);
-}
-
-SwapChain& SwapChain::operator=(SwapChain other) noexcept
-{
-	swap(*this, other);
-	return *this;
-}
-
-void swap(SwapChain& a, SwapChain& b) noexcept
-{
-	using std::swap;
-
-	swap(a.swapChain_, b.swapChain_);
-	swap(a.buffers_, b.buffers_);
-	swap(a.format_, b.format_);
-	swap(a.width_, b.width_);
-	swap(a.height_, b.height_);
-	swap(a.surface_, b.surface_);
-	swap(a.device_, b.device_);
+	VPP_LOAD_PROC(device(), DestroySwapchainKHR);
+	pfDestroySwapchainKHR(device(), vkHandle(), nullptr);
 }
 
 void SwapChain::destroyBuffers()
@@ -158,7 +133,7 @@ void SwapChain::resize(const vk::Extent2D& size, const SwapChainSettings& settin
 
 	//(re)create swapChain
 	//if there is already a swapChain it will be passed as the old swapchain parameter
-	auto oldSwapchain = vkSwapChain();
+	auto oldSwapchain = vkHandle();
 
 	//formats
 	uint32_t count;
@@ -185,8 +160,8 @@ void SwapChain::resize(const vk::Extent2D& size, const SwapChainSettings& settin
 	//create info from seperate function since it requires a lot of querying
 	auto createInfo = settings.parse(surfCaps, presentModes, formats, size);
 	createInfo.surface = vkSurface();
-	createInfo.oldSwapchain = vkSwapChain();
-	VPP_CALL(pfCreateSwapchainKHR(vkDevice(), &createInfo, nullptr, &swapChain_));
+	createInfo.oldSwapchain = vkHandle();
+	VPP_CALL(pfCreateSwapchainKHR(device(), &createInfo, nullptr, &vkHandle()));
 
 	format_ = createInfo.imageFormat;
 	width_ = createInfo.imageExtent.width;
@@ -194,16 +169,16 @@ void SwapChain::resize(const vk::Extent2D& size, const SwapChainSettings& settin
 
 	if(oldSwapchain)
 	{
-		pfDestroySwapchainKHR(vkDevice(), oldSwapchain, nullptr);
+		pfDestroySwapchainKHR(device(), oldSwapchain, nullptr);
 		oldSwapchain = {};
 	}
 
 	//new buffers
 	//get swapchain images
-	VPP_CALL(pfGetSwapchainImagesKHR(vkDevice(), vkSwapChain(), &count, nullptr));
+	VPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &count, nullptr));
 
 	std::vector<vk::Image> imgs(count);
-	VPP_CALL(pfGetSwapchainImagesKHR(vkDevice(), vkSwapChain(), &count, imgs.data()));
+	VPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &count, imgs.data()));
 
 	//create imageviews and insert buffers
 	buffers_.reserve(count);
@@ -228,7 +203,7 @@ void SwapChain::resize(const vk::Extent2D& size, const SwapChainSettings& settin
 		info.components = components;
 		info.image = img;
 
-		auto view = vk::createImageView(vkDevice(), info);
+		auto view = vk::createImageView(device(), info);
 		buffers_.push_back({img, view});
 	}
 }
@@ -239,7 +214,7 @@ unsigned int SwapChain::acquireNextImage(vk::Semaphore sem, vk::Fence fence) con
 	VPP_LOAD_PROC(vkDevice(), AcquireNextImageKHR);
 
 	std::uint32_t ret;
-	VPP_CALL(pfAcquireNextImageKHR(vkDevice(), vkSwapChain(), UINT64_MAX, sem, fence, &ret));
+	VPP_CALL(pfAcquireNextImageKHR(device(), vkHandle(), UINT64_MAX, sem, fence, &ret));
 	return ret;
 }
 
@@ -249,7 +224,7 @@ void SwapChain::present(const Queue& queue, std::uint32_t currentBuffer, vk::Sem
 
 	vk::PresentInfoKHR presentInfo {};
 	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &swapChain_;
+	presentInfo.pSwapchains = &vkHandle();
 	presentInfo.pImageIndices = &currentBuffer;
 
 	if(wait)

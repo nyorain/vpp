@@ -36,7 +36,7 @@ struct DefaultSwapChainSettings final : public SwapChainSettings
 
 ///TODO: synchronization for acquire and present commands. Handle acquire -> out_of_date
 ///Represents Vulkan swap chain and associated images/frameBuffers.
-class SwapChain : public Resource
+class SwapChain : public ResourceHandle<vk::SwapchainKHR>
 {
 public:
     struct RenderBuffer
@@ -62,8 +62,8 @@ public:
 		const vk::Extent2D& size = fwd::defaultSize, const SwapChainSettings& = {});
     ~SwapChain();
 
-	SwapChain(SwapChain&& other) noexcept;
-	SwapChain& operator=(SwapChain other) noexcept;
+	SwapChain(SwapChain&& other) noexcept = default;
+	SwapChain& operator=(SwapChain&& other) noexcept = default;
 
 	///Resizes the swapchain to the given size. Should be called if the native window of the
 	///underlaying surface handle changes it size to make sure the swapchain fills the
@@ -85,21 +85,16 @@ public:
 	///of all rendering commands for this image). Can be nullHandle.
     void present(const Queue& queue, unsigned int image, vk::Semaphore wait = {}) const;
 
-    const vk::SwapchainKHR& vkSwapChain() const { return swapChain_; }
 	const vk::SurfaceKHR& vkSurface() const { return surface_; }
 
 	vk::Format format() const { return format_; }
 	vk::Extent2D size() const;
     const std::vector<RenderBuffer>& renderBuffers() const { return buffers_; }
 
-	operator vk::SwapchainKHR() const { return vkSwapChain(); }
-	friend void swap(SwapChain& a, SwapChain& b) noexcept;
-
 protected:
 	void destroyBuffers();
 
 protected:
-    vk::SwapchainKHR swapChain_ {};
 	vk::SurfaceKHR surface_ {};
 	std::vector<RenderBuffer> buffers_;
 

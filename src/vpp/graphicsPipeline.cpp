@@ -174,7 +174,7 @@ namespace vpp
 
 
 GraphicsPipelineBuilder::GraphicsPipelineBuilder(const Device& dev, vk::RenderPass rp,
-	unsigned int subpass) : shader(dev), renderPass(rp), subpass(xsubpass)
+	unsigned int xsubpass) : shader(dev), renderPass(rp), subpass(xsubpass)
 {
 	dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
 
@@ -200,9 +200,9 @@ GraphicsPipelineBuilder::GraphicsPipelineBuilder(const Device& dev, vk::RenderPa
 
 	//stencil
 	vk::StencilOpState stencil;
-	states.stencil.failOp = vk::StencilOp::keep;
-	states.stencil.passOp = vk::StencilOp::keep;
-	states.stencil.compareOp = vk::CompareOp::always;
+	stencil.failOp = vk::StencilOp::keep;
+	stencil.passOp = vk::StencilOp::keep;
+	stencil.compareOp = vk::CompareOp::always;
 
 	states.depthStencil.depthTestEnable = true;
 	states.depthStencil.depthWriteEnable = true;
@@ -217,22 +217,22 @@ GraphicsPipelineBuilder::GraphicsPipelineBuilder(const Device& dev, vk::RenderPa
 	states.multisample.rasterizationSamples = vk::SampleCountBits::e1;
 }
 
-Pipeline GraphicsPipelineBuilder::build(vk::PipelineCache cache) const
+Pipeline GraphicsPipelineBuilder::build(vk::PipelineCache cache)
 {
-	vk::GraphicsPipelineCreateInfo info;
-	auto layout = parse(info);
-	auto pipeline = vk::createGraphicsPipelines(shader.device(), cache, {info});
-	return {shader.device(), pipeline, layout, true};
+	auto info = parse();
+	vk::Pipeline pipeline;
+	vk::createGraphicsPipelines(shader.device(), cache, 1, info, nullptr, pipeline);
+	return Pipeline(shader.device(), pipeline);
 }
 
-vk::PipelineLayout GraphicsPipelineBuilder::parse(vk::GraphicsPIpelineCreateInfo& ret) const
+vk::GraphicsPipelineCreateInfo GraphicsPipelineBuilder::parse()
 {
 	vk::GraphicsPipelineCreateInfo ret;
 
 	//Binding description
 	std::size_t attributeCount = 0;
 	for(auto& layout : vertexBufferLayouts)
-		attributeCount += layout.get().attributes.size();
+		attributeCount += layout.attributes.size();
 
 	std::vector<vk::VertexInputBindingDescription> bindingDescriptions;
 	bindingDescriptions.reserve(vertexBufferLayouts.size());
@@ -245,18 +245,18 @@ vk::PipelineLayout GraphicsPipelineBuilder::parse(vk::GraphicsPIpelineCreateInfo
 		std::size_t location = 0;
 		std::size_t offset = 0;
 
-		for(auto& attribute : layout.get().attributes)
+		for(auto& attribute : layout.attributes)
 		{
 			attributeDescriptions.emplace_back();
 			attributeDescriptions.back().location = location++;
-			attributeDescriptions.back().binding = layout.get().binding;
+			attributeDescriptions.back().binding = layout.binding;
 			attributeDescriptions.back().format = attribute;
 			attributeDescriptions.back().offset = offset;
 			offset += formatSize(attribute) / 8;
 		}
 
 		bindingDescriptions.emplace_back();
-		bindingDescriptions.back().binding = layout.get().binding;
+		bindingDescriptions.back().binding = layout.binding;
 		bindingDescriptions.back().stride = offset;
 		bindingDescriptions.back().inputRate = vk::VertexInputRate::vertex; ///XXX: paramterize this
 	}
@@ -266,6 +266,15 @@ vk::PipelineLayout GraphicsPipelineBuilder::parse(vk::GraphicsPIpelineCreateInfo
 	vertexInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 	vertexInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
 	vertexInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
+	//update states with data
+	states.colorBlend.attachmentCount = states.blendAttachments.size();
+	states.colorBlend.pAttachments = states.blendAttachments.data();
+
+	states.viewport.viewportCount = states.viewports.size();
+	states.viewport.pViewports = states.viewports.data();
+	states.viewport.scissorCount = states.scissors.size();
+	states.viewport.pScissors = states.scissors.data();
 
 	//dynamic state
 	vk::PipelineDynamicStateCreateInfo dynamicState;
@@ -280,8 +289,8 @@ vk::PipelineLayout GraphicsPipelineBuilder::parse(vk::GraphicsPIpelineCreateInfo
 	ret.stageCount = infos.size();
 	ret.pStages = infos.data();
 
-	ret.pViewportState = &createInfo.states.viewport;
-	ret.layout = pipelineLayout;
+	ret.pViewportState = &states.viewport;
+	ret.layout = layout;
 	ret.pVertexInputState = &vertexInfo;
 	ret.renderPass = renderPass;
 	ret.subpass = subpass;
@@ -291,8 +300,6 @@ vk::PipelineLayout GraphicsPipelineBuilder::parse(vk::GraphicsPIpelineCreateInfo
 	ret.pMultisampleState = &states.multisample;
 	ret.pDepthStencilState = &states.depthStencil;
 	ret.pTessellationState = nullptr;
-
-	return pipelineLayout;
 }
 
 std::vector<Pipeline> createGraphicsPipelines(const Device& dev,
@@ -300,21 +307,22 @@ std::vector<Pipeline> createGraphicsPipelines(const Device& dev,
 {
 	auto pipelines = vk::createGraphicsPipelines(dev, cache, infos);
 	std::vector<Pipeline> ret;
-	ret.reserve(pipelines.size())
-	for(auto& p : pipelines) ret.push_back(p);
+	ret.reserve(pipelines.size());
+	for(auto& p : pipelines) ret.emplace_back(dev, p);
 	return ret;
 }
 
-std::vector<Pipeline> createGraphicsPipelines(const Range<GraphicsPipelineBuilder>& builder,
+std::vector<Pipeline> createGraphicsPipelines(
+	const Range<std::reference_wrapper<GraphicsPipelineBuilder>>& builder,
 	vk::PipelineCache cache)
 {
 	if(builder.empty()) return {};
 
 	std::vector<vk::GraphicsPipelineCreateInfo> infos;
 	infos.reserve(builder.size());
-	for(auto& b : builder) infos.push_back(b.parse());
+	for(auto& b : builder) infos.push_back(b.get().parse());
 
-	return createGraphicsPipelines(builder.front().shader.device(), infos, cache);
+	return createGraphicsPipelines(builder.front().get().shader.device(), infos, cache);
 }
 
 }

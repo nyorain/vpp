@@ -20,10 +20,17 @@ namespace vpp
 ///Resource class shall not depend on any further (implementation defined) functionality.
 ///\sa ResourceReference
 ///\sa Device
-#ifdef VPP_ONE_DEVICE_OPTIMIZATION
+#ifndef VPP_ONE_DEVICE_OPTIMIZATION
 class Resource
 {
 public:
+	Resource(const Resource& other) noexcept = default;
+
+	Resource(Resource&& other) noexcept { swap(*this, other); }
+	Resource& operator=(Resource other) noexcept { swap(*this, other); return *this; }
+
+	~Resource() noexcept = default;
+
 	const Device& device() const noexcept { return *device_; }
 
 	const vk::Instance& vkInstance() const noexcept { return device().vkInstance(); }
@@ -37,13 +44,6 @@ public:
 protected:
 	Resource() noexcept = default;
 	Resource(const Device& device) noexcept : device_(&device) {}
-	~Resource() noexcept = default;
-
-	Resource(const Resource&& other) noexcept = default;
-	Resource& operator=(const Resource other) noexcept = default;
-
-	Resource(Resource&& other) noexcept { swap(*this, other); }
-	Resource& operator=(Resource other) noexcept { swap(*this, other); return *this; }
 
 	void init(const Device& dev) noexcept { device_ = &dev; }
 	friend void swap(Resource& a, Resource& b) noexcept { std::swap(a.device_, b.device_); }
@@ -57,6 +57,14 @@ private:
 class Resource
 {
 public:
+	Resource(const Resource& other) noexcept = default;
+	Resource& operator=(const Resource& other) noexcept = default;
+
+	Resource(Resource&& other) noexcept = default;
+	Resource& operator=(Resource&& other) noexcept = default;
+
+	~Resource() = default;
+
 	const Device& device() const noexcept { return *deviceRef; }
 
 	const vk::Instance& vkInstance() const noexcept { return device().vkInstance(); }
@@ -70,13 +78,6 @@ public:
 protected:
 	Resource() = default;
 	Resource(const Device& dev) { init(dev); }
-	~Resource() = default;
-
-	Resource(const Resource& other) noexcept = default;
-	Resource& operator=(const Resource& other) noexcept = default;
-
-	Resource(Resource&& other) noexcept = default;
-	Resource& operator=(Resource&& other) noexcept = default;
 
 	void init(const Device& dev);
 	friend void swap(Resource& a, Resource& b) noexcept {}
@@ -121,6 +122,11 @@ template<typename T>
 class ResourceHandle : public Resource
 {
 public:
+	ResourceHandle(ResourceHandle&& other) noexcept { swap(*this, other); }
+	ResourceHandle& operator=(ResourceHandle other) noexcept { swap(*this, other); return *this; }
+
+	~ResourceHandle() = default;
+
 	const T& vkHandle() const noexcept { return handle_; }
 	operator T() const noexcept { return vkHandle(); }
 
@@ -137,10 +143,6 @@ public:
 protected:
 	ResourceHandle() = default;
 	ResourceHandle(const Device& dev, const T& handle = {}) : Resource(dev), handle_(handle) {}
-	~ResourceHandle() = default;
-
-	ResourceHandle(ResourceHandle&& other) noexcept { swap(*this, other); }
-	ResourceHandle& operator=(ResourceHandle other) noexcept { swap(*this, other); return *this; }
 
 	T& vkHandle() noexcept { return handle_; }
 
@@ -149,10 +151,18 @@ protected:
 };
 
 template<typename T, typename B>
-class ResourceHandleReference : ResourceReference<B>
+class ResourceHandleReference : public ResourceReference<B>
 {
 public:
+	ResourceHandleReference(ResourceHandleReference&& other) noexcept { swap(*this, other); }
+	ResourceHandleReference& operator=(ResourceHandleReference other) noexcept
+		{ swap(*this, other); return *this; }
+
+	~ResourceHandleReference() = default;
+
 	const T& vkHandle() const noexcept { return handle_; }
+	T& vkHandle() noexcept { return handle_; } //XXX: public for now. Why cant this be protected??
+
 	operator T() const noexcept { return vkHandle(); }
 
 	ResourceHandleReference& resourceBase() noexcept { return *this; }
@@ -167,13 +177,6 @@ public:
 protected:
 	ResourceHandleReference() = default;
 	ResourceHandleReference(const T& handle) : handle_(handle) {}
-	~ResourceHandleReference() = default;
-
-	ResourceHandleReference(ResourceHandleReference&& other) noexcept { swap(*this, other); }
-	ResourceHandleReference& operator=(ResourceHandleReference other) noexcept
-		{ swap(*this, other); return *this; }
-
-	T& vkHandle() noexcept { return handle_; }
 
 protected:
 	T handle_ {};

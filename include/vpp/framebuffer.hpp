@@ -14,7 +14,7 @@ namespace vpp
 ///Can be initialized with two step initialization.
 ///Stores its own size and is able to create and manage its own attachments but does
 ///not store any further information such as render pass compatibilty.
-class Framebuffer : public Resource
+class Framebuffer : public ResourceHandle<vk::Framebuffer>
 {
 public:
 	using ExtAttachments = std::unordered_map<unsigned int, vk::ImageView>;
@@ -33,8 +33,8 @@ public:
 		const AttachmentsInfo& attachments, const ExtAttachments& ext = {});
 	~Framebuffer();
 
-	Framebuffer(Framebuffer&& other) noexcept;
-	Framebuffer& operator=(Framebuffer other) noexcept;
+	Framebuffer(Framebuffer&& other) noexcept = default;
+	Framebuffer& operator=(Framebuffer&& other) noexcept = default;
 
 	void create(const Device& dev, const vk::Extent2D& size, const std::vector<vk::ImageCreateInfo>&);
 	void create(const Device& dev, const vk::Extent2D& size, const AttachmentsInfo& info);
@@ -44,15 +44,10 @@ public:
 	void init(vk::RenderPass rp, const std::vector<vk::ImageViewCreateInfo>& info,
 		const ExtAttachments& extAttachments = {});
 
-	vk::Framebuffer vkFramebuffer() const { return framebuffer_; }
 	const std::vector<ViewableImage>& attachments() const { return attachments_; }
 	vk::Extent2D size() const;
 
-	operator vk::Framebuffer() const { return vkFramebuffer(); }
-	friend void swap(Framebuffer& a, Framebuffer& b) noexcept;
-
 protected:
-	vk::Framebuffer framebuffer_ {};
 	std::vector<ViewableImage> attachments_;
 	unsigned int width_ = 0;
 	unsigned int height_ = 0;

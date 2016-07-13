@@ -13,7 +13,7 @@ namespace vpp
 vk::ShaderModule loadShaderModule(vk::Device dev, const char* filename);
 vk::ShaderModule loadShaderModule(vk::Device dev, const std::vector<std::uint8_t>& code);
 
-class ShaderModule : public Resource
+class ShaderModule : public ResourceHandle<vk::ShaderModule>
 {
 public:
 	ShaderModule() = default;
@@ -21,16 +21,8 @@ public:
 	ShaderModule(const Device& dev, const std::vector<std::uint8_t>& bytes);
 	~ShaderModule();
 
-	ShaderModule(ShaderModule&& other) noexcept;
-	ShaderModule& operator=(ShaderModule other) noexcept;
-
-	vk::ShaderModule vkShaderModule() const { return module_; }
-
-	operator vk::ShaderModule() const { return vkShaderModule(); }
-	friend void swap(ShaderModule& a, ShaderModule& b) noexcept;
-
-protected:
-	vk::ShaderModule module_ {};
+	ShaderModule(ShaderModule&& other) noexcept = default;
+	ShaderModule& operator=(ShaderModule&& other) noexcept = default;
 };
 
 ///Vulkan Shader Stage wrapper around owned or non-owned shader modules.

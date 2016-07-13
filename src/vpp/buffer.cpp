@@ -13,44 +13,25 @@ namespace vpp
 
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags)
 {
-	buffer_ = vk::createBuffer(dev.vkDevice(), info);
-	auto reqs = vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_);
+	vkHandle() = vk::createBuffer(dev, info);
+	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
 
 	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
-	dev.deviceAllocator().request(buffer_, reqs, info.usage, memoryEntry_);
+	dev.deviceAllocator().request(vkHandle(), reqs, info.usage, memoryEntry_);
 }
 
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, std::uint32_t memoryTypeBits)
 {
-	buffer_ = vk::createBuffer(dev.vkDevice(), info);
-	auto reqs = vk::getBufferMemoryRequirements(dev.vkDevice(), buffer_);
+	vkHandle() = vk::createBuffer(dev, info);
+	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
 
 	reqs.memoryTypeBits &= memoryTypeBits;
-	dev.deviceAllocator().request(buffer_, reqs, info.usage, memoryEntry_);
-}
-
-Buffer::Buffer(Buffer&& other) noexcept
-{
-	swap(*this, other);
-}
-
-Buffer& Buffer::operator=(Buffer other) noexcept
-{
-	swap(*this, other);
-	return *this;
+	dev.deviceAllocator().request(vkHandle(), reqs, info.usage, memoryEntry_);
 }
 
 Buffer::~Buffer()
 {
-	if(vkBuffer()) vk::destroyBuffer(vkDevice(), vkBuffer(), nullptr);
-}
-
-void swap(Buffer& a, Buffer& b) noexcept
-{
-	using std::swap;
-
-	swap(a.memoryEntry_, b.memoryEntry_);
-	swap(a.buffer_, b.buffer_);
+	if(vkHandle()) vk::destroyBuffer(device(), vkHandle());
 }
 
 DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize size)
@@ -70,7 +51,7 @@ DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize si
 	//retrieve by mapping
 	if(buf.mappable())
 	{
-		return std::make_unique<MappableDownloadWork>(buf);
+		return std::make_unique<MappableDownloadWork>(buf.memoryMap());
 	}
 	else
 	{

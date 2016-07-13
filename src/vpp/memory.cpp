@@ -68,7 +68,7 @@ vk::MappedMemoryRange MemoryMap::mappedMemoryRange() const
 
 const vk::DeviceMemory& MemoryMap::vkMemory() const
 {
-	return memory_->vkDeviceMemory();
+	return memory_->vkHandle();
 }
 
 void MemoryMap::flush() const
@@ -205,15 +205,15 @@ void swap(MemoryMapView& a, MemoryMapView& b) noexcept
 
 //Memory
 DeviceMemory::DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info)
-	: Resource(dev)
+	: ResourceHandle(dev)
 {
 	type_ = info.memoryTypeIndex;
 	size_ = info.allocationSize;
 
-	memory_ = vk::allocateMemory(vkDevice(), info);
+	vkHandle() = vk::allocateMemory(vkDevice(), info);
 }
 DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, std::uint32_t typeIndex)
-	: Resource(dev)
+	: ResourceHandle(dev)
 {
 	type_ = typeIndex;
 	size_ = size;
@@ -222,10 +222,10 @@ DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, std::uint32_t 
 	info.allocationSize = size_;
 	info.memoryTypeIndex = type_;
 
-	memory_ = vk::allocateMemory(vkDevice(), info);
+	vkHandle() = vk::allocateMemory(vkDevice(), info);
 }
 DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryPropertyFlags flags)
-	: Resource(dev)
+	: ResourceHandle(dev)
 {
 	type_ = device().memoryType(flags);
 	size_ = size;
@@ -234,7 +234,7 @@ DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryProp
 	info.allocationSize = size_;
 	info.memoryTypeIndex = type_;
 
-	memory_ = vk::allocateMemory(vkDevice(), info);
+	vkHandle() = vk::allocateMemory(vkDevice(), info);
 }
 DeviceMemory::~DeviceMemory()
 {
@@ -243,7 +243,7 @@ DeviceMemory::~DeviceMemory()
 		if(!allocations_.empty()) VPP_DEBUG_OUTPUT(allocations_.size(), "allocations left.");
 	})
 
-	if(vkDeviceMemory()) vk::freeMemory(vkDevice(), memory_, nullptr);
+	if(vkHandle()) vk::freeMemory(vkDevice(), vkHandle(), nullptr);
 }
 
 Allocation DeviceMemory::alloc(std::size_t size, std::size_t alignment, AllocationType type)
@@ -437,6 +437,11 @@ MemoryMapView DeviceMemory::map(const Allocation& allocation)
 vk::MemoryPropertyFlags DeviceMemory::properties() const
 {
 	return device().memoryProperties().memoryTypes[type()].propertyFlags;
+}
+
+bool DeviceMemory::mappable() const
+{
+	return properties() & vk::MemoryPropertyBits::hostVisible;
 }
 
 }
