@@ -86,7 +86,7 @@ public:
 	///\}
 
 	///\{
-	///Changes or adds a new shader stage (depending the info::stage).
+	///Changes or adds a new shader stage (depending on info::stage).
 	void stage(const char* filename, const ShaderStage::CreateInfo& info);
 	void stage(vk::ShaderModule module, const ShaderStage::CreateInfo& info);
 	///\}

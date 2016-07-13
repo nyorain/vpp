@@ -3,7 +3,8 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/shader.hpp>
-#include <vpp/range.hpp>
+#include <vpp/utility/range.hpp>
+#include <vpp/utility/stringParam.hpp>
 
 #include <vector>
 #include <functional>
@@ -89,9 +90,10 @@ void apply(const Range<std::reference_wrapper<DescriptorSetUpdate>>& updates);
 
 ///Alternative vk::DescriptorSetLayoutBinding constructor.
 vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
-	vk::ShaderStageFlags stages,unsigned int count = 1, unsigned int binding = -1,
-	const vk::Sampler* samplers = nullptr);
+	vk::ShaderStageFlags stages = fwd::allShaderStages, unsigned int count = 1,
+	unsigned int binding = -1, const vk::Sampler* samplers = nullptr);
 
+///Defined the different vertex inputs a pipeline takes.
 struct VertexBufferLayout
 {
 	std::vector<vk::Format> attributes;
@@ -99,63 +101,55 @@ struct VertexBufferLayout
 };
 
 ///Represents a vulkan desciptor set layout which stores information about the structure of a
-///descriptor set. Needed to create a descriptor set. This class will internally store the
-///given information about a descriptor set so that they can be retrieved later.
-class DescriptorSetLayout : public Resource
+///descriptor set.
+///Can imagined as the type (description) of which objects can be created (descriptorSets).
+class DescriptorSetLayout : public ResourceHandle<vk::DescriptorSetLayout>
 {
 public:
 	DescriptorSetLayout() = default;
 	DescriptorSetLayout(const Device& dev, const Range<vk::DescriptorSetLayoutBinding>& bindings);
 	~DescriptorSetLayout();
 
-	DescriptorSetLayout(DescriptorSetLayout&& other) noexcept;
-	DescriptorSetLayout& operator=(DescriptorSetLayout other) noexcept;
-
-	vk::DescriptorSetLayout vkDescriptorSetLayout() const { return layout_; }
-	const std::vector<vk::DescriptorSetLayoutBinding>& bindings() const { return bindings_; }
-
-	operator vk::DescriptorSetLayout() const { return vkDescriptorSetLayout(); }
-	friend void swap(DescriptorSetLayout& a, DescriptorSetLayout& b) noexcept;
-
-protected:
-	std::vector<vk::DescriptorSetLayoutBinding> bindings_;
-	vk::DescriptorSetLayout layout_;
+	DescriptorSetLayout(DescriptorSetLayout&& other) noexcept = default;
+	DescriptorSetLayout& operator=(DescriptorSetLayout&& other) noexcept = default;
 };
 
+///XXX: store a reference to pool/layout instead of the device pointer for additional information.
 ///Represents a vulkan descriptor set.
-class DescriptorSet : public Resource
+///A descriptor set is basically a set of different data types (uniform & storage buffer or
+///different image/sampler handles) that can be passed to the pipeline shader stages.
+///A pipelines can have multiple descriptor sets which theirselfs can have multiple desctiptors
+///of different types.
+class DescriptorSet : public ResourceHandle<vk::DescriptorSet>
 {
 public:
 	DescriptorSet() = default;
 	DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPool pool);
 	~DescriptorSet();
 
-	DescriptorSet(DescriptorSet&& other) noexcept;
-	DescriptorSet& operator=(DescriptorSet other) noexcept;
-
-	const vk::DescriptorSet& vkDescriptorSet() const { return descriptorSet_; }
-
-	operator vk::DescriptorSet() const { return vkDescriptorSet(); }
-	friend void swap(DescriptorSet& a, DescriptorSet& b) noexcept;
-
-protected:
-	const DescriptorSetLayout* layout_;
-	vk::DescriptorSet descriptorSet_ {};
+	DescriptorSet(DescriptorSet&& other) noexcept = default;
+	DescriptorSet& operator=(DescriptorSet&& other) noexcept = default;
 };
 
-///RAII vulkan pipeline layout wrapper
+///RAII vulkan pipeline layout wrapper.
+///A pipeline layout specifies all descriptor layouts and push constant ranges an
+///application can use.
+///Multiple pipelines can share the same pipeline layout.
 class PipelineLayout : public ResourceHandle<vk::PipelineLayout>
 {
 public:
 	PipelineLayout() = default;
 	PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info);
+	PipelineLayout(const Device& dev,
+		const Range<std::reference_wrapper<DescriptorSetLayout>>& layouts,
+		const Range<vk::PushConstantRange>& ranges = {});
 	~PipelineLayout();
 
 	PipelineLayout(PipelineLayout&& other) noexcept = default;
 	PipelineLayout& operator=(PipelineLayout&& other) noexcept = default;
 };
 
-///RAII vulkan descriptor pool wrapper
+///RAII vulkan descriptor pool wrapper.
 class DescriptorPool : public ResourceHandle<vk::DescriptorPool>
 {
 public:
@@ -167,32 +161,49 @@ public:
 	DescriptorPool& operator=(DescriptorPool&& other) noexcept = default;
 };
 
-//TODO: functions to create multiple pipelines (may be more efficient)
-///Pipeline base class.
+///RAII vulkan pipeline cache wrapper.
+///A pipeline cache can be used to increase pipeline compilation time.
+///The application can save driver-specific cache data from created pipelines to disk
+///and then load them during the next execution and pass them to the pipeline constructor
+///which will decrease pipeline build time.
+class PipelineCache : public ResourceHandle<vk::PipelineCache>
+{
+public:
+	PipelineCache() = default;
+	PipelineCache(const Device& dev);
+
+	///Creates the pipeline cache with the given initial data.
+	PipelineCache(const Device& dev, const Range<std::uint8_t>& data);
+
+	///Loads the pipeline cache data from a file.
+	///\exception std::runtime_error if opening the file fails
+	PipelineCache(const Device& dev, const StringParam& filename);
+	~PipelineCache();
+
+	PipelineCache(PipelineCache&& other) noexcept = default;
+	PipelineCache& operator=(PipelineCache&& other) noexcept = default;
+};
+
+///\{
+///Saves a pipeline cache to the given filename.
+///\exception std::runtime_error if opening/writing the file fails
+void save(vk::Device dev, vk::PipelineCache cache, const StringParam& filename);
+void save(const PipelineCache& cache, const StringParam& file){ save(cache.device(), cache, file); }
+///\}
+
+///XXX: resourceRef: pipeline layout
+///RAII Vulkan pipeline wrapper.
+///A pipeline is basically a collection of draw/compute information that contains e.g.
+///the vertex and descriptor layouts, used shaders and different state information.
 class Pipeline : public ResourceHandle<vk::Pipeline>
 {
 public:
+	Pipeline() = default;
+	Pipeline(const Device& dev, vk::Pipeline pipeline) : ResourceHandle(dev, pipeline) {}
 	~Pipeline();
 
-	Pipeline(Pipeline&& other) noexcept;
-	Pipeline& operator=(Pipeline other) noexcept;
-
-	vk::PipelineLayout vkPipelineLayout() const { return pipelineLayout_; }
-	friend void swap(Pipeline& a, Pipeline& b) noexcept;
-
-protected:
-	vk::PipelineLayout pipelineLayout_ {};
-	bool layoutOwned_ = false; //TODO: not owned layout
-
-protected:
-	Pipeline() = default;
-	Pipeline(const Device& dev);
+	Pipeline(Pipeline&& other) noexcept = default;
+	Pipeline& operator=(Pipeline&& other) noexcept = default;
 };
-
-///Can be used to load a pipeline cache from a file.
-vk::PipelineCache loadPipelineCache(vk::Device dev, const char* name);
-
-///Can be used to save a pipeline cache to a file.
-void savePipelineCache(vk::Device dev, vk::PipelineCache cache, const char* name);
 
 }

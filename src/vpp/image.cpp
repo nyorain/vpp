@@ -91,13 +91,15 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::ImageLayout layou
 DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, const vk::Extent3D& extent,
 	const vk::ImageSubresourceLayers& subres, bool allowMap)
 {
-#ifndef NDEBUG
-	if(!image.memoryEntry().allocated())
+	VPP_DEBUG_CHECK(vpp::retrive(image),
 	{
-		std::cerr << "vpp::retrieve(image): image has no memory. Calling assureMemory()\n";
-		image.assureMemory();
-	}
-#endif //NDEBUG
+		if(!image.memoryEntry().allocated())
+		{
+			VPP_DEBUG_OUTPUT("Image has no memory. Undefined will be data retrived. "
+				"Calling assureMemory() and returning the undefined data");
+			image.assureMemory();
+		}
+	});
 
 	if(image.mappable() && allowMap)
 	{

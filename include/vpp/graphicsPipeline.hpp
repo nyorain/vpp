@@ -2,23 +2,19 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/pipeline.hpp>
+#include <vpp/utility/range.hpp>
 
 namespace vpp
 {
 
-class GraphicsPipeline : public Pipeline
-{
-public:
-	struct CreateInfo; //defs.hpp
-	struct States; //defs.hpp
+///\{
+///Create multiple vulkan graphic pipelines at once.
+///Might be more efficient than constructing them individually.
+std::vector<Pipeline> createGraphicsPipelines(const Device& dev,
+	const Range<vk::GraphicsPipelineCreateInfo>& infos, vk::PipelineCache cache = {});
 
-public:
-	GraphicsPipeline() = default;
-	GraphicsPipeline(const Device& device, const CreateInfo& createInfo);
-	~GraphicsPipeline() = default;
-
-	GraphicsPipeline(GraphicsPipeline&& other) noexcept;
-	GraphicsPipeline& operator=(GraphicsPipeline&& other) noexcept;
-};
+std::vector<Pipeline> createGraphicsPipelines(const Range<GraphicsPipelineBuilder>& builder,
+	vk::PipelineCache cache = {});
+///\}
 
 }

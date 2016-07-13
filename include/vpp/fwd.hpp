@@ -8,42 +8,45 @@ namespace vpp
 
 using vk::Range;
 
-class Context;
-class Device;
 class Resource;
-class Queue;
+class WorkBase;
+
+class Buffer;
+class Image;
 class Surface;
 class SwapChain;
-class RendererBuilder;
-class SwapChainRenderer;
 class ShaderStage;
 class ShaderProgram;
 class DeviceMemory;
-class DeviceMemoryAllocator;
-class MemoryEntry;
-class Buffer;
-class Image;
-class DebugCallback;
 class Pipeline;
-class GraphicsPipeline;
-class ComputePipeline;
-class Buffer;
+class DebugCallback;
 class DescriptorSet;
+class DescriptorPool;
 class VertexBufferLayout;
 class DescriptorSetLayout;
 class Framebuffer;
-class ViewableImage;
 class RenderPass;
+class CommandPool;
+class CommandBuffer;
+class PipelineCache;
+class PipelineLayout;
+
+class Context;
+class Device;
+class Queue;
+class RendererBuilder;
+class SwapChainRenderer;
+class DeviceMemoryAllocator;
+class MemoryEntry;
+class ViewableImage;
 class RenderPassInstance;
-class Texture;
-class Allocator;
+class GraphicsPipelineBuilder;
+class ComputePipelineBuilder;
+
 class CommandProvider;
 class DeviceMemoryProvider;
 class HostMemoryProvider;
-class CommandPool;
-class CommandBuffer;
 class SubmitManager;
-class WorkBase;
 class WorkManager;
 class TransferManager;
 

@@ -5,7 +5,7 @@
 #include <vpp/allocator.hpp>
 #include <vpp/commandBuffer.hpp>
 #include <vpp/work.hpp>
-#include <vpp/range.hpp>
+#include <vpp/utility/range.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -24,8 +24,9 @@ class Buffer : public MemoryResource
 {
 public:
 	Buffer() = default;
-	Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
 	Buffer(const Device& dev, const vk::BufferCreateInfo& info, std::uint32_t memoryTypesBits);
+	Buffer(const Device& dev, const vk::BufferCreateInfo& info,
+		vk::MemoryPropertyFlags mflags = {});
 	~Buffer();
 
 	Buffer(Buffer&& other) noexcept;
@@ -158,9 +159,11 @@ fill140(const Buffer& buf, const T&... args){ return fill(buf, BufferAlign::std1
 template<typename... T> WorkPtr
 fill430(const Buffer& buf, const T&... args){ return fill(buf, BufferAlign::std430, args...); }
 
-//TODO: retrieve only specific range
 ///Retrives the data stored in the buffer.
+///\param size The size of the range to retrive. If size is vk::wholeSize (default) the range
+///from offset until the end of the buffer will be retrieved.
 ///\return A Work ptr that is able to retrive an array of std::uint8_t values storing the data.
-DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset = 0, vk::DeviceSize size = 0);
+DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset = 0,
+	vk::DeviceSize size = vk::wholeSize);
 
 };

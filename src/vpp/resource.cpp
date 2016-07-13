@@ -6,7 +6,7 @@ namespace vpp
 #ifdef VPP_ONE_DEVICE_OPTIMIZATION
 
 const Device* Resource::deviceRef;
-void Resource::check(const Device& dev)
+void Resource::init(const Device& dev)
 {
 	if(deviceRef == &dev) return; //most likely
 

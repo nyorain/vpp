@@ -24,11 +24,15 @@ namespace vpp
 class Resource
 {
 public:
-	const Device& device() const { return *device_; }
+	const Device& device() const noexcept { return *device_; }
 
-	const vk::Instance& vkInstance() const { return device().vkInstance(); }
-	const vk::PhysicalDevice& vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
-	const vk::Device& vkDevice() const { return device().vkDevice(); }
+	const vk::Instance& vkInstance() const noexcept { return device().vkInstance(); }
+	const vk::Device& vkDevice() const noexcept { return device().vkDevice(); }
+	const vk::PhysicalDevice& vkPhysicalDevice() const noexcept
+		{ return device().vkPhysicalDevice(); }
+
+	Resource& resourceBase() noexcept { return *this; }
+	const Resource& resourceBase() const noexcept { return *this; }
 
 protected:
 	Resource() noexcept = default;
@@ -41,10 +45,8 @@ protected:
 	Resource(Resource&& other) noexcept { swap(*this, other); }
 	Resource& operator=(Resource other) noexcept { swap(*this, other); return *this; }
 
-	friend void swap(Resource& a, Resource& b) noexcept
-	{
-		std::swap(a.device_, b.device_);
-	}
+	void init(const Device& dev) noexcept { device_ = &dev; }
+	friend void swap(Resource& a, Resource& b) noexcept { std::swap(a.device_, b.device_); }
 
 private:
 	const Device* device_ {nullptr};
@@ -55,15 +57,19 @@ private:
 class Resource
 {
 public:
-	const Device& device() const { return *deviceRef; }
+	const Device& device() const noexcept { return *deviceRef; }
 
-	const vk::Instance& vkInstance() const { return device().vkInstance(); }
-	const vk::PhysicalDevice& vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
-	const vk::Device& vkDevice() const { return device().vkDevice(); }
+	const vk::Instance& vkInstance() const noexcept { return device().vkInstance(); }
+	const vk::Device& vkDevice() const noexcept { return device().vkDevice(); }
+	const vk::PhysicalDevice& vkPhysicalDevice() const noexcept
+		{ return device().vkPhysicalDevice(); }
+
+	Resource& resourceBase() noexcept { return *this; }
+	const Resource& resourceBase() const noexcept { return *this; }
 
 protected:
 	Resource() = default;
-	Resource(const Device& dev) { check(dev); }
+	Resource(const Device& dev) { init(dev); }
 	~Resource() = default;
 
 	Resource(const Resource& other) noexcept = default;
@@ -72,11 +78,11 @@ protected:
 	Resource(Resource&& other) noexcept = default;
 	Resource& operator=(Resource&& other) noexcept = default;
 
+	void init(const Device& dev);
 	friend void swap(Resource& a, Resource& b) noexcept {}
 
 private:
 	static const Device* deviceRef;
-	void check(const Device& dev);
 };
 
 #endif //VPP_ONE_DEVICE_OPTIMIZATION
@@ -97,50 +103,80 @@ template <typename T>
 class ResourceReference
 {
 public:
-	const Device& device() const { return reinterpret_cast<const T&>(*this).resourceRef().device(); }
+	const Device& device() const
+		{ return reinterpret_cast<const T&>(*this).resourceRef().device(); }
 
 	const vk::Instance& vkInstance() const { return device().vkInstance(); }
 	const vk::PhysicalDevice& vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
 	const vk::Device& vkDevice() const { return device().vkDevice(); }
+
+	ResourceReference& resourceBase() noexcept { return *this; }
+	const ResourceReference& resourceBase() const noexcept { return *this; }
 };
-
-///Base class for all classes that own a vulkan resource, i.e. classes that cannot be copied.
-class VulkanResource : public Resource, public NonCopyable {};
-
-///ResourceReference class for classes that own a vulkan resource.
-template<typename T>
-class VulkanResourceReference : public ResourceReference<T>, public NonCopyable {};
 
 ///Utility template base class that makes RAII wrappers easier.
 ///Derives from Resource and holds a vulkan handle of type T.
 ///Implements the conversion and move operators/constructors.
-template<typename T, typename Base = VulkanResource>
-class ResourceHandle : public Base
+template<typename T>
+class ResourceHandle : public Resource
 {
 public:
-	ResourceHandle(ResourceHandle&& other) noexcept { swap(*this, other); }
-	ResourceHandle& operator=(ResourceHandle other) noexcept { swap(*this, other); }
-	~ResourceHandle() = default;
-
 	const T& vkHandle() const noexcept { return handle_; }
 	operator T() const noexcept { return vkHandle(); }
 
+	ResourceHandle& resourceBase() noexcept { return *this; }
+	const ResourceHandle& resourceBase() const noexcept { return *this; }
+
 	friend void swap(ResourceHandle<T>& a, ResourceHandle<T>& b) noexcept
 	{
-		std::swap(static_cast<Base>(a), static_cast<Base>(b));
-		std::swap(a.handle_, b.handle_);
+		using std::swap;
+		swap(a.resourceBase(), b.resourceBase());
+		swap(a.handle_, b.handle_);
 	}
 
 protected:
 	ResourceHandle() = default;
-	ResourceHandle(const T& handle) : handle_(handle) {}
+	ResourceHandle(const Device& dev, const T& handle = {}) : Resource(dev), handle_(handle) {}
+	~ResourceHandle() = default;
+
+	ResourceHandle(ResourceHandle&& other) noexcept { swap(*this, other); }
+	ResourceHandle& operator=(ResourceHandle other) noexcept { swap(*this, other); return *this; }
+
+	T& vkHandle() noexcept { return handle_; }
 
 protected:
-	T handle_;
+	T handle_ {};
 };
 
-///Convinience Typedef for ResourceHandle classes that don't need to store their own device ref.
 template<typename T, typename B>
-using ResourceHandleReference = ResourceHandle<T, ResourceReference<B>>;
+class ResourceHandleReference : ResourceReference<B>
+{
+public:
+	const T& vkHandle() const noexcept { return handle_; }
+	operator T() const noexcept { return vkHandle(); }
+
+	ResourceHandleReference& resourceBase() noexcept { return *this; }
+	const ResourceHandleReference& resourceBase() const noexcept { return *this; }
+
+	friend void swap(ResourceHandleReference<T, B>& a, ResourceHandleReference<T, B>& b) noexcept
+	{
+		using std::swap;
+		swap(a.handle_, b.handle_);
+	}
+
+protected:
+	ResourceHandleReference() = default;
+	ResourceHandleReference(const T& handle) : handle_(handle) {}
+	~ResourceHandleReference() = default;
+
+	ResourceHandleReference(ResourceHandleReference&& other) noexcept { swap(*this, other); }
+	ResourceHandleReference& operator=(ResourceHandleReference other) noexcept
+		{ swap(*this, other); return *this; }
+
+	T& vkHandle() noexcept { return handle_; }
+
+protected:
+	T handle_ {};
+};
 
 }

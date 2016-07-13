@@ -35,43 +35,90 @@ struct SwapChainRenderer::AttachmentInfo
 	vk::ImageView external = {};
 };
 
-struct GraphicsPipeline::States
+// struct GraphicsPipeline::States
+// {
+// 	vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
+// 	vk::PipelineTessellationStateCreateInfo tessellation;
+// 	vk::PipelineViewportStateCreateInfo viewport;
+// 	vk::PipelineRasterizationStateCreateInfo rasterization;
+// 	vk::PipelineMultisampleStateCreateInfo multisample;
+// 	vk::PipelineDepthStencilStateCreateInfo depthStencil;
+// 	vk::PipelineColorBlendStateCreateInfo colorBlend;
+//
+// 	std::vector<vk::PipelineColorBlendAttachmentState> blendAttachments;
+// 	std::vector<vk::Viewport> viewports;
+// 	std::vector<vk::Rect2D> scissors;
+//
+// 	States() = default;
+// 	States(const vk::Viewport& viewport);
+// };
+//
+// struct GraphicsPipeline::CreateInfo
+// {
+// 	CreateInfo() = default;
+// 	//CreateInfo(const Device& dev, const Range<vk::DynamicState>& dyanmic = {});
+//
+// 	ShaderProgram shader;
+// 	vk::PipelineCache cache {};
+//
+// 	vk::RenderPass renderPass {};
+// 	unsigned int subpass {};
+//
+// 	std::vector<std::reference_wrapper<DescriptorSetLayout>> descriptorSetLayouts;
+// 	std::vector<std::reference_wrapper<VertexBufferLayout>> vertexBufferLayouts;
+//
+// 	vk::PipelineCreateFlags flags {};
+// 	GraphicsPipeline::States states {};
+//
+// 	std::vector<vk::DynamicState> dynamicStates;
+// 	std::vector<vk::PushConstantRange> pushConstantRanges;
+// };
+
+
+///Class to easier create vulkan graphics pipelines.
+///Note that objects of this class can be copied, but this will not duplicate the
+///undeerlaying shader modules. So if a pipelineBuilder owns a shader module, its copies
+///(which still reference those modules) shall not be used to create a pipeline after
+///the original goes out of scope.
+class GraphicsPipelineBuilder
 {
-	vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
-	vk::PipelineTessellationStateCreateInfo tessellation;
-	vk::PipelineViewportStateCreateInfo viewport;
-	vk::PipelineRasterizationStateCreateInfo rasterization;
-	vk::PipelineMultisampleStateCreateInfo multisample;
-	vk::PipelineDepthStencilStateCreateInfo depthStencil;
-	vk::PipelineColorBlendStateCreateInfo colorBlend;
+public:
+	GraphicsPipelineBuilder() = default;
+	GraphicsPipelineBuilder(const Device& dev, vk::RenderPass rp, unsigned int xsubpass = 0);
+	~GraphicsPipelineBuilder() = default;
 
-	std::vector<vk::PipelineColorBlendAttachmentState> blendAttachments;
-	std::vector<vk::Viewport> viewports;
-	std::vector<vk::Rect2D> scissors;
+	GraphicsPipelineBuilder(const GraphicsPipelineBuilder& other);
+	GraphicsPipelineBuilder& operator=(const GraphicsPipelineBuilder& other);
 
-	States() = default;
-	States(const vk::Viewport& viewport);
-};
+	Pipeline build(vk::PipelineCache cache = {}) const;
+	vk::PipelineLayout parse(vk::GraphicsPipelineCreateInfo& createInfo) const;
 
-struct GraphicsPipeline::CreateInfo
-{
-	CreateInfo() = default;
-	//CreateInfo(const Device& dev, const Range<vk::DynamicState>& dyanmic = {});
-
+public:
 	ShaderProgram shader;
-	vk::PipelineCache cache {};
-
 	vk::RenderPass renderPass {};
 	unsigned int subpass {};
 
-	std::vector<std::reference_wrapper<DescriptorSetLayout>> descriptorSetLayouts;
-	std::vector<std::reference_wrapper<VertexBufferLayout>> vertexBufferLayouts;
+	vk::PipelineLayout layout;
+	std::vector<VertexBufferLayout> vertexBufferLayouts;
 
 	vk::PipelineCreateFlags flags {};
-	GraphicsPipeline::States states {};
-
 	std::vector<vk::DynamicState> dynamicStates;
 	std::vector<vk::PushConstantRange> pushConstantRanges;
+
+	struct
+	{
+		std::vector<vk::PipelineColorBlendAttachmentState> blendAttachments;
+		std::vector<vk::Viewport> viewports;
+		std::vector<vk::Rect2D> scissors;
+
+		vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
+		vk::PipelineTessellationStateCreateInfo tessellation;
+		vk::PipelineViewportStateCreateInfo viewport;
+		vk::PipelineRasterizationStateCreateInfo rasterization;
+		vk::PipelineMultisampleStateCreateInfo multisample;
+		vk::PipelineDepthStencilStateCreateInfo depthStencil;
+		vk::PipelineColorBlendStateCreateInfo colorBlend;
+	} states;
 };
 
 }

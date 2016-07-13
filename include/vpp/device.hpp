@@ -49,7 +49,8 @@ public:
 	int memoryType(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits = ~0u) const;
 
 	///Returns a bitmask of memoryTypes that match the given parameters.
-	std::uint32_t memoryTypeBits(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits = ~0u) const;
+	std::uint32_t memoryTypeBits(vk::MemoryPropertyFlags mflags,
+		std::uint32_t typeBits = ~0u) const;
 
 	///Returns a CommandBufferProvider that can be used to easily allocate a command buffer in the
 	///current thread.

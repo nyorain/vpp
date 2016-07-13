@@ -182,150 +182,106 @@ void DescriptorSetUpdate::copy(const vk::CopyDescriptorSet& copySet)
 
 //descriptorSetLayout
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
-	const std::vector<DescriptorBinding>& bindings) : Resource(dev)
+	const Range<vk::DescriptorSetLayoutBinding>& bindings) : ResourceHandle(dev)
 {
 	std::vector<vk::DescriptorSetLayoutBinding> vkbindings;
 	vkbindings.reserve(bindings.size());
 
-	for(auto& binding : bindings)
-	{
-		vkbindings.emplace_back();
-		vkbindings.back().descriptorType = binding.type;
-		vkbindings.back().stageFlags = binding.stages;
-		vkbindings.back().descriptorCount = binding.count;
-		vkbindings.back().pImmutableSamplers = nullptr;
-		vkbindings.back().binding = vkbindings.size() - 1;
-	}
-
 	vk::DescriptorSetLayoutCreateInfo descriptorLayout;
-	descriptorLayout.bindingCount = vkbindings.size();
-	descriptorLayout.pBindings = vkbindings.data();
+	descriptorLayout.bindingCount = bindings.size();
+	descriptorLayout.pBindings = bindings.data();
 
-	layout_ = vk::createDescriptorSetLayout(vkDevice(), descriptorLayout);
-	bindings_ = bindings;
-}
-DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& other) noexcept
-{
-	swap(*this, other);
-}
-
-DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout other) noexcept
-{
-	destroy();
-	swap(*this, other);
-	return *this;
+	vkHandle() = vk::createDescriptorSetLayout(vkDevice(), descriptorLayout);
 }
 
 DescriptorSetLayout::~DescriptorSetLayout()
 {
-	if(device_ && vkDescriptorSetLayout())
-	{
-		vk::destroyDescriptorSetLayout(vkDevice(), layout_, nullptr);
-	}
-}
-
-void swap(DescriptorSetLayout& a, DescriptorSetLayout& b) noexcept
-{
-	using std::swap;
-
-	swap(a.bindings_, b.bindings_);
-	swap(a.layout_, b.layout_);
-	swap(a.device_, b.device_);
+	if(vkHandle()) vk::destroyDescriptorSetLayout(vkDevice(), vkHandle());
 }
 
 //DescriptorSet
 DescriptorSet::DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPool pool)
-	: Resource(layout.device()), layout_(&layout)
+	: ResourceHandle(layout.device())
 {
-	auto vklayout = layout.vkDescriptorSetLayout();
-
 	vk::DescriptorSetAllocateInfo allocInfo;
 	allocInfo.descriptorPool = pool;
 	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = &vklayout;
+	allocInfo.pSetLayouts = &layout.vkHandle();
 
-	vk::allocateDescriptorSets(vkDevice(), allocInfo, descriptorSet_);
-}
-
-DescriptorSet::DescriptorSet(DescriptorSet&& other) noexcept
-{
-	swap(*this, other);
-}
-
-DescriptorSet& DescriptorSet::operator=(DescriptorSet other) noexcept
-{
-	swap(*this, other);
-	return *this;
+	vk::allocateDescriptorSets(vkDevice(), allocInfo, vkHandle());
 }
 
 DescriptorSet::~DescriptorSet()
 {
-	layout_ = nullptr;
-	descriptorSet_ = {};
+	///XXX: something about descriptorSet desctruction/freeing
 }
 
-void swap(DescriptorSet& a, DescriptorSet& b) noexcept
+//pipelineLayout
+PipelineLayout::PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info)
+	: ResourceHandle(dev)
 {
-	using std::swap;
-
-	swap(a.descriptorSet_, b.descriptorSet_);
-	swap(a.layout_, b.layout_);
-	swap(a.device_, b.device_);
+	vkHandle() = vk::createPipelineLayout(dev, info);
 }
 
-//Pipeline
-Pipeline::Pipeline(const Device& dev) : Resource(dev)
+PipelineLayout::PipelineLayout(const Device& dev,
+	const Range<std::reference_wrapper<DescriptorSetLayout>>& layouts,
+	const Range<vk::PushConstantRange>& ranges) : ResourceHandle(dev)
 {
+	std::vector<vk::DescriptorSetLayout> vklayouts;
+	vklayouts.reserve(layouts.size());
+	for(auto& layout : layouts) vklayouts.push_back(layout.get());
+
+	vk::PipelineLayoutCreateInfo info;
+	info.setLayoutCount = vklayouts.size();
+	info.pSetLayouts = vklayouts.data();
+	info.pushConstantRangeCount = ranges.size();
+	info.pPushConstantRanges = ranges.data();
+
+	vkHandle() = vk::createPipelineLayout(dev, info);
 }
 
-Pipeline::Pipeline(Pipeline&& other) noexcept
+PipelineLayout::~PipelineLayout()
 {
-	swap(*this, other);
+	if(vkHandle()) vk::destroyPipelineLayout(device(), vkHandle());
 }
 
-Pipeline& Pipeline::operator=(Pipeline other) noexcept
+//pipeline cache
+PipelineCache::PipelineCache(const Device& dev) : ResourceHandle(dev)
 {
-	swap(*this, other);
-	return *this;
+	vkHandle() = vk::createPipelineCache(dev, {});
 }
 
-Pipeline::~Pipeline()
+PipelineCache::PipelineCache(const Device& dev, const Range<std::uint8_t>& data)
+	: ResourceHandle(dev)
 {
-	if(pipeline_) vk::destroyPipeline(vkDevice(), pipeline_, nullptr);
-	if(pipelineLayout_) vk::destroyPipelineLayout(vkDevice(), pipelineLayout_, nullptr);
-
-	pipeline_ = {};
-	pipelineLayout_ = {};
+	vkHandle() = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
 }
 
-void swap(Pipeline& a, Pipeline& b) noexcept
+PipelineCache::PipelineCache(const Device& dev, const StringParam& filename)
+	: ResourceHandle(dev)
 {
-	using std::swap;
-
-	swap(static_cast<ResourceHandle<vk::Pipeline>&>(a), static_cast<ResourceHandle<vk::Pipelne>&>(b));
-	swap(a.pipelineLayout_, b.pipelineLayout_);
-	swap(a.layoutOwned_, b.layoutOwned_);
+	auto data = readFile(filename);
+	vkHandle() = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
 }
 
-//cache
-void savePipelineCache(vk::Device dev, vk::PipelineCache cache, const char* filename)
+void save(vk::Device dev, vk::PipelineCache cache, const char* filename)
 {
 	auto data = vk::getPipelineCacheData(dev, cache);
 	writeFile(filename, data);
 }
 
-vk::PipelineCache loadPipelineCache(vk::Device dev, const char* filename)
+//Pipeline
+Pipeline::Pipeline(const Device& dev, vk::Pipeline pipeline) : ResourceHandle(dev, pipeline)
 {
-	auto data = readFile(filename);
-
-	vk::PipelineCacheCreateInfo info;
-	info.initialDataSize = data.size();
-	info.pInitialData = data.data();
-
-	return vk::createPipelineCache(dev, info);
 }
 
-//utility -format size in bits
+Pipeline::~Pipeline()
+{
+	if(vkHandle()) vk::destroyPipeline(device(), vkHandle());
+}
+
+
+//utility. format size in bits
 unsigned int formatSizeBits(vk::Format format)
 {
 	using namespace vk;

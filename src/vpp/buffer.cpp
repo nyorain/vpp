@@ -59,7 +59,8 @@ DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize si
 	{
 		if(!buf.memoryEntry().allocated())
 		{
-			VPP_DEBUG_OUTPUT("Image has no memory. Undefined data retrived. Calling assureMemory()");
+			VPP_DEBUG_OUTPUT("Buffer has no memory. Undefined will be data retrived. "
+				"Calling assureMemory() and returning the undefined data");
 			buf.assureMemory();
 		}
 	});

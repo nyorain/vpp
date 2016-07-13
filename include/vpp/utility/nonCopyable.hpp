@@ -1,3 +1,5 @@
+//This file is taken from nyorain/nytl nytl/nonCopyable
+
 #pragma once
 
 namespace vpp
