@@ -1,4 +1,5 @@
 //This file is taken from nyorain/nytl nytl/stringParam
+#pragma once
 
 #include <string>
 #include <cstring>

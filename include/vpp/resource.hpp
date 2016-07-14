@@ -128,6 +128,8 @@ public:
 	~ResourceHandle() = default;
 
 	const T& vkHandle() const noexcept { return handle_; }
+	T& vkHandle() noexcept { return handle_; } //XXX: public for now. Why cant this be protected??
+
 	operator T() const noexcept { return vkHandle(); }
 
 	ResourceHandle& resourceBase() noexcept { return *this; }
@@ -136,15 +138,13 @@ public:
 	friend void swap(ResourceHandle<T>& a, ResourceHandle<T>& b) noexcept
 	{
 		using std::swap;
-		swap(a.resourceBase(), b.resourceBase());
+		swap(static_cast<Resource&>(a), static_cast<Resource&>(b));
 		swap(a.handle_, b.handle_);
 	}
 
 protected:
 	ResourceHandle() = default;
 	ResourceHandle(const Device& dev, const T& handle = {}) : Resource(dev), handle_(handle) {}
-
-	T& vkHandle() noexcept { return handle_; }
 
 protected:
 	T handle_ {};

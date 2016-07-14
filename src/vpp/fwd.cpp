@@ -9,10 +9,14 @@ namespace fwd
 
 //from context.hpp
 #ifdef VPP_DEBUG
- extern const vk::DebugReportFlagsEXT defaultDebugFlags = vk::DebugReportBitsEXT::error |
- 	vk::DebugReportBitsEXT::warning;
+
+extern const vk::DebugReportFlagsEXT defaultDebugFlags = vk::DebugReportBitsEXT::error |
+	vk::DebugReportBitsEXT::warning | vk::DebugReportBitsEXT::performanceWarning |
+	vk::DebugReportBitsEXT::debug;
 #else
- extern const vk::DebugReportFlagsEXT defaultDebugFlags = {};
+
+extern const vk::DebugReportFlagsEXT defaultDebugFlags = {};
+
 #endif
 
 //from commandBuffer.hpp

@@ -4,8 +4,14 @@
 #include <vpp/pipeline.hpp>
 #include <vpp/utility/range.hpp>
 
+#include <vector>
+
 namespace vpp
 {
+
+//TODO: something about derivates when copying builder.
+//really ugly that the extra file is needed here...
+class GraphicsPipelineBuilder; //defs.hpp
 
 ///\{
 ///Create multiple vulkan graphic pipelines at once.

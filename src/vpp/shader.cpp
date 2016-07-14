@@ -74,10 +74,6 @@ ShaderStage::ShaderStage(const Device& dev, vk::ShaderModule module, const Creat
 ShaderStage::~ShaderStage()
 {
 	if(owned_ && module_) vk::destroyShaderModule(vkDevice(), module_, nullptr);
-
-	info_ = {};
-	module_ = {};
-	owned_ = {};
 }
 
 ShaderStage::ShaderStage(ShaderStage&& other) noexcept
@@ -151,6 +147,19 @@ std::vector<vk::PipelineShaderStageCreateInfo> ShaderProgram::vkStageInfos() con
 		ret.push_back(stage.vkStageInfo());
 
 	return ret;
+}
+
+//copy
+ShaderProgram copy(const ShaderProgram& other)
+{
+	ShaderProgram ret(other.device());
+	for(auto& stage : other.stages()) ret.stage(stage.vkShaderModule(), stage.info());
+	return ret;
+}
+
+ShaderStage copy(const ShaderStage& other)
+{
+	return {other.device(), other.vkShaderModule(), other.info()};
 }
 
 }

@@ -18,7 +18,7 @@ vk::SwapchainCreateInfoKHR SwapChainSettings::parse(const vk::SurfaceCapabilitie
 	vk::SwapchainCreateInfoKHR ret;
 
 	//choose present mode
-	//mailbox: no tearing, blocks
+	//mailbox: no tearing, blocks (?)
 	//fifo: no tearing, no blocking (using a queue)
 	//fifo-relaxed: tearing, no blocking (tearing only if fps > monitor fps)
 	//immediate-relaxed: tearing, no blocking (tearing only if fps < monitor fps)
@@ -37,7 +37,7 @@ vk::SwapchainCreateInfoKHR SwapChainSettings::parse(const vk::SurfaceCapabilitie
 			best = 3u;
 			ret.presentMode = mode;
 		}
-		else if(mode == vk::PresentModeKHR::fifoRelaxed && best < 2)
+		if(mode == vk::PresentModeKHR::fifoRelaxed && best < 2)
 		{
 			best = 2u;
 			ret.presentMode = mode;

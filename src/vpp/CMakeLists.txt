@@ -3,6 +3,7 @@ set(vpp-sources
 	allocator.cpp
     context.cpp
     device.cpp
+    descriptor.cpp
     procAddr.cpp
 	renderer.cpp
 	memory.cpp
@@ -35,8 +36,7 @@ set(vpp-sources
 	../../external/boost/src/alloc_lib.c
 	../../external/boost/src/dlmalloc.cpp
 
-	utility/file.cpp
-	utility/allocator.cpp)
+	utility/file.cpp)
 
 #add backends
 if(${VPP_WINDOWS})

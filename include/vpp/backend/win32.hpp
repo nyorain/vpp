@@ -6,6 +6,7 @@
 #include <vpp/surface.hpp>
 #include <vpp/context.hpp>
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 namespace vpp

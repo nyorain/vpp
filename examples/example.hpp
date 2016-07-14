@@ -38,6 +38,45 @@ struct App
 
 App* gApp;
 
+void toggleFullscreen(HWND hwnd)
+{
+	static DWORD savedStyle;
+	static DWORD savedExstyle;
+	static bool fullscreen = false;
+
+	if(!fullscreen)
+	{
+		savedStyle = ::GetWindowLong(hwnd, GWL_STYLE);
+		savedExstyle = ::GetWindowLong(hwnd, GWL_EXSTYLE);
+
+		MONITORINFO monitorinfo;
+		monitorinfo.cbSize = sizeof(monitorinfo);
+	    ::GetMonitorInfo(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST),
+			&monitorinfo);
+
+		auto& rect = monitorinfo.rcMonitor;
+		rect.right -= rect.left;
+		rect.bottom -= rect.top;
+
+		::SetWindowLong(hwnd, GWL_STYLE, (savedStyle | WS_POPUP) &
+			~(WS_OVERLAPPEDWINDOW));
+		::SetWindowLong(hwnd, GWL_EXSTYLE, (savedExstyle | WS_EX_TOPMOST) &
+			~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
+		::SetWindowPos(hwnd, HWND_TOP, rect.left, rect.top, rect.right, rect.bottom,
+			SWP_NOOWNERZORDER |	SWP_ASYNCWINDOWPOS | SWP_FRAMECHANGED |
+			SWP_NOZORDER | SWP_NOACTIVATE);
+
+		fullscreen = true;
+	}
+	else
+	{
+		SetWindowLong(hwnd, GWL_STYLE, savedStyle);
+		SetWindowLong(hwnd, GWL_EXSTYLE, savedExstyle);
+		::SetWindowPos(hwnd, nullptr, 100, 100, 1200, 800, SWP_ASYNCWINDOWPOS | SWP_FRAMECHANGED);
+		fullscreen = false;
+	}
+}
+
 LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
     switch(message)
@@ -45,6 +84,26 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 		case WM_ERASEBKGND:
 		{
 			//dont erase it to avoid flickering
+			break;
+		}
+
+		case WM_KEYDOWN:
+		{
+			switch(wparam)
+			{
+				case VK_ESCAPE:
+				{
+					PostQuitMessage(0);
+					DestroyWindow(hwnd);
+					break;
+				}
+
+				case VK_F11:
+				{
+					toggleFullscreen(hwnd);
+					break;
+				}
+			}
 			break;
 		}
 

@@ -6,11 +6,11 @@
 #include <vpp/buffer.hpp>
 #include <vpp/graphicsPipeline.hpp>
 #include <vpp/computePipeline.hpp>
+#include <vpp/descriptor.hpp>
 
-#include <nytl/nytl.hpp>
-
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h> //srsly microsoft? "near" and "far" macros? WTF man hoooly shit
+#include <nytl/vec.hpp>
+#include <nytl/mat.hpp>
+#include <nytl/transform.hpp>
 
 #include <random>
 #include <type_traits>
@@ -24,7 +24,7 @@ struct Particle
 {
 	nytl::Vec2f position;
 	nytl::Vec2f velocity;
-	nytl::Vec4f color;
+	nytl::Vec2f color;
 };
 
 namespace vpp
@@ -58,25 +58,21 @@ class ParticleSystem : public vpp::Resource
 protected:
 	App& app_;
 	std::vector<Particle> particles_;
-
-	vpp::Buffer particlesBuffer1_;
-	vpp::Buffer particlesBuffer2_;
-	vpp::Buffer particlesBuffer3_;
-	vpp::Buffer particlesBuffer4_;
+	vpp::Buffer particlesBuffer_;
 
 	vpp::VertexBufferLayout vertexBufferLayout_;
-	vpp::ComputePipeline computePipeline_;
-	vpp::GraphicsPipeline graphicsPipeline_;
+	vpp::Pipeline computePipeline_;
+	vpp::Pipeline graphicsPipeline_;
 
-	vk::CommandBuffer computeBuffer_;
+	vpp::PipelineLayout graphicsLayout_;
+	vpp::PipelineLayout computeLayout_;
 
-	vk::DescriptorPool descriptorPool_;
+
+	vpp::CommandBuffer computeBuffer_;
+	vpp::DescriptorPool descriptorPool_;
 
 	vpp::DescriptorSetLayout computeDescriptorSetLayout_;
-	vpp::DescriptorSet computeDescriptorSet1_;
-	vpp::DescriptorSet computeDescriptorSet2_;
-	vpp::DescriptorSet computeDescriptorSet3_;
-	vpp::DescriptorSet computeDescriptorSet4_;
+	vpp::DescriptorSet computeDescriptorSet_;
 	vpp::Buffer computeUBO_;
 
 	vpp::DescriptorSetLayout graphicsDescriptorSetLayout_;
@@ -105,9 +101,6 @@ protected:
 	void writeDescriptorSets();
 	void writeParticleBuffer();
 	void writeGraphicsUBO();
-
-	void updateUBOs(const nytl::Vec2ui& mousePos);
-	void compute();
 
 public:
 	ParticleSystem(App& app, std::size_t count);
@@ -166,29 +159,15 @@ void ParticleRenderer::build(unsigned int id, const vpp::RenderPassInstance& ins
 	auto cmdBuffer = instance.vkCommandBuffer();
 	VkDeviceSize offsets[1] = { 0 };
 
-	auto gd = ps().graphicsDescriptorSet_.vkDescriptorSet();
-	auto buf1 = ps().particlesBuffer1_.vkBuffer();
-	auto buf2 = ps().particlesBuffer2_.vkBuffer();
-	auto buf3 = ps().particlesBuffer3_.vkBuffer();
-	auto buf4 = ps().particlesBuffer4_.vkBuffer();
+	auto gd = ps().graphicsDescriptorSet_.vkHandle();
+	auto buf = ps().particlesBuffer_.vkHandle();
 
 	vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::graphics,
-		ps().graphicsPipeline_.vkPipeline());
+		ps().graphicsPipeline_);
 	vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
-		ps().graphicsPipeline_.vkPipelineLayout(), 0, {gd}, {});
-
-	auto size = ps().count_ / 4;
-	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf1}, offsets);
-	vk::cmdDraw(cmdBuffer, size * 4, 1, 0, 0);
-
-	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf2}, offsets);
-	vk::cmdDraw(cmdBuffer, size, 1, 0, 0);
-
-	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf3}, offsets);
-	vk::cmdDraw(cmdBuffer, size, 1, 0, 0);
-
-	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf4}, offsets);
-	vk::cmdDraw(cmdBuffer, size, 1, 0, 0);
+		ps().graphicsLayout_, 0, {gd}, {});
+	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf}, offsets);
+	vk::cmdDraw(cmdBuffer, ps().count_, 1, 0, 0);
 }
 
 std::vector<vk::ClearValue> ParticleRenderer::clearValues(unsigned int)
@@ -204,14 +183,26 @@ void ParticleRenderer::beforeRender(vk::CommandBuffer cmdBuffer)
 	vk::BufferMemoryBarrier bufferBarrier;
 	bufferBarrier.srcAccessMask = vk::AccessBits::shaderWrite | vk::AccessBits::shaderRead;
 	bufferBarrier.dstAccessMask = vk::AccessBits::vertexAttributeRead;
-	bufferBarrier.buffer = ps().particlesBuffer1_.vkBuffer();
+	bufferBarrier.buffer = ps().particlesBuffer_;
 	bufferBarrier.offset = 0;
-	bufferBarrier.size = sizeof(Particle) * ps().particles_.size() / 4;
+	bufferBarrier.size = sizeof(Particle) * ps().count_;
 	bufferBarrier.srcQueueFamilyIndex = vk::queueFamilyIgnored;
 	bufferBarrier.dstQueueFamilyIndex = vk::queueFamilyIgnored;
 
-	vk::cmdPipelineBarrier(cmdBuffer, vk::PipelineStageBits::computeShader,
-		vk::PipelineStageBits::vertexShader, {}, {}, {&bufferBarrier}, {});
+	// vk::BufferMemoryBarrier uniformBarrier;
+	// bufferBarrier.srcAccessMask = vk::AccessBits::hostWrite;
+	// bufferBarrier.dstAccessMask = vk::AccessBits::uniformRead;
+	// bufferBarrier.buffer = ps().graphicsUBO_;
+	// bufferBarrier.offset = 0;
+	// bufferBarrier.size = ps().graphicsUBO_.size();
+	// bufferBarrier.srcQueueFamilyIndex = vk::queueFamilyIgnored;
+	// bufferBarrier.dstQueueFamilyIndex = vk::queueFamilyIgnored;
+
+	// vk::cmdPipelineBarrier(cmdBuffer, vk::PipelineStageBits::topOfPipe,
+	// 	vk::PipelineStageBits::bottomOfPipe, {}, {}, {bufferBarrier, uniformBarrier}, {});
+
+	vk::cmdPipelineBarrier(cmdBuffer, vk::PipelineStageBits::topOfPipe,
+		vk::PipelineStageBits::bottomOfPipe, {}, {}, {bufferBarrier}, {});
 }
 
 ParticleRenderer::AdditionalSemaphores ParticleRenderer::submit(unsigned int id)
@@ -221,7 +212,7 @@ ParticleRenderer::AdditionalSemaphores ParticleRenderer::submit(unsigned int id)
 	//submit command buffer
 	vk::SubmitInfo submitInfo;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &ps().computeBuffer_;
+	submitInfo.pCommandBuffers = &ps().computeBuffer_.vkHandle();
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &computeSemaphore_;
 
@@ -252,8 +243,8 @@ void ParticleSystem::init()
 	initParticles();
 	initParticleBuffer();
 
-	initComputePipeline();
 	initGraphicsPipeline();
+	initComputePipeline();
 
 	//allocator_.allocate();
 	device().deviceAllocator().allocate();
@@ -274,53 +265,42 @@ void ParticleSystem::initGraphicsPipeline()
 		{
 			vk::Format::r32g32Sfloat, //position
 			vk::Format::r32g32Sfloat, //velocity
-			vk::Format::r32g32b32a32Sfloat //color
+			vk::Format::r32g32Sfloat //color (only r and g values)
 		},
 	0}; //at binding 0
 
-	vk::PipelineCache cache;
-	if(vpp::fileExists("gfxCache")) cache = loadPipelineCache(device(), "gfxCache");
-	else cache = vk::createPipelineCache(device(), {});
+	graphicsLayout_ = {device(), {graphicsDescriptorSetLayout_}};
 
-	vpp::GraphicsPipeline::CreateInfo info;
-	info.descriptorSetLayouts = {graphicsDescriptorSetLayout_};
-	info.vertexBufferLayouts = {vertexBufferLayout_};
-	info.dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
-	info.renderPass = app_.renderPass.vkRenderPass();
-	info.cache = cache;
+	vpp::PipelineCache cache(device());
+	if(vpp::fileExists("gfxCache")) cache = {device(), "gfxCache"};
 
-	info.shader = vpp::ShaderProgram(device());
-	info.shader.stage("particles.vert.spv", {vk::ShaderStageBits::vertex});
-	info.shader.stage("particles.frag.spv", {vk::ShaderStageBits::fragment});
+	vpp::GraphicsPipelineBuilder builder(device(), app_.renderPass);
+	builder.vertexBufferLayouts = {vertexBufferLayout_};
+	builder.dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
+	builder.layout = graphicsLayout_;
 
-	info.states = vpp::GraphicsPipeline::States(vk::Viewport{0, 0, 900, 900, 0.f, 1.f});
-	info.states.rasterization.cullMode = vk::CullModeBits::none;
-	info.states.inputAssembly.topology = vk::PrimitiveTopology::pointList;
+	builder.shader.stage("particles.vert.spv", {vk::ShaderStageBits::vertex});
+	builder.shader.stage("particles.frag.spv", {vk::ShaderStageBits::fragment});
 
-	nytl::Timer timer;
-	graphicsPipeline_ = vpp::GraphicsPipeline(device(), info);
-	// std::cout << timer.elapsedTime().milliseconds() << " to create the gfx pipeline.\n";
+	builder.states.rasterization.cullMode = vk::CullModeBits::none;
+	builder.states.inputAssembly.topology = vk::PrimitiveTopology::pointList;
 
-	vpp::savePipelineCache(device(), cache, "gfxCache");
-	vk::destroyPipelineCache(device(), cache);
+	graphicsPipeline_ = builder.build(cache);
+	vpp::save(cache, "gfxCache");
 }
 void ParticleSystem::initComputePipeline()
 {
-	vk::PipelineCache cache;
-	if(vpp::fileExists("compCache")) cache = loadPipelineCache(device(), "compCache");
-	else cache = vk::createPipelineCache(device(), {});
+	computeLayout_ = {device(), {computeDescriptorSetLayout_}};
 
-	vpp::ComputePipeline::CreateInfo info;
-	info.descriptorSetLayouts = {&computeDescriptorSetLayout_};
-	info.shader = vpp::ShaderStage(device(), "particles.comp.spv", {vk::ShaderStageBits::compute});
-	info.cache = cache;
+	vpp::PipelineCache cache(device());
+	if(vpp::fileExists("compCache")) cache = {device(), "compCache"};
 
-	nytl::Timer timer;
-	computePipeline_ = vpp::ComputePipeline(device(), info);
-	// std::cout << timer.elapsedTime().milliseconds() << " to create the compute pipeline.\n";
+	vpp::ComputePipelineBuilder builder;
+	builder.shaderStage = {device(), "particles.comp.spv", {vk::ShaderStageBits::compute}};
+	builder.layout = computeLayout_;
 
-	vpp::savePipelineCache(device(), cache, "compCache");
-	vk::destroyPipelineCache(device(), cache);
+	computePipeline_ = builder.build(cache);
+	vpp::save(cache, "compCache");
 }
 
 void ParticleSystem::initDescriptors()
@@ -328,42 +308,34 @@ void ParticleSystem::initDescriptors()
 	//init pool
 	vk::DescriptorPoolSize typeCounts[2] {};
 	typeCounts[0].type = vk::DescriptorType::uniformBuffer;
-	typeCounts[0].descriptorCount = 5;
+	typeCounts[0].descriptorCount = 2;
 
 	typeCounts[1].type = vk::DescriptorType::storageBuffer;
-	typeCounts[1].descriptorCount = 4;
+	typeCounts[1].descriptorCount = 1;
 
 	vk::DescriptorPoolCreateInfo descriptorPoolInfo;
 	descriptorPoolInfo.poolSizeCount = 2;
 	descriptorPoolInfo.pPoolSizes = typeCounts;
-	descriptorPoolInfo.maxSets = 5;
+	descriptorPoolInfo.maxSets = 2;
 
-	descriptorPool_ = vk::createDescriptorPool(vkDevice(), descriptorPoolInfo);
-
+	descriptorPool_ = {device(), descriptorPoolInfo};
 
 	//graphics set
-	std::vector<vpp::DescriptorBinding> gfxBindings =
-	{
-		{vk::DescriptorType::uniformBuffer, vk::ShaderStageBits::vertex} //contains matrices
+	auto gfxBindings = {
+		vpp::descriptorBinding(vk::DescriptorType::uniformBuffer, vk::ShaderStageBits::vertex, 0)
 	};
 
-	graphicsDescriptorSetLayout_ = vpp::DescriptorSetLayout(device(), gfxBindings);
-	graphicsDescriptorSet_ = vpp::DescriptorSet(graphicsDescriptorSetLayout_, descriptorPool_);
-
+	graphicsDescriptorSetLayout_ = {device(), gfxBindings};
+	graphicsDescriptorSet_ = {graphicsDescriptorSetLayout_, descriptorPool_};
 
 	//computeSet
-	std::vector<vpp::DescriptorBinding> compBindings =
-	{
-		{vk::DescriptorType::storageBuffer, vk::ShaderStageBits::compute}, //the particles
-		{vk::DescriptorType::uniformBuffer, vk::ShaderStageBits::compute} //delta time, mouse pos
+	auto compBindings = {
+		vpp::descriptorBinding(vk::DescriptorType::storageBuffer, vk::ShaderStageBits::compute, 0),
+		vpp::descriptorBinding(vk::DescriptorType::uniformBuffer, vk::ShaderStageBits::compute, 1)
 	};
 
-	computeDescriptorSetLayout_ = vpp::DescriptorSetLayout(device(), compBindings);
-
-	computeDescriptorSet1_ = vpp::DescriptorSet(computeDescriptorSetLayout_, descriptorPool_);
-	computeDescriptorSet2_ = vpp::DescriptorSet(computeDescriptorSetLayout_, descriptorPool_);
-	computeDescriptorSet3_ = vpp::DescriptorSet(computeDescriptorSetLayout_, descriptorPool_);
-	computeDescriptorSet4_ = vpp::DescriptorSet(computeDescriptorSetLayout_, descriptorPool_);
+	computeDescriptorSetLayout_ = {device(), compBindings};
+	computeDescriptorSet_ = {computeDescriptorSetLayout_, descriptorPool_};
 }
 
 void ParticleSystem::initDescriptorBuffers()
@@ -373,14 +345,14 @@ void ParticleSystem::initDescriptorBuffers()
 	gfxInfo.size = sizeof(nytl::Mat4f) * 2; //viewMatrix, perspectiveMatrix
 	gfxInfo.usage = vk::BufferUsageBits::uniformBuffer;
 
-	graphicsUBO_ = vpp::Buffer(device(), gfxInfo, vk::MemoryPropertyBits::hostVisible);
+	graphicsUBO_ = {device(), gfxInfo, vk::MemoryPropertyBits::hostVisible};
 
 	//compute
 	vk::BufferCreateInfo compInfo;
 	compInfo.size = sizeof(float) * 5; //mouse pos(vec2f), speed, deltaTime, attract
 	compInfo.usage = vk::BufferUsageBits::uniformBuffer;
 
-	computeUBO_ = vpp::Buffer(device(), compInfo, vk::MemoryPropertyBits::hostVisible);
+	computeUBO_ = {device(), compInfo, vk::MemoryPropertyBits::hostVisible};
 }
 
 void ParticleSystem::initParticles()
@@ -395,58 +367,25 @@ void ParticleSystem::initParticles()
 		particle.position.y = distr(rgen);
 
 		particle.velocity = nytl::Vec2f{0.f, 0.f};
-		particle.color = nytl::Vec4f(0.0, 0.0, 1.0, 1.0);
+		particle.color = nytl::Vec2f(1., 1.);
 	}
 }
 void ParticleSystem::initParticleBuffer()
 {
 	vk::BufferCreateInfo bufInfo;
-	bufInfo.size = sizeof(Particle) * particles_.size() / 4;
-	bufInfo.usage = vk::BufferUsageBits::vertexBuffer | vk::BufferUsageBits::storageBuffer | vk::BufferUsageBits::transferDst;
+	bufInfo.size = sizeof(Particle) * count_;
+	bufInfo.usage = vk::BufferUsageBits::vertexBuffer | vk::BufferUsageBits::storageBuffer
+		| vk::BufferUsageBits::transferDst;
 
-	particlesBuffer1_ = vpp::Buffer(device(), bufInfo, 1);
-	particlesBuffer2_ = vpp::Buffer(device(), bufInfo, 1);
-	particlesBuffer3_ = vpp::Buffer(device(), bufInfo, 1);
-	particlesBuffer4_ = vpp::Buffer(device(), bufInfo, 1);
+	particlesBuffer_ = {device(), bufInfo, 1};
 }
 
 void ParticleSystem::writeParticleBuffer()
 {
-	// particlesBuffer1_.assureMemory();
-	// std::cout << "deviceLocal: " << (particlesBuffer_.memoryEntry().memory()->propertyFlags() & vk::MemoryPropertyBits::deviceLocal) << "\n";
-	// std::cout << "size: " << particlesBuffer_.size() << "\n";
-	// auto map = particlesBuffer_.memoryMap();
-	// std::memcpy(map.ptr(), particles_.data(), sizeof(Particle) * particles_.size());
-	auto size = particles_.size() / 4;
-	// auto work = particlesBuffer1_.fill({particles_.data(), sizeof(Particle) * size});
-	// auto work2 = particlesBuffer2_.fill({particles_.data() + size, sizeof(Particle) * size});
-	// auto work3 = particlesBuffer3_.fill({particles_.data() + 2 * size, sizeof(Particle) * size});
-	// auto work4 = particlesBuffer4_.fill({particles_.data() + 3 * size, sizeof(Particle) * size});
-	//
-	// //std::cout << "finish...\n";
-	// work->finish();
-	//  work2->finish();
-	//  work3->finish();
-	//  work4->finish();
+	vpp::BufferUpdate update(particlesBuffer_, vpp::BufferAlign::std430);
+	update.add(particles_);
 
-	std::vector<Particle> p1(particles_.begin(), particles_.begin() + size);
-	std::vector<Particle> p2(particles_.begin() + size, particles_.begin() + 2 * size);
-	std::vector<Particle> p3(particles_.begin() + 2 * size, particles_.begin() + 3 * size);
-	std::vector<Particle> p4(particles_.begin() + 3 * size, particles_.begin() + 4 * size);
-
-	vpp::BufferUpdate u1(particlesBuffer1_);
-	u1.add(p1);
-
-	vpp::BufferUpdate u2(particlesBuffer2_);
-	u2.add(p2);
-
-	vpp::BufferUpdate u3(particlesBuffer3_);
-	u3.add(p3);
-
-	vpp::BufferUpdate u4(particlesBuffer4_);
-	u4.add(p4);
-
-	//particlesBuffer1_.fill140(particles_);
+	//fill430(particlesBuffer_, particles_);
 }
 
 void ParticleSystem::buildComputeBuffer()
@@ -457,37 +396,56 @@ void ParticleSystem::buildComputeBuffer()
 	vk::CommandBufferBeginInfo cmdBufInfo;
 	vk::beginCommandBuffer(computeBuffer_, cmdBufInfo);
 
-	auto cd1 = computeDescriptorSet1_.vkDescriptorSet();
-	auto cd2 = computeDescriptorSet2_.vkDescriptorSet();
-	auto cd3 = computeDescriptorSet3_.vkDescriptorSet();
-	auto cd4 = computeDescriptorSet4_.vkDescriptorSet();
+	auto cd = computeDescriptorSet_.vkHandle();
 
-	vk::cmdBindPipeline(computeBuffer_, vk::PipelineBindPoint::compute, computePipeline_.vkPipeline());
+	vk::BufferMemoryBarrier uniformBarrier;
+	uniformBarrier.srcAccessMask = vk::AccessBits::hostWrite;
+	uniformBarrier.dstAccessMask = vk::AccessBits::uniformRead;
+	uniformBarrier.buffer = computeUBO_;
+	uniformBarrier.offset = 0;
+	uniformBarrier.size = computeUBO_.size();
+	uniformBarrier.srcQueueFamilyIndex = vk::queueFamilyIgnored;
+	uniformBarrier.dstQueueFamilyIndex = vk::queueFamilyIgnored;
 
+	vk::cmdPipelineBarrier(computeBuffer_, vk::PipelineStageBits::topOfPipe,
+		vk::PipelineStageBits::bottomOfPipe, {}, {}, {uniformBarrier}, {});
+
+	vk::cmdBindPipeline(computeBuffer_, vk::PipelineBindPoint::compute, computePipeline_);
 	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::compute,
-		computePipeline_.vkPipelineLayout(), 0, {cd1}, {});
-	vk::cmdDispatch(computeBuffer_, particles_.size() / 64, 1, 1);
-
-	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::compute,
-		computePipeline_.vkPipelineLayout(), 0, {cd2}, {});
-	vk::cmdDispatch(computeBuffer_, particles_.size() / 64, 1, 1);
-
-	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::compute,
-		computePipeline_.vkPipelineLayout(), 0, {cd3}, {});
-	vk::cmdDispatch(computeBuffer_, particles_.size() / 64, 1, 1);
-
-	vk::cmdBindDescriptorSets(computeBuffer_, vk::PipelineBindPoint::compute,
-		computePipeline_.vkPipelineLayout(), 0, {cd4}, {});
-	vk::cmdDispatch(computeBuffer_, particles_.size() / 64, 1, 1);
+		computeLayout_, 0, {cd}, {});
+	vk::cmdDispatch(computeBuffer_, count_ / 16, 1, 1);
 
 	vk::endCommandBuffer(computeBuffer_);
 }
 
-void ParticleSystem::updateUBOs(const nytl::Vec2ui& mousePos)
+void ParticleSystem::writeGraphicsUBO()
+{
+	auto pMat = nytl::perspective3(45.f, 900.f / 900.f, 0.1f, 100.f);
+	auto vMat = nytl::identityMat<4, float>();
+	auto map = graphicsUBO_.memoryMap();
+
+	vpp::BufferUpdate update(graphicsUBO_);
+	update.add(pMat, vMat);
+}
+
+void ParticleSystem::writeDescriptorSets()
+{
+	vpp::DescriptorSetUpdate gfx(graphicsDescriptorSet_);
+	gfx.uniform({{graphicsUBO_, 0, sizeof(nytl::Mat4f) * 2}});
+
+	vpp::DescriptorSetUpdate comp(computeDescriptorSet_);
+	comp.storage({{particlesBuffer_, 0, sizeof(Particle) * count_}});
+	comp.uniform({{computeUBO_, 0, sizeof(float) * 5}});
+
+	vpp::apply({gfx, comp});
+}
+
+void ParticleSystem::ParticleSystem::update(const nytl::Vec2ui& mousePos)
 {
 	//compute
 	auto now = Clock::now();
-	float delta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1, 1>>>(now - lastUpdate_).count();
+	float delta = std::chrono::duration_cast<std::chrono::duration<
+		float, std::ratio<1, 1>>>(now - lastUpdate_).count();
 	lastUpdate_ = now;
 
 	float speed = 15.f;
@@ -500,63 +458,8 @@ void ParticleSystem::updateUBOs(const nytl::Vec2ui& mousePos)
 	std::memcpy(map.ptr() + sizeof(float), &speed, sizeof(float));
 	std::memcpy(map.ptr() + sizeof(float) * 2, &attract, sizeof(float));
 	std::memcpy(map.ptr() + sizeof(float) * 3, &normMousePos, sizeof(nytl::Vec2f));
+	if(!map.coherent())map.flush();
 }
-
-void ParticleSystem::writeGraphicsUBO()
-{
-	auto pMat = nytl::perspective3(45.f, 900.f / 900.f, 0.1f, 100.f);
-	auto vMat = nytl::identityMat<4, float>();
-	auto map = graphicsUBO_.memoryMap();
-	// std::memcpy(map.ptr(), &pMat, sizeof(nytl::Mat4f));
-	// std::memcpy(map.ptr() + sizeof(nytl::Mat4f), &vMat, sizeof(nytl::Mat4f));
-
-	vpp::BufferUpdate update(graphicsUBO_);
-	update.add(pMat, vMat);
-}
-
-void ParticleSystem::writeDescriptorSets()
-{
-	vpp::DescriptorSetUpdate gfx(graphicsDescriptorSet_);
-	gfx.uniform({{graphicsUBO_, 0, sizeof(nytl::Mat4f) * 2}});
-
-	vpp::DescriptorSetUpdate comp1(computeDescriptorSet1_);
-	comp1.storage({{particlesBuffer1_, 0, sizeof(Particle) * particles_.size() / 4}});
-	comp1.uniform({{computeUBO_, 0, sizeof(float) * 5}});
-
-	vpp::DescriptorSetUpdate comp2(computeDescriptorSet2_);
-	comp2.storage({{particlesBuffer2_, 0, sizeof(Particle) * particles_.size() / 4}});
-	comp2.uniform({{computeUBO_, 0, sizeof(float) * 5}});
-
-	vpp::DescriptorSetUpdate comp3(computeDescriptorSet3_);
-	comp3.storage({{particlesBuffer3_, 0, sizeof(Particle) * particles_.size() / 4}});
-	comp3.uniform({{computeUBO_, 0, sizeof(float) * 5}});
-
-	vpp::DescriptorSetUpdate comp4(computeDescriptorSet4_);
-	comp4.storage({{particlesBuffer4_, 0, sizeof(Particle) * particles_.size() / 4}});
-	comp4.uniform({{computeUBO_, 0, sizeof(float) * 5}});
-
-	vpp::apply({gfx, comp1, comp2, comp3, comp4});
-}
-
-void ParticleSystem::compute()
-{
-	/*
-	vk::SubmitInfo submitInfo;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &computeBuffer_;
-
-	vk::queueSubmit(app_.computeQueue, {submitInfo}, 0);
-	vk::queueWaitIdle(app_.computeQueue);
-	*/
-}
-
-void ParticleSystem::ParticleSystem::update(const nytl::Vec2ui& mousePos)
-{
-	updateUBOs(mousePos);
-	//compute();
-}
-
-//utility
 
 int main(int argc, char** argv)
 {

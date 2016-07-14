@@ -38,17 +38,17 @@ struct Particle
 {
 	vec2 pos;
 	vec2 vel;
-	vec4 col;
+	vec2 col;
 };
 
-layout (std430, binding = 0) buffer Pos
+layout(local_size_x = 16) in;
+
+layout(std430, set = 0, binding = 0) buffer Pos
 {
 	Particle particles[];
 };
 
-layout (local_size_x = 16) in;
-
-layout (binding = 1) uniform UBO
+layout(set = 0, binding = 1) uniform UBO
 {
 	float deltaT;
 	float speed;
@@ -58,14 +58,14 @@ layout (binding = 1) uniform UBO
 	float attractorY;
 } ubo;
 
-vec3 attraction(vec3 pos, vec3 attractPos)
+vec2 attraction(vec2 pos, vec2 attractPos)
 {
-    vec3 delta = attractPos - pos;
+    vec2 delta = attractPos - pos;
 	const float damp = 0.5;
     float dDampedDot = dot(delta, delta) + damp;
     float invDist = 1.0f / sqrt(dDampedDot);
     float invDistCubed = invDist*invDist*invDist;
-    return delta * invDistCubed * 0.00035;
+    return delta * invDistCubed * 0.035;
 }
 
 void main()
@@ -73,18 +73,18 @@ void main()
     // Current SSBO index
     uint index = gl_GlobalInvocationID.x;
 	// Don't try to write beyond particle count
-    if (index >= particles.length())
-		return;
+    // if (index >= particles.length())
+	// 	return;
 
     // Read position and velocity
     vec2 vPos = particles[index].pos;
     vec2 vVel = particles[index].vel;
 
-	vec3 destPos = vec3(ubo.attractorX, ubo.attractorY, 0.0);
-
     // Calculate new velocity depending on attraction point
-	if(ubo.attract != 0.0) vVel += ubo.deltaT * attraction(vec3(vPos, 0.0), destPos.xyz).xy * 100;
-	vVel *= 1 - (0.05 * ubo.deltaT * 10);
+	if(ubo.attract != 0.0)
+		vVel += ubo.deltaT * attraction(vPos, vec2(ubo.attractorX, ubo.attractorY));
+
+	vVel *= 1 - (0.5 * ubo.deltaT);
 
     // Move by velocity
 	vPos += vVel * ubo.speed * ubo.deltaT * 10;
@@ -92,14 +92,12 @@ void main()
 	if ((vPos.x < -1.0) || (vPos.x > 1.0))
 		vVel.x -= vVel.x;
 
-	//color
-	vec3 color = vec3(1.0, 1.0 - clamp(150 * length(vVel), 0., 1.), 0.0);
-
-	//col.r = 1 - clamp(7 * sqrt(abs(vVel.x) + abs(vVel.y)), 0., 1.);
+	if ((vPos.y < -1.0) || (vPos.y > 1.0))
+		vVel.y -= vVel.y;
 
     // Write back
     particles[index].pos = vPos;
     particles[index].vel = vVel;
-	particles[index].col.xyz = color;
+	particles[index].col.y = 1.0 - clamp(150 * length(vVel), 0., 1.);
 
 }
