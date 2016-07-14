@@ -4,6 +4,7 @@
 #include <vpp/resource.hpp>
 #include <vpp/framebuffer.hpp>
 #include <vpp/renderPass.hpp>
+#include <vpp/image.hpp>
 
 #include <memory>
 #include <vector>
@@ -71,7 +72,20 @@ public:
 class SwapChainRenderer : public ResourceReference<SwapChainRenderer>
 {
 public:
-	struct AttachmentInfo; //defs.hpp
+	struct AttachmentInfo
+	{
+		//will be used to create static/dynamic attachments
+		ViewableImage::CreateInfo createInfo;
+
+		//specifies whether it is a dynamic or static attachment.
+		//Each framebuffer (for the different swapChain attachments) has its own dyanmic attachments
+		//while static attachments are shared among them
+		bool dynamic = false;
+
+		//if valid all other members will be ignored and this will be used as some additional
+		//external attachment. Note that it must have at least the size of the swapChain
+		vk::ImageView external = {};
+	};
 
 	///The CreateInfo struct holds all information that is needed for construction a
 	///SwapChainRenderer. It allows to define additional attachments of different types.

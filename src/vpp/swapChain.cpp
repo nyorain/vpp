@@ -37,7 +37,7 @@ vk::SwapchainCreateInfoKHR SwapChainSettings::parse(const vk::SurfaceCapabilitie
 			best = 3u;
 			ret.presentMode = mode;
 		}
-		if(mode == vk::PresentModeKHR::fifoRelaxed && best < 2)
+		else if(mode == vk::PresentModeKHR::fifoRelaxed && best < 2)
 		{
 			best = 2u;
 			ret.presentMode = mode;
@@ -94,6 +94,148 @@ vk::SwapchainCreateInfoKHR SwapChainSettings::parse(const vk::SurfaceCapabilitie
 	ret.imageArrayLayers = 1;
 	ret.queueFamilyIndexCount = 0;
 	ret.clipped = true;
+	return ret;
+}
+
+//DefaultSwapChainSettings
+//utility
+namespace
+{
+
+using EA = DefaultSwapChainSettings::ErrorAction;
+
+void onError(EA action, const char* field)
+{
+	const std::string errorMsg = "vpp::DefaultSwapChainSettings: using different ";
+
+	if(action == EA::output)
+		std::cerr << errorMsg << field << "\n";
+
+	if(action == EA::throwException)
+		throw std::runtime_error(errorMsg + field);
+}
+
+}
+
+//DefaultSwapChainSettings
+vk::SwapchainCreateInfoKHR DefaultSwapChainSettings::parse(const vk::SurfaceCapabilitiesKHR& caps,
+	const Range<vk::PresentModeKHR>& modes,
+	const Range<vk::SurfaceFormatKHR>& formats,
+	const vk::Extent2D& size) const
+{
+
+	vk::SwapchainCreateInfoKHR ret;
+
+	//choose present mode
+	ret.presentMode = modes[0];
+	auto best = 0u;
+	for(auto& mode : modes)
+	{
+		if(mode == prefPresentMode)
+		{
+			ret.presentMode = mode;
+			break;
+		}
+		else if(mode == vk::PresentModeKHR::mailbox)
+		{
+			best = 4u;
+			ret.presentMode = mode;
+		}
+		else if(mode == vk::PresentModeKHR::fifo && best < 3)
+		{
+			best = 3u;
+			ret.presentMode = mode;
+		}
+		else if(mode == vk::PresentModeKHR::fifoRelaxed && best < 2)
+		{
+			best = 2u;
+			ret.presentMode = mode;
+		}
+		else if(mode == vk::PresentModeKHR::immediate && best < 1)
+		{
+			best = 1u;
+			ret.presentMode = mode;
+		}
+	}
+
+	if(ret.presentMode != prefPresentMode) onError(errorAction, "presentMode");
+	prefPresentMode = ret.presentMode; 
+
+	//format
+	ret.imageFormat = formats[0].format;
+	ret.imageColorSpace = formats[0].colorSpace;
+
+	if(formats.size() == 1 && formats[0].format == vk::Format::undefined)
+	{
+		ret.imageFormat = prefFormat;
+	}
+	else
+	{
+		for(auto& format : formats)
+		{
+			if(format.format == prefFormat)
+			{
+				ret.imageFormat = format.format;
+				ret.imageColorSpace = format.colorSpace;
+				break;
+			}
+			else if(format.format == vk::Format::r8g8b8a8Unorm)
+			{
+				ret.imageFormat = format.format;
+				ret.imageColorSpace = format.colorSpace;
+			}
+		}
+
+		if(ret.imageFormat != prefFormat) onError(errorAction, "format");
+		prefFormat = ret.imageFormat;
+	}
+
+	//size
+	//if the size is equal the zero the size has to be chosen by manually (using the given size)
+	if(caps.currentExtent.width == 0xFFFFFFFF && caps.currentExtent.height == 0xFFFFFFFF)
+	{
+		ret.imageExtent = size;
+		VPP_DEBUG_CHECK(vpp::SwapChainSettings,
+		{
+			if(!size.width || !size.height) VPP_DEBUG_OUTPUT("Invalid size will be set.");
+		});
+	}
+	else
+	{
+		ret.imageExtent = caps.currentExtent;
+	}
+
+	//number of images
+	ret.minImageCount = caps.minImageCount + 1;
+	if((caps.maxImageCount > 0) && (ret.minImageCount > caps.maxImageCount))
+		ret.minImageCount = caps.maxImageCount;
+
+	//transform
+	ret.preTransform = caps.currentTransform;
+	if(caps.supportedTransforms & prefTransform)
+		ret.preTransform = prefTransform;
+	else if(caps.supportedTransforms & vk::SurfaceTransformBitsKHR::identity)
+		ret.preTransform = vk::SurfaceTransformBitsKHR::identity;
+
+	if(ret.preTransform != prefTransform) onError(errorAction, "transform");
+	prefTransform = ret.preTransform;
+
+	//alpha
+	ret.compositeAlpha = vk::CompositeAlphaBitsKHR::opaque;
+	if(caps.supportedCompositeAlpha & prefAlpha)
+		ret.compositeAlpha = prefAlpha;
+	else if(caps.supportedCompositeAlpha & vk::CompositeAlphaBitsKHR::inherit)
+		ret.compositeAlpha = vk::CompositeAlphaBitsKHR::inherit;
+
+	if(ret.compositeAlpha != prefAlpha) onError(errorAction, "alpha");
+	prefAlpha = ret.compositeAlpha;
+
+	//createInfo
+	ret.imageUsage = vk::ImageUsageBits::colorAttachment | prefUsage;
+	ret.imageArrayLayers = 1;
+	ret.queueFamilyIndexCount = 0;
+	ret.clipped = true;
+
 	return ret;
 }
 

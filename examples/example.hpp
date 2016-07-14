@@ -6,7 +6,6 @@
 #include <vpp/renderPass.hpp>
 #include <vpp/renderer.hpp>
 #include <vpp/image.hpp>
-#include <vpp/defs.hpp>
 
 #include <string>
 #include <iostream>

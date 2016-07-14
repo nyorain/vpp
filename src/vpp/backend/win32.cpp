@@ -1,6 +1,5 @@
 #include <vpp/backend/win32.hpp>
 #include <vpp/procAddr.hpp>
-#include <vpp/defs.hpp>
 
 namespace vpp
 {

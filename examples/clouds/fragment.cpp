@@ -2,7 +2,6 @@
 
 #include <vpp/provider.hpp>
 #include <vpp/utility/file.hpp>
-#include <vpp/defs.hpp>
 #include <vpp/buffer.hpp>
 #include <vpp/graphicsPipeline.hpp>
 #include <vpp/computePipeline.hpp>

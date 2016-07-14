@@ -13,7 +13,6 @@
 #include <vpp/computePipeline.hpp>
 #include <vpp/context.hpp>
 #include <vpp/debug.hpp>
-#include <vpp/defs.hpp>
 #include <vpp/descriptor.hpp>
 #include <vpp/device.hpp>
 #include <vpp/framebuffer.hpp>

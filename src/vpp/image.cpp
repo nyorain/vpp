@@ -1,8 +1,8 @@
 #include <vpp/image.hpp>
-#include <vpp/defs.hpp>
 #include <vpp/provider.hpp>
 #include <vpp/transfer.hpp>
 #include <vpp/transferWork.hpp>
+#include <vpp/vk.hpp>
 #include <vpp/utility/debug.hpp>
 
 #include <utility>

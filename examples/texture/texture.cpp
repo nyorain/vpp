@@ -1,6 +1,5 @@
 #include <example.hpp>
 
-#include <vpp/defs.hpp>
 #include <vpp/image.hpp>
 #include <vpp/graphicsPipeline.hpp>
 

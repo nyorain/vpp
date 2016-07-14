@@ -1,10 +1,10 @@
 #include <vpp/renderer.hpp>
-#include <vpp/defs.hpp>
 #include <vpp/swapChain.hpp>
 #include <vpp/surface.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/provider.hpp>
 #include <vpp/submit.hpp>
+#include <vpp/vk.hpp>
 
 #include <stdexcept>
 

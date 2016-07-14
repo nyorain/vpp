@@ -84,20 +84,39 @@ void main()
 	if(ubo.attract != 0.0)
 		vVel += ubo.deltaT * attraction(vPos, vec2(ubo.attractorX, ubo.attractorY));
 
-	vVel *= 1 - (0.5 * ubo.deltaT);
+	vVel *= 1 - (0.6 * ubo.deltaT);
 
     // Move by velocity
 	vPos += vVel * ubo.speed * ubo.deltaT * 10;
 
-	if ((vPos.x < -1.0) || (vPos.x > 1.0))
-		vVel.x -= vVel.x;
+	if(vPos.x < -1.0)
+	{
+		vVel.x = abs(vVel.x) * 0.4; //they lose energy when colliding
+		vPos.x = -1.0;
+	}
 
-	if ((vPos.y < -1.0) || (vPos.y > 1.0))
-		vVel.y -= vVel.y;
+	if(vPos.x > 1.0)
+	{
+		vVel.x = abs(vVel.x) * -0.4; //they lose energy when colliding
+		vPos.x = 1.0;
+	}
+
+	if(vPos.y < -1.0)
+	{
+		vVel.y = abs(vVel.y) * 0.4; //they lose energy when colliding
+		vPos.y = -1.0;
+	}
+
+	if(vPos.y > 1.0)
+	{
+		vPos.y = 1.0;
+		vVel.y -= 0.022 * abs(fract((1 + vPos.x) * 100)) * abs(fract(vVel.y * 100) * fract(vVel.x * 100));
+		vVel.x -= 0.00025 * fract((1 + vPos.x) * 1000) * fract(vVel.y * 1000) * fract(vVel.x * 1000);
+	}
 
     // Write back
     particles[index].pos = vPos;
     particles[index].vel = vVel;
-	particles[index].col.y = 1.0 - clamp(150 * length(vVel), 0., 1.);
+	particles[index].col.y = 1.0 - clamp(100 * length(vVel), 0., 1.);
 
 }

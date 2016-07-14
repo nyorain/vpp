@@ -4,6 +4,7 @@
 #include <vpp/memoryResource.hpp>
 #include <vpp/allocator.hpp>
 #include <vpp/work.hpp>
+#include <vpp/vulkan/structs.hpp>
 
 #include <memory>
 
@@ -67,7 +68,12 @@ inline WorkPtr changeLayout(const Image& img, vk::ImageLayout ol, vk::ImageLayou
 class ViewableImage : public ResourceReference<ViewableImage>
 {
 public:
-	struct CreateInfo;
+	struct CreateInfo
+	{
+		vk::ImageCreateInfo imgInfo;
+		vk::ImageViewCreateInfo viewInfo;
+		vk::MemoryPropertyFlags memoryFlags {}; //memory flags for image
+	};
 
 	///\{
 	///Some useful default create infos.

@@ -24,7 +24,6 @@ set(vpp-sources
     swapChain.cpp
 	transfer.cpp
 	work.cpp
-	fwd.cpp
 	queue.cpp
 	provider.cpp
 

@@ -3,6 +3,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/swapChain.hpp>
 #include <vpp/surface.hpp>
+#include <vpp/vulkan/enums.hpp>
 
 #include <vector>
 #include <string>
@@ -10,8 +11,6 @@
 
 namespace vpp
 {
-
-namespace fwd { extern const vk::DebugReportFlagsEXT defaultDebugFlags; }
 
 //TODO: correct graphics/compute/present queue support -- holy shit one bugfest atm
 //TODO: correct layer management
@@ -29,7 +28,14 @@ public:
 		///These two members are ignored if the backend choses the size (i.e. the size of the window)
 		unsigned int width = 0;
 		unsigned int height = 0;
-		vk::DebugReportFlagsEXT debugFlags = fwd::defaultDebugFlags;
+
+#ifdef VPP_DEBUG
+		vk::DebugReportFlagsEXT debugFlags =
+			vk::DebugReportBitsEXT::warning | vk::DebugReportBitsEXT::error |
+			vk::DebugReportBitsEXT::performanceWarning | vk::DebugReportBitsEXT::debug;
+#else
+		vk::DebugReportFlagsEXT debugFlags = {};
+#endif
 
 		std::vector<const char*> instanceExtensions;
 		std::vector<const char*> deviceExtensions;

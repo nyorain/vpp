@@ -1,7 +1,7 @@
 #include <vpp/framebuffer.hpp>
 #include <vpp/memory.hpp>
-#include <vpp/defs.hpp>
 #include <vpp/renderPass.hpp>
+#include <vpp/vk.hpp>
 #include <vpp/utility/range.hpp>
 
 namespace vpp

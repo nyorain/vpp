@@ -1,9 +1,8 @@
 #pragma once
 
-//experimental feature, may not be fully working
-
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
+#include <vpp/vulkan/enums.hpp>
 
 #include <memory>
 #include <map>
@@ -16,10 +15,8 @@ namespace vpp
 //e.g. CommandBuffers must be destroyed in the same thread as they were constructed.
 
 class CommandPool;
-namespace fwd { extern const vk::CommandBufferLevel commandBufferLevelPrimary; }
 
-///XXX: this class really needed?
-//CommandBuffer
+//RAII vulkan CommandBuffer wrapper.
 class CommandBuffer : public ResourceHandleReference<vk::CommandBuffer, CommandBuffer>
 {
 public:
@@ -37,8 +34,7 @@ protected:
 	const CommandPool* commandPool_ {};
 };
 
-//CommandPool
-//XXX: needed?
+//RAII vulkan CommandPool wrapper.
 class CommandPool : public ResourceHandle<vk::CommandPool>
 {
 public:
@@ -49,9 +45,9 @@ public:
 	CommandPool(CommandPool&& other) noexcept = default;
 	CommandPool& operator=(CommandPool&& other) noexcept = default;
 
+	CommandBuffer allocate(vk::CommandBufferLevel lvl = vk::CommandBufferLevel::primary);
 	std::vector<CommandBuffer> allocate(std::size_t count,
-		vk::CommandBufferLevel lvl = fwd::commandBufferLevelPrimary);
-	CommandBuffer allocate(vk::CommandBufferLevel lvl = fwd::commandBufferLevelPrimary);
+		vk::CommandBufferLevel lvl = vk::CommandBufferLevel::primary);
 
 	void reset(vk::CommandPoolResetFlags flags) const;
 

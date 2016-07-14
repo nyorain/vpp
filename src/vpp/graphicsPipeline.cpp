@@ -1,8 +1,8 @@
 #include <vpp/graphicsPipeline.hpp>
-#include <vpp/defs.hpp>
 #include <vpp/context.hpp>
 #include <vpp/shader.hpp>
 #include <vpp/buffer.hpp>
+#include <vpp/vk.hpp>
 
 #include <utility>
 #include <algorithm>

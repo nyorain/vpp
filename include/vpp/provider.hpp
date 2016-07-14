@@ -43,7 +43,7 @@ public:
 
 	///Allocates a commandBuffer for the calling thread that matches the given requirements.
 	CommandBuffer get(std::uint32_t qfamily, vk::CommandPoolCreateFlags flags = {},
-		vk::CommandBufferLevel lvl = fwd::commandBufferLevelPrimary);
+		vk::CommandBufferLevel lvl = vk::CommandBufferLevel::primary);
 
 	///Allocates a commandBuffer that matches the given flags.
 	// CommandBuffer get(vk::QueueFlags qflags, vk::CommandPoolCreateFlags flags = {},
@@ -53,7 +53,7 @@ public:
 	///Might be more efficient than multiple calls to get.
 	std::vector<CommandBuffer> get(std::uint32_t qfamily, unsigned int count,
 		vk::CommandPoolCreateFlags flags = {},
-		vk::CommandBufferLevel lvl = fwd::commandBufferLevelPrimary);
+		vk::CommandBufferLevel lvl = vk::CommandBufferLevel::primary);
 
 protected:
 	std::map<std::thread::id, std::vector<CommandPool>> commandPools_;
