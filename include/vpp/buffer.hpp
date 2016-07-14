@@ -2,8 +2,6 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/memoryResource.hpp>
-#include <vpp/allocator.hpp>
-#include <vpp/commandBuffer.hpp>
 #include <vpp/work.hpp>
 #include <vpp/utility/range.hpp>
 
@@ -34,6 +32,7 @@ public:
 };
 
 ///Vulkan shader data types.
+///Defines all possible types that can be passed as buffer update paramter.
 enum class ShaderType
 {
 	none, //used for things like e.g. containers
@@ -50,7 +49,14 @@ enum class ShaderType
 	structure //Vulkan type has additional "member" tuples with member pointers
 };
 
+///Returns the alignment the given ShaderType requires.
+///Does return 0 for special values such as none, buffer, structure or matrix.
+constexpr unsigned int align(ShaderType type);
+
 ///Specifies the different buffer alignment methods.
+///For the differences, read https://www.opengl.org/wiki/Interface_Block_(GLSL)#Memory_layout.
+///Uniform buffer are by default std140 while storage buffers are by default std430.
+///Both defaults can be explicitly changed in the shader files using the buffers.
 enum class BufferAlign
 {
 	std140,
@@ -60,7 +66,8 @@ enum class BufferAlign
 class BufferUpdate : public ResourceReference<BufferUpdate>
 {
 public:
-	BufferUpdate(const Buffer& buffer, BufferAlign align = BufferAlign::std140, bool direct = false);
+	BufferUpdate(const Buffer& buffer, BufferAlign align = BufferAlign::std140,
+		bool direct = false);
 	~BufferUpdate();
 
 	template<typename T> void addSingle(const T& obj);
@@ -105,6 +112,7 @@ protected:
 	bool direct_ = false;
 };
 
+#include <vpp/bits/vulkanTypes.inl>
 #include <vpp/bits/buffer.inl>
 
 ///TODO: function for aligned buffer reading

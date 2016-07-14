@@ -132,7 +132,7 @@ void DescriptorSetUpdate::storage(ImageInfos images, int binding, unsigned int e
 	writes_.emplace_back(*set_, binding, elem, images_.back().size(),
 		vk::DescriptorType::storageImage, images_.back().data(), nullptr, nullptr);
 }
-void DescriptorSetUpdate::combinedSampler(ImageInfos images, int binding, unsigned int elem)
+void DescriptorSetUpdate::imageSampler(ImageInfos images, int binding, unsigned int elem)
 {
 	if(binding == -1) binding = currentBinding_++;
 	else currentBinding_ = binding + 1;

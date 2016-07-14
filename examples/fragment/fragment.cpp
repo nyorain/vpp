@@ -1,15 +1,13 @@
 #include <example.hpp>
 
 #include <vpp/provider.hpp>
-#include <vpp/utility/file.hpp>
 #include <vpp/buffer.hpp>
+#include <vpp/descriptor.hpp>
 #include <vpp/graphicsPipeline.hpp>
-#include <vpp/computePipeline.hpp>
+#include <vpp/vk.hpp>
+#include <vpp/utility/file.hpp>
 
 #include <nytl/nytl.hpp>
-
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h> //srsly microsoft? "near" and "far" macros? WTF man hoooly shit
 
 #include <cassert>
 #include <cstring>
@@ -37,9 +35,9 @@ protected:
 
 	App& app_;
 
-	vpp::GraphicsPipeline pipeline_;
-
-	vk::DescriptorPool descriptorPool_;
+	vpp::Pipeline pipeline_;
+	vpp::DescriptorPool descriptorPool_;
+	vpp::PipelineLayout pipelineLayout_;
 	vpp::DescriptorSetLayout descriptorSetLayout_;
 	vpp::DescriptorSet descriptorSet_;
 	vpp::Buffer ubo_;
@@ -92,20 +90,19 @@ void FragmentData::init()
 
 void FragmentData::initPipeline()
 {
-	vpp::GraphicsPipeline::CreateInfo info;
-	info.descriptorSetLayouts = {descriptorSetLayout_};
-	info.dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
-	info.renderPass = app_.renderPass.vkRenderPass();
+	pipelineLayout_ = {device(), {descriptorSetLayout_}};
 
-	info.shader = vpp::ShaderProgram(device());
-	info.shader.stage("fragment.vert.spv", {vk::ShaderStageBits::vertex});
-	info.shader.stage("fragment.frag.spv", {vk::ShaderStageBits::fragment});
+	vpp::GraphicsPipelineBuilder builder(device(), app_.renderPass);
+	builder.layout = pipelineLayout_;
+	builder.dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
 
-	info.states = {vk::Viewport{0, 0, 1, 1, 0.f, 1.f}};
-	info.states.rasterization.cullMode = vk::CullModeBits::none;
-	info.states.inputAssembly.topology = vk::PrimitiveTopology::triangleList;
+	builder.shader.stage("fragment.vert.spv", {vk::ShaderStageBits::vertex});
+	builder.shader.stage("fragment.frag.spv", {vk::ShaderStageBits::fragment});
 
-	pipeline_ = vpp::GraphicsPipeline(device(), info);
+	builder.states.rasterization.cullMode = vk::CullModeBits::none;
+	builder.states.inputAssembly.topology = vk::PrimitiveTopology::triangleList;
+
+	pipeline_ = builder.build();
 }
 
 void FragmentData::initDescriptors()
@@ -120,16 +117,15 @@ void FragmentData::initDescriptors()
 	descriptorPoolInfo.pPoolSizes = typeCounts;
 	descriptorPoolInfo.maxSets = 1;
 
-	descriptorPool_ = vk::createDescriptorPool(vkDevice(), descriptorPoolInfo);
+	descriptorPool_ = {device(), descriptorPoolInfo};
 
 	//graphics set
-	std::vector<vpp::DescriptorBinding> gfxBindings =
-	{
-		{vk::DescriptorType::uniformBuffer, vk::ShaderStageBits::fragment} //fragment stuff
+	auto gfxBindings = {
+		vpp::descriptorBinding(vk::DescriptorType::uniformBuffer, vk::ShaderStageBits::fragment)
 	};
 
-	descriptorSetLayout_ = vpp::DescriptorSetLayout(device(), gfxBindings);
-	descriptorSet_ = vpp::DescriptorSet(descriptorSetLayout_, descriptorPool_);
+	descriptorSetLayout_ = {device(), gfxBindings};
+	descriptorSet_ = {descriptorSetLayout_, descriptorPool_};
 }
 
 void FragmentData::initDescriptorBuffers()
@@ -165,7 +161,7 @@ void FragmentData::writeDescriptorSets()
 {
 	//write buffers
 	vpp::DescriptorSetUpdate update(descriptorSet_);
-	update.uniform({{ubo_.vkBuffer(), 0, sizeof(nytl::Mat4f) * 2}});
+	update.uniform({{ubo_, 0, sizeof(nytl::Mat4f) * 2}});
 }
 
 void FragmentData::update(const nytl::Vec2ui& mousePos)
@@ -183,11 +179,11 @@ void FragmentRenderer::build(unsigned int, const vpp::RenderPassInstance& instan
 	auto cmdBuffer = instance.vkCommandBuffer();
 	VkDeviceSize offsets[1] = { 0 };
 
-	auto gd = data().descriptorSet_.vkDescriptorSet();
+	auto& gd = data().descriptorSet_;
 
 	vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::graphics, data().pipeline_);
 	vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
-		data().pipeline_.vkPipelineLayout(), 0, {gd}, {});
+		data().pipelineLayout_, 0, {gd}, {});
 	vk::cmdDraw(cmdBuffer, 6, 1, 0, 0);
 }
 

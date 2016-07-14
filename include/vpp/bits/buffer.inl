@@ -1,53 +1,5 @@
 #pragma once
 
-struct RawBufferData
-{
-public:
-	const std::uint8_t& data;
-	std::size_t size;
-
-public:
-	template<typename T>
-	RawBufferData(const T& obj, std::size_t count = 1)
-		: data(reinterpret_cast<const std::uint8_t&>(obj)), size(sizeof(T) * count) {}
-};
-
-template<typename T>
-constexpr RawBufferData raw(const T& obj, std::size_t count = 1) { return {obj, count}; }
-
-template<typename T>
-constexpr RawBufferData raw(const T* obj, std::size_t count = 1) { return {*obj, count}; }
-
-template<typename T> struct VulkanType { static constexpr auto type = ShaderType::none; };
-template<typename T> struct VulkanType<T&> : public VulkanType<T> {};
-template<typename T> struct VulkanType<const T> : public VulkanType<T> {};
-template<typename T> struct VulkanType<volatile T> : public VulkanType<T> {};
-template<typename T> struct VulkanType<const volatile T> : public VulkanType<T> {};
-template<> struct VulkanType<float> { static constexpr auto type = ShaderType::scalar; };
-template<> struct VulkanType<bool> { static constexpr auto type = ShaderType::scalar; };
-template<> struct VulkanType<std::uint32_t> { static constexpr auto type = ShaderType::scalar; };
-template<> struct VulkanType<std::int32_t> { static constexpr auto type = ShaderType::scalar; };
-template<> struct VulkanType<double> { static constexpr auto type = ShaderType::scalar_64; };
-template<> struct VulkanType<RawBufferData> { static constexpr auto type = ShaderType::buffer; };
-
-template<typename T> auto constexpr VulkanTypeV = VulkanType<T>::type;
-
-constexpr unsigned int align(ShaderType type)
-{
-	switch(type)
-	{
-		case ShaderType::scalar: return 4;
-		case ShaderType::scalar_64:
-		case ShaderType::vec2: return 8;
-		case ShaderType::vec3:
-		case ShaderType::vec4:
-		case ShaderType::vec2_64: return 16;
-		case ShaderType::vec3_64:
-		case ShaderType::vec4_64: return 32;
-		default: return 0;
-	}
-}
-
 namespace detail
 {
 
@@ -197,4 +149,20 @@ template<typename... T>
 void BufferUpdate::add(const T&... objs)
 {
 	int e1[] = {(addSingle(objs), 0)...};
+}
+
+constexpr unsigned int align(ShaderType type)
+{
+	switch(type)
+	{
+		case ShaderType::scalar: return 4;
+		case ShaderType::scalar_64:
+		case ShaderType::vec2: return 8;
+		case ShaderType::vec3:
+		case ShaderType::vec4:
+		case ShaderType::vec2_64: return 16;
+		case ShaderType::vec3_64:
+		case ShaderType::vec4_64: return 32;
+		default: return 0;
+	}
 }

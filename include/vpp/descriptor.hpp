@@ -77,9 +77,7 @@ public:
 	void sampler(ImageInfos images, int binding = -1, unsigned int elem = 0);
 	void image(ImageInfos images, int binding = -1, unsigned int elem = 0);
 	void storage(ImageInfos images, int binding = -1, unsigned int elem = 0);
-
-	//rename to imageSampler
-	void combinedSampler(ImageInfos images, int binding = -1, unsigned int elem = 0);
+	void imageSampler(ImageInfos images, int binding = -1, unsigned int elem = 0);
 	void inputAttachment(ImageInfos images, int binding = -1, unsigned int elem = 0);
 
 	void uniform(BufferViewInfos views, int binding = -1, unsigned int elem = 0);

@@ -159,7 +159,7 @@ vk::SwapchainCreateInfoKHR DefaultSwapChainSettings::parse(const vk::SurfaceCapa
 	}
 
 	if(ret.presentMode != prefPresentMode) onError(errorAction, "presentMode");
-	prefPresentMode = ret.presentMode; 
+	prefPresentMode = ret.presentMode;
 
 	//format
 	ret.imageFormat = formats[0].format;

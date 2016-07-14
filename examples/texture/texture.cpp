@@ -1,7 +1,9 @@
 #include <example.hpp>
 
 #include <vpp/image.hpp>
+#include <vpp/descriptor.hpp>
 #include <vpp/graphicsPipeline.hpp>
+#include <vpp/vk.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -78,35 +80,35 @@ public:
 			info.pPoolSizes = typeCounts;
 			info.maxSets = 1;
 
-			descriptorPool_ = vk::createDescriptorPool(device(), info);
+			descriptorPool_ = {device(), info};
 
 			//set
-			layout = {device(), {{vk::DescriptorType::combinedImageSampler,
-				vk::ShaderStageBits::fragment}}};
+			layout = {device(), {vpp::descriptorBinding(vk::DescriptorType::combinedImageSampler,
+				vk::ShaderStageBits::fragment)}};
 
 			descriptorSet_ = vpp::DescriptorSet(layout, descriptorPool_);
 
 			//write
 			vpp::DescriptorSetUpdate update(descriptorSet_);
-			update.combinedSampler({{sampler_, texture_.vkImageView(), vk::ImageLayout::general}});
+			update.imageSampler({{sampler_, texture_.vkImageView(), vk::ImageLayout::general}});
 		}
 
 		//pipeline
 		{
-			vpp::GraphicsPipeline::CreateInfo info;
-			info.descriptorSetLayouts = {layout};
-			info.dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
-			info.renderPass = app_.renderPass.vkRenderPass();
+			pipelineLayout_ = {device(), {layout}};
 
-			info.shader = vpp::ShaderProgram(device());
-			info.shader.stage("texture.vert.spv", {vk::ShaderStageBits::vertex});
-			info.shader.stage("texture.frag.spv", {vk::ShaderStageBits::fragment});
+			vpp::GraphicsPipelineBuilder builder(device(), app_.renderPass);
+			builder.layout = pipelineLayout_;
+			builder.dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
 
-			info.states = {{0, 0, 900, 900}};
-			info.states.rasterization.cullMode = vk::CullModeBits::none;
-			info.states.inputAssembly.topology = vk::PrimitiveTopology::triangleList;
+			builder.shader = vpp::ShaderProgram(device());
+			builder.shader.stage("texture.vert.spv", {vk::ShaderStageBits::vertex});
+			builder.shader.stage("texture.frag.spv", {vk::ShaderStageBits::fragment});
 
-			pipeline_ = {device(), info};
+			builder.states.rasterization.cullMode = vk::CullModeBits::none;
+			builder.states.inputAssembly.topology = vk::PrimitiveTopology::triangleList;
+
+			pipeline_ = builder.build();
 		}
 
 
@@ -118,9 +120,10 @@ protected:
 
 	App& app_;
 	vpp::ViewableImage texture_;
-	vpp::GraphicsPipeline pipeline_;
+	vpp::Pipeline pipeline_;
+	vpp::PipelineLayout pipelineLayout_;
 	vpp::DescriptorSet descriptorSet_;
-	vk::DescriptorPool descriptorPool_;
+	vpp::DescriptorPool descriptorPool_;
 	vk::Sampler sampler_;
 	bool initialized_ = false;
 };
@@ -142,9 +145,9 @@ public:
 	{
 		auto cmdBuffer = instance.vkCommandBuffer();
 		vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::graphics,
-			data().pipeline_.vkPipeline());
+			data().pipeline_);
 		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
-			data().pipeline_.vkPipelineLayout(), 0, {data().descriptorSet_}, {});
+			data().pipelineLayout_, 0, {data().descriptorSet_}, {});
 		vk::cmdDraw(cmdBuffer, 6, 1, 0, 0);
 	}
 	std::vector<vk::ClearValue> clearValues(unsigned int) override
