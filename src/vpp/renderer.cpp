@@ -114,7 +114,8 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 	renderBuffers_.reserve(swapChain.renderBuffers().size());
 
 	auto qFam = info.queueFamily;
-	auto cmdBuffers = device().commandProvider().get(qFam, swapChain.renderBuffers().size());
+	auto cmdBuffers = device().commandProvider().get(qFam, swapChain.renderBuffers().size(),
+		vk::CommandPoolCreateBits::resetCommandBuffer);
 
 	//frame buffers
 	for(auto& cmdBuffer : cmdBuffers)

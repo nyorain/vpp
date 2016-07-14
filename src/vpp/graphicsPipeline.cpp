@@ -87,6 +87,10 @@ vk::GraphicsPipelineCreateInfo GraphicsPipelineBuilder::parse()
 {
 	vk::GraphicsPipelineCreateInfo ret;
 
+	//reset
+	bindingDescriptions_.clear();
+	attributeDescriptions_.clear();
+
 	//Binding description
 	std::size_t attributeCount = 0;
 	for(auto& layout : vertexBufferLayouts)

@@ -15,6 +15,9 @@ public:
 template<typename T>
 constexpr RawBufferData raw(const T& obj, std::size_t count = 1) { return {obj, count}; }
 
+template<typename T>
+constexpr RawBufferData raw(const T* obj, std::size_t count = 1) { return {*obj, count}; }
+
 template<typename T> struct VulkanType { static constexpr auto type = ShaderType::none; };
 template<typename T> struct VulkanType<T&> : public VulkanType<T> {};
 template<typename T> struct VulkanType<const T> : public VulkanType<T> {};
