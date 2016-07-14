@@ -48,6 +48,10 @@ public:
 	//virtual CommandExecutionState submit(unsigned int, vk::CommandBuffer gfx, vk::Semaphore render,
 	//	vk::Semaphore& present);
 
+	///XXX: this function is bad at all... it allocates something on the heap but is one
+	///	of the functions called every frame. Can be done better in some way?
+	/// Some SubmitManager functions as well. Then at least use some kind of pmr.
+
 	virtual AdditionalSemaphores submit(unsigned int id) { return {}; }
 
 	///This function is called before every frame and allows the builder to execute/queue

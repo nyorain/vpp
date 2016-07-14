@@ -1,9 +1,9 @@
 - better renderer resetting (all command pools at once, just resize the frameRenderers vector)
-- textures
+- textures (overthing viewable image + sampler)
 - fully implement examples!
 	- general initializer
 		- something about descriptors and descriptor pools
-		- think about buffer/image providers
+		- think about buffer/image providers (better not)
 	- improve classes to use allocators and provider
 	- backend agnostic createContext function
 	- display class for vkDisplayKHR extension
@@ -11,5 +11,4 @@
 		- easier querying/creation/using for commands
 	- some smaller improvements
 		- mapMemory: check valid usage (esp. alignment and stuff)
-
-	-pipeline caches
+		- pmr for performance critical (every-frame) functions.
