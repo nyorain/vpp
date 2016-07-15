@@ -12,20 +12,13 @@
 namespace vpp
 {
 
-///Returns the size in bytes of the given format.
-///E.g. vk::Format::r8g8b8a8* will return 4, since it has a size of 4 * 8 bits = 32 bits = 4 bytes.
-///For compressed formats this function will return the size of one block in bytes.
-///\sa blockSize
-unsigned int formatSize(vk::Format format);
+//TODO: rework. Does not offer all flexibility needed. stride and stuff atm not changeable
+//for graphics pipelines. Abolish those wrapper structs and replace them with initializer funcs.
+//VkVertexInputBindingDescription: describes a vertex buffer binding.
+//VkVertexInputAttributeDescription: describes a vertexShader <in> variable and associates it
+//	with a vertex buffer binding.
 
-///Returns the size of one compressed block of a compressed vulkan format.
-///If the given format is not a compressed format, {1, 1} is returned.
-///For vk::Format::undefined, {0, 0} is returned
-///\sa formatSize
-vk::Extent2D blockSize(vk::Format format);
-
-
-///Defined the different vertex inputs a pipeline takes.
+///Defines the different vertex inputs a pipeline takes.
 struct VertexBufferLayout
 {
 	std::vector<vk::Format> attributes;

@@ -49,6 +49,16 @@ public:
 	virtual std::uint8_t& data() override { return *map_.ptr(); }
 };
 
+///Download work implementation for stored data.
+class StoredDataWork : public FinishedWork<std::uint8_t&>
+{
+public:
+	std::vector<std::uint8_t> data_;
+
+	StoredDataWork(std::vector<uint8_t>&& data) : data_(std::move(data)) {}
+	virtual std::uint8_t& data() override { return *data_.data(); }
+};
+
 ///Upload work implementation.
 class UploadWork : public TransferWork<void>
 {

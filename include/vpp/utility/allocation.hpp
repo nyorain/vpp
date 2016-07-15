@@ -17,7 +17,7 @@ struct Allocation
 };
 
 ///Aligns an offset.
-template<typename T>
-T align(T offset, T alignment) { return std::ceil(offset / double(alignment)) * alignment; }
+template<typename T> T align(T offset, T alignment)
+	{ return std::ceil(offset / double(alignment)) * alignment; }
 
 }

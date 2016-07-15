@@ -21,31 +21,45 @@ public:
 
 		//image
 		{
-			//load image
-			int width, height, comp;
-			auto data = stbi_load("image.png", &width, &height, &comp, 4);
-			if(!data) throw std::runtime_error("Failed to load image image.png");
+			//load image 1
+			int width1, height1, comp1;
+			auto data1 = stbi_load("image1.png", &width1, &height1, &comp1, 4);
+			if(!data1) throw std::runtime_error("Failed to load image image1.png");
+
+			//load image 2
+			int width2, height2, comp2;
+			auto data2 = stbi_load("image2.png", &width2, &height2, &comp2, 4);
+			if(!data1) throw std::runtime_error("Failed to load image image2.png");
 
 			//assert(comp = 4); //assert rgba
 			vk::Extent3D extent;
-			extent.width = width;
-			extent.height = height;
+			extent.width = width1 + width2;
+			extent.height = height1 + height2;
 			extent.depth = 1;
 
 			//texture
 			auto info = vpp::ViewableImage::defaultColor2D();
 			info.imgInfo.extent = extent;
-			info.imgInfo.tiling = vk::ImageTiling::linear;
+			info.imgInfo.tiling = vk::ImageTiling::optimal;
 			info.imgInfo.format = vk::Format::r8g8b8a8Unorm;
 			info.viewInfo.format = vk::Format::r8g8b8a8Unorm;
-			info.memoryFlags = vk::MemoryPropertyBits::hostVisible;
+			// info.memoryFlags = vk::MemoryPropertyBits::hostVisible;
 			texture_ = {device(), info};
 
-			std::cout << texture_.image().size() << "\n";
-			std::cout << width * height * comp << "\n";
+			// std::cout << texture_.image().size() << "\n";
+			// std::cout << width * height * comp << "\n";
 
-			fill(texture_.image(), *data, vk::ImageLayout::undefined, extent,
-				{vk::ImageAspectBits::color, 0, 0, 1}, width * height * comp);
+			extent.width = width1;
+			extent.height = height1;
+
+			fill(texture_.image(), *data1, vk::Format::r8g8b8a8Unorm, vk::ImageLayout::undefined,
+				extent, {vk::ImageAspectBits::color, 0, 0})->finish();
+
+			extent.width = width2;
+			extent.height = height2;
+
+			fill(texture_.image(), *data2, vk::Format::r8g8b8a8Unorm, vk::ImageLayout::undefined,
+				extent, {vk::ImageAspectBits::color, 0, 0}, {width1, height1, 0})->finish();
 
 			//sampler
 			vk::SamplerCreateInfo samplerInfo;

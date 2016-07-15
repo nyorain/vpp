@@ -11,6 +11,18 @@
 namespace vpp
 {
 
+///Returns the size in bytes of the given format.
+///E.g. vk::Format::r8g8b8a8* will return 4, since it has a size of 4 * 8 bits = 32 bits = 4 bytes.
+///For compressed formats this function will return the size of one block in bytes.
+///\sa blockSize
+unsigned int formatSize(vk::Format format);
+
+///Returns the size of one compressed block of a compressed vulkan format.
+///If the given format is not a compressed format, {1, 1} is returned.
+///For vk::Format::undefined, {0, 0} is returned
+///\sa formatSize
+vk::Extent2D blockSize(vk::Format format);
+
 
 ///Representing a vulkan image on a device and having its own memory allocation bound to it.
 ///The Image class does not store further information like size, type, format or layout.
@@ -27,26 +39,45 @@ public:
 	Image& operator=(Image&& other) noexcept = default;
 };
 
+//TODO: allow compressed formats. Some way to allow filling a compressed image with
+//	uncompressed data? doing the compressing on the gpu?
+
 ///Fills the given image with data.
-///The image must be either allocated on host visible memory or must have the transferDst bit set
-///as usage and must not be multisampled.
-///\param dataSize The size of the given data. If vk::wholeSize, it will be assumed to be as large
-///as the images memory size - offset.
-///\param data Tightly packed data
-///The data must be in linear order, independent from the images tiling.
+///There are two different methods for filling an image: memoryMap and transfer.
+///MemoryMap is used if the image is mappable and the allowMap param is true, otherwise
+///the transferMethod is used.
+///Some of the parameters are only needed for one of the two methods. If it is certain
+///which method is used before calling this function they can be set to any value.
+///\param image The image to retrieve the data from. Must have linear tiling and a non-compressed
+///format. Must not be multisampled and either be created on host visible memory of with the
+///transferDst usage bit set.
+///\param data Tightly packed data.
+///The data must be in row-major order and large enough for the given extent.
+///The size of data will be expected to be extent.w * extent.h * extent.d * formatSize(format).
+///\param format The images format. Only important for the size, so if the images format
+///is r8g8b8a8*, passing a8b8g8r8* as format is fine.
+///\param layout The layout of the image when this work will be submitted.
+///Only needed if the image is retrieved per transfer. If the layout is not transferDstOptimal
+///or the generel it will be changed to transferDstOptimal.
+///\param extent The size of the image region to fill. Note that offset + extent must not be larger
+///than the images extent.
+///\param subres The Subresource to fill.
+///\param offset The offset of the image region to fill. By default no offset.
 ///\param allowMap If set to false, the image fill always be filled using a transfer command
-///rather than mapping its memory. Needed e.g. if the image has an optimal tiling.
-WorkPtr fill(const Image& image, const std::uint8_t& data, vk::ImageLayout layout,
-	const vk::Extent3D& extent, const vk::ImageSubresourceLayers& subres,
-	vk::DeviceSize dataSize = vk::wholeSize, bool allowMap = true);
+///rather than mapping its memory. Needed e.g. if the image has an optimal tiling since
+///optimal tiling images cannot be filled using memory maps. True by default.
+WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
+	vk::ImageLayout layout, const vk::Extent3D& extent, const vk::ImageSubresource& subres,
+	const vk::Offset3D& offset = {}, bool allowMap = true);
 
 ///Retrieves the data from the given image.
 ///The image must be either allocated on host visible memory or must have the transferSrc bit set
 ///as usage and must not be multisampled.
 ///\param allowMap If set to false, the image fill always be filled using a transfer command
 ///rather than mapping its memory. Needed e.g. if the image has an optimal tiling.
-DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, const vk::Extent3D& extent,
-	const vk::ImageSubresourceLayers& subres, bool allowMap = true);
+DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format format,
+	const vk::Extent3D& extent, const vk::ImageSubresource& subres,
+	const vk::Offset3D& offset = {}, bool allowMap = true);
 
 
 ///XXX: rather use vk::ImageSubresource param instead of only aspects and guessing

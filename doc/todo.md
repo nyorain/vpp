@@ -12,3 +12,6 @@
 	- some smaller improvements
 		- mapMemory: check valid usage (esp. alignment and stuff)
 		- pmr for performance critical (every-frame) functions.
+
+	- think about include of nytl headers. Should really the namespace be replaced? header guards?
+		projects using nytl outside of vpp should be able to do so (and use it for vpp calls).
