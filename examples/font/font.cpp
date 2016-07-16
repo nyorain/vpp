@@ -8,11 +8,11 @@
 #define DDF_FONT_IMPLEMENTATION
 #include "ddf_font.h"
 
-constexpr char printString[] = "HelloqWorld";
+constexpr char printString[] = "HelloWorldThisFontHasNoSpacesqq";
 constexpr auto stringSize = sizeof(printString) - 1;
 
 constexpr auto xpos = 00;
-constexpr auto ypos = 400;
+constexpr auto ypos = 200;
 
 struct Vertex
 {
@@ -78,19 +78,19 @@ public:
 			//sampler
 			vk::SamplerCreateInfo samplerInfo;
 			samplerInfo.magFilter = vk::Filter::linear;
-			samplerInfo.minFilter = vk::Filter::nearest;
+			samplerInfo.minFilter = vk::Filter::linear;
 			samplerInfo.mipmapMode = vk::SamplerMipmapMode::linear;
-			samplerInfo.addressModeU = vk::SamplerAddressMode::repeat;
-			samplerInfo.addressModeV = vk::SamplerAddressMode::repeat;
-			samplerInfo.addressModeW = vk::SamplerAddressMode::repeat;
+			samplerInfo.addressModeU = vk::SamplerAddressMode::clampToEdge;
+			samplerInfo.addressModeV = vk::SamplerAddressMode::clampToEdge;
+			samplerInfo.addressModeW = vk::SamplerAddressMode::clampToEdge;
 			samplerInfo.mipLodBias = 0;
-			samplerInfo.anisotropyEnable = true;
-			samplerInfo.maxAnisotropy = 32;
+			samplerInfo.anisotropyEnable = false;
+			samplerInfo.maxAnisotropy = 0;
 			samplerInfo.compareEnable = false;
 			samplerInfo.compareOp = {};
-			samplerInfo.minLod = 0;
-			samplerInfo.maxLod = 0.5;
-			samplerInfo.borderColor = vk::BorderColor::floatTransparentBlack;
+			samplerInfo.minLod = 0.0;
+			samplerInfo.maxLod = 0.0;
+			samplerInfo.borderColor = vk::BorderColor::floatOpaqueWhite;
 			samplerInfo.unnormalizedCoordinates = false;
 			sampler_ = vk::createSampler(device(), samplerInfo);
 		}
@@ -117,8 +117,8 @@ public:
 				float ystart = ypos + charData.offset_y;
 				float ustart = charData.texcoord_x;
 				float vstart = charData.texcoord_y;
-				float xsize = charData.charwidth;
-				float ysize = charData.charheight;
+				float xsize = charData.charwidth * 3;
+				float ysize = charData.charheight * 3;
 				float xsizeuv = charData.texwidth;
 				float ysizeuv = charData.texheight;
 
@@ -142,7 +142,7 @@ public:
 				vertex.v -= ysizeuv;
 				update.add(vpp::raw(vertex)); //6
 
-				xoff = xstart + charData.advance; //chardata.advance
+				xoff = xstart + 2.5 * charData.advance; //chardata.advance
 			}
 		}
 

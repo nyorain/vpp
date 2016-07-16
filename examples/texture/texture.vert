@@ -30,5 +30,9 @@ void main()
 	);
 
 	gl_Position = positions[gl_VertexIndex];
+
+	//font inversion
+	// oTexCoords = vec2(0, 1) - vec2(-1, 1) * texCoords[gl_VertexIndex];
+
 	oTexCoords = texCoords[gl_VertexIndex];
 }

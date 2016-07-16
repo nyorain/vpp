@@ -29,9 +29,9 @@ void main()
     // Acquire the signed distance
     float d = median(s.r, s.g, s.b) - 0.5;
     // Weight between inside and outside (anti-aliasing)
-    float w = clamp(d / (fwidth(d)) + 0.8, 0.0, 1.0);
-    // float w = smoothstep(0.0, 1.0, d / fwidth(d) + 0.5);
+    float w = clamp(d / fwidth(d) + 0.5, 0.0, 1.0);
+	// float w = d + 0.5;
+    // float w = smoothstep(0.4, 0.6, d + 0.5);
     // Combining the background and foreground color
-    // oColor = mix(vec4(fontColor, 1.0), vec4(fontColor, 0.0), w);
 	oColor = vec4(fontColor, w);
 }

@@ -156,7 +156,7 @@ void initWindow(App& app)
     wndClass.hInstance = app.hinstance;
     wndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
     wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wndClass.hbrBackground = (HBRUSH) GetStockObject(WHITE_BRUSH);
+    wndClass.hbrBackground = nullptr;
     wndClass.lpszMenuName = NULL;
     wndClass.lpszClassName = name.c_str();
     wndClass.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
