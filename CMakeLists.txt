@@ -26,6 +26,9 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED on)
+
 #to disable ninja byproduct warning
 cmake_policy(SET CMP0058 NEW)
 

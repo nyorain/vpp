@@ -5,11 +5,19 @@
 #include <vpp/graphicsPipeline.hpp>
 #include <vpp/vk.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 #define DDF_FONT_IMPLEMENTATION
 #include "ddf_font.h"
+
+constexpr char printString[] = "HelloqWorld";
+constexpr auto stringSize = sizeof(printString) - 1;
+
+constexpr auto xpos = 00;
+constexpr auto ypos = 400;
+
+struct Vertex
+{
+	float x, y, u, v;
+};
 
 class TextureData : public vpp::Resource
 {
@@ -21,53 +29,10 @@ public:
 	{
 		if(initialized_) return;
 		vpp::Resource::init(app_.context.device());
+		ddf_font font;
 
 		//image
 		{
-			// //load image 1
-			// int width1, height1, comp1;
-			// auto data1 = stbi_load("image1.png", &width1, &height1, &comp1, 4);
-			// if(!data1) throw std::runtime_error("Failed to load image image1.png");
-			//
-			// //load image 2
-			// int width2, height2, comp2;
-			// auto data2 = stbi_load("test.png", &width2, &height2, &comp2, 4);
-			// if(!data2) throw std::runtime_error("Failed to load image image2.png");
-
-			// int width, height, comp;
-			// auto data = stbi_load("test.png", &width, &height, &comp, 4);
-			// if(!data) throw std::runtime_error("Failed to load image image2.png");
-
-			//assert(comp = 4); //assert rgba
-			// vk::Extent3D extent;
-			// extent.width = width;
-			// extent.height = height;
-			// extent.depth = 1;
-			//
-			// //texture
-			// auto info = vpp::ViewableImage::defaultColor2D();
-			// info.imgInfo.extent = extent;
-			// info.imgInfo.tiling = vk::ImageTiling::optimal;
-			// info.imgInfo.format = vk::Format::r8g8b8a8Unorm;
-			// info.viewInfo.format = vk::Format::r8g8b8a8Unorm;
-			// info.memoryFlags = vk::MemoryPropertyBits::hostVisible;
-			// texture_ = {device(), info};
-
-			// std::cout << texture_.image().size() << "\n";
-			// std::cout << width * height * comp << "\n";
-
-			// fill(texture_.image(), *data, vk::Format::r8g8b8a8Unorm, vk::ImageLayout::undefined,
-			// 	extent, {vk::ImageAspectBits::color, 0, 0})->finish();
-
-			// extent.width = width2;
-			// extent.height = height2;
-			//
-			// fill(texture_.image(), *data2, vk::Format::r8g8b8a8Unorm, vk::ImageLayout::undefined,
-			// 	extent, {vk::ImageAspectBits::color, 0, 0}, {width1, height1, 0})->finish();
-
-
-
-			ddf_font font;
 			if(!ddf_font_create(&font, "font.ddf"))
 			{
 				printf("ddf_font error %d", ddf_get_last_error());
@@ -76,7 +41,7 @@ public:
 
 			auto width = font.texture_width;
 			auto height = font.texture_height;
-			uint8_t* data = font.texture_data;
+			const uint8_t* data = font.texture_data;
 
 			std::cout << width << " -- " << height << "\n";
 
@@ -91,6 +56,7 @@ public:
 				}
 			}
 
+			//assert(comp = 4); //assert rgba
 			vk::Extent3D extent;
 			extent.width = width;
 			extent.height = height;
@@ -99,35 +65,85 @@ public:
 			//texture
 			auto info = vpp::ViewableImage::defaultColor2D();
 			info.imgInfo.extent = extent;
-			info.imgInfo.tiling = vk::ImageTiling::linear;
+			info.imgInfo.tiling = vk::ImageTiling::optimal;
 			info.imgInfo.format = vk::Format::r8g8b8a8Unorm;
+			info.imgInfo.usage = vk::ImageUsageBits::transferDst | vk::ImageUsageBits::sampled;
+			info.imgInfo.initialLayout = vk::ImageLayout::undefined;
 			info.viewInfo.format = vk::Format::r8g8b8a8Unorm;
-			info.memoryFlags = vk::MemoryPropertyBits::hostVisible;
 			texture_ = {device(), info};
 
-			fill(texture_.image(), *data2.data(),
-				vk::Format::r8g8b8a8Unorm, vk::ImageLayout::undefined,
-				extent, {vk::ImageAspectBits::color, 0, 0})->finish();
-
+			fill(texture_.image(), *data2.data(), vk::Format::r8g8b8a8Unorm,
+				vk::ImageLayout::undefined, extent, {vk::ImageAspectBits::color, 0, 0})->finish();
 
 			//sampler
 			vk::SamplerCreateInfo samplerInfo;
 			samplerInfo.magFilter = vk::Filter::linear;
-			samplerInfo.minFilter = vk::Filter::linear;
-			samplerInfo.mipmapMode = vk::SamplerMipmapMode::nearest;
+			samplerInfo.minFilter = vk::Filter::nearest;
+			samplerInfo.mipmapMode = vk::SamplerMipmapMode::linear;
 			samplerInfo.addressModeU = vk::SamplerAddressMode::repeat;
 			samplerInfo.addressModeV = vk::SamplerAddressMode::repeat;
 			samplerInfo.addressModeW = vk::SamplerAddressMode::repeat;
 			samplerInfo.mipLodBias = 0;
 			samplerInfo.anisotropyEnable = true;
-			samplerInfo.maxAnisotropy = 16;
+			samplerInfo.maxAnisotropy = 32;
 			samplerInfo.compareEnable = false;
 			samplerInfo.compareOp = {};
 			samplerInfo.minLod = 0;
-			samplerInfo.maxLod = 0.25;
+			samplerInfo.maxLod = 0.5;
 			samplerInfo.borderColor = vk::BorderColor::floatTransparentBlack;
 			samplerInfo.unnormalizedCoordinates = false;
 			sampler_ = vk::createSampler(device(), samplerInfo);
+		}
+
+		//buffer
+		{
+			vk::BufferCreateInfo info;
+			info.usage = vk::BufferUsageBits::vertexBuffer | vk::BufferUsageBits::transferDst;
+			info.size = sizeof(float) * 4 * stringSize * 6; //6 verts per char
+			vertexBuffer_ = {device(), info};
+			vertexBuffer_.assureMemory();
+
+			vpp::BufferUpdate update(vertexBuffer_);
+			float xoff = xpos;
+			for(auto i = 0u; i < stringSize; ++i)
+			{
+				auto& c = printString[i];
+
+				// auto charData = &sdf_spacing[(c - 32) * 8];
+				const auto& charData = *ddf_get_glyph_properties(&font, c);
+				if(!&charData) continue;
+
+				float xstart = xoff;
+				float ystart = ypos + charData.offset_y;
+				float ustart = charData.texcoord_x;
+				float vstart = charData.texcoord_y;
+				float xsize = charData.charwidth;
+				float ysize = charData.charheight;
+				float xsizeuv = charData.texwidth;
+				float ysizeuv = charData.texheight;
+
+				Vertex vertex = {xstart, ystart, ustart, vstart};
+				update.add(vpp::raw(vertex)); //1
+
+				vertex.x += xsize;
+				vertex.u += xsizeuv;
+				update.add(vpp::raw(vertex)); //2
+
+				vertex.y += ysize;
+				vertex.v += ysizeuv;
+				update.add(vpp::raw(vertex)); //3
+				update.add(vpp::raw(vertex)); //4
+
+				vertex.x -= xsize;
+				vertex.u -= xsizeuv;
+				update.add(vpp::raw(vertex)); //5
+
+				vertex.y -= ysize;
+				vertex.v -= ysizeuv;
+				update.add(vpp::raw(vertex)); //6
+
+				xoff = xstart + charData.advance; //chardata.advance
+			}
 		}
 
 		//descriptor
@@ -163,9 +179,7 @@ public:
 			vpp::GraphicsPipelineBuilder builder(device(), app_.renderPass);
 			builder.layout = pipelineLayout_;
 			builder.dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
-
-			builder.shader.stage("texture.vert.spv", {vk::ShaderStageBits::vertex});
-			builder.shader.stage("texture.frag.spv", {vk::ShaderStageBits::fragment});
+			builder.vertexBufferLayouts = {{{vk::Format::r32g32Sfloat, vk::Format::r32g32Sfloat}}};
 
 			builder.states.blendAttachments[0].blendEnable = true;
 			builder.states.blendAttachments[0].colorBlendOp = vk::BlendOp::add;
@@ -175,6 +189,9 @@ public:
 			builder.states.blendAttachments[0].srcAlphaBlendFactor = vk::BlendFactor::one;
 			builder.states.blendAttachments[0].dstAlphaBlendFactor = vk::BlendFactor::zero;
 			builder.states.blendAttachments[0].alphaBlendOp = vk::BlendOp::add;
+
+			builder.shader.stage("font.vert.spv", {vk::ShaderStageBits::vertex});
+			builder.shader.stage("font.frag.spv", {vk::ShaderStageBits::fragment});
 
 			builder.states.rasterization.cullMode = vk::CullModeBits::none;
 			builder.states.inputAssembly.topology = vk::PrimitiveTopology::triangleList;
@@ -196,6 +213,7 @@ protected:
 	vpp::DescriptorSet descriptorSet_;
 	vpp::DescriptorPool descriptorPool_;
 	vk::Sampler sampler_;
+	vpp::Buffer vertexBuffer_;
 	bool initialized_ = false;
 };
 
@@ -217,14 +235,15 @@ public:
 		auto cmdBuffer = instance.vkCommandBuffer();
 		vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::graphics,
 			data().pipeline_);
+		vk::cmdBindVertexBuffers(cmdBuffer, 0, {data().vertexBuffer_}, {0});
 		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
 			data().pipelineLayout_, 0, {data().descriptorSet_}, {});
-		vk::cmdDraw(cmdBuffer, 6, 1, 0, 0);
+		vk::cmdDraw(cmdBuffer, stringSize * 6, 1, 0, 0);
 	}
 	std::vector<vk::ClearValue> clearValues(unsigned int) override
 	{
 		std::vector<vk::ClearValue> ret(2, vk::ClearValue{});
-		ret[0].color = {{0.f, 0.f, 0.f, 1.0f}};
+		ret[0].color = {{1.f, 1.f, 1.f, 1.0f}};
 		ret[1].depthStencil = {1.f, 0};
 		return ret;
 	}
