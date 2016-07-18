@@ -68,6 +68,7 @@ enum class PipelineCacheHeaderVersion : int32_t
 {
 	one = 1
 };
+VPP_BITMASK_OPS(PipelineCacheHeaderVersion)
 
 enum class StructureType : int32_t
 {
@@ -137,6 +138,7 @@ enum class StructureType : int32_t
 	debugMarkerObjectTagInfoEXT = 1000022001,
 	debugMarkerMarkerInfoEXT = 1000022002
 };
+VPP_BITMASK_OPS(StructureType)
 
 enum class SystemAllocationScope : int32_t
 {
@@ -146,11 +148,13 @@ enum class SystemAllocationScope : int32_t
 	device = 3,
 	instance = 4
 };
+VPP_BITMASK_OPS(SystemAllocationScope)
 
 enum class InternalAllocationType : int32_t
 {
 	executable = 0
 };
+VPP_BITMASK_OPS(InternalAllocationType)
 
 enum class Result : int32_t
 {
@@ -180,6 +184,7 @@ enum class Result : int32_t
 	errorInvalidShaderNV = -1000012000,
 	nvExtension1Error = -1000013000
 };
+VPP_BITMASK_OPS(Result)
 
 enum class Format : int32_t
 {
@@ -369,6 +374,7 @@ enum class Format : int32_t
 	astc12x12UnormBlock = 183,
 	astc12x12SrgbBlock = 184
 };
+VPP_BITMASK_OPS(Format)
 
 enum class FormatFeatureBits : int32_t
 {
@@ -395,12 +401,14 @@ enum class ImageType : int32_t
 	e2d = 1,
 	e3d = 2
 };
+VPP_BITMASK_OPS(ImageType)
 
 enum class ImageTiling : int32_t
 {
 	optimal = 0,
 	linear = 1
 };
+VPP_BITMASK_OPS(ImageTiling)
 
 enum class ImageUsageBits : int32_t
 {
@@ -445,6 +453,7 @@ enum class PhysicalDeviceType : int32_t
 	virtualGpu = 3,
 	cpu = 4
 };
+VPP_BITMASK_OPS(PhysicalDeviceType)
 
 enum class QueueBits : int32_t
 {
@@ -528,6 +537,7 @@ enum class QueryType : int32_t
 	pipelineStatistics = 1,
 	timestamp = 2
 };
+VPP_BITMASK_OPS(QueryType)
 
 enum class QueryPipelineStatisticBits : int32_t
 {
@@ -581,6 +591,7 @@ enum class SharingMode : int32_t
 	exclusive = 0,
 	concurrent = 1
 };
+VPP_BITMASK_OPS(SharingMode)
 
 enum class ImageLayout : int32_t
 {
@@ -595,6 +606,7 @@ enum class ImageLayout : int32_t
 	preinitialized = 8,
 	presentSrcKHR = 1000001002
 };
+VPP_BITMASK_OPS(ImageLayout)
 
 enum class ImageViewType : int32_t
 {
@@ -606,6 +618,7 @@ enum class ImageViewType : int32_t
 	e2dArray = 5,
 	cubeArray = 6
 };
+VPP_BITMASK_OPS(ImageViewType)
 
 enum class ComponentSwizzle : int32_t
 {
@@ -617,6 +630,7 @@ enum class ComponentSwizzle : int32_t
 	b = 5,
 	a = 6
 };
+VPP_BITMASK_OPS(ComponentSwizzle)
 
 enum class PipelineCreateBits : int32_t
 {
@@ -644,6 +658,7 @@ enum class VertexInputRate : int32_t
 	vertex = 0,
 	instance = 1
 };
+VPP_BITMASK_OPS(VertexInputRate)
 
 enum class PrimitiveTopology : int32_t
 {
@@ -659,6 +674,7 @@ enum class PrimitiveTopology : int32_t
 	triangleStripWithAdjacency = 9,
 	patchList = 10
 };
+VPP_BITMASK_OPS(PrimitiveTopology)
 
 enum class PolygonMode : int32_t
 {
@@ -666,6 +682,7 @@ enum class PolygonMode : int32_t
 	line = 1,
 	point = 2
 };
+VPP_BITMASK_OPS(PolygonMode)
 
 enum class CullModeBits : int32_t
 {
@@ -681,6 +698,7 @@ enum class FrontFace : int32_t
 	counterClockwise = 0,
 	clockwise = 1
 };
+VPP_BITMASK_OPS(FrontFace)
 
 enum class CompareOp : int32_t
 {
@@ -693,6 +711,7 @@ enum class CompareOp : int32_t
 	greaterOrEqual = 6,
 	always = 7
 };
+VPP_BITMASK_OPS(CompareOp)
 
 enum class StencilOp : int32_t
 {
@@ -705,6 +724,7 @@ enum class StencilOp : int32_t
 	incrementAndWrap = 6,
 	decrementAndWrap = 7
 };
+VPP_BITMASK_OPS(StencilOp)
 
 enum class LogicOp : int32_t
 {
@@ -725,6 +745,7 @@ enum class LogicOp : int32_t
 	nand = 14,
 	set = 15
 };
+VPP_BITMASK_OPS(LogicOp)
 
 enum class BlendFactor : int32_t
 {
@@ -748,6 +769,7 @@ enum class BlendFactor : int32_t
 	src1Alpha = 17,
 	oneMinusSrc1Alpha = 18
 };
+VPP_BITMASK_OPS(BlendFactor)
 
 enum class BlendOp : int32_t
 {
@@ -757,6 +779,7 @@ enum class BlendOp : int32_t
 	min = 3,
 	max = 4
 };
+VPP_BITMASK_OPS(BlendOp)
 
 enum class ColorComponentBits : int32_t
 {
@@ -779,6 +802,7 @@ enum class DynamicState : int32_t
 	stencilWriteMask = 7,
 	stencilReference = 8
 };
+VPP_BITMASK_OPS(DynamicState)
 
 enum class Filter : int32_t
 {
@@ -786,12 +810,14 @@ enum class Filter : int32_t
 	linear = 1,
 	cubicIMG = 1000015000
 };
+VPP_BITMASK_OPS(Filter)
 
 enum class SamplerMipmapMode : int32_t
 {
 	nearest = 0,
 	linear = 1
 };
+VPP_BITMASK_OPS(SamplerMipmapMode)
 
 enum class SamplerAddressMode : int32_t
 {
@@ -801,6 +827,7 @@ enum class SamplerAddressMode : int32_t
 	clampToBorder = 3,
 	mirrorClampToEdge = 1000014000
 };
+VPP_BITMASK_OPS(SamplerAddressMode)
 
 enum class BorderColor : int32_t
 {
@@ -811,6 +838,7 @@ enum class BorderColor : int32_t
 	floatOpaqueWhite = 4,
 	intOpaqueWhite = 5
 };
+VPP_BITMASK_OPS(BorderColor)
 
 enum class DescriptorType : int32_t
 {
@@ -826,6 +854,7 @@ enum class DescriptorType : int32_t
 	storageBufferDynamic = 9,
 	inputAttachment = 10
 };
+VPP_BITMASK_OPS(DescriptorType)
 
 enum class DescriptorPoolCreateBits : int32_t
 {
@@ -845,18 +874,21 @@ enum class AttachmentLoadOp : int32_t
 	clear = 1,
 	dontCare = 2
 };
+VPP_BITMASK_OPS(AttachmentLoadOp)
 
 enum class AttachmentStoreOp : int32_t
 {
 	store = 0,
 	dontCare = 1
 };
+VPP_BITMASK_OPS(AttachmentStoreOp)
 
 enum class PipelineBindPoint : int32_t
 {
 	graphics = 0,
 	compute = 1
 };
+VPP_BITMASK_OPS(PipelineBindPoint)
 
 enum class AccessBits : int32_t
 {
@@ -904,6 +936,7 @@ enum class CommandBufferLevel : int32_t
 	primary = 0,
 	secondary = 1
 };
+VPP_BITMASK_OPS(CommandBufferLevel)
 
 enum class CommandBufferUsageBits : int32_t
 {
@@ -938,12 +971,14 @@ enum class IndexType : int32_t
 	uint16 = 0,
 	uint32 = 1
 };
+VPP_BITMASK_OPS(IndexType)
 
 enum class SubpassContents : int32_t
 {
 	eInline = 0,
 	secondaryCommandBuffers = 1
 };
+VPP_BITMASK_OPS(SubpassContents)
 
 
 enum class SurfaceTransformBitsKHR : int32_t
@@ -973,6 +1008,7 @@ enum class ColorSpaceKHR : int32_t
 {
 	srgbNonlinear = 0
 };
+VPP_BITMASK_OPS(ColorSpaceKHR)
 
 enum class PresentModeKHR : int32_t
 {
@@ -981,6 +1017,7 @@ enum class PresentModeKHR : int32_t
 	fifo = 2,
 	fifoRelaxed = 3
 };
+VPP_BITMASK_OPS(PresentModeKHR)
 
 
 enum class DisplayPlaneAlphaBitsKHR : int32_t
@@ -1006,7 +1043,7 @@ enum class DebugReportObjectTypeEXT : int32_t
 	deviceMemory = 8,
 	buffer = 9,
 	image = 10,
-	event = 11,
+	vent = 11,
 	queryPool = 12,
 	bufferView = 13,
 	imageView = 14,
@@ -1025,12 +1062,14 @@ enum class DebugReportObjectTypeEXT : int32_t
 	swapchainKHR = 27,
 	debugReport = 28
 };
+VPP_BITMASK_OPS(DebugReportObjectTypeEXT)
 
 enum class DebugReportErrorEXT : int32_t
 {
 	none = 0,
 	callbackRef = 1
 };
+VPP_BITMASK_OPS(DebugReportErrorEXT)
 
 enum class DebugReportBitsEXT : int32_t
 {
@@ -1048,6 +1087,7 @@ enum class RasterizationOrderAMD : int32_t
 	strict = 0,
 	relaxed = 1
 };
+VPP_BITMASK_OPS(RasterizationOrderAMD)
 
 
 

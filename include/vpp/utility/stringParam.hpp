@@ -46,7 +46,7 @@ class SizedStringParam : public StringParam
 public:
 	constexpr SizedStringParam() = default;
 	SizedStringParam(const std::string& string) : StringParam(string), length_(string.size()) {}
-	constexpr SizedStringParam(const char* chars) : StringParam(chars), length_(std::strlen(chars)) {}
+	SizedStringParam(const char* chars) : StringParam(chars), length_(std::strlen(chars)) {}
 	constexpr SizedStringParam(const Range<char>& range) : StringParam(range.data()),
 		length_(range.size()) {}
 

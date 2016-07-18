@@ -3,12 +3,12 @@ vpp is a vulkan abstraction library written in modern C++14 and licensed by the 
 It does not aim to be a full-sized graphics engine, it rather focuses on providing some useful
 features that make programming vulkan applications in c++ more convinient and less repetitive.
 
-vpp does also include a c++ codegenerator for the vulkan api which focuses on typesafety, less typing
+vpp also includes a c++ codegenerator for the vulkan api which focuses on typesafety, less typing
 while still being more explicit as well as it tries to not introduce a huge compile time overhead.
-There should be no runtime overhead in using the c++ api.
+There should be no runtime overhead using the c++ api.
 
-At the moment, vpp is in an experimental pre-alpha state, but the first (usable) alpha is expected to
-be released soon.
+At the moment, vpp is in an experimental pre-alpha state, but the first (usable) alpha is
+expected to be released soon.
 
 __Any contributions (feature requests, critics and recommendations as well) are highly appreciated.
 If you want to improve the library or add your own ideas, just start a pull request.__
@@ -17,15 +17,15 @@ If you want to improve the library or add your own ideas, just start a pull requ
 Here are some examples to give you an idea on how the api will probably look like and in
 which way in may be useful to programming vulkan applications.
 Examples as well as a full documentation will be provided at some first release of a stable api.
-Note that those examples just represent one part of the library (the highest abstraction level) while
-there are also other not-shown parts of the library. The code is more some
+Note that those examples just represent one part of the library (the highest abstraction
+level) while there are also other not-shown parts of the library. The code is more some
 kind of concept, it just exists to show how one would do certain things with vpp.
 Some parts of the examples are more concepts and not yet fully implemented in the library!
 
 ### Contexts
-If you just want a vulkan context you can play around with and do not care about the exact details of
-creatin, you can just use a vpp::Context which will create a vulkan instance, device, surface and
-swapchain for a given backend.
+If you just want a vulkan context you can play around with and do not care about the exact
+details of creation, you can just use a vpp::Context which will create a vulkan
+instance, device, surface and swapchain for a given backend.
 
 `````````````````````````cpp
 //Let vpp query the backend and create a context for it.
@@ -33,7 +33,7 @@ swapchain for a given backend.
 //queues/extensions/layers and
 //debug information you want, we just use the defaults here.
 //In this case we e.g. create a win32 context by using the win32 createContext overload.
-vpp::Context context = vpp::createContext(hwnd, {});
+vpp::Context context = vpp::createContext(hwnd, {/* default settings */});
 
 //Context is basically just a all-in-one wrapper for the objects needed to render with vulkan
 //If you want fine-grained control over these objects, the Context class is not what you want.
@@ -195,12 +195,13 @@ workManager.finish();
 std::uint8_t& data = work4->data();
 `````````````````
 
-Note that here again will usually just one batch of work (commandBuffers) be submitted to the vulkan
-device which may bring huge performance gains since this is consideresd a heavy operation.
+Note that here again will usually just one batch of work (CommandBuffers) be submitted to the
+vulkan device which may bring huge performance gains since this is considered a heavy operation.
 
-All the examples here are using the highest level of abstraction of vpp (vpp in NOT an engine, so there
-will be no abstraction like Mesh, Material or Camera), but the api can also be accessed on a lower
-level of abstraction using e.g. the DeviceMemory, SubmitManager, Device or SwapChain.
+All the examples here are using the highest level of abstraction of vpp (vpp in
+NOT an engine, so there will be no abstraction like Mesh, Material or Camera), but the api
+can also be accessed on a lower level of abstraction using e.g. the DeviceMemory,
+SubmitManager, Device or SwapChain.
 
 
 ## Building
@@ -208,14 +209,21 @@ __vpp does not have any external dependencies (excluding vulkan headers and load
 It does require a solid C++14 compiler though which means that it is (at the moment) not
 buildable with MSVC, but it works with newer clang versions and gcc 5/6.
 
-At the moment, vpp does compile a small part of boost (boost::container::pmr) within its own library for
-more efficient host memory allocations, but since this feature will part of the c++17 standard,
-this will then no longer be needed (and note that you do not have to have boost installed, the needed
-files will be compiled together with the vpp source files).
+The main features that would be required in MSVC to make compiling vpp possible are NSDMIs
+for aggregates (uniform initialization of aggregates with default members) and extented constexpr
+support. Both features are part of the C++14 standard.
 
-Just download the repository or clone it with git, run cmake and then build it (with make/ninja/...).
-For the newest changes and fixes, check out the dev git branch, which might be broken (i.e. not
-compiling or not running) at times.
+At the moment, vpp does compile a small part of boost (boost::container::pmr) within its own
+library for more efficient host memory allocations, but since this feature will part of the
+C++17 standard, this will then no longer be needed (and note that you do not have to
+have boost installed, the needed files will be compiled together with the vpp source files).
+Patches that do not decrease vpp code quality but make it msvc 2015 conformant are highly
+appreciated.
+
+Just download the repository or clone it with git, run cmake and then build it
+(with make/ninja/...).
+For the newest changes and fixes, check out the dev git branch, which might be broken (i.e.
+not compiling or not running) at times.
 
 ### Troubleshooting
 

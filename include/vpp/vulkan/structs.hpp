@@ -1039,8 +1039,8 @@ struct Offset2D
 };
 struct Extent2D
 {
-	uint32_t width {};
-	uint32_t height {};
+	uint32_t width;
+	uint32_t height;
 
 	const VkExtent2D& vkHandle() const { return reinterpret_cast<const VkExtent2D&>(*this); }
 	VkExtent2D& vkHandle() { return reinterpret_cast<VkExtent2D&>(*this); }

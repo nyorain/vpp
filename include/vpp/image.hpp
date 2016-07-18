@@ -103,7 +103,7 @@ public:
 	{
 		vk::ImageCreateInfo imgInfo;
 		vk::ImageViewCreateInfo viewInfo;
-		vk::MemoryPropertyFlags memoryFlags {}; //memory flags for image
+		vk::MemoryPropertyFlags memoryFlags; //memory flags for image
 	};
 
 	///\{

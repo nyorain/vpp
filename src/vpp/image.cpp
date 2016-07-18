@@ -549,7 +549,7 @@ vk::Extent2D blockSize(vk::Format format)
 	using vk::Format;
 	switch(format)
 	{
-		case Format::bc1RgbUnormBlock: return {4, 4};
+	case Format::bc1RgbUnormBlock: return vk::Extent2D{4, 4};
 		case Format::bc1RgbSrgbBlock: return {4, 4};
 		case Format::bc1RgbaUnormBlock: return {4, 4};
 		case Format::bc1RgbaSrgbBlock: return {4, 4};
