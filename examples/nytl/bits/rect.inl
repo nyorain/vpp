@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -59,20 +59,10 @@ intersects(const Rect<D, P>& r1, const Line<D, P>& l2)
 
     return true;
 }
-///\relates nytl::Rect
-template<std::size_t D, typename P> bool 
-intersects(const Rect<D, P>& a, const Triangle<D, P>& b)
-{
-	return (contains(a, b.a) || contains(a, b.b) || contains(a, b.c));
-}
+
 ///\relates nytl::Rect
 template<std::size_t D, typename P> bool 
 intersects(const Line<D, P>& a, const Rect<D, P>& b){ return intersects(b, a); }
-
-///\relates nytl::Rect
-template<std::size_t D, typename P> bool 
-intersects(const Triangle<D, P>& a, const Rect<D, P>& b){ return inteRects(b, a); }
-
 
 //contains
 ///\relates nytl::Rect
@@ -210,40 +200,6 @@ template<std::size_t D, typename P>
 std::vector<Rect<D, P>> operator-(const Rect<D, P>& ra, const Rect<D, P>& rb)
 {
     return difference(ra, rb);
-}
-
-//TODO: use Vec here (since number of returnd simplexes is known)?
-//can be problematic for higher dimensions (uses stack)
-///\relates nytl::Rect Simplex
-///\brief Returns a Simplex representation of the Rects area.
-///\details There are many ways to represent a Rect area by multiple Simplexes, this functions 
-///returns one of them.
-///\return A SimplexReiogn with D! Simplexes that cover exactly the same area as the given rect.
-template<std::size_t D, typename P>
-SimplexRegion<D, P> split(const Rect<D, P>& r)
-{
-	auto points = std::vector<Vec<D, P>> {};
-	points.reserve(std::pow(2, D));
-
-	//generate points
-	//binary minmax
-	for(std::size_t i(0); i < std::pow(2, D); ++i)
-	{
-		auto point = Vec<D, P> {};
-		for(std::size_t d(0); d < D; ++i)
-		{
-			point[d] = r.position[d];
-			if(i & std::size_t(std::pow(2, d)))
-			{
-				point[d] += r.size[d];
-			}
-		}
-
-		points.push_back(point);
-	}
-
-	//create convex (simplexRegion) from rect points
-	return createConvex(points); 
 }
 
 ///\relates nytl::Rect

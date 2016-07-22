@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -144,8 +144,8 @@ public:
 		{ for(auto& val : *this) val *= lhs; return *this; }
     template<typename ot> VecType& operator /=(const ot& lhs)
 		{ for(auto& val : *this) val /= lhs; return *this; }
-    template<typename ot> VecType& operator %=(const ot& lhs){ 
-		for(auto& val : *this) val %= lhs; return *this; }
+    template<typename ot> VecType& operator %=(const ot& lhs)
+		{ for(auto& val : *this) val %= lhs; return *this; }
     template<typename ot> VecType& operator |=(const ot& lhs)
 		{ for(auto& val : *this) val |= lhs; return *this; }
     template<typename ot> VecType& operator ^=(const ot& lhs)

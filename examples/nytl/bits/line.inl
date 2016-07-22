@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,42 +22,7 @@
  * SOFTWARE.
  */
 
-//implementation specialization
-namespace detail
-{
-
-template<std::size_t D, typename P>
-struct SimplexContainsPoint<D, P, 1>
-{
-	static bool call(const Simplex<D, P, 1>& a, const Vec<D, P>& v)
-	{
-		return (a.definedAt(v[0]) && all(a.valueAt(v[0]) == v));
-	}
-};
-
-template<std::size_t D, typename P>
-struct SimplexIntersects<D, P, 1>
-{
-	static bool call(const Simplex<D, P, 1>& la, const Simplex<D, P, 1>& lb)
-	{  
-		Mat<D, 3, double> eqs;
-		eqs.col(0) = la.b - la.a;
-		eqs.col(1) = -lb.b + lb.a;
-		eqs.col(2) = lb.a - la.a;
-
-		rrefMat(eqs);
-
-		//unsolveable
-		if((all(Vec2d(eqs.row(D - 1)) == 0) && eqs.row(D - 1)[2] != 0)) return false;
-
-		//solveable, but not in Line segment
-		if(any(eqs.col(2) >= 1) || any(eqs.col(2) <= 0)) return false;
-
-		return true;
-	};
-};
-
-} //detail
+#pragma once
 
 template<size_t D, typename P> bool 
 Line<D, P>::definedAt(const P& value, std::size_t dim) const
@@ -69,17 +34,11 @@ Line<D, P>::definedAt(const P& value, std::size_t dim) const
 template<size_t D, typename P> Vec<D, P>
 Line<D, P>::valueAt(const P& value, std::size_t dim) const
 {
-    if(!definedAt(value, dim))
-    {
-		//throw?
-        return {};
-    }
-    else if(gradient()[dim] == 0)
-    {
-        auto ret = a;
-        ret[dim] = value;
-        return ret;
-    }
+	//Will NOT check for defined at, can be done by function user, if needed
+    if(gradient()[dim] == 0)
+	{
+		return a;
+	}
     else
     {
         auto ret = a + ((value - a[dim]) * gradient(dim));
@@ -87,9 +46,11 @@ Line<D, P>::valueAt(const P& value, std::size_t dim) const
     }
 }
 
-template<std::size_t D, typename P>
-bool Line<D, P>::valid() const
+///\ingroup math
+///Returns the length of the given line.
+///Just a wrapper around the Line::length function.
+template<size_t D, typename P>
+float length(const Line<D, P>& line)
 {
-	return detail::SimplexValid(*this);
+	return line.length();
 }
-

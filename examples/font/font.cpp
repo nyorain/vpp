@@ -103,7 +103,7 @@ public:
 			vertexBuffer_ = {device(), info};
 			vertexBuffer_.assureMemory();
 
-			vpp::BufferUpdate update(vertexBuffer_);
+			vpp::BufferUpdate update(vertexBuffer_, vpp::BufferAlign::std140);
 			float xoff = xpos;
 			for(auto i = 0u; i < stringSize; ++i)
 			{

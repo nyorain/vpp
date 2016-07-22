@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -110,7 +110,7 @@ public:
     using ArgTuple = std::tuple<Args...>;
 
 protected:
-    template<std::size_t i> 
+    template<std::size_t i>
 	struct ArgImpl
     {
         using type = typename std::tuple_element<i, ArgTuple>::type;
@@ -118,6 +118,7 @@ protected:
 
 public:
     using ReturnType = Ret;
+	using Signature = Ret(Args...);
     template<std::size_t i> using ArgType = typename ArgImpl<i>::type;
     constexpr static Size ArgSize = std::tuple_size<ArgTuple>::value;
 };
@@ -135,7 +136,7 @@ template<typename C, typename Ret, typename... Args>
 class FunctionTraits<Ret(C::*)(Args...) const> : public FunctionTraits<Ret(Args...)> {};
 
 //functor, class
-template<typename F> 
+template<typename F>
 class FunctionTraits : public FunctionTraits<decltype(&F::operator())> {};
 
 template<typename F>

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,56 +34,78 @@
 namespace nytl
 {
 
-///\brief Cloneable base class
-///\ingroup utility
+///\brief CloneMoveable base class
+///\ingroup utilty
 template<typename T>
-class Cloneable
+class CloneMovable
 {
 private:
-	virtual T* clone() const { return new T(static_cast<const T&>(*this)); }
 	virtual T* cloneMove() { return new T(std::move(static_cast<T&>(*this))); }
-
-	template<typename X> friend std::unique_ptr<X> clone(const X&);
 	template<typename X> friend std::unique_ptr<X> cloneMove(const X&);
 
 protected:
-	virtual ~Cloneable() = default;
+	virtual ~CloneMovable() = default;
+};
+
+///\brief Cloneable base class
+///\ingroup utility
+template<typename T>
+class Cloneable : public CloneMovable<T>
+{
+	virtual T* clone() const { return new T(static_cast<const T&>(*this)); }
+	template<typename X> friend std::unique_ptr<X> clone(const X&);
+};
+
+///\brief Abstract CloneMovable base class
+///\ingroup utility
+template<typename T>
+class AbstractCloneMovable
+{
+private:
+	template<typename X> friend std::unique_ptr<X> cloneMove(X&&);
+	virtual T* cloneMove() = 0;
+
+protected:
+	virtual ~AbstractCloneMovable() = default;
 };
 
 ///\brief Abstract Cloneable base class
 ///\ingroup utility
 template<typename T>
-class AbstractCloneable
+class AbstractCloneable : public AbstractCloneMovable<T>
+{
+	template<typename X> friend std::unique_ptr<X> clone(const X&);
+	virtual T* clone() const = 0;
+};
+
+///\brief Utility template to derive from a class with a virtual cloneMove function.
+///\ingroup utility
+template<typename Base, typename Derived>
+class DeriveCloneMovable : public Base
 {
 private:
-	virtual T* clone() const = 0;
-	virtual T* cloneMove() = 0;
-
-	template<typename X> friend std::unique_ptr<X> clone(const X&);
 	template<typename X> friend std::unique_ptr<X> cloneMove(X&&);
+    virtual Base* cloneMove() override
+		{ return new Derived(std::move(static_cast<Derived&>(*this))); }
 
 protected:
-	virtual ~AbstractCloneable() = default;
+	using CloneMovableBase = DeriveCloneMovable;
+	using Base::Base;
 };
+
 
 ///\brief Utility template to derive from a class with a virtual clone function.
 ///\ingroup utility
-template<typename Base, typename Derived> 
-class DeriveCloneable : public Base
+template<typename Base, typename Derived>
+class DeriveCloneable : public DeriveCloneMovable<Base, Derived>
 {
 private:
+	template<typename X> friend std::unique_ptr<X> clone(const X&);
     virtual Base* clone() const override //Base return type since it uses CRTP
 		{ return new Derived(static_cast<const Derived&>(*this)); }
-    virtual Base* cloneMove() override 
-		{ return new Derived(std::move(static_cast<Derived&>(*this))); }
-
-	template<typename X> friend std::unique_ptr<X> clone(const X&);
-	template<typename X> friend std::unique_ptr<X> cloneMove(X&&);
 
 protected:
 	using CloneableBase = DeriveCloneable;
-
-public:
 	using Base::Base;
 };
 
@@ -104,7 +126,7 @@ std::unique_ptr<T> clone(const T& value)
 template<typename T>
 std::unique_ptr<T> clone(const T* value)
 {
-	return clone(*value);
+	return value ? clone(*value) : nullptr;
 }
 
 //XXX: good idea?
@@ -112,7 +134,7 @@ std::unique_ptr<T> clone(const T* value)
 template<typename T>
 std::unique_ptr<T> clone(const std::unique_ptr<T>& value)
 {
-	return clone(*value);
+	return value ? clone(*value) : nullptr;
 }
 ///\}
 
@@ -131,7 +153,7 @@ std::unique_ptr<T> cloneMove(T&& value)
 ///when dealing with smart pointers like std::unique_ptr.
 ///\param VectorObject A Vector of Cloneable objects (objects with a clone() member function).
 ///\return A std::vector of cloned objects.
-template<class A> std::vector<decltype(clone(A{}))> 
+template<class A> std::vector<decltype(clone(A{}))>
 cloneVector(const std::vector<A>& VectorObject)
 {
     std::vector<A> ret;

@@ -108,14 +108,19 @@ public:
 	///Acquires the next swapchain image (i.e. the next render buffer).
 	///\param sem Semaphore to be signaled when acquiring is complete or nullHandle.
 	///\param fence Fence to be signaled when acquiring is complete or nullHandle.
-	///\return The id of the newly acquired image.
-	///May block depending on present mode. TODO.
-    unsigned int acquireNextImage(vk::Semaphore sem = {}, vk::Fence fence = {}) const;
+	///\param id The id of the newly acquired image.
+	///\return The result returned by vkAcquireImageKHR. The caller has to handle
+	///results like outOfDate or suboptimal and can decide if to recreate (resize()) the
+	///swapChain. There will not be any check performed on the result.
+    vk::Result acquire(unsigned int& id, vk::Semaphore sem = {}, vk::Fence fence = {}) const;
 
-	///Queues commands to present the image with the given id on the given queue. TODO
+	///Queues commands to present the image with the given id on the given queue.
 	///\param wait The semaphore to wait on before presenting (usually signaled at the end
 	///of all rendering commands for this image). Can be nullHandle.
-    void present(const Queue& queue, unsigned int image, vk::Semaphore wait = {}) const;
+	///\return The result returned by vkQueuePresentKHR. The caller has to handle
+	///results like outOfDate or suboptimal and can decide if to recreate (resize()) the
+	///swapChain. There will not be any check performed on the result.
+    vk::Result present(const Queue& queue, unsigned int image, vk::Semaphore wait = {}) const;
 
 	const vk::SurfaceKHR& vkSurface() const { return surface_; }
 

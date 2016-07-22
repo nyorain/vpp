@@ -56,7 +56,9 @@ DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize si
 	else
 	{
 		//use transfer buffer
-		auto cmdBuffer = buf.device().commandProvider().get(0);
+		const Queue* queue;
+		auto qFam = transferQueueFamily(buf.device(), &queue);
+		auto cmdBuffer = buf.device().commandProvider().get(qFam);
 		auto downloadBuffer = buf.device().transferManager().buffer(size);
 
 		vk::BufferCopy region {offset, 0, size};
@@ -65,7 +67,8 @@ DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize si
 		vk::cmdCopyBuffer(cmdBuffer, buf, downloadBuffer.buffer(), {region});
 		vk::endCommandBuffer(cmdBuffer);
 
-		return std::make_unique<DownloadWork>(std::move(cmdBuffer), std::move(downloadBuffer));
+		return std::make_unique<DownloadWork>(std::move(cmdBuffer), *queue,
+			std::move(downloadBuffer));
 	}
 }
 
@@ -79,23 +82,26 @@ BufferUpdate::BufferUpdate(const Buffer& buffer, BufferAlign align, bool direct)
 		map_ = buffer.memoryMap();
 		work_ = std::make_unique<FinishedWork<void>>();
 	}
-	else if(direct)
-	{
-		auto cmdBuffer = device().commandProvider().get(0);
-		data_.resize(buffer.size());
-		work_ = std::make_unique<CommandWork<void>>(std::move(cmdBuffer));
-		direct_ = true;
-
-		copies_.push_back({0, 0, 0});
-	}
 	else
 	{
-		auto uploadBuffer = device().transferManager().buffer(buffer.size());
-		auto cmdBuffer = device().commandProvider().get(0);
-		map_ = uploadBuffer.buffer().memoryMap();
-		work_ = std::make_unique<UploadWork>(std::move(cmdBuffer), std::move(uploadBuffer));
-
+		const Queue* queue;
+		auto qFam = transferQueueFamily(device(), &queue);
+		auto cmdBuffer = device().commandProvider().get(qFam);
 		copies_.push_back({0, 0, 0});
+
+		if(direct)
+		{
+			data_.resize(buffer.size());
+			direct_ = true;
+			work_ = std::make_unique<CommandWork<void>>(std::move(cmdBuffer), *queue);
+		}
+		else
+		{
+			auto uploadBuffer = device().transferManager().buffer(buffer.size());
+			map_ = uploadBuffer.buffer().memoryMap();
+			work_ = std::make_unique<UploadWork>(std::move(cmdBuffer), *queue,
+				std::move(uploadBuffer));
+		}
 	}
 }
 

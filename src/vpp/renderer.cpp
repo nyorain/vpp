@@ -261,7 +261,10 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, cons
 	auto acquireComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 	auto renderComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 
-    auto currentBuffer = swapChain().acquireNextImage(acquireComplete);
+	unsigned int currentBuffer;
+    auto result = swapChain().acquire(currentBuffer, acquireComplete);
+	//TODO: result error handling, out_of_date or suboptimal/invalid
+
 	renderImpl_->frame(currentBuffer);
 
 	auto& cmdBuf = renderBuffers_[currentBuffer].commandBuffer;
@@ -351,7 +354,10 @@ void SwapChainRenderer::renderBlock(const Queue* gfx, const Queue* present)
 	auto acquireComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 	auto renderComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 
-    auto currentBuffer = swapChain().acquireNextImage(acquireComplete);
+	unsigned int currentBuffer;
+    auto result = swapChain().acquire(currentBuffer, acquireComplete);
+	//TODO: result error handling, out_of_date or suboptimal/invalid
+	
 	renderImpl_->frame(currentBuffer);
 
 	auto& cmdBuf = renderBuffers_[currentBuffer].commandBuffer;

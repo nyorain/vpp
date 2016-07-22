@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,18 +32,20 @@ namespace nytl
 {
 
 /* possible macros: NYTL_OS_NAME NYTL_COMPILER_NAME
- * OS: NYTL_OS_64, NYTL_OS_WINDOWS, NYTL_OS_WINDOWS64, NYTL_OS_LINUX, NYTL_OS_ANDROID, 
+ * OS: NYTL_OS_64, NYTL_OS_WINDOWS, NYTL_OS_WINDOWS64, NYTL_OS_LINUX, NYTL_OS_ANDROID,
  *		NYTL_OS_MACOS, NYTL_OS_IOS, NYTL_OS_BSD, NYTL_OS_UNKNOWN
  * Version: NYTL_ANDROID_VERION
  *
- * Compiler: NYTL_COMPILER_64, NYTL_COMPILER_INTEL, NYTL_COMPILER_MSC, NYTL_COMPILER_GNU, 
+ * Compiler: NYTL_COMPILER_64, NYTL_COMPILER_INTEL, NYTL_COMPILER_MSC, NYTL_COMPILER_GNU,
  *		NYTL_COMPILER_CLANG, NYTL_COMPILER_BORLAND, NYTL_COMPILER_MINGW, NYTL_COMPILER_MINGW64
- * Version: NYTL_GNU_VERSION, NYTL_MSC_VERSION, NYTL_INTEL_VERSION, NYTL_CLANG_VERSION, 
+ * Version: NYTL_GNU_VERSION, NYTL_MSC_VERSION, NYTL_INTEL_VERSION, NYTL_CLANG_VERSION,
  *		NYTL_MINGW32_VERSION, NYTL_MINGW64_VERSION
+ *
+ * NYTL_PRETTY_FUNCTION, NYTL_DEPRECATED
  */
 
 //http://sourceforge.net/p/predef/wiki
-//OS//////////////////////////////////////////////////////////////////////////////////
+//OS////////////
 #if defined(_WIN32) || defined(__WIN32__)
     #define NYTL_OS_WINDOWS 1
     #define NYTL_OS_NAME "Windows"
@@ -88,7 +90,7 @@ namespace nytl
 
 
 
-//Compiler/////////////////////////////////////////////////////////////////////////
+//Compiler////
 #if defined(__BORLANDC__)
     #define NYTL_COMPILER_BORLAND 1
     #define NYTL_COMPILER_NAME "Borland"
@@ -142,9 +144,9 @@ namespace nytl
 #if __cplusplus >= 201402L
 	#define NYTL_DEPRECATED [[deprecated]]
 #else
-	#ifdef NYTL_COMPILER_GNU
+	#if defined(__GNUC__)
 		#define NYTL_DEPRECATED __attribute__ ((deprecated))
-	#elif NYTL_COMPILER_MSC
+	#elif defined(_MSC_VER)
 		#define NYTL_DEPRECATED __declspec(deprecated)
 	#else
 		//#pragma message("WARNING: You need to implement DEPRECATED for this compiler")
@@ -162,10 +164,12 @@ namespace nytl
 #endif //NYTL_cpp14_constexpr
 
 //nytl pretty function
-#if defined(NYTL_COMPILER_CLANG) || defined(NYTL_COMPILER_GNU)
+#if defined(NYTL_COMPILER_CLANG) || defined(NYTL_COMPILER_GNU) || __GNUC__
 	#define NYTL_PRETTY_FUNCTION __PRETTY_FUNCTION__
-#elif defined(NYTL_COMPILER_MSC)
+#elif defined(_MSC_VER)
 	#define NYTL_PRETTY_FUNCTION __FUNCTION__
+#else
+	#define NYTL_PRETTY_FUNCTION __func__
 #endif
 
 ///\ingroup utility

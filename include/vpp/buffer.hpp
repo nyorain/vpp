@@ -50,7 +50,7 @@ enum class ShaderType
 };
 
 ///Returns the alignment the given ShaderType requires.
-///Does return 0 for special values such as none, buffer, structure or matrix.
+///Returns 0 for special values such as none, buffer, structure or matrix.
 constexpr unsigned int align(ShaderType type);
 
 ///Specifies the different buffer alignment methods.
@@ -63,18 +63,41 @@ enum class BufferAlign
 	std430
 };
 
+///This class can be used to update the contents of a buffer.
+///It will automatically align the data as specified but can also be used to just upload/write
+///raw data to the buffer. Can also be used to specify custom offsets or alignment for the data.
 class BufferUpdate : public ResourceReference<BufferUpdate>
 {
 public:
-	BufferUpdate(const Buffer& buffer, BufferAlign align = BufferAlign::std140,
-		bool direct = false);
+	///The given align type will influence the applied alignments.
+	///\param direct Specifies if direct updates should be preferred. Will be ignored
+	///if the buffer is filled by mapping and in some cases, direct filling is not possible.
+	///\exception std::runtime_error if the device has no queue that supports graphics/compute or
+	///transfer operations and the buffer is not mappable.
+	///\sa BufferAlign
+	BufferUpdate(const Buffer& buffer, BufferAlign align, bool direct = false);
 	~BufferUpdate();
 
+	///Adds a single object to the buffer updates data. The type of the given object must have
+	///a specialization for the VulkanType template struct that carriers information about
+	///the corresponding shader variable type of the object to align it correctly.
+	///The given object can also be a container/array of such types.
+	///If one just wants to fill the buffer with raw data it can use to vpp::raw function for
+	///a object which will wrap it into a temporary RawBuffer object that will just be copied
+	///to the buffer without any alignment or offset.
 	template<typename T> void addSingle(const T& obj);
+
+	///Utility function that calls addSingle for all ob the given objects.
 	template<typename... T> void add(const T&... obj);
 
+	///Writes size bytes from ptr to the buffer.
 	void write(const void* ptr, std::size_t size);
+
+	///Offsets the current position on the buffer by size bytes. If update is true, it will
+	///override the bytes with zero, otherwise they will not be changed.
 	void offset(std::size_t size, bool update = true);
+
+	///Assure that the current position on the buffer meets the given alignment requirements.
 	void align(std::size_t align);
 
 	void alignUniform();
@@ -83,9 +106,13 @@ public:
 
 	WorkPtr apply();
 
-	const Buffer& buffer() const { return *buffer_; }
+	///Returns the bufferOffset, i.e. the current position on the operating buffer.
 	std::size_t bufferOffset() const { return bufferOffset_; }
+
+	///Returns the internal offset, i.e. the position on the internal stored data.
 	std::size_t internalOffset() const { return internalOffset_; }
+
+	const Buffer& buffer() const { return *buffer_; }
 	BufferAlign alignType() const { return align_; }
 
 	bool std140() const { return align_ == BufferAlign::std140; }

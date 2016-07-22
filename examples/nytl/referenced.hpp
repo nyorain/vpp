@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,19 +42,32 @@ protected:
 
 protected:
 	Referenced() = default;
-	virtual ~Referenced() = default; 
+	virtual ~Referenced() = default;
 
 public:
-	void ref() const { referenceCount_++; }
-	void unref() const { referenceCount_--; if(referenceCount_ == 0) delete this; }
-	void unrefNodelete() const { referenceCount_--; }
+	auto ref() const { return ++referenceCount_; }
+	auto unref() const
+	{
+		auto cpy = referenceCount_.load();
+
+		while(true)
+		{
+			if(std::atomic_compare_exchange_weak(&referenceCount_, &cpy, cpy - 1)) break;
+			cpy = referenceCount_.load(); //reload if failed
+		}
+
+		//cpy should NEVER be 0 but who knows...
+		if(cpy <= 1) delete this;
+		return cpy > 0 ? cpy - 1 : 0;
+	}
+	auto unrefNodelete() const { return --referenceCount_; }
 
 	unsigned int referenceCount() const { return referenceCount_.load(); }
 };
 
 ///\ingroup utility
-///Smart pointer class for objects with built-in reference counter. 
-///If you want to make your classes reference counted types from design to be able to
+///\brief Smart pointer class for objects with built-in reference counter.
+///\details If you want to make your classes reference counted types from design to be able to
 ///use this smart pointer, have a look at the nytl::References base class.
 template<typename T>
 class IntrusivePtr
@@ -63,7 +76,7 @@ protected:
 	T* object_ {nullptr};
 
 public:
-	IntrusivePtr() = default; 
+	IntrusivePtr() = default;
 	IntrusivePtr(T* obj) : object_(obj) { if(object_) object_->ref(); }
 	IntrusivePtr(T& obj) : object_(&obj) { object_->ref(); }
 	~IntrusivePtr(){ if(object_) object_->unref(); }

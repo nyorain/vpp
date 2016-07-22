@@ -110,8 +110,10 @@ void main()
 	if(vPos.y > 1.0)
 	{
 		vPos.y = 1.0;
-		vVel.y -= 0.022 * abs(fract((1 + vPos.x) * 100)) * abs(fract(vVel.y * 100) * fract(vVel.x * 100));
-		vVel.x -= 0.00025 * fract((1 + vPos.x) * 1000) * fract(vVel.y * 1000) * fract(vVel.x * 1000);
+		// vVel.y -= 0.022 * abs(fract((1 + vPos.x) * 100)) * abs(fract(vVel.y * 100) * fract(vVel.x * 100));
+		// vVel.x -= 0.00025 * fract((1 + vPos.x) * 1000) * fract(vVel.y * 1000) * fract(vVel.x * 1000);
+		vVel.y -= sign(vVel.y) * 0.02 * abs(fract((1 + vPos.x) * 10000)) * abs(fract(vVel.y * 100000) * fract(vVel.x * 100));
+		vVel.x -= vVel.x * 0.005 * (1 - abs(fract((1 + vPos.x) * 10000))) * fract(vVel.y * 1000) * abs(fract(vVel.x * 1000000));
 	}
 
     // Write back

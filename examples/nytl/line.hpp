@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -80,7 +80,6 @@ public:
 	//Simplex
     double size() const { return distance(a, b); }
 	VecType center() const { return (a + b) / 2; }
-	bool valid() const;
 
 	Vec<2, VecType>& points()
 		{ return reinterpret_cast<Vec<2, VecType>&>(*this); }

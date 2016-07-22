@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,5 +37,10 @@ template<typename...> struct DeriveDummy {};
 ///\ingroup utility
 ///C++17 alias template for void, used to detect ill-formad types in a SFINAE-context.
 template<typename...> using void_t = void;
+
+///\ingroup utility
+///Utility template function that can be used to hide unused compiler warnings.
+///Has usually no additional cost. Is meant as placeholder for future code.
+template<typename... T> void unused(T&&...) {}
 
 }

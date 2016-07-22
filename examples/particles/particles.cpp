@@ -282,6 +282,14 @@ void ParticleSystem::initGraphicsPipeline()
 	builder.shader.stage("particles.vert.spv", {vk::ShaderStageBits::vertex});
 	builder.shader.stage("particles.frag.spv", {vk::ShaderStageBits::fragment});
 
+	builder.states.blendAttachments[0].blendEnable = true;
+	builder.states.blendAttachments[0].colorBlendOp = vk::BlendOp::add;
+	builder.states.blendAttachments[0].srcColorBlendFactor = vk::BlendFactor::srcAlpha;
+	builder.states.blendAttachments[0].dstColorBlendFactor = vk::BlendFactor::oneMinusSrcAlpha;
+	builder.states.blendAttachments[0].srcAlphaBlendFactor = vk::BlendFactor::one;
+	builder.states.blendAttachments[0].dstAlphaBlendFactor = vk::BlendFactor::zero;
+	builder.states.blendAttachments[0].alphaBlendOp = vk::BlendOp::add;
+
 	builder.states.rasterization.cullMode = vk::CullModeBits::none;
 	builder.states.inputAssembly.topology = vk::PrimitiveTopology::pointList;
 
@@ -424,7 +432,7 @@ void ParticleSystem::writeGraphicsUBO()
 	auto vMat = nytl::identityMat<4, float>();
 	auto map = graphicsUBO_.memoryMap();
 
-	vpp::BufferUpdate update(graphicsUBO_);
+	vpp::BufferUpdate update(graphicsUBO_, vpp::BufferAlign::std140);
 	update.add(pMat, vMat);
 }
 

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -87,6 +87,8 @@ public:
     using ReverseIterator = std::reverse_iterator<Iterator>;
     using ConstReverseIterator = std::reverse_iterator<ConstIterator>;
     using Difference = Size;
+
+	using RangeError = std::out_of_range;
 
 	//stl
 	using size_type = Size;
@@ -203,9 +205,10 @@ public:
 		return ret;
 	}
 
-	//stl
-    ConstPointer data() const noexcept { return data_; }
-    pointer data() noexcept { return data_; }
+	//stl 
+	//TODO: correct data implementations 
+    //ConstPointer data() const noexcept { return data_; }
+    //pointer data() noexcept { return data_; }
 
     void fill(const Value& val) { for(auto& v : data_) *v = val; }
 
@@ -228,10 +231,10 @@ public:
     Reference operator[](Size i){ return *data_[i]; }
     ConstReference operator[](Size i) const { return *data_[i]; }
 
-    Reference at(Size i){ if(i >= dim || i < 0) 
-		throw std::out_of_range("nytl::Vec::at: out of range"); return *data_[i]; }
-    ConstReference at(Size i) const { if(i >= dim || i < 0) 
-		throw std::out_of_range("nytl::Vec::at: out of range"); return *data_[i]; }
+    Reference at(Size i)
+		{ if(i >= dim || i < 0) throw RangeError("nytl::Vec::at"); return *data_[i]; }
+    ConstReference at(Size i) const 
+		{ if(i >= dim || i < 0) throw RangeError("nytl::Vec::at"); return *data_[i]; }
 
     Reference front() noexcept { return *data_[0]; }
     ConstReference front() const noexcept { return *data_[0]; }
@@ -265,6 +268,8 @@ public:
     using ReverseIterator = std::reverse_iterator<Iterator>;
     using ConstReverseIterator = std::reverse_iterator<ConstIterator>;
     using Difference = Size;
+
+	using RangeError = std::out_of_range;
 
 	//stl
 	using size_type = Size;
@@ -398,10 +403,10 @@ public:
     Reference operator[](Size i){ if(i == 0) return x; return y; }
     ConstReference operator[](Size i) const { if(i == 0) return x; return y; }
 
-    Reference at(Size i){ if(i >= dim || i < 0) 
-		throw std::out_of_range("nytl::Vec::at: out of range"); return (*this)[i]; }
-    ConstReference at(Size i) const { if(i >= dim || i < 0) 
-		throw std::out_of_range("nytl::Vec::at: out of range"); return (*this)[i]; }
+    Reference at(Size i)
+		{ if(i >= dim)	throw RangeError("nytl::RefVec::at"); return (*this)[i]; }
+    ConstReference at(Size i) const 
+		{ if(i >= dim) throw std::out_of_range("nytl::RefVec::at"); return (*this)[i]; }
 
     Reference front() noexcept { return x; }
     ConstReference front() const noexcept { return x; }
@@ -433,6 +438,8 @@ public:
     using ReverseIterator = std::reverse_iterator<Iterator>;
     using ConstReverseIterator = std::reverse_iterator<ConstIterator>;
     using Difference = Size;
+
+	using RangeError = std::out_of_range;
 
 	//stl
 	using size_type = Size;
@@ -567,10 +574,10 @@ public:
     Reference operator[](Size i){ if(i == 0) return x; if(i == 1) return y; return z; }
     ConstReference operator[](Size i) const { if(i == 0) return x; if(i == 1) return y; return z; }
 
-    Reference at(Size i){ if(i >= dim || i < 0) 
-		throw std::out_of_range("nytl::Vec::at: out of range"); return (*this)[i]; }
-    ConstReference at(Size i) const { if(i >= dim || i < 0) 
-		throw std::out_of_range("nytl::Vec::at: out of range"); return (*this)[i]; }
+    Reference at(Size i)
+		{ if(i >= dim)	throw RangeError("nytl::RefVec::at"); return (*this)[i]; }
+    ConstReference at(Size i) const 
+		{ if(i >= dim) throw RangeError("nytl::RefVec::at"); return (*this)[i]; }
 
     Reference front() noexcept { return x; }
     ConstReference front() const noexcept { return x; }
@@ -608,6 +615,8 @@ public:
     using ReverseIterator = std::reverse_iterator<Iterator>;
     using ConstReverseIterator = std::reverse_iterator<ConstIterator>;
     using Difference = Size;
+
+	using RangeError = std::out_of_range;
 
 	//stl
 	using size_type = Size;
@@ -745,10 +754,10 @@ public:
     ConstReference operator[](Size i) const 
 		{ if(i == 0) return x; if(i == 1) return y; if(i == 2) return z; return w; }
 
-    Reference at(Size i){ if(i >= dim || i < 0) 
-		throw std::out_of_range("nytl::Vec::at: out of range"); return (*this)[i]; }
-    ConstReference at(Size i) const { if(i >= dim || i < 0) 
-		throw std::out_of_range("nytl::Vec::at: out of range"); return (*this)[i]; }
+    Reference at(Size i)
+		{ if(i >= dim)	throw RangeError("nytl::RefVec::at"); return (*this)[i]; }
+    ConstReference at(Size i) const 
+		{ if(i >= dim) throw RangeError("nytl::RefVec::at"); return (*this)[i]; }
 
     Reference front() noexcept { return x; }
     ConstReference front() const noexcept { return x; }

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -64,50 +64,17 @@ template<std::size_t D, typename P>
 void translate(SquareMat<D, P>& mat, const Vec<D - 1, P>& trans)
 {
 	for(std::size_t i(0); i < D - 1; ++i)
-		mat[D - 1][i] += trans[i];
+		mat[i][D - 1] += trans[i];
 }
-
-/*
-///\relates Mat Transform
-template<std::size_t D, typename P>
-void rotate(SquareMat<D + 1, P>& mat, const VecScalar<rotationPlanes(D), P>& planes, P angle)
-{
-	rotate(angle * planes);
-}
-
-///\relates Mat Transform
-template<std::size_t D, typename P>
-void rotate(SquareMat<D + 1, P>& mat, const Vec<rotationPlanes(D), P>& planeRot)
-{
-	auto rotMat = identityMat<D>();
-	for(std::size_t i(0); i < rotationPlanes(D); ++i)
-	{
-		auto planeMat = identityMat<D>();
-		auto idx = detail::indexPlane(D, i);
-
-		auto c = std::cos(planeRot[i]);
-		auto s = std::sin(planeRot[i]);
-
-		planeMat[idx[0]][idx[0]] = c;
-		planeMat[idx[0]][idx[1]] = -s;
-		planeMat[idx[1]][idx[0]] = s;
-		planeMat[idx[1]][idx[1]] = c;
-
-		rotMat *= planeMat;
-	}
-
-	mat *= rotMat;
-}
-*/
 
 ///\relates Mat Transform
 template<typename P>
-void rotate(SquareMat<3, P>& mat, const P& planeRot)
+void rotate(SquareMat<3, P>& mat, const Vec<1, P>& planeRot)
 {
 	auto rotMat = identityMat<3>();
 
-	auto c = std::cos(planeRot);
-	auto s = std::sin(planeRot);
+	auto c = std::cos(planeRot[0]);
+	auto s = std::sin(planeRot[0]);
 
 	rotMat[0][0] = c;
 	rotMat[0][1] = -s;
@@ -185,7 +152,6 @@ SquareMat<D, P> rotateCopy(SquareMat<D, P> mat, const Vec<D, P>& rot)
 	return mat;
 }
 
-//perspcetive
 template<typename P>
 SquareMat<4, P> perspective3(P left, P right, P top, P bottom, P pnear, P far)
 {

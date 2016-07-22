@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -54,7 +54,7 @@ makeReferenceIterator(const T& it)
 ///\ingroup utitliy
 ///Allows reference iteration (like range-based for loop) over an object.
 template<typename T>
-class referenceIteration
+class ReferenceIteration
 {
 public:
 	T* object_;
@@ -66,7 +66,7 @@ public:
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
 public:
-	referenceIteration(T& object) : object_(&object) {}
+	ReferenceIteration(T& object) : object_(&object) {}
 
 	iterator begin(){ object_->begin(); }	
 	const_iterator begin() const { return object_->begin(); }
@@ -87,7 +87,7 @@ public:
 template<typename T> ReferenceIterator<T> 
 makeReferenceIteration(const T& obj)
 {
-	return referenceIteration<T>(obj);
+	return ReferenceIteration<T>(obj);
 }
 
 }

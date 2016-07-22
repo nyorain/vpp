@@ -16,8 +16,8 @@ template<typename T>
 class TransferWork : public CommandWork<T>
 {
 public:
-	TransferWork(CommandBuffer&& cmdBuf, TransferRange&& range)
-		: CommandWork<T>(std::move(cmdBuf)), transferRange_(std::move(range)) {}
+	TransferWork(CommandBuffer&& cmdBuf, vk::Queue queue, TransferRange&& range)
+		: CommandWork<T>(std::move(cmdBuf), queue), transferRange_(std::move(range)) {}
 
 public:
 	TransferRange transferRange_;

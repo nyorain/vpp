@@ -81,7 +81,9 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 	else
 	{
 		const auto byteSize = texSize * extent.width * extent.height * extent.depth;
-		auto cmdBuffer = image.device().commandProvider().get(0);
+		const Queue* queue;
+		auto qFam = transferQueueFamily(image.device(), &queue);
+		auto cmdBuffer = image.device().commandProvider().get(qFam);
 		auto uploadBuffer = image.device().transferManager().buffer(byteSize);
 		fill140(uploadBuffer.buffer(), raw(data, byteSize));
 
@@ -100,7 +102,7 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 		vk::cmdCopyBufferToImage(cmdBuffer, uploadBuffer.buffer(), image, layout, {region});
 		vk::endCommandBuffer(cmdBuffer);
 
-		return std::make_unique<UploadWork>(std::move(cmdBuffer), std::move(uploadBuffer));
+		return std::make_unique<UploadWork>(std::move(cmdBuffer), *queue, std::move(uploadBuffer));
 	}
 }
 
@@ -144,7 +146,9 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, const vk::Exten
 	}
 	else
 	{
-		auto cmdBuffer = image.device().commandProvider().get(0);
+		const Queue* queue;
+		auto qFam = transferQueueFamily(image.device(), &queue);
+		auto cmdBuffer = image.device().commandProvider().get(qFam);
 		auto downloadBuffer = image.device().transferManager().buffer(image.size());
 
 		vk::beginCommandBuffer(cmdBuffer, {});
@@ -163,7 +167,8 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, const vk::Exten
 		vk::endCommandBuffer(cmdBuffer);
 
 		vk::endCommandBuffer(cmdBuffer);
-		return std::make_unique<DownloadWork>(std::move(cmdBuffer), std::move(downloadBuffer));
+		return std::make_unique<DownloadWork>(std::move(cmdBuffer), *queue,
+			std::move(downloadBuffer));
 	}
 }
 
@@ -229,13 +234,15 @@ void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::Image img, vk::ImageLa
 WorkPtr changeLayout(const Device& dev, vk::Image img, vk::ImageLayout ol, vk::ImageLayout nl,
 	vk::ImageAspectFlags aspect)
 {
+	const Queue* queue;
+	auto qFam = transferQueueFamily(dev, &queue);
 
-	auto cmdBuffer = dev.commandProvider().get(0);
+	auto cmdBuffer = dev.commandProvider().get(qFam);
 	vk::beginCommandBuffer(cmdBuffer, {});
 	changeLayoutCommand(cmdBuffer, img, ol, nl, aspect);
 	vk::endCommandBuffer(cmdBuffer);
 
-	return std::make_unique<CommandWork<void>>(std::move(cmdBuffer));
+	return std::make_unique<CommandWork<void>>(std::move(cmdBuffer), *queue);
 }
 
 //static infos

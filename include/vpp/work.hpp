@@ -81,14 +81,12 @@ class CommandWork : public Work<R>
 {
 public:
 	CommandWork() = default;
-	CommandWork(CommandBuffer&& buffer) : cmdBuffer_(std::move(buffer)) {};
+	CommandWork(CommandBuffer&& buffer, vk::Queue queue);
 
 	virtual void submit() override;
 	virtual void finish() override;
 	virtual void wait() override;
 	virtual WorkBase::State state() override;
-
-	virtual void queue();
 
 public:
 	CommandBuffer cmdBuffer_;

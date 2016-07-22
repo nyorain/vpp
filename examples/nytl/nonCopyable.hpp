@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,7 @@
  */
 
 ///\file
-///\brief Defines the helper base classes NonCopyable and NonMoveable to derive from.
+///\brief Defines the helper base classes NonCopyable and NonMovable to derive from.
 
 #pragma once
 
@@ -37,10 +37,9 @@ class NonCopyable
 private:
 	NonCopyable(const NonCopyable&) = delete;
 	NonCopyable& operator =(const NonCopyable&) = delete;
-
 protected:
-	constexpr NonCopyable() noexcept = default;
-	~NonCopyable() noexcept = default;
+	NonCopyable() noexcept = default;
+	NonCopyable(NonCopyable&) noexcept = default;
 
 	NonCopyable(NonCopyable&&) noexcept = default;
 	NonCopyable& operator=(NonCopyable&&) noexcept = default;
@@ -57,8 +56,8 @@ private:
 	NonMovable& operator=(NonMovable&&) = delete;
 
 protected:
-	constexpr NonMovable() noexcept = default;
-	~NonMovable() noexcept = default;
+	NonMovable() noexcept = default;
+	NonMovable(NonMovable&) noexcept = default;
 };
 
 }

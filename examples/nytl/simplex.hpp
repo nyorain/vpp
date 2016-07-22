@@ -1,6 +1,6 @@
 /* The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,6 @@
 #include <nytl/vec.hpp>
 #include <nytl/mat.hpp>
 #include <nytl/scalar.hpp>
-#include <nytl/linearSolver.hpp>
 #include <nytl/bits/tmpUtil.inl>
 
 #include <vector>
@@ -91,9 +90,6 @@ public:
 	///Returns the center point of the area.
 	VecType center() const;
 
-	///Returns whether the defined Simplex is valid (i.e. size > 0).
-	bool valid() const;
-
 	///Converts the object into a Vec of points. 
 	///Can be used to acces (read/change/manipulate) the points.
 	Vec<A + 1, VecType>& points(){ return points_; }
@@ -104,70 +100,12 @@ public:
 
 	///Converts the object to a Simplex with a different dimension or precision.
 	///Note that the area dimension A cannot be changed, only the space dimension D.
+	///This means simply that e.g. a Triangle cannot be converted into a line, but a triangle
+	///in 3 dimensional space can be converted to a triangle in 2 dimensional space (by simply
+	///stripping the 3rd dimension).
 	///Works only if the new D is still greater equal A.
 	template<std::size_t OD, typename OP> 
 		operator Simplex<OD, OP, A>() const;
-};
-
-///\ingroup math
-///Describes a RectRegion of multiple Simplexes. 
-template<std::size_t D, typename P = float, std::size_t A = D>
-class SimplexRegion : public DeriveDummy<DimMatch<D, A>>
-{
-public:
-	static constexpr std::size_t dim = D;
-	static constexpr std::size_t simplexDim = A;
-
-	using SimplexType = Simplex<D, P, A>;
-	using SimplexRegionType = SimplexRegion<D, P, A>;
-	using VectorType = std::vector<SimplexType>;
-	using Size = typename VectorType::size_type;
-
-	//stl
-    using value_type = SimplexType;
-	using size_type = Size;
-
-public:
-	VectorType simplices_;
-
-public:
-	///Adds a Simplex to this RectRegion. Effectively only adds the part of the Simplex that
-	///is not already part of the RectRegion.
-	void add(const SimplexType& simplex);
-
-	///Makes this RectRegion object the union of itself and the argument-given RectRegion.
-	void add(const SimplexRegionType& simplexRegion);
-
-	///Adds a Simplex without checking for intersection
-	void addNoCheck(const SimplexType& simplex) { simplices_.push_back(simplex); }
-
-	///Adds a SimplexRegion without checking for intersection
-	void addNoCheck(const SimplexRegionType& simplexRegion) 
-		{ simplices_.insert(simplices_.cend(), simplexRegion.cbegin(), simplexRegion.cend()); }
-
-	///Subtracts a Simplex from this SimplexRegion. 
-	///Effectively checks every Simplex of this SimplexRegio for intersection and resizes 
-	///it if needed.
-	void subtract(const SimplexType& simplex);
-
-	///Subtracts the given simplexRegion from this object.
-	void subtract(const SimplexRegionType& simplexregion);
-
-	///Returns the total size of the region.
-	double size() const;
-
-	///Returns the number of simplexes this SimplexRegion contains.
-	Size count() const { return simplices().size(); }
-
-	///Returns a Vector with the given Simplexes.
-	const VectorType& simplices() const { return simplices_; }
-
-	///Returns a Vector with the given Simplexes.
-	VectorType& simplices() { return simplices_; }
-
-	///Converts this object to a SimplexRegion object of different precision and/or space dimension.
-	template<std::size_t OD, typename OP> 
-		operator SimplexRegion<OD, OP, A>() const;
 };
 
 //To get the additional features for each specialization, include the corresponding headers:
@@ -179,7 +117,6 @@ template<std::size_t D, typename P = float> using Triangle = Simplex<D, P, 2>;
 template<std::size_t D, typename P = float> using Tetrahedron = Simplex<D, P, 3>;
 
 //operators/utility
-#include <nytl/bits/simplexRegion.inl>
 #include <nytl/bits/simplex.inl>
 
 }

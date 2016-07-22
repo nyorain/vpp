@@ -61,8 +61,11 @@ public:
 protected:
 	friend class SubmitManager;
 	FencePtr fence_;
-	CommandExecutionState** self_ {};
+	CommandExecutionState** self_ {}; //pointer to the a unique_ptr in SubmitManager (Submission)
 };
+
+//TODO: split off class QueueManager. SubmitManager will only use QueueManager for locking.
+//This way there can be multiple classes like SubmitManager (e.g. SparseBinder in future).
 
 ///Class that manages all commands submitted to the gpu.
 ///In vulkan, submitting work to the device is a pretty heavy operation and must be synchronized

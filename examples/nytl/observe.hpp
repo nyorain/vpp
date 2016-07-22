@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,8 @@
 namespace nytl
 {
 
+///TODO: threadsafety? better use shared/weak pointer implementation?
+
 class Observable;
 
 ///\ingroup utility
@@ -42,7 +44,10 @@ class Observable;
 class Observer
 {
 	friend class Observable;
-	virtual void observeableDestruction(Observable&) = 0;
+
+	///Virtual Callback function that will be called when the object observed by this
+	///observer will be desctructed.
+	virtual void destructionCallback(Observable&) = 0;
 };
 
 ///\ingroup utility
@@ -53,33 +58,38 @@ class Observable
 {
 protected:
 	std::vector<Observer*> observer_;
-	std::mutex mutex_;
 
 public:
 	~Observable()
 	{
 		//no lock guard needed. Undefined behavior if destructor and accesing run at the same time
 		for(auto& obs : observer_)
-			obs->observeableDestruction(*this);
+			obs->destructionCallback(*this);
 	}
 
 	void addObserver(Observer& obs)
 	{
-		std::lock_guard<std::mutex> lock(mutex_);
 		observer_.push_back(&obs);
 	}
-	bool removeObserver(Observer& obs)
+	bool removeObserver(const Observer& obs)
 	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		return (observer_.cend() == std::remove(observer_.begin(), observer_.end(), &obs));
+		for(auto i = 0u; i < observer_.size(); ++i)
+		{
+			if(observer_[i] == &obs) 
+			{
+				observer_.erase(observer_.cbegin() + i);
+				return true;
+			}
+		}
+
+		return false;
 	}
 	bool moveObserver(Observer& oldone, Observer& newone)
 	{
-		std::lock_guard<std::mutex> lock(mutex_);
 		auto it = std::find(observer_.begin(), observer_.end(), &oldone);
-		if(it == observer_.cend()) return 0;
+		if(it == observer_.cend()) return false;
 		*it = &newone;
-		return 1;
+		return true;
 	}
 };
 
@@ -87,13 +97,13 @@ public:
 ///\brief Smart pointer class that observes the lifetime of its object.
 ///\details Basically a smart pointer that does always know, whether the object it points to is 
 //alive or not. Does only work with objects of classes that are derived from nytl::Observeable.
-///Semantics are related to std::unique_ptr.
+///Semantics are related to std::unique_ptr/std::shared_ptr.
 template <typename T>
 class ObservingPtr : public Observer
 {
 private:
-	std::atomic<T*> object_ {nullptr};
-	virtual void observableDestruction(Observable&) override { object_ = nullptr; }
+	T* object_ {nullptr};
+	virtual void destructionCallback(Observable&) override { object_ = nullptr; }
 
 public:
 	ObservingPtr() = default;
@@ -102,41 +112,45 @@ public:
 	~ObservingPtr(){ if(object_) object_->removeObserver(*this); }
 
 	ObservingPtr(const ObservingPtr& other) : object_(other.object_)
-		{ object_->addObserver(*this); }
+	{ 
+		if(object_) object_->addObserver(*this); 
+	}
 	ObservingPtr& operator=(const ObservingPtr& other)
-		{ reset(other.object_); return *this; }
+	{ 
+		reset(other.object_);
+		return *this; 
+	}
 
 	ObservingPtr(ObservingPtr&& other) noexcept : object_(other.object_)
-		{ if(object_) object_->moveObserver(other, *this); other.object_ = nullptr; }
+	{ 
+		if(object_) object_->moveObserver(other, *this); 
+		other.object_ = nullptr; 
+	}
 	ObservingPtr& operator=(ObservingPtr&& other) noexcept
-		{ 
-			reset(); 
-			object_ = other.object_; 
-			if(object_) object_->moveObserver(other, *this); 
-			other.object_ = nullptr; 
-			return *this; 
-		}
+	{ 
+		reset(); 
+		object_ = other.object_; 
+		if(object_) object_->moveObserver(other, *this); 
+		other.object_ = nullptr; 
+		return *this; 
+	}
 
 	void reset(T* obj = nullptr)
-		{ 
-			if(obj) obj->addObserver(*this); 
-			if(object_) object_->removeObserver(*this); 
-			object_ = obj;  
-		}
+	{ 
+		if(obj) obj->addObserver(*this); 
+		if(object_) object_->removeObserver(*this); 
+		object_ = obj;  
+	}
 	void reset(T& obj)
-		{ 
-			obj.addObserver(*this); 
-			if(object_) object_->removeObserver(*this);
-			object_ = &obj;  
-		}
+	{ 
+		obj.addObserver(*this); 
+		if(object_) object_->removeObserver(*this);
+		object_ = &obj;  
+	}
 
-	T* get() { return object_; }
-
-	T& operator*(){ return *object_; }
-	const T& operator*() const { return *object_; }
-
-	T* operator->(){ return object_; }
-	const T* operator->() const { return object_; }
+	T* get() const { return object_; }
+	T& operator*() const { return *object_; }
+	T* operator->() const { return object_; }
 
 	operator bool() const { return (object_ != nullptr); }
 	void swap(ObservingPtr& other) noexcept 

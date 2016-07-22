@@ -42,3 +42,30 @@ vk::queueBindSparse(queue, infos, fence);
 queue.mutex().unlock();
 
 //wait for the fence
+
+class SparseMemoryEntry : public Resource
+{
+public:
+	///Assures that the given memory resource range is bound to a device memory object.
+	///This function will request the needed memory from the associated DeviceMemoryAllocator.
+	WorkPtr assureBound(const Allocation& allocation);
+
+	WorkPtr bind(const Allocation& allocation, )
+
+protected:
+	MemoryResourceType type_; //buffer, image, opaque image
+	vk::DeviceSize size_;
+};
+
+class ManagedSparseMemoryEntry : public SparseMemoryEntry
+{
+protected:
+	DeviceMemoryAllocator& allocator_;
+	std::vector<MemoryBinds> binds_;
+};
+
+class SparseBinder
+{
+public:
+	void add(/* some bind info params*/);
+};

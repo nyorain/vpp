@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#if __cplusplus >= 201411
+#if __cplusplus >= 201411 || 1
  #include <experimental/any>
 #else
  #include <stdexcept>
@@ -40,7 +40,7 @@
 namespace nytl
 {
 
-#if __cplusplus >= 201411
+#if __cplusplus >= 201411 || 1
 using Any = std::experimental::any;
 using std::experimental::bad_any_cast;
 
@@ -79,7 +79,8 @@ protected:
 
 public:
 	Any() = default;
-	template<typename T>
+
+	template<typename T, typename = std::enable_if_t<!std::is_same_v<Any, T>>>
 	Any(T&& value)
 		: ptr_(new Implementation<typename std::decay<T>::type>(std::forward<T>(value))) {}
 
@@ -147,5 +148,20 @@ T any_cast(Any&& operand)
 
 #endif
 
+}
 
+//ehhhh...
+namespace std
+{
+#if __cplusplus < 201411 && 0
+	using any = nytl::Any;
+	using bad_any_cast = nytl::bad_any_cast;
+
+	template<typename T, typename A> auto any_cast(A&& operand)
+	{
+		return nytl::any_cast<T>(std::forward<A>(operand));
+	}
+#else
+	using namespace experimental::fundamentals_v1;
+#endif
 }

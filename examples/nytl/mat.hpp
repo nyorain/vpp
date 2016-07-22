@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -201,15 +201,15 @@ public:
     Vec<C, P>& operator[](size_t row){ return data_[row]; }
 	const Vec<C, P>& operator[](size_t row) const { return data_[row]; }
 
-    Vec<C, P>& at(size_t row){ if(row >= R || row < 0)
-		throw std::out_of_range("nytl::Mat::at: out of range"); return data_[row]; }
-	const Vec<C, P>& at(size_t row) const { if(row >= R || row < 0)
-		throw std::out_of_range("nytl::Mat::at: out of range"); return data_[row]; }
+    Vec<C, P>& at(size_t row)
+		{ if(row >= R) throw std::out_of_range("nytl::Mat::at"); return data_[row]; }
+	const Vec<C, P>& at(size_t row) const 
+		{ if(row >= R || row < 0) throw std::out_of_range("nytl::Mat::at"); return data_[row]; }
 
-	P& at(size_t row, size_t col){ if(row >= R || row < 0)
-		throw std::out_of_range("nytl::Mat::at: out of range"); return data_[row][col]; }
-	const P& at(size_t row, size_t col) const { if(row >= R || row < 0)
-		throw std::out_of_range("nytl::Mat::at: out of range"); return data_[row][col]; }
+	P& at(size_t r, size_t c)
+		{ if(r >= R || c > C) throw std::out_of_range("nytl::Mat::at"); return data_[r][c]; }
+	const P& at(size_t r, size_t c) const 
+		{ if(r >= R || c > C) throw std::out_of_range("nytl::Mat::at"); return data_[r][c]; }
 
     reference front() noexcept { return data_[0][0]; }
     const_reference front() const noexcept { return data_[0][0]; }

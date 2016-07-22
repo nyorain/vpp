@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ template<std::size_t R, std::size_t C, typename P>
 template<typename TD>
 typename std::enable_if_t<Mat<R, C, P>::is_squared, TD> Mat<R, C, P>::invert()
 {
-	//TODO	
+	//TODO
 }
 
 
@@ -55,13 +55,50 @@ class InvalidMatrix : public std::invalid_argument
 {
 public:
 	InvalidMatrix() : std::invalid_argument("Invalid Matrix argument") {}
-	InvalidMatrix(const std::string& func) 
+	InvalidMatrix(const std::string& func)
 		: std::invalid_argument("Invalid Matrix argument in function " + func) {}
 };
 
+///\relates Mat
+///\brief Returns a tranposed copy of the given matrix, i.e. switches rows and colums.
+///\details Useful when column-major matrix buffers are needed (e.g. glsl).
+template<std::size_t R, std::size_t C, typename P>
+Mat<C, R, P> transpose(const nytl::Mat<R, C, P>& mat)
+{
+	Mat<C, R, P> ret;
+	for(std::size_t i(0); i < R; ++i)
+		ret.col(i) = mat.row(i);
+
+	return ret;
+}
 
 ///\relates Mat
-///Returns the identityMatrix for the given dimension and precision.
+///\brief Returns a tranposed copy of the given matrix, i.e. switches rows and colums.
+///\details Useful when column-major matrix buffers are needed (e.g. glsl).
+///\sa transpose
+template<std::size_t R, std::size_t C, typename P>
+Mat<C, R, P> transposition(const Mat<R, C, P>& mat)
+{
+	Mat<C, R, P> ret;
+	for(std::size_t i(0); i < R; ++i)
+		ret.col(i) = mat.row(i);
+
+	return ret;
+}
+
+///\relates Mat
+///\brief Transposes a given SquareMatrix in place, i.e. switches rows and colums.
+///\sa transposition
+template<std::size_t D, typename P>
+void transpose(SquareMat<D, P>& mat)
+{
+	auto cpy = mat; //copy of the given matrix to not override (->lose) values
+	for(std::size_t i(0); i < D; ++i)
+		mat.col(i) = cpy.row(i);
+}
+
+///\relates Mat
+///\brief Returns the identityMatrix for the given dimension and precision.
 template<std::size_t D, typename P = float>
 SquareMat<D, P> identityMat()
 {
@@ -72,7 +109,7 @@ SquareMat<D, P> identityMat()
 
 ///\relates Mat
 ///\return The inverse of the given square Matrix
-template<std::size_t D, typename P> 
+template<std::size_t D, typename P>
 SquareMat<D, P> inverse(const SquareMat<D, P>& m)
 {
 	auto cpy = m;
@@ -154,7 +191,7 @@ Vec2<Mat<D, D, double>> luDecomposition(const Mat<D, D, P>& m)
 		}
 	}
 
-	return lu;	
+	return lu;
 }
 
 ///\relates Mat
@@ -250,7 +287,7 @@ unsigned int analyzeRefMat(const Mat<R, C, P>& m)
 */
 
 ///\relates Mat
-///\brief Brings a given Matrix in the reduced-row-echolon-form (rref). 
+///\brief Brings a given Matrix in the reduced-row-echolon-form (rref).
 ///\details The Mat will first be brought into the row-echolon-form, so it does not have
 ///to fulfill any requirements.
 template<size_t R, size_t C, typename P>
@@ -303,14 +340,9 @@ void identity(SquareMat<D, P>& mat)
 	*/
 }
 
-//TODO XXX:
-//some function for analyzing the ref/rref result
-//no solution, infinite solutions, exactly onesolution?
-
 //operators
 namespace detail
 {
-
 
 constexpr const unsigned int cDWidth = 6;
 inline unsigned int getNumberOfDigits(double i)
@@ -335,8 +367,8 @@ std::ostream& operator<<(std::ostream& os, const Mat<R, C, P>& obj)
         for(unsigned int o(0); o < C; o++)
         {
 			using namespace detail;
-            os	<< std::setw(cDWidth) 
-				<< std::setprecision(cDWidth - getNumberOfDigits(obj[i][o]) + 4) 
+            os	<< std::setw(cDWidth)
+				<< std::setprecision(cDWidth - getNumberOfDigits(obj[i][o]) + 4)
 				<< obj[i][o];
 
             if(o != C - 1)
@@ -389,7 +421,7 @@ Mat<R, C, P> operator*(const P& other, Mat<R, C, P> ma)
 
 //Mat and Mat
 ///\relates Mat
-template <size_t RA, size_t CA, size_t CB, typename P> Mat<RA, CB, P> 
+template <size_t RA, size_t CA, size_t CB, typename P> Mat<RA, CB, P>
 operator*(const Mat<RA, CA, P>& ma, const Mat<CA, CB, P>& mb)
 {
     Mat<RA, CB, P> ret {};

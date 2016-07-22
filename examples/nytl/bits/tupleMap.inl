@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,7 @@ namespace nytl
 namespace detail
 {
 
-template<typename OT, typename NT, std::size_t I = 0> 
+template<typename OT, typename NT, std::size_t I = 0>
 struct TupleMapImpl; //unspecified
 
 template<typename... OA, typename... NA, std::size_t I>
@@ -44,7 +44,7 @@ struct TupleMapImpl<std::tuple<OA...>, std::tuple<NA...>, I>
     using NewTuple = std::tuple<NA...>;
 
     constexpr static const bool value = std::is_convertible<
-			typename std::tuple_element<0, OrgTuple>::type, 
+			typename std::tuple_element<0, OrgTuple>::type,
 			typename std::tuple_element<0, NewTuple>::type
 		>::value;
 
@@ -89,8 +89,8 @@ struct TupleMapImpl<std::tuple<>, std::tuple<NewLeft...>, idx>
 
 
 //TupleMap
-template<typename OrgTup, typename NewTup, typename Seq = 
-	typename detail::TupleMapImpl<OrgTup, NewTup>::type> 
+template<typename OrgTup, typename NewTup, typename Seq =
+	typename detail::TupleMapImpl<OrgTup, NewTup>::type>
 struct TupleMap; //unspecified
 
 template<typename... OA, typename... NA, std::size_t... I>
@@ -100,8 +100,9 @@ struct TupleMap<std::tuple<OA...>, std::tuple<NA...>, std::index_sequence<I...>>
     using OrgTup = typename std::tuple<OA...>;
     using Seq = std::index_sequence<I...>;
 
-    static constexpr NewTup map(OA&&... args) noexcept
+    static constexpr NewTup map(OA... args) noexcept
     {
+		unused(args...); //because of warnings on gcc when paras are unused
         return std::tuple<NA...>(std::forward<decltype(std::get<I>(OrgTup(args...)))>
 				(std::get<I>(OrgTup(args...)))...);
     }

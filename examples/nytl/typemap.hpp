@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@
 
 #include <nytl/any.hpp>
 #include <nytl/bits/tmpUtil.inl>
+#include <nytl/bits/typemap.inl>
 
 #include <unordered_map>
 #include <algorithm>
@@ -40,129 +41,17 @@
 namespace nytl
 {
 
-namespace detail
-{
-
-template<typename T, typename = void>
-struct Loader
-{
-	static bool call(std::istream& is, T& obj)
-	{
-		//using dummy = decltype(is >> obj);
-		
-		is >> obj;
-		return 1;
-	}
-};
-
-template<typename T>
-struct Loader<T, void_t<decltype(T{}.load(std::cin))>>
-{
-	static bool call(std::istream& is, T& obj)
-	{
-		return obj.load(is);
-	}
-};
-
-}
-
 ///\ingroup utility
-///Load an object from an istream. If your type does neither overload the >> operator nor
-///have a load member function, specialize this template function with your own type.
-template<typename T>
-bool load(std::istream& is, T& obj)
-{
-	return detail::Loader<T>::call(is, obj);
-}
-
-namespace detail
-{
-
-//TODO: perfect forwarding needed here? Args/CArgs are explicitly specified...
-//make_unique_wrapper, returns a unique_ptr for usual types and a void* for void type
-template<typename Base, typename T, typename... Args> struct make_unique_wrapper
-{
-    static std::unique_ptr<Base> call(Args... args) { return std::make_unique<T>(args...); }
-};
-
-template<typename T, typename... Args> struct make_unique_wrapper<void, T, Args...>
-{
-    static void* call(Args... args) { return new T(args...); };
-};
-
-template<typename T, typename... Args> struct make_unique_wrapper<Any, T, Args...>
-{
-    static Any call(Args... args) { return Any(T(args...)); };
-};
-
-//createLoad
-template<typename Base, typename T, typename... Args> struct CreateLoadWrapper
-{
-    static std::unique_ptr<Base> call(std::istream& is, Args... args) 
-	{ 
-		auto ret = std::make_unique<T>(args...); 
-		if(!load(is, *ret)) return nullptr;
-		return ret;
-	}
-};
-
-template<typename T, typename... Args> struct CreateLoadWrapper<void, T, Args...>
-{
-    static void* call(std::istream& is, Args... args) 
-	{ 
-		auto ret = new T(args...);
-		if(!load(is, *ret)) return nullptr;
-		return ret;
-	};
-};
-
-template<typename T, typename... Args> struct CreateLoadWrapper<Any, T, Args...>
-{
-    static Any call(std::istream& is, Args... args) 
-	{ 
-		auto ret = T(args...);
-		if(!load(is, ret)) return Any();
-		return Any(ret);
-	};
-};
-
-//wrapper for creating empty (invalid) objects of given type (ptr/any)
-template<typename Pointer> struct make_empty_wrapper
-{
-    static Pointer call() { return nullptr; };
-};
-
-template<> struct make_empty_wrapper<Any>
-{
-    static Any call() { return Any(); };
-};
-
-//wrapper for checking if an object is valid
-template<typename T>
-struct CheckValidWrapper
-{
-	static bool call(const T& obj){ return obj != nullptr; }
-};
-
-template<>
-struct CheckValidWrapper<Any>
-{
-	static bool call(const Any& obj){ return !obj.empty(); }
-};
-
-}
-
-
-///\ingroup utility
-///Can be thought of as map (like std::map) that holds pair of identifiers and types.
-///Internally just uses type erasure to "store" its types.
+///\brief Can be thought of as map (like std::map) that holds pair of identifiers and types.
+///\details Internally just uses type erasure to "store" its types.
 ///Therefore there are just a small set of operations that can then be done with those
-///"stored" types, like e.g. creating them from identifier or std::type_info or receive the 
+///"stored" types, like e.g. creating them from identifier or std::type_info or receive the
 ///type_info of the stored type by identifier.
-///\tparam I Identifier type for the types (usually std::string)
-///\tparam B Base type of all stored types. If there is none, use void (Created objects will then be
-///passed as void* objects). Defaulted to void
+///\tparam I Identifier type for the types (usually std::string).
+///\tparam B Base type of all stored types. Has Specializations for void (using void* for object
+///passsing) and Any (prefer this method over void). Defaulted to Any.
 ///\tparam CA Additional construction args an objects needs on creation.
+///\sa Serializer
 template<typename I, typename B = Any, typename... CArgs>
 class Typemap
 {
@@ -172,8 +61,7 @@ public:
     using Pointer = typename std::conditional<
 		std::is_same<Base, void>::value, void*, typename std::conditional<
 		std::is_same<Base, Any>::value, Any, std::unique_ptr<Base>>::type>::type;
-	using EmptyFactory = detail::make_empty_wrapper<Pointer>;
-	template <typename T> using Factory = detail::make_unique_wrapper<B, T>;
+	template <typename T> using Factory = detail::CreateWrapper<B, T>;
 	template <typename T> using LoadFactory = detail::CreateLoadWrapper<B, T, CArgs...>;
 
     //base
@@ -234,17 +122,17 @@ public:
     //entry
     Iterator typeIterator(const Identifier& id, const std::type_info& typeID)
     {
-		auto it = typeIterator(typeID); 
-		if(it != types_.end() && it->first == id) 
-			return it; 
-		return types_.end(); 
+		auto it = typeIterator(typeID);
+		if(it != types_.end() && it->first == id)
+			return it;
+		return types_.end();
 	}
     ConstIterator typeIterator(const Identifier& id, const std::type_info& typeID) const
     {
-	   	auto it = typeIterator(typeID); 
-		if(it != types_.cend() && it->first == id) 
-			return it; 
-		return types_.cend(); 
+	   	auto it = typeIterator(typeID);
+		if(it != types_.cend() && it->first == id)
+			return it;
+		return types_.cend();
 	}
 
     bool valid(const ConstIterator& it) const { return it != types_.end(); }
@@ -296,85 +184,85 @@ public:
         return remove(id, typeid(obj));
     }
 
-    bool exists(const Identifier& id) const 
+    bool exists(const Identifier& id) const
 		{ return typeIterator(id) != types_.cend(); }
-    bool exists( const std::type_info& typeID) const 
+    bool exists( const std::type_info& typeID) const
 		{ return typeIterator(typeID) != types_.cend(); }
-    template<typename T> bool exists(const T& obj = T{}) const 
+    template<typename T> bool exists(const T& obj = T{}) const
 		{ return typeIterator(typeid(obj)) != types_.cend(); }
-    template<typename T> bool exists(const Identifier& id, const T& obj = T{}) const 
+    template<typename T> bool exists(const Identifier& id, const T& obj = T{}) const
 		{ return typeIterator(id, typeid(obj)) != types_.cend(); }
-    bool eists(const Identifier& id, const std::type_info& typeID) const 
+    bool eists(const Identifier& id, const std::type_info& typeID) const
 		{ return typeIterator(id, typeID) != types_.cend(); }
 
 	///{
 	///Creates a object for the given type identifier or info with the given construction arguments.
-	///\return A unique_ptr of Base type (or void* if Base is void) or nullptr if the object could 
+	///\return A unique_ptr of Base type (or void* if Base is void) or nullptr if the object could
 	///not be constructed.
     Pointer create(const Identifier& id, CArgs&&... args) const
-    { 
-		auto it = typeIterator(id); 
-		if(it != types_.cend()) 
-			return it->second->create(std::forward<CArgs>(args)...); 
-		return EmptyFactory::call();
+    {
+		auto it = typeIterator(id);
+		if(it != types_.cend())
+			return it->second->create(std::forward<CArgs>(args)...);
+		return {};
 	}
     Pointer create(const std::type_info& id, CArgs&&... args) const
-    { 
-		auto it = typeIterator(id); 
-		if(it != types_.cend()) 
-			return it->second->create(std::forward<CArgs>(args)...); 
-		return EmptyFactory::call(); 
+    {
+		auto it = typeIterator(id);
+		if(it != types_.cend())
+			return it->second->create(std::forward<CArgs>(args)...);
+		return {};
 	}
 	///}
-	
+
 	///{
 	///Create an object with the given type and loads its by an istream.
 	///If creating the object or loading it from the stream fails, returns a nullptr.
 	///To load the object nytl::load(istream, object) is called, which may be overloaded for
-	///custom types. 
+	///custom types.
     Pointer createLoad(const Identifier& id, std::istream& is, CArgs&&... args) const
-    { 
-		auto it = typeIterator(id); 
-		if(it != types_.cend()) 
-			return it->second->create(is, std::forward<CArgs>(args)...); 
-		return EmptyFactory::call();
+    {
+		auto it = typeIterator(id);
+		if(it != types_.cend())
+			return it->second->create(is, std::forward<CArgs>(args)...);
+		return {};
 	}
     Pointer createLoad(const std::type_info& id, std::istream& is, CArgs&&... args) const
-    { 
-		auto it = typeIterator(id); 
-		if(it != types_.cend()) 
-			return it->second->createLoad(is, std::forward<CArgs>(args)...); 
-		return EmptyFactory::call(); 
+    {
+		auto it = typeIterator(id);
+		if(it != types_.cend())
+			return it->second->createLoad(is, std::forward<CArgs>(args)...);
+		return {};
 	}
 	///}
 
-	///\exception std::invalid_argument if there is no entry with the given type_info 
-    const Identifier& id(const std::type_info& typeID) const 
-	{ 
-		auto it = typeIterator(typeID); 
-		if(it != types_.cend()) 
-			return it->first; 
+	///\exception std::invalid_argument if there is no entry with the given type_info
+    const Identifier& id(const std::type_info& typeID) const
+	{
+		auto it = typeIterator(typeID);
+		if(it != types_.cend())
+			return it->first;
 
 		throw std::invalid_argument("nytl::Typemap::id: no entry with the given type_info");
 	}
 
 	///\exception std::invalid_argument if there is no entry for the given type
-    template<typename T> const Identifier& id(const T& obj = T{}) const 
+    template<typename T> const Identifier& id(const T& obj = T{}) const
 		{ return id(typeid(obj)); }
 
 	///\exception std::invalid_argument if there is no entry for the given identifier
-    const std::type_info& typeInfo(const Identifier& id) const 
-	{ 
-		if(typeExists(id)) 
-			return types_[id].typeInfo(); 
-		
+    const std::type_info& typeInfo(const Identifier& id) const
+	{
+		if(typeExists(id))
+			return types_[id].typeInfo();
+
 		throw std::invalid_argument("nytl::Typemap::typeInfo: no entry with the given id");
 	}
-    const std::unordered_map<Identifier, std::unique_ptr<const TypeBase>>& types() const 
+    const std::unordered_map<Identifier, std::unique_ptr<const TypeBase>>& types() const
 		{ return types_; }
 };
 
-//registerFunc
+///\brief Convinience function for registering types in a Typemap.
 ///\ingroup utility
 template<typename T, typename Identifier, typename Base, typename... CArgs>
 unsigned int addType(Typemap<Identifier, Base, CArgs...>& m, const Identifier& id)

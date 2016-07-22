@@ -350,17 +350,20 @@ void SwapChain::resize(const vk::Extent2D& size, const SwapChainSettings& settin
 	}
 }
 
-unsigned int SwapChain::acquireNextImage(vk::Semaphore sem, vk::Fence fence) const
+vk::Result SwapChain::acquire(unsigned int& id, vk::Semaphore sem, vk::Fence fence) const
 {
 	//TODO: out of date, sync, timeout...
 	VPP_LOAD_PROC(vkDevice(), AcquireNextImageKHR);
 
-	std::uint32_t ret;
-	VPP_CALL(pfAcquireNextImageKHR(device(), vkHandle(), UINT64_MAX, sem, fence, &ret));
+	std::uint32_t id32;
+	auto ret = pfAcquireNextImageKHR(device(), vkHandle(), UINT64_MAX, sem, fence, &id32);
+	id = id32;
+
 	return ret;
 }
 
-void SwapChain::present(const Queue& queue, std::uint32_t currentBuffer, vk::Semaphore wait) const
+vk::Result SwapChain::present(const Queue& queue, std::uint32_t currentBuffer,
+	vk::Semaphore wait) const
 {
 	VPP_LOAD_PROC(vkDevice(), QueuePresentKHR);
 
@@ -376,7 +379,9 @@ void SwapChain::present(const Queue& queue, std::uint32_t currentBuffer, vk::Sem
 	}
 
 	std::lock_guard<std::mutex> guard(queue.mutex());
-	VPP_CALL(pfQueuePresentKHR(queue, &presentInfo));
+	auto ret = pfQueuePresentKHR(queue, &presentInfo);
+
+	return ret;
 }
 
 vk::Extent2D SwapChain::size() const

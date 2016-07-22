@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Jan Kelling
+ * Copyright (c) 2016 nyorain
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@
 #pragma once
 
 #include <nytl/vec.hpp>
-#include <nytl/simplex.hpp>
+#include <nytl/line.hpp>
 
 #include <vector>
 #include <ostream>
@@ -79,8 +79,8 @@ using Rect4ul = Rect<4, unsigned long>;
 ///a given size. There exist various operators for the Rect template class e.g. to check for
 ///intersection, compute unions or differences.
 ///There exist specialization for a 2-dimensional hyperRect (just a Rectangle), a 3-dimensional
-///hyperRect (also called box) with additional features. 
-template<std::size_t D, typename P> 
+///hyperRect (also called box) with additional features.
+template<std::size_t D, typename P>
 class Rect
 {
 public:
@@ -101,26 +101,25 @@ public:
 
 public:
 	///Constructs the Rect with a given position and size.
-	Rect(VecType pposition = VecType(), VecType psize = VecType()) noexcept 
+	Rect(VecType pposition = VecType(), VecType psize = VecType()) noexcept
 		: position(pposition), size(psize) {}
 
 	///Returns the center point.
 	VecType center() const { return static_cast<Precision>(position + (size / Precision(2))); };
 
-	//TODO: find a better name for this function.
 	///Returns the area/volume/... of the given rect.
-	Precision inside() const { return multiply(size); }
+	Precision space() const { return multiply(size); }
 
 	///Returns whether the Rect has an area/volume/...
 	bool empty() const { return !allEqual(size, 0); }
 
 	///Converts the Rect to another Rect object of different dimension and/or precision.
-	template<Size OD, class OP> 
+	template<Size OD, class OP>
 	operator Rect<OD, OP>() const { return Rect<OD, OP>(position, size); }
 };
 
 //Rect2 specialization
-template<typename P> 
+template<typename P>
 class Rect<2, P>
 {
 public:
@@ -140,9 +139,9 @@ public:
 	VecType size;
 
 public:
-	Rect(const VecType& pposition, const VecType& psize = VecType()) noexcept 
+	Rect(const VecType& pposition, const VecType& psize = VecType()) noexcept
 		: position(pposition), size(psize) {}
-	Rect(const P& x = {}, const P& y = {}, const P& width = {}, const P& height = {}) noexcept 
+	Rect(const P& x = {}, const P& y = {}, const P& width = {}, const P& height = {}) noexcept
 		: position(x, y), size(width, height) {}
 
 	VecType center() const { return static_cast<Precision>(position + (size / Precision(2))); };
@@ -176,11 +175,11 @@ public:
 };
 
 //Rect3 specialization
-template<typename P> 
+template<typename P>
 class Rect<3, P>
 {
 public:
-    static constexpr std::size_t dim = 2;
+    static constexpr std::size_t dim = 3;
 
 	using Size = std::size_t;
 	using Precision = P;
@@ -197,7 +196,7 @@ public:
 	VecType size;
 
 public:
-	Rect(const VecType& pposition, const VecType& psize = VecType()) noexcept 
+	Rect(const VecType& pposition, const VecType& psize = VecType()) noexcept
 		: position(pposition), size(psize) {}
 	Rect(P x = P(), P y = P(), P z = P(), P width = P(), P height = P(), P depth = P()) noexcept
         : position(x,y,z), size(width,height,depth) {}

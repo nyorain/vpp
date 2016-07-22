@@ -111,8 +111,10 @@ protected:
 enum class AllocationType
 {
 	none = 0,
-	linear,
-	optimal
+	linear = 1,
+	optimal = 2,
+	sparse = 4,
+	sparseAlias = 8
 };
 
 ///DeviceMemory class that keeps track of its allocated and freed areas.
