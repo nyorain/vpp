@@ -348,6 +348,16 @@ void ViewableImage::init(const vk::ImageViewCreateInfo& info)
 	imageView_ = vk::createImageView(vkDevice(), cpy);
 }
 
+//sampler
+Sampler::Sampler(const Device& dev, const vk::SamplerCreateInfo& info) : ResourceHandle(dev)
+{
+	vkHandle() = vk::createSampler(dev, info);
+}
+
+Sampler::~Sampler()
+{
+	vk::destroySampler(device(), vkHandle());
+}
 
 //utility. format size in bits
 unsigned int formatSizeBits(vk::Format format)

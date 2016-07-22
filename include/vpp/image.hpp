@@ -137,6 +137,18 @@ protected:
 	vk::ImageView imageView_ {};
 };
 
+///Sampler wrapper.
+class Sampler : public ResourceHandle<vk::Sampler>
+{
+public:
+	Sampler() = default;
+	Sampler(const Device& dev, const vk::SamplerCreateInfo& info);
+	~Sampler();
+
+	Sampler(Sampler&& other) noexcept = default;
+	Sampler& operator=(Sampler&& other) noexcept = default;
+};
+
 ///TODO:
 ///Vulkan image view.
 class ImageView : public Resource
