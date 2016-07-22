@@ -14,7 +14,6 @@
  namespace std { namespace pmr {
 	template<typename T> using polymorphic_allocator = boost::container::pmr::polymorphic_allocator<T>;
 
-	using memory_resource = boost::container::pmr::memory_resource;
 	using synchronized_pool_resource = boost::container::pmr::synchronized_pool_resource;
 	using unsynchronized_pool_resource = boost::container::pmr::unsynchronized_pool_resource;
  }}

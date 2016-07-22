@@ -3,7 +3,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/allocator.hpp>
 #include <vpp/commandBuffer.hpp>
-#include <vpp/utility/memory_resource.hpp>
+#include <vpp/utility/memory_resource.hpp> //really ugly. Can this be avoided?
 
 #include <vector>
 #include <string>

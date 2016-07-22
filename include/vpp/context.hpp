@@ -13,35 +13,39 @@ namespace vpp
 {
 
 //TODO: correct graphics/compute/present queue support -- holy shit one bugfest atm
+//TODO: sparse queue
 //TODO: correct layer management
 //TODO: do not public expose init functions. Needed for createContext funcionts.
 //rather do some friend class Backend and then create backend implementations using the
 //functionality.
 // -- we are writing code for idiots --
 
+#ifdef VPP_DEBUG
+ const vk::DebugReportFlagsEXT contextDefaultDebugFlags = vk::DebugReportBitsEXT::warning |
+	vk::DebugReportBitsEXT::error | vk::DebugReportBitsEXT::performanceWarning |
+	vk::DebugReportBitsEXT::debug;
+
+#else
+ const vk::DebugReportFlagsEXT contextDefaultDebugFlags = {};
+
+#endif
+
 ///A Vulkan Context. Can be used to easily create Device and Swapchain.
+///The Context will automatically create a present queue for its surface as well as a graphics
+///and compute queue (if possible just one queue for all needs).
+///If more fine-grained control over device, queues and swapChain creation is needed, consider
+///creating them manually.
 class Context
 {
 public:
 	struct CreateInfo
 	{
-		///These two members are ignored if the backend choses the size (i.e. the size of the window)
+		///These two members are ignored if the backend choses the size of the swapChain.
 		unsigned int width = 0;
 		unsigned int height = 0;
-
-#ifdef VPP_DEBUG
-		vk::DebugReportFlagsEXT debugFlags =
-			vk::DebugReportBitsEXT::warning | vk::DebugReportBitsEXT::error |
-			vk::DebugReportBitsEXT::performanceWarning | vk::DebugReportBitsEXT::debug;
-#else
-		vk::DebugReportFlagsEXT debugFlags = {};
-#endif
-
+		vk::DebugReportFlagsEXT debugFlags = contextDefaultDebugFlags;
 		std::vector<const char*> instanceExtensions;
 		std::vector<const char*> deviceExtensions;
-
-		std::vector<vk::DeviceQueueCreateInfo> extraQueues;
-		bool extraPresentQueue = 1;
 	};
 
 public:
@@ -57,8 +61,7 @@ public:
 	const Device& device() const { return *device_; }
 	const SwapChain& swapChain() const { return swapChain_; }
 
-	const Queue* graphicsQueue() const { return presentQueue_; }
-	const Queue* computeQueue() const { return presentQueue_; }
+	const Queue* graphicsComputeQueue() const { return presentQueue_; }
 	const Queue& presentQueue() const { return *presentQueue_; }
 
 	SwapChain& swapChain() { return swapChain_; }
@@ -85,6 +88,7 @@ protected:
 	SwapChain swapChain_;
 
 	const Queue* presentQueue_ = nullptr;
+	const Queue* graphicsComputeQueue_ = nullptr;
 	std::unique_ptr<DebugCallback> debugCallback_;
 };
 

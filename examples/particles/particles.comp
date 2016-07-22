@@ -91,25 +91,36 @@ void main()
 
 	if(vPos.x < -1.0)
 	{
-		vVel.x = abs(vVel.x) * 0.4; //they lose energy when colliding
-		vPos.x = -1.0;
+		float fac = abs((-1.0 - particles[index].pos.x) / (vVel.x * ubo.speed * ubo.deltaT * 10));
+		vPos = particles[index].pos + vVel * fac * ubo.speed * ubo.deltaT * 10;
+
+		vVel.x = abs(vVel.x);
+		vVel *= 0.4; //they lose energy when colliding
+		vPos += vVel * (1.f - fac) * ubo.speed * ubo.deltaT * 10;
+
+		// vPos.x = fac;
+		// vPos.y = fac;
+		//
+		// vVel = vec2(0, 0);
 	}
 
 	if(vPos.x > 1.0)
 	{
 		vVel.x = abs(vVel.x) * -0.4; //they lose energy when colliding
-		vPos.x = 1.0;
+		vPos.x = particles[index].pos.x;
 	}
 
 	if(vPos.y < -1.0)
 	{
-		vVel.y = abs(vVel.y) * 0.4; //they lose energy when colliding
-		vPos.y = -1.0;
+		// vVel.y = abs(vVel.y) * 0.4; //they lose energy when colliding
+		// vPos.y = particles[index].pos.y;
+		vPos.y = -0.99999;
+		vVel = vec2(0, 0);
 	}
 
 	if(vPos.y > 1.0)
 	{
-		vPos.y = 1.0;
+		vPos.y = particles[index].pos.y;
 		// vVel.y -= 0.022 * abs(fract((1 + vPos.x) * 100)) * abs(fract(vVel.y * 100) * fract(vVel.x * 100));
 		// vVel.x -= 0.00025 * fract((1 + vPos.x) * 1000) * fract(vVel.y * 1000) * fract(vVel.x * 1000);
 		vVel.y -= sign(vVel.y) * 0.02 * abs(fract((1 + vPos.x) * 10000)) * abs(fract(vVel.y * 100000) * fract(vVel.x * 100));

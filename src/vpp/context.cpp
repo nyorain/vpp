@@ -27,11 +27,12 @@ void swap(Context& a, Context& b) noexcept
 {
 	using std::swap;
 
-	swap(a.device_, b.device_);
 	swap(a.instance_, b.instance_);
+	swap(a.device_, b.device_);
 	swap(a.surface_, b.surface_);
 	swap(a.swapChain_, b.swapChain_);
 	swap(a.presentQueue_, b.presentQueue_);
+	swap(a.graphicsComputeQueue_, b.graphicsComputeQueue_);
 	swap(a.debugCallback_, b.debugCallback_);
 }
 
@@ -52,7 +53,7 @@ void Context::initInstance(const CreateInfo& info)
 	appInfo.applicationVersion = aVersion;
 	appInfo.pEngineName = eName;
 	appInfo.engineVersion = eVersion;
-	appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 11); //use header version when working
+	appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 11);
 
 	//iniinfo
 	std::vector<const char*> extensions = info.instanceExtensions;
@@ -113,51 +114,57 @@ void Context::initDevice(const CreateInfo& info)
 
 	//present queue
 	auto queues = surface().supportedQueueFamilies(phdev);
-	std::uint32_t presentQueueFamily = -1; //only queueFamilies < 32 are valid
-	std::uint32_t presentQueueId = 0;
 
-	for(auto queue : queues)
+	std::uint32_t presentQFam = -1;
+	std::uint32_t graphicsComputeQFam = -1;
+
+	static const auto bothFlags = vk::QueueBits::graphics | vk::QueueBits::compute;
+
+	for(auto i = 0u; i < queueProps.size(); ++i)
 	{
-		if(queueProps[queue].queueFlags & vk::QueueBits::graphics)
+		const auto& qProp = queueProps[i];
+		if(surface().queueFamilySupported(phdev, i))
 		{
-			presentQueueFamily = queue;
-			break;
-		}
-	}
-
-	if(presentQueueFamily == std::uint32_t(-1))
-	{
-		throw std::runtime_error("unable to get present & graphical queue");
-	}
-
-	float priorities[1] = {0.0};
-	std::vector<vk::DeviceQueueCreateInfo> queueInfos = info.extraQueues;
-
-	bool found = 0;
-	for(auto& queueinfo : queueInfos)
-	{
-		if(queueinfo.queueFamilyIndex == presentQueueFamily)
-		{
-			if(info.extraPresentQueue)
+			presentQFam = i;
+			if((qProp.queueFlags & bothFlags) == bothFlags)
 			{
-				presentQueueId = queueinfo.queueCount;
-				queueinfo.queueCount = queueinfo.queueCount + 1;
+				graphicsComputeQFam = i;
+				break;
 			}
-
-			found = 1;
-			break;
+		}
+		else if((qProp.queueFlags & bothFlags) == bothFlags)
+		{
+			graphicsComputeQFam = i;
 		}
 	}
 
-	if(!found)
-	{
-		queueInfos.push_back({{}, presentQueueFamily, 1, priorities});
-	}
+	if(presentQFam == std::uint32_t(-1))
+		throw std::runtime_error("vpp::Context::initDevice: unable to get present queue");
+
+	if(graphicsComputeQFam == std::uint32_t(-1))
+		throw std::runtime_error("vpp::Context::initDevice: unable to get gfx/comp queue");
 
 	//create
 	vk::DeviceCreateInfo devinfo{};
-	devinfo.queueCreateInfoCount = queueInfos.size();
-	devinfo.pQueueCreateInfos = queueInfos.data();
+	devinfo.queueCreateInfoCount = 1;
+
+	//queues
+	float priorities[1] = {0.0};
+
+	vk::DeviceQueueCreateInfo queueInfos[2];
+	queueInfos[0].queueFamilyIndex = presentQFam;
+	queueInfos[0].queueCount = 1;
+	queueInfos[0].pQueuePriorities = priorities;
+
+	if(graphicsComputeQFam != presentQFam)
+	{
+		devinfo.queueCreateInfoCount = 2;
+		queueInfos[1].queueFamilyIndex = graphicsComputeQFam;
+		queueInfos[1].queueCount = 1;
+		queueInfos[1].pQueuePriorities = priorities;
+	}
+
+	devinfo.pQueueCreateInfos = queueInfos;
 	devinfo.enabledLayerCount = layers.size();
 	devinfo.ppEnabledLayerNames = layers.data();
 	devinfo.enabledExtensionCount = extensions.size();
@@ -165,11 +172,8 @@ void Context::initDevice(const CreateInfo& info)
 
 	device_.reset(new Device(vkInstance(), phdev, devinfo));
 
-	presentQueue_ = device().queue(presentQueueFamily, presentQueueId);
-	if(!presentQueue_)
-	{
-		throw std::runtime_error("failed to create queue");
-	}
+	presentQueue_ = device().queue(presentQFam, 0);
+	graphicsComputeQueue_ = device().queue(graphicsComputeQFam, 0);
 }
 
 void Context::initSwapChain(const CreateInfo& info)

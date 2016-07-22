@@ -28,9 +28,6 @@ struct App
 	vpp::SwapChainRenderer renderer;
 	vpp::SwapChainRenderer::CreateInfo rendererInfo {};
 
-	const vpp::Queue* presentQueue {};
-	const vpp::Queue* computeQueue {};
-
 	std::function<std::unique_ptr<vpp::RendererBuilder>()> func;
 	bool initialized = false;
 };
@@ -293,15 +290,12 @@ void initApp(App& app, const std::function<std::unique_ptr<vpp::RendererBuilder>
 
 	initRenderPass(app);
 
-	app.rendererInfo.queueFamily = app.context.graphicsQueue()->family();
+	app.rendererInfo.queueFamily = app.context.graphicsComputeQueue()->family();
 	app.rendererInfo.renderPass = app.renderPass;
 	app.rendererInfo.attachments = {{vpp::ViewableImage::defaultDepth2D()}};
 	app.context.device().transferManager().shrink();
 
 	app.renderer = vpp::SwapChainRenderer(app.context.swapChain(), app.rendererInfo, func());
-
-	app.presentQueue = &app.context.presentQueue();
-	app.computeQueue = app.context.computeQueue();
 
 	app.initialized = true;
 }

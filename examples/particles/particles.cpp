@@ -216,7 +216,7 @@ ParticleRenderer::AdditionalSemaphores ParticleRenderer::submit(unsigned int id)
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &computeSemaphore_;
 
-	dev.submitManager().add(*ps().app_.context.computeQueue(), submitInfo);
+	dev.submitManager().add(*ps().app_.context.graphicsComputeQueue(), submitInfo);
 
 	return {{computeSemaphore_, vk::PipelineStageBits::allCommands}};
 	//return {};
@@ -411,7 +411,7 @@ void ParticleSystem::buildComputeBuffer()
 	uniformBarrier.dstAccessMask = vk::AccessBits::uniformRead;
 	uniformBarrier.buffer = computeUBO_;
 	uniformBarrier.offset = 0;
-	uniformBarrier.size = computeUBO_.size();
+	uniformBarrier.size = 0x14; //no idea. debug layer.
 	uniformBarrier.srcQueueFamilyIndex = vk::queueFamilyIgnored;
 	uniformBarrier.dstQueueFamilyIndex = vk::queueFamilyIgnored;
 
