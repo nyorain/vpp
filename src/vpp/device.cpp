@@ -22,14 +22,17 @@ struct Device::TLStorage
 
 	// TLStorage(const Device& dev) : deviceAllocator(dev), vulkanAllocator(memoryResource) {}
 	TLStorage(const Device& dev) : deviceAllocator(dev) {}
-
-	TLStorage(TLStorage&& other) noexcept = default;
-	TLStorage& operator=(TLStorage&& other) noexcept = default;
 };
 
 //Device Impl
+//XXX: care for order in this structure since some of the vars depend on each other.
+//i.e. tlStorage (with deviceAllocator and memoryResource) should not be placed after
+//submitManager or transferManger or commandProvider.
 struct Device::Impl
 {
+	std::map<std::thread::id, TLStorage> tlStorage;
+	std::mutex storageMutex; //use a shared_mutex here with c++17.
+
 	CommandProvider commandProvider;
 	SubmitManager submitManager;
 	TransferManager transferManager;
@@ -37,12 +40,8 @@ struct Device::Impl
 	vk::PhysicalDeviceProperties physicalDeviceProperties;
 	vk::PhysicalDeviceMemoryProperties memoryProperties;
 
-	std::vector<std::unique_ptr<Queue>> queues;
 	std::vector<vk::QueueFamilyProperties> qFamilyProperties;
-
-	std::map<std::thread::id, TLStorage> tlStorage;
-	// std::map<std::thread::id, std::unique_ptr<TLStorage>> tlStorage;
-	std::mutex storageMutex; //use a shared_mutex here with c++17.
+	std::vector<std::unique_ptr<Queue>> queues;
 
 	Impl(const Device& dev) : commandProvider(dev), submitManager(dev), transferManager(dev) {}
 };

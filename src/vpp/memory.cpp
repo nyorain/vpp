@@ -240,7 +240,17 @@ DeviceMemory::~DeviceMemory()
 {
 	VPP_DEBUG_CHECK(vpp::DeviceMemory::~DeviceMemory,
 	{
-		if(!allocations_.empty()) VPP_DEBUG_OUTPUT(allocations_.size(), "allocations left.");
+		if(!allocations_.empty())
+		{
+			std::string msg = std::to_string(allocations_.size()) + " allocations left:";
+			for(auto& a : allocations_)
+			{
+				msg += "\n\t" + std::to_string(a.allocation.offset);
+				msg += " " + std::to_string(a.allocation.size);
+			}
+
+			VPP_DEBUG_OUTPUT(msg);
+		}
 	})
 
 	if(vkHandle()) vk::freeMemory(vkDevice(), vkHandle(), nullptr);

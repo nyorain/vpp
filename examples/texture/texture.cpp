@@ -126,6 +126,7 @@ public:
 	}
 
 protected:
+public:
 	friend class TextureRenderer;
 
 	App& app_;
@@ -178,4 +179,8 @@ int main(int argc, char** argv)
 	TextureData data(app);
 	initApp(app, [&](){ return std::make_unique<TextureRenderer>(data); });
 	mainLoop(app, [](){});
+	std::cout << ":0\n";
+	app.renderer = {};
+	data.texture_ = {};
+	std::cout << ":1\n";
 }
