@@ -7,17 +7,30 @@
 #include <vpp/transfer.hpp>
 
 #include <cstdlib>
+#include <thread>
+#include <mutex>
 
 namespace vpp
 {
+
+struct Device::TLStorage
+{
+	std::vector<CommandPool> commandPools;
+	std::pmr::unsynchronized_pool_resource memoryResource;
+	DeviceMemoryAllocator deviceAllocator;
+	// VulkanAllocator vulkanAllocator;
+
+	// TLStorage(const Device& dev) : deviceAllocator(dev), vulkanAllocator(memoryResource) {}
+	TLStorage(const Device& dev) : deviceAllocator(dev) {}
+
+	TLStorage(TLStorage&& other) noexcept = default;
+	TLStorage& operator=(TLStorage&& other) noexcept = default;
+};
 
 //Device Impl
 struct Device::Impl
 {
 	CommandProvider commandProvider;
-	DeviceMemoryProvider deviceMemoryProvider;
-	HostMemoryProvider hostMemoryProvider;
-
 	SubmitManager submitManager;
 	TransferManager transferManager;
 
@@ -27,8 +40,11 @@ struct Device::Impl
 	std::vector<std::unique_ptr<Queue>> queues;
 	std::vector<vk::QueueFamilyProperties> qFamilyProperties;
 
-	Impl(const Device& dev) : commandProvider(dev), deviceMemoryProvider(dev),
-		hostMemoryProvider(), submitManager(dev), transferManager(dev) {}
+	std::map<std::thread::id, TLStorage> tlStorage;
+	// std::map<std::thread::id, std::unique_ptr<TLStorage>> tlStorage;
+	std::mutex storageMutex; //use a shared_mutex here with c++17.
+
+	Impl(const Device& dev) : commandProvider(dev), submitManager(dev), transferManager(dev) {}
 };
 
 //Device
@@ -57,6 +73,8 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 		impl_->queues[i].reset(new Queue(queue, impl_->qFamilyProperties[queueInfo.queueFamilyIndex],
 			queueInfo.queueFamilyIndex, idx));
 	}
+
+	tlStorage(); //automatically provide storage for this thread
 }
 
 Device::~Device()
@@ -137,30 +155,16 @@ std::uint32_t Device::memoryTypeBits(vk::MemoryPropertyFlags mflags, std::uint32
 	return typeBits;
 }
 
-void Device::finishSetup() const
-{
-	submitManager().submit();
-	waitIdle();
-}
-
 DeviceMemoryAllocator& Device::deviceAllocator() const
 {
-	return memoryProvider().get();
+	auto& storage = tlStorage();
+	return storage.deviceAllocator;
 }
 
 std::pmr::memory_resource& Device::hostMemoryResource() const
 {
-	return hostMemoryProvider().get();
-}
-
-HostMemoryProvider& Device::hostMemoryProvider() const
-{
-	return impl_->hostMemoryProvider;
-}
-
-DeviceMemoryProvider& Device::memoryProvider() const
-{
-	return impl_->deviceMemoryProvider;
+	auto& storage = tlStorage();
+	return storage.memoryResource;
 }
 
 CommandProvider& Device::commandProvider() const
@@ -176,6 +180,27 @@ SubmitManager& Device::submitManager() const
 TransferManager& Device::transferManager() const
 {
 	return impl_->transferManager;
+}
+
+Device::TLStorage& Device::tlStorage() const
+{
+	auto threadid = std::this_thread::get_id();
+	std::lock_guard<std::mutex>(impl_->storageMutex); //only lock shared mutex in c++17
+
+	auto it = impl_->tlStorage.find(threadid);
+	if(it == impl_->tlStorage.end())
+	{
+		it = impl_->tlStorage.emplace(std::piecewise_construct,
+			std::forward_as_tuple(threadid), std::forward_as_tuple(*this)).first;
+	}
+
+	return it->second;
+}
+
+std::vector<CommandPool>& Device::tlCommandPools() const
+{
+	auto& storage = tlStorage();
+	return storage.commandPools;
 }
 
 }

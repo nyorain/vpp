@@ -10,6 +10,7 @@ namespace vpp
 {
 
 //TODO: creation abstraction to easier create queues (just pass reqs, needed queues will be queryed)
+
 ///Vulkan Device.
 ///When a DeviceLost vulkan error occures, the program can try to create a new Device object for the
 ///same PhysicalDevice, if this fails again with the DeviceLost, the physical device is not longer
@@ -51,31 +52,34 @@ public:
 	std::uint32_t memoryTypeBits(vk::MemoryPropertyFlags mflags,
 		std::uint32_t typeBits = ~0u) const;
 
-	///Returns a CommandBufferProvider that can be used to easily allocate a command buffer in the
-	///current thread.
+	///Returns a CommandBufferProvider that can be used to easily allocate command buffers.
+	///\sa CommandProvider
 	CommandProvider& commandProvider() const;
 
-	///Returns a DeviceMemoryProvider that can be used to easily allocate vulkan device memory in the
-	///current thread.
-	DeviceMemoryProvider& memoryProvider() const;
-
-	///Returns the host memory provider/ memory pool.
-	HostMemoryProvider& hostMemoryProvider() const;
-
 	///Returns the submit manager for this device.
+	///\sa SubmitManager
 	SubmitManager& submitManager() const;
 
 	///Return the default transferManager for this device.
+	///\sa TransferManager
 	TransferManager& transferManager() const;
 
-	///Makes sure that all queued setup commandBuffers have been executed.
-	void finishSetup() const;
-
 	///Returns a deviceMemory allocator for the calling thread.
+	///\sa DeviceMemoryAllocator
 	DeviceMemoryAllocator& deviceAllocator() const;
 
 	///Returns a HostMemoryAllocator for the calling thread.
 	std::pmr::memory_resource& hostMemoryResource() const;
+
+	//TODO: see doc/old/allocationCallbacks.cpp
+	//A bit problematic to use a memory_resource since it requires the size when freeing
+	//but vulkan does not provide it.
+	
+	///Returns an allocationCallbacks object that can be used for more efficient host allocations
+	///inside the vulkan api. Usually this will not have a real performance impact.
+	///Note that the returned AllocationCallbacks structure should only be used in the calling
+	///thread.
+	// const vk::AllocationCallbacks& allocationCallbacks() const;
 
 	const vk::Instance& vkInstance() const { return instance_; }
 	const vk::PhysicalDevice& vkPhysicalDevice() const { return physicalDevice_; }
@@ -84,11 +88,19 @@ public:
 	operator vk::Device() const { return vkDevice(); }
 
 protected:
+	struct Impl;
+	struct TLStorage; //there are a couple of thread dependent variables stored
+	friend class CommandProvider; //must acces threadLocalPools
+
+protected:
+	std::vector<CommandPool>& tlCommandPools() const;
+	TLStorage& tlStorage() const;
+
+protected:
 	vk::Instance instance_ {};
 	vk::PhysicalDevice physicalDevice_ {};
 	vk::Device device_ {};
 
-	struct Impl;
 	std::unique_ptr<Impl> impl_;
 };
 

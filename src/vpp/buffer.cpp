@@ -3,6 +3,7 @@
 #include <vpp/provider.hpp>
 #include <vpp/transfer.hpp>
 #include <vpp/transferWork.hpp>
+#include <vpp/queue.hpp>
 #include <vpp/utility/debug.hpp>
 
 #include <utility>

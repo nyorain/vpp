@@ -1,4 +1,5 @@
 #include <vpp/transfer.hpp>
+#include <vpp/queue.hpp>
 #include <vpp/vk.hpp>
 #include <algorithm>
 

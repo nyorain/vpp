@@ -71,4 +71,42 @@ void CommandPool::reset(vk::CommandPoolResetFlags flags) const
 	vk::resetCommandPool(device(), vkHandle(), flags);
 }
 
+//CommandProvider
+CommandProvider::CommandProvider(const Device& dev) : Resource(dev)
+{
+}
+
+CommandBuffer CommandProvider::get(std::uint32_t family,
+ 	vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
+{
+	auto& pools = device().tlCommandPools();
+	for(auto& pool : pools)
+	{
+		if(pool.queueFamily() == family && pool.flags() == flags)
+		{
+			return pool.allocate(lvl);
+		}
+	}
+
+	 pools.emplace_back(device(), family, flags);
+	 return pools.back().allocate(lvl);
+}
+
+
+std::vector<CommandBuffer> CommandProvider::get(std::uint32_t family, unsigned int count,
+	vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
+{
+	auto& pools = device().tlCommandPools();
+	for(auto& pool : pools)
+	{
+		if(pool.queueFamily() == family && pool.flags() == flags)
+		{
+			return pool.allocate(count, lvl);
+		}
+	}
+
+	 pools.emplace_back(device(), family, flags);
+	 return pools.back().allocate(count, lvl);
+}
+
 }
