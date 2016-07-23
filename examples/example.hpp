@@ -6,6 +6,10 @@
 #include <vpp/renderPass.hpp>
 #include <vpp/renderer.hpp>
 #include <vpp/image.hpp>
+#include <vpp/queue.hpp>
+
+#include <nytl/vec.hpp>
+#include <nytl/mat.hpp>
 
 #include <string>
 #include <iostream>
@@ -14,6 +18,23 @@
 #include <cmath>
 #include <functional>
 #include <memory>
+
+namespace vpp
+{
+
+template<std::size_t R, std::size_t C, typename V> struct VulkanType<nytl::Mat<R, C, V>>
+{
+	static constexpr auto type = vpp::ShaderType::matrix;
+	static constexpr auto major = R;
+	static constexpr auto minor = C;
+	static constexpr auto transpose = true;
+};
+
+template<> struct VulkanType<nytl::Vec2f> { static constexpr auto type = vpp::ShaderType::vec2; };
+template<> struct VulkanType<nytl::Vec3f> { static constexpr auto type = vpp::ShaderType::vec3; };
+template<> struct VulkanType<nytl::Vec4f> { static constexpr auto type = vpp::ShaderType::vec4; };
+
+}
 
 struct App
 {

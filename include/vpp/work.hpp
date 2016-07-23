@@ -1,13 +1,10 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/resource.hpp>
-#include <vpp/queue.hpp>
 #include <vpp/submit.hpp>
 #include <vpp/commandBuffer.hpp>
 
 #include <memory>
-#include <iostream>
 
 namespace vpp
 {
@@ -95,22 +92,25 @@ public:
 };
 
 ///Manages (i.e. submits and waits) for multiple work objects.
-class WorkManager : public Resource
+///On desctruction this call will automatically finish all owned work objects.
+///The work objects are always finished in the same order that they were added.
+///Can be really useful when postponing multiple work batches together and not expliclity
+///finish them until end of initialization which can result in better performance.
+class WorkManager
 {
 public:
 	WorkManager() = default;
-	WorkManager(const Device& dev, std::size_t submitThreshold = 100);
+	~WorkManager();
 
 	void add(std::unique_ptr<WorkBase> work);
 	void submit();
 	void finish();
 
 protected:
-	std::size_t submitThreshold_;
 	std::vector<std::unique_ptr<WorkBase>> todo_;
 };
 
-//commandWork implementation
+//CommandWork implementation
 #include <vpp/bits/work.inl>
 
 }

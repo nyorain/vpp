@@ -32,38 +32,37 @@ template<typename T, typename U = std::uint32_t>
 class Flags
 {
 public:
-	Flags() = default;
-	Flags(T bit) : value_(static_cast<U>(bit)) {}
-	Flags(bool, T bit) : value_(~static_cast<U>(bit)) {}
-	//Flags(const Flags& rhs) : value_(rhs.value()) {}
+	constexpr Flags() = default;
+	constexpr Flags(T bit) : value_(static_cast<U>(bit)) {}
+	constexpr Flags(bool, T bit) : value_(~static_cast<U>(bit)) {}
 
-	Flags& operator=(const Flags& rhs) { value_ = rhs.value(); return *this; }
-	Flags& operator|=(const Flags& rhs) { value_ |= rhs.value(); return *this; }
-    Flags& operator&=(const Flags& rhs) { value_ &= rhs.value_; return *this; }
-    Flags& operator^=(const Flags& rhs) { value_ ^= rhs.value(); return *this; }
-    Flags operator|(const Flags& rhs) const { return Flags(rhs) |= *this; }
-    Flags operator&(const Flags& rhs) const { return Flags(rhs) &= *this; }
-    Flags operator^(const Flags& rhs) const { return Flags(rhs) ^= *this; }
-    operator bool() const { return (value()); }
-    bool operator!() const { return !(value()); }
-    bool operator==(const Flags& rhs) const { return value_ == rhs.value(); }
-    bool operator!=(const Flags& rhs) const { return value_ != rhs.value(); }
+	constexpr Flags& operator=(const Flags& rhs) { value_ = rhs.value(); return *this; }
+	constexpr Flags& operator|=(const Flags& rhs) { value_ |= rhs.value(); return *this; }
+    constexpr Flags& operator&=(const Flags& rhs) { value_ &= rhs.value_; return *this; }
+    constexpr Flags& operator^=(const Flags& rhs) { value_ ^= rhs.value(); return *this; }
+    constexpr Flags operator|(const Flags& rhs) const { return Flags(rhs) |= *this; }
+    constexpr Flags operator&(const Flags& rhs) const { return Flags(rhs) &= *this; }
+    constexpr Flags operator^(const Flags& rhs) const { return Flags(rhs) ^= *this; }
+    constexpr operator bool() const { return (value()); }
+    constexpr bool operator!() const { return !(value()); }
+    constexpr bool operator==(const Flags& rhs) const { return value_ == rhs.value(); }
+    constexpr bool operator!=(const Flags& rhs) const { return value_ != rhs.value(); }
 
-    explicit operator U() const { return value_; }
-	const U& value() const { return value_; }
+    constexpr explicit operator U() const { return value_; }
+	constexpr const U& value() const { return value_; }
 
 protected:
 	U value_ {};
 };
 
-template <typename T> Flags<T> operator|(T bit, const Flags<T>& flags) { return flags | bit; }
-template <typename T> Flags<T> operator&(T bit, const Flags<T>& flags) { return flags & bit; }
-template <typename T> Flags<T> operator^(T bit, const Flags<T>& flags) { return flags ^ bit; }
+template <typename T> auto constexpr operator|(T bit, const Flags<T>& flags) { return flags | bit; }
+template <typename T> auto constexpr operator&(T bit, const Flags<T>& flags) { return flags & bit; }
+template <typename T> auto constexpr operator^(T bit, const Flags<T>& flags) { return flags ^ bit; }
 
 }
 
 #define VPP_BITMASK_OPS(T) \
-	inline vk::Flags<T> operator|(T a, T b) { return vk::Flags<T>(a) | b; } \
-	inline vk::Flags<T> operator&(T a, T b) { return vk::Flags<T>(a) & b; } \
-	inline vk::Flags<T> operator^(T a, T b) { return vk::Flags<T>(a) ^ b; } \
-	inline vk::Flags<T> operator~(T bit) { return vk::Flags<T>(false, bit); }
+	constexpr vk::Flags<T> operator|(T a, T b) { return vk::Flags<T>(a) | b; } \
+	constexpr vk::Flags<T> operator&(T a, T b) { return vk::Flags<T>(a) & b; } \
+	constexpr vk::Flags<T> operator^(T a, T b) { return vk::Flags<T>(a) ^ b; } \
+	constexpr vk::Flags<T> operator~(T bit) { return vk::Flags<T>(false, bit); }

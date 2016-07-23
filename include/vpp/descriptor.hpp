@@ -52,6 +52,7 @@ public:
 	DescriptorPool& operator=(DescriptorPool&& other) noexcept = default;
 };
 
+//TODO: rename to DescriptorUpdate? easier and probably also better
 ///Allows convinient descriptorSet updates.
 ///Does not perform any checking.
 class DescriptorSetUpdate : ResourceReference<DescriptorSetUpdate>

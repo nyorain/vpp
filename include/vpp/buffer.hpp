@@ -142,10 +142,14 @@ protected:
 #include <vpp/bits/vulkanTypes.inl>
 #include <vpp/bits/buffer.inl>
 
-///TODO: function for aligned buffer reading
+//TODO: function for aligned buffer reading
 //template<typename... T>
 //void alignedRead(const std::uint8_t& data, T... args);
 
+//TODO: function to determine buffer size if it should be filled with the given objects.
+//should be constexpr function like:
+//template<typename... T>
+//vk::DeviceSize bufferSize(T... args);
 
 ///Fills the buffer with the given data.
 ///Does this either by memory mapping the buffer or by copying it via command buffer.
