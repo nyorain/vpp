@@ -43,6 +43,18 @@ queue.mutex().unlock();
 
 //wait for the fence
 
+
+//the idea for implementing sparse memory entries is to make the MemoryEntry class virtual and
+//then provide multiple implementations (e.g. default, sparse, sparseResidency, sparseAliasing)
+//The down-side of this would be that it would result in one extra word per memory resource for
+//the virtual table, the need to allocate the memory entry implementation on the heap instead of
+//the stack and the fact that sparse memory entries cannot be implemented without huuge host-side
+//memory needs.
+//The question is if sparse memory resources can be handled in any safe way, so that they would
+//not need that much resources on the host side. If there is such a way, leave memor entry as it
+//is and make vpp::MemoryResource a class for non-sparse memory resources and instead provide
+//helpers for the alternative handling of sparse resources.
+//probably there isnt such a way. one has to keep track of memory bindings.
 class SparseMemoryEntry : public Resource
 {
 public:
@@ -62,6 +74,14 @@ class ManagedSparseMemoryEntry : public SparseMemoryEntry
 protected:
 	DeviceMemoryAllocator& allocator_;
 	std::vector<MemoryBinds> binds_;
+};
+
+class MemoryEntry
+{
+public:
+	virtual ~MemoryEntry();
+	virtual void assureBound(vk::DeviceSize offset = 0, vk::DeviceSize size = 0) = 0;
+	virtual vk::DeviceSize size() const = 0;
 };
 
 class SparseBinder

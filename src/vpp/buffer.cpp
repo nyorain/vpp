@@ -230,4 +230,20 @@ void BufferUpdate::alignTexel()
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
 
+//bufferSizeCalculator
+void BufferSizeCalculator::alignUniform()
+{
+	align(device().properties().limits.minUniformBufferOffsetAlignment);
+}
+
+void BufferSizeCalculator::alignStorage()
+{
+	align(device().properties().limits.minTexelBufferOffsetAlignment);
+}
+
+void BufferSizeCalculator::alignTexel()
+{
+	align(device().properties().limits.minTexelBufferOffsetAlignment);
+}
+
 }

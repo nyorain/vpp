@@ -4,6 +4,7 @@
 #include <vpp/memoryResource.hpp>
 #include <vpp/work.hpp>
 #include <vpp/utility/range.hpp>
+#include <vpp/utility/allocation.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -139,17 +140,61 @@ protected:
 	bool direct_ = false;
 };
 
+///Can be used to calculate the size that would be needed to fit certain objects with certain
+///alignments on a buffer.
+class BufferSizeCalculator : public Resource
+{
+public:
+	using Size = vk::DeviceSize;
+
+public:
+	BufferSizeCalculator(const Device& dev, BufferAlign align) : Resource(dev), align_(align) {}
+	~BufferSizeCalculator() = default;
+
+	template<typename T> void addSingle(const T& obj);
+	template<typename... T> void add(const T&... obj);
+
+	void offset(Size size) { offset_ += size; }
+	void align(Size align) { offset_ = vpp::align(offset_, align); }
+
+	void alignUniform();
+	void alignStorage();
+	void alignTexel();
+
+	BufferAlign alignType() const { return align_; }
+	bool std140() const { return align_ == BufferAlign::std140; }
+	bool std430() const { return align_ == BufferAlign::std430; }
+
+	Size offset() const { return offset_; }
+
+protected:
+	Size offset_;
+	BufferAlign align_;
+};
+
 #include <vpp/bits/vulkanTypes.inl>
 #include <vpp/bits/buffer.inl>
 
 //TODO: function for aligned buffer reading
+//XXX: base class for BufferUpate, BufferSizeCalculator (->BufferSize) and BufferReader
+//they have in commmon: template read/write operator, offset, bufferalign and functions
+
 //template<typename... T>
 //void alignedRead(const std::uint8_t& data, T... args);
-
-//TODO: function to determine buffer size if it should be filled with the given objects.
-//should be constexpr function like:
-//template<typename... T>
-//vk::DeviceSize bufferSize(T... args);
+// class BufferReader
+// {
+// public:
+// 	using Size = std::size_t;
+//
+// public:
+// 	template<typename T> void readSingle(T& obj);
+// 	template<typename... T> void read(T&... obj);
+//
+// protected:
+// 	std::vector<std::uint8_t> data_;
+// 	Size offset_;
+// 	BufferAlign align_;
+// };
 
 ///Fills the buffer with the given data.
 ///Does this either by memory mapping the buffer or by copying it via command buffer.
@@ -196,5 +241,33 @@ fill430(const Buffer& buf, const T&... args){ return fill(buf, BufferAlign::std4
 ///\return A Work ptr that is able to retrive an array of std::uint8_t values storing the data.
 DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset = 0,
 	vk::DeviceSize size = vk::wholeSize);
+
+
+/*
+
+//simple example for the size/fill/read api:
+//does not use the features for which the more comlex OO-api is needed such as
+//custom alignments and offsets.
+
+//query the size needed for a buffer in layout std140 with the given objects.
+//note that for all of these calls you have to specialize the VulkanType template correectly
+//for the given types (except the rawBuffer if gotten from vpp::raw and the container).
+auto size = vpp::bufferSize140(dev, myvec2, myvec3, mymat3, myvector, myrawdata);
+auto buffer = createBuffer(dev, size);
+
+//fill the data with the buffer
+//Usually one would one finish this work in place but batch it together with other work
+//can be done using a vpp::WorkManager.
+vpp::fill140(dev, myvec2, myvec3, mymat3, myvector, myrawdata)->finish();
+
+//some operations/shader access here that changes the data of the buffer
+
+//read the data back in
+//the first call retrieves the data the second one parses it/reads it into the given variables.
+//Usually one would not finish the work in place to retrieve the data.
+auto data = vpp::retrieve(buffer)->data();
+vpp::read140(dev, data, myvec2, myvec3, mymat3, myvector, myrawdata);
+
+*/
 
 };
