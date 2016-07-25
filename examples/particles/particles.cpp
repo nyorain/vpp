@@ -3,6 +3,7 @@
 #include <vpp/provider.hpp>
 #include <vpp/utility/file.hpp>
 #include <vpp/buffer.hpp>
+#include <vpp/bufferOps.hpp>
 #include <vpp/graphicsPipeline.hpp>
 #include <vpp/computePipeline.hpp>
 #include <vpp/descriptor.hpp>
@@ -22,9 +23,9 @@ using Clock = std::chrono::high_resolution_clock;
 //types
 struct Particle
 {
-	nytl::Vec2f position;
-	nytl::Vec2f velocity;
-	nytl::Vec2f color;
+	nytl::Vec2f position {};
+	nytl::Vec2f velocity {};
+	nytl::Vec2f color {};
 };
 
 namespace vpp
@@ -244,6 +245,13 @@ void ParticleSystem::init()
 	buildComputeBuffer();
 
 	lastUpdate_ = Clock::now();
+
+	//XXX: test
+	particles_.clear();
+	particles_.reserve(count_);
+	vpp::read430(particlesBuffer_, particles_)->finish();
+
+	std::cout << "3rd position retrieved: " << particles_[2].position << "\n";
 }
 
 void ParticleSystem::initGraphicsPipeline()
@@ -357,6 +365,7 @@ void ParticleSystem::initParticles()
 	rgen.seed(time(nullptr));
 	std::uniform_real_distribution<float> distr(-0.85f, 0.85f);
 
+	int i = 0;
 	for(auto& particle : particles_)
 	{
 		particle.position.x = distr(rgen);
@@ -364,6 +373,9 @@ void ParticleSystem::initParticles()
 
 		particle.velocity = nytl::Vec2f{0.f, 0.f};
 		particle.color = nytl::Vec2f(1., 1.);
+
+		if(i == 2) std::cout << "3rd position set: " << particle.position << "\n";
+		i++;
 	}
 }
 void ParticleSystem::initParticleBuffer()
@@ -371,7 +383,7 @@ void ParticleSystem::initParticleBuffer()
 	vk::BufferCreateInfo bufInfo;
 	bufInfo.size = sizeof(Particle) * count_;
 	bufInfo.usage = vk::BufferUsageBits::vertexBuffer | vk::BufferUsageBits::storageBuffer
-		| vk::BufferUsageBits::transferDst;
+		| vk::BufferUsageBits::transferDst | vk::BufferUsageBits::transferSrc;
 
 	particlesBuffer_ = {device(), bufInfo, 1};
 }

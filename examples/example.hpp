@@ -4,6 +4,7 @@
 #include <vpp/commandBuffer.hpp>
 #include <vpp/transfer.hpp>
 #include <vpp/renderPass.hpp>
+#include <vpp/bufferOps.hpp>
 #include <vpp/renderer.hpp>
 #include <vpp/image.hpp>
 #include <vpp/queue.hpp>

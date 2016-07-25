@@ -3,6 +3,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/work.hpp>
 #include <vpp/transfer.hpp>
+#include <vpp/bufferOps.hpp>
 #include <vpp/memoryResource.hpp>
 
 namespace vpp

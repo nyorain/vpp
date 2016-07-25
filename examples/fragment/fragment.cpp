@@ -7,8 +7,6 @@
 #include <vpp/vk.hpp>
 #include <vpp/utility/file.hpp>
 
-#include <nytl/nytl.hpp>
-
 #include <cassert>
 #include <cstring>
 #include <chrono>

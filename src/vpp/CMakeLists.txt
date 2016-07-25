@@ -1,6 +1,8 @@
 #default sources
 set(vpp-sources
 	allocator.cpp
+	buffer.cpp
+	bufferOps.cpp
     context.cpp
     device.cpp
     descriptor.cpp
@@ -9,9 +11,7 @@ set(vpp-sources
 	memory.cpp
 	allocator.cpp
 	shader.cpp
-	device.cpp
 	framebuffer.cpp
-	buffer.cpp
 	image.cpp
 	debug.cpp
 	pipeline.cpp
@@ -27,6 +27,7 @@ set(vpp-sources
 	queue.cpp
 	provider.cpp
 
+	#until c++17
 	../../external/boost/src/global_resource.cpp
 	../../external/boost/src/pool_resource.cpp
 	../../external/boost/src/synchronized_pool_resource.cpp
