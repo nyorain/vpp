@@ -1,9 +1,9 @@
 # vpp
 vpp is a vulkan abstraction library written in modern C++14 and licensed by the __MIT License__.
 It does not aim to be a full-sized graphics engine, it rather focuses on providing some useful
-features that make programming vulkan applications in c++ more convinient and less repetitive.
+features that make programming vulkan applications in c++ more convenient and less repetitive.
 
-vpp also includes a c++ codegenerator for the vulkan api which focuses on typesafety, less typing
+vpp also includes a C++ codegenerator for the vulkan api which focuses on typesafety and less typing
 while still being more explicit as well as it tries to not introduce a huge compile time overhead.
 There should be no runtime overhead using the c++ api.
 
@@ -15,7 +15,7 @@ If you want to improve the library or add your own ideas, just start a pull requ
 
 ## Examples
 Here are some examples to give you an idea on how the api will probably look like and in
-which way in may be useful to programming vulkan applications.
+which way in may be useful to program vulkan applications.
 Examples as well as a full documentation will be provided at some first release of a stable api.
 Note that those examples just represent one part of the library (the highest abstraction
 level) while there are also other not-shown parts of the library. The code is more some
