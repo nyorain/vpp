@@ -17,4 +17,5 @@ int main(int argc, const char** argv)
 	generator.generate();
 
 	std::cout << "generated ... \n";
+	return EXIT_SUCCESS;
 }

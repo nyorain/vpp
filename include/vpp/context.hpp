@@ -12,7 +12,6 @@
 namespace vpp
 {
 
-//TODO: correct graphics/compute/present queue support -- holy shit one bugfest atm
 //TODO: sparse queue
 //TODO: correct layer management
 //TODO: do not public expose init functions. Needed for createContext funcionts.

@@ -44,6 +44,7 @@ queue.mutex().unlock();
 //wait for the fence
 
 
+
 //the idea for implementing sparse memory entries is to make the MemoryEntry class virtual and
 //then provide multiple implementations (e.g. default, sparse, sparseResidency, sparseAliasing)
 //The down-side of this would be that it would result in one extra word per memory resource for
@@ -55,6 +56,7 @@ queue.mutex().unlock();
 //is and make vpp::MemoryResource a class for non-sparse memory resources and instead provide
 //helpers for the alternative handling of sparse resources.
 //probably there isnt such a way. one has to keep track of memory bindings.
+
 class SparseMemoryEntry : public Resource
 {
 public:
@@ -76,6 +78,7 @@ protected:
 	std::vector<MemoryBinds> binds_;
 };
 
+
 class MemoryEntry
 {
 public:
@@ -89,3 +92,16 @@ class SparseBinder
 public:
 	void add(/* some bind info params*/);
 };
+
+
+
+
+class MemoryEntry
+{
+protected:
+	DeviceMemoryAllocator* allocator_;
+	unsigned int id_;
+};
+
+class MemoryAllocator;
+class SparseMemoryAllocator : public MemoryAllocator;
