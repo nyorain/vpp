@@ -12,6 +12,8 @@ namespace vpp
 ///Work base class.
 ///The Work classes abstract possible gpu work do be done. They are therefore not executed
 ///automatically, but usually batched together for performance gains.
+///Work implementations should finish their operations on work object descruction.
+///Although this may lead to blocking destructors, it will assure that no work discarded.
 class WorkBase
 {
 public:
