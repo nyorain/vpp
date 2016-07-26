@@ -390,7 +390,7 @@ void ParticleSystem::initParticleBuffer()
 
 void ParticleSystem::writeParticleBuffer()
 {
-	vpp::BufferUpdate update(particlesBuffer_, vpp::BufferAlign::std430);
+	vpp::BufferUpdate update(particlesBuffer_, vpp::BufferLayout::std430);
 	update.add(particles_);
 
 	//fill430(particlesBuffer_, particles_);
@@ -432,7 +432,7 @@ void ParticleSystem::writeGraphicsUBO()
 	auto vMat = nytl::identityMat<4, float>();
 	auto map = graphicsUBO_.memoryMap();
 
-	vpp::BufferUpdate update(graphicsUBO_, vpp::BufferAlign::std140);
+	vpp::BufferUpdate update(graphicsUBO_, vpp::BufferLayout::std140);
 	update.add(pMat, vMat);
 }
 

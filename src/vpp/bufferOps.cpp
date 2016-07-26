@@ -48,7 +48,7 @@ DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize si
 }
 
 //BufferFill
-BufferUpdate::BufferUpdate(const Buffer& buffer, BufferAlign align, bool direct)
+BufferUpdate::BufferUpdate(const Buffer& buffer, BufferLayout align, bool direct)
 	: BufferOperator(align), buffer_(&buffer)
 {
 	buffer.assureMemory();
@@ -221,7 +221,7 @@ void BufferSizer::alignTexel()
 }
 
 //BufferReader
-BufferReader::BufferReader(const Device& dev, BufferAlign align, const Range<std::uint8_t>& data)
+BufferReader::BufferReader(const Device& dev, BufferLayout align, const Range<std::uint8_t>& data)
 	: Resource(dev), BufferOperator(align), data_(data)
 {
 }

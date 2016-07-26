@@ -162,11 +162,11 @@ void BufferOperator<B>::add(T&&... objs)
 	int e1[] = {(addSingle(objs), 0)...};
 }
 
-template<typename... T> WorkPtr read(const Buffer& buf, BufferAlign align, T&... args)
+template<typename... T> WorkPtr read(const Buffer& buf, BufferLayout align, T&... args)
 {
 	struct WorkImpl : public Work<void>
 	{
-		WorkImpl(const Buffer& buf, BufferAlign align, T&... args)
+		WorkImpl(const Buffer& buf, BufferLayout align, T&... args)
 			: buffer_(buf), retrieveWork_(retrieve(buf)), align_(align), args_(args...) {}
 		~WorkImpl() { finish(); }
 
@@ -190,7 +190,7 @@ template<typename... T> WorkPtr read(const Buffer& buf, BufferAlign align, T&...
 
 		const Buffer& buffer_;
 		DataWorkPtr retrieveWork_;
-		BufferAlign align_;
+		BufferLayout align_;
 		std::tuple<T&...> args_;
 	};
 

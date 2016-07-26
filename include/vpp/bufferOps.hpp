@@ -7,6 +7,8 @@
 #include <vpp/utility/allocation.hpp>
 #include <vpp/bits/apply.inl>
 
+///\file Defines several utility operations for buffers such as updating or reading them.
+
 namespace vpp
 {
 
@@ -36,7 +38,7 @@ constexpr unsigned int align(ShaderType type);
 ///For the differences, read https://www.opengl.org/wiki/Interface_Block_(GLSL)#Memory_layout.
 ///Uniform buffer are by default std140 while storage buffers are by default std430.
 ///Both defaults can be explicitly changed in the shader files using the buffers.
-enum class BufferAlign
+enum class BufferLayout
 {
 	std140,
 	std430
@@ -51,7 +53,7 @@ public:
 	using Size = std::size_t;
 
 public:
-	BufferOperator(BufferAlign align) : align_(align) {}
+	BufferOperator(BufferLayout align) : align_(align) {}
 	~BufferOperator() = default;
 
 	///Will operator on the given object. The type of the given object must have
@@ -69,12 +71,12 @@ public:
 	///Returns the current offset on the buffer.
 	Size offset() const { return offset_; }
 
-	BufferAlign alignType() const { return align_; }
-	bool std140() const { return align_ == BufferAlign::std140; }
-	bool std430() const { return align_ == BufferAlign::std430; }
+	BufferLayout alignType() const { return align_; }
+	bool std140() const { return align_ == BufferLayout::std140; }
+	bool std430() const { return align_ == BufferLayout::std430; }
 
 protected:
-	BufferAlign align_;
+	BufferLayout align_;
 	Size offset_ {};
 };
 
@@ -90,7 +92,7 @@ public:
 	///\exception std::runtime_error if the device has no queue that supports graphics/compute or
 	///transfer operations and the buffer is not mappable.
 	///\sa BufferAlign
-	BufferUpdate(const Buffer& buffer, BufferAlign align, bool direct = false);
+	BufferUpdate(const Buffer& buffer, BufferLayout align, bool direct = false);
 	~BufferUpdate();
 
 	///Writes size bytes from ptr to the buffer.
@@ -114,10 +116,11 @@ public:
 	std::size_t internalOffset() const { return internalOffset_; }
 
 	const Buffer& buffer() const { return *buffer_; }
-	BufferAlign alignType() const { return align_; }
 
-	bool std140() const { return align_ == BufferAlign::std140; }
-	bool std430() const { return align_ == BufferAlign::std430; }
+	using BufferOperator::offset;
+	using BufferOperator::alignType;
+	using BufferOperator::std140;
+	using BufferOperator::std430;
 
 	const Buffer& resourceRef() const { return *buffer_; }
 
@@ -143,7 +146,7 @@ protected:
 class BufferSizer : public BufferOperator<BufferSizer>, public Resource
 {
 public:
-	BufferSizer(const Device& dev, BufferAlign align) : BufferOperator(align), Resource(dev) {}
+	BufferSizer(const Device& dev, BufferLayout align) : BufferOperator(align), Resource(dev) {}
 	~BufferSizer() = default;
 
 	void operate(const void* ptr, Size size) { offset_ += size; }
@@ -151,11 +154,14 @@ public:
 	void offset(Size size) { offset_ += size; }
 	void align(Size align) { offset_ = vpp::align(offset_, align); }
 
+	using BufferOperator::offset;
+	using BufferOperator::alignType;
+	using BufferOperator::std140;
+	using BufferOperator::std430;
+
 	void alignUniform();
 	void alignStorage();
 	void alignTexel();
-
-	using BufferOperator::offset;
 };
 
 ///Class that can be used to read raw data into objects using the coorect alignment.
@@ -165,17 +171,18 @@ public:
 	//XXX: better use owned data (a vector, data copy) here?
 	///Constructs the BufferReader with the given data range.
 	///Note that the range must stay valid until destruction.
-	BufferReader(const Device& dev, BufferAlign align, const Range<std::uint8_t>& data);
+	BufferReader(const Device& dev, BufferLayout align, const Range<std::uint8_t>& data);
 	~BufferReader() = default;
 
 	void operate(void* ptr, Size size);
 
 	void offset(Size size) { offset_ += size; }
-	void align(Size align) {
-		// std::cout << offset_ << " --align-- " << align << "\n";
-		offset_ = vpp::align(offset_, align); }
+	void align(Size align) { offset_ = vpp::align(offset_, align); }
 
-
+	using BufferOperator::offset;
+	using BufferOperator::alignType;
+	using BufferOperator::std140;
+	using BufferOperator::std430;
 
 	void alignUniform();
 	void alignStorage();
@@ -207,7 +214,7 @@ protected:
 ///\sa fill140
 ///\sa fill430
 template<typename... T>
-WorkPtr fill(const Buffer& buf, BufferAlign align, const T&... args)
+WorkPtr fill(const Buffer& buf, BufferLayout align, const T&... args)
 {
 	BufferUpdate update(buf, align);
 	update.add(args...);
@@ -218,13 +225,13 @@ WorkPtr fill(const Buffer& buf, BufferAlign align, const T&... args)
 ///\sa fill
 ///\sa BufferUpdate
 template<typename... T> WorkPtr fill140(const Buffer& buf, const T&... args)
-	{ return fill(buf, BufferAlign::std140, args...); }
+	{ return fill(buf, BufferLayout::std140, args...); }
 
 ///Utilty shortcut for filling the buffer with data using the std430 layout.
 ///\sa fill
 ///\sa BufferUpdate
 template<typename... T> WorkPtr fill430(const Buffer& buf, const T&... args)
-	{ return fill(buf, BufferAlign::std430, args...); }
+	{ return fill(buf, BufferLayout::std430, args...); }
 
 ///Retrives the data stored in the buffer.
 ///\param size The size of the range to retrive. If size is vk::wholeSize (default) the range
@@ -235,23 +242,24 @@ DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset = 0,
 
 ///Reads the data stored in the given buffer aligned into the given objects.
 ///Note that the given objects MUST remain valid until the work finishes.
+///You can basically pass all argument types that you can pass to the fill command.
 ///Internally just uses a combination of a retrieve work operation and the reads the
 ///retrieved data into the given arguments using the BufferReader class.
 ///\sa BufferReader
 template<typename... T>
-WorkPtr read(const Buffer& buf, BufferAlign align, T&... args);
+WorkPtr read(const Buffer& buf, BufferLayout align, T&... args);
 
 ///Reads the given buffer into the given objects using the std140 layout.
 ///\sa read
 ///\sa BufferReader
 template<typename... T> WorkPtr read140(const Buffer& buf, T&... args)
-	{ return read(buf, BufferAlign::std140, args...); }
+	{ return read(buf, BufferLayout::std140, args...); }
 
 ///Reads the given buffer into the given objects using the std430 layout.
 ///\sa read
 ///\sa BufferReader
 template<typename... T> WorkPtr read430(const Buffer& buf, T&... args)
-	{ return read(buf, BufferAlign::std430, args...); }
+	{ return read(buf, BufferLayout::std430, args...); }
 
 
 //TODO: constexpr where possible. One does not have to really pass the objects in most cases
@@ -260,7 +268,7 @@ template<typename... T> WorkPtr read430(const Buffer& buf, T&... args)
 ///Calculates the size a vulkan buffer must have to be able to store all the given objects.
 ///\sa BufferSizer
 template<typename... T>
-std::size_t needeBufferSize(const Device& dev, BufferAlign align, const T&... args)
+std::size_t needeBufferSize(const Device& dev, BufferLayout align, const T&... args)
 {
 	BufferSizer sizer(dev, align);
 	sizer.add(args...);
@@ -272,14 +280,14 @@ std::size_t needeBufferSize(const Device& dev, BufferAlign align, const T&... ar
 ///\sa neededBufferSize
 ///\sa BufferSizer
 template<typename... T> std::size_t neededBufferSize140(const Device& dev, const T&... args)
-	{ return neededBufferSize(dev, BufferAlign::std140, args...); }
+	{ return neededBufferSize(dev, BufferLayout::std140, args...); }
 
 ///Calcualtes the size a vulkan buffer must have to be able to store all the given objects using
 ///the std430 layout.
 ///\sa neededBufferSize
 ///\sa BufferSizer
 template<typename... T> std::size_t neededBufferSize430(const Device& dev, const T&... args)
-	{ return neededBufferSize(dev, BufferAlign::std430, args...); }
+	{ return neededBufferSize(dev, BufferLayout::std430, args...); }
 
 
 ///Implementation of buffer operations and vukan types
