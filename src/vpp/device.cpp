@@ -47,8 +47,6 @@ struct Device::Impl
 };
 
 //Device
-Device::Device() = default;
-
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info)
 	: instance_(ini), physicalDevice_(phdev)
 {
@@ -73,13 +71,41 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 			queueInfo.queueFamilyIndex, idx));
 	}
 
-	tlStorage(); //automatically provide storage for this thread
+	tlStorage(); //automatically provide storage for this thread. XXX: useful?
+}
+
+Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
+	const Range<std::pair<unsigned int, unsigned int>>& queues)
+		: instance_(ini), physicalDevice_(phdev), device_(device)
+{
+	auto qProps = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
+
+	impl_.reset(new Impl(*this));
+	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());
+	impl_->memoryProperties = vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
+	impl_->qFamilyProperties = qProps;
+
+	impl_->queues.resize(queues.size());
+
+	for(std::size_t i(0); i < queues.size(); ++i)
+	{
+		auto queue = vk::getDeviceQueue(vkDevice(), queues[i].first, queues[i].second);
+		impl_->queues[i].reset(new Queue(queue, impl_->qFamilyProperties[queues[i].first],
+			queues[i].first, queues[i].second));
+	}
+
+	tlStorage(); //automatically provide storage for this thread. XXX: useful?
 }
 
 Device::~Device()
 {
 	impl_.reset();
 	if(vkDevice()) vk::destroyDevice(device_, nullptr);
+}
+
+void Device::release()
+{
+	device_ = {};
 }
 
 void Device::waitIdle() const
