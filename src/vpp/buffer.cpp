@@ -7,6 +7,26 @@
 namespace vpp
 {
 
+Buffer::Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
+	vk::MemoryPropertyFlags mflags)
+{
+	vkHandle() = buffer;
+	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
+
+	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
+	dev.deviceAllocator().request(vkHandle(), reqs, usage, memoryEntry_);
+}
+
+Buffer::Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
+	std::uint32_t memoryTypeBits)
+{
+	vkHandle() = buffer;
+	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
+
+	reqs.memoryTypeBits &= reqs.memoryTypeBits;
+	dev.deviceAllocator().request(vkHandle(), reqs, usage, memoryEntry_);
+}
+
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags)
 {
 	vkHandle() = vk::createBuffer(dev, info);

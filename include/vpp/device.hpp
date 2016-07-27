@@ -27,13 +27,13 @@ public:
 	///Creates the object from the given device and stores the given queues.
 	///Note that this function call transfers ownership of the given vulkan device to the
 	///created vpp::Device object i.e. it will be destroyed in the Device objects desctructor.
-	///This function is especially useful with the NotOwned template to create a Device object
+	///This function is especially useful with the NonOwned template to create a Device object
 	///from an elsewhere created vulkan device.
 	///\param queues A vector holding all queues that should be retrieved.
 	///For every entry in the given vector, the first member of the pair represents the queue
 	///family and the second member the queue id. Note that there is no way in vulkan to check
 	///for created queues of a device so this information must be valid.
-	///\sa NotOwned
+	///\sa NonOwned
 	Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 		const Range<std::pair<unsigned int, unsigned int>>& queues);
 

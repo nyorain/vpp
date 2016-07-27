@@ -227,7 +227,7 @@ void ParticleSystem::init()
 	Resource::init(app_.context.device());
 
 	{
-		vpp::NotOwned<vpp::Device> dev2(vkInstance(), vkPhysicalDevice(), vkDevice(), {});
+		vpp::NonOwned<vpp::Device> dev2(vkInstance(), vkPhysicalDevice(), vkDevice(), {});
 		//can go out of scope without any problems
 	}
 

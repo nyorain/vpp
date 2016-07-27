@@ -31,6 +31,7 @@ public:
 	Framebuffer() = default;
 	Framebuffer(const Device& dev, vk::RenderPass rp, const vk::Extent2D& size,
 		const AttachmentsInfo& attachments, const ExtAttachments& ext = {});
+	Framebuffer(const Device& dev, const vk::Extent2D& size, vk::Framebuffer framebuffer);
 	~Framebuffer();
 
 	Framebuffer(Framebuffer&& other) noexcept = default;

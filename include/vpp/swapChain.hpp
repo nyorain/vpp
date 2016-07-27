@@ -92,6 +92,11 @@ public:
 	///as the underlaying native surface, then the size parameter is ignored.
 	SwapChain(const Device& device, vk::SurfaceKHR surface,
 		const vk::Extent2D& size = {}, const SwapChainSettings& = {});
+
+	///Transfers ownership of the given swapChain handle to the created object.
+	SwapChain(const Device& dev, vk::SwapchainKHR swapChain, vk::SurfaceKHR surface,
+		const vk::Extent2D& size, vk::Format format);
+
     ~SwapChain();
 
 	SwapChain(SwapChain&& other) noexcept = default;
@@ -99,7 +104,8 @@ public:
 
 	///Resizes the swapchain to the given size. Should be called if the native window of the
 	///underlaying surface handle changes it size to make sure the swapchain fills the
-	///whole window. May invalidate all images and imageViews retrived before the resize.
+	///whole window. Will invalidate all images and imageViews retrived before the resize.
+	///Will invalidate the previous vk::SwapchainKHR handle.
 	///Note that the size paramter is only used when the backend does not provide a fixed
 	///surface size. Otherwise the swapchain will simply be resized to the current surface
 	///size and the given size paramter is ignored.
@@ -130,6 +136,7 @@ public:
 
 protected:
 	void destroyBuffers();
+	void createBuffers();
 
 protected:
 	vk::SurfaceKHR surface_ {};

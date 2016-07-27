@@ -23,6 +23,11 @@ public:
 	Buffer(const Device& dev, const vk::BufferCreateInfo& info, std::uint32_t memoryTypesBits);
 	Buffer(const Device& dev, const vk::BufferCreateInfo& info,
 		vk::MemoryPropertyFlags mflags = {});
+	Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
+		std::uint32_t memoryTypeBits);
+	Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
+		vk::MemoryPropertyFlags mflags = {});
+		
 	~Buffer();
 
 	Buffer(Buffer&& other) noexcept = default;

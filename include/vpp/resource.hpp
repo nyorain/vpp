@@ -88,18 +88,18 @@ private:
 
 #endif //VPP_ONE_DEVICE_OPTIMIZATION
 
-///Can be used for not owned resources. Does not store any additional data.
+///Can be used for non owned resources. Does not store any additional data.
 ///Derives from the given type and simply calls its protected release function (which should
 ///release the owned resource) before calling its destructor which then cannot destroy the
 ///not owned resource.
 ///If you want to enable your custom classes for this template simply implement a release memeber
-///function which is visible to NotOwned.
+///function which is visible to NonOwned.
 template <typename T>
-class NotOwned : public T
+class NonOwned : public T
 {
 public:
 	using T::T;
-	~NotOwned() { T::release(); }
+	~NonOwned() { T::release(); }
 };
 
 ///Resource class that already holds another resource and does therefore not have to hold a second
