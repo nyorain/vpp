@@ -38,6 +38,11 @@ void swap(Surface& a, Surface& b) noexcept
 	std::swap(a.surface_, b.surface_);
 }
 
+void Surface::release()
+{
+	surface_ = {};
+}
+
 bool Surface::queueFamilySupported(vk::PhysicalDevice phdev, std::uint32_t qFamiliyIndex) const
 {
 	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceSupportKHR);

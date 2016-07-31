@@ -130,6 +130,8 @@ protected:
 	vk::PhysicalDevice physicalDevice_ {};
 	vk::Device device_ {};
 
+	///Device uses the pimpl idion since it holds internally many objects (some threadlocal) that would
+	///pull a lot of unacceptabl headers.
 	std::unique_ptr<Impl> impl_;
 };
 

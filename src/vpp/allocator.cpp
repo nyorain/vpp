@@ -367,7 +367,6 @@ DeviceMemoryAllocator::queryTypes()
 				if(supportsType(req, i))
 				{
 					std::pmr::vector<Requirement*> vec({&req}, {&allctr});
-
 					auto it = occurences.find(i);
 					if(it != occurences.cend()) it->second.push_back(&req);
 					else occurences.emplace(i, std::pmr::vector<Requirement*>{&req});

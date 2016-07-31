@@ -19,3 +19,5 @@
 
 - custom exception? like vpp::VulkanError if vulkan call (caught exception or result) failed or
 	vpp::QueueError if there is not queue that can execute the needed operation
+
+- External constructors for all resources (construct them from existing handles)

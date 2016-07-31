@@ -42,6 +42,7 @@ public:
 	const MemoryEntry& resourceRef() const { return memoryEntry(); }
 
 protected:
+	using ResourceHandleReference<T, MemoryResource<T>>::ResourceHandleReference;
 	MemoryResource() = default;
 	~MemoryResource() = default;
 

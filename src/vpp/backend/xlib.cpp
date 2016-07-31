@@ -1,12 +1,11 @@
 #include <vpp/backend/xlib.hpp>
+#include <vpp/procAddr.hpp>
 
 namespace vpp
 {
 
-Surface createSurface(vk::Instance instance, Display& dpy, Window window);
+Surface createSurface(vk::Instance instance, Display& dpy, Window window)
 {
-	if(module == nullptr) module = ::GetModuleHandle(nullptr);
-
 	vk::XlibSurfaceCreateInfoKHR info;
     info.dpy = &dpy;
     info.window = window;
@@ -16,7 +15,7 @@ Surface createSurface(vk::Instance instance, Display& dpy, Window window);
 	return {instance, ret};
 }
 
-Context createContext(Display& dpy, Window window, Context::CreateInfo info);
+Context createContext(Display& dpy, Window window, Context::CreateInfo info)
 {
 	info.instanceExtensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
 
@@ -32,7 +31,7 @@ Context createContext(Display& dpy, Window window, Context::CreateInfo info);
 	return ret;
 }
 
-Context createContext(Display& dpy, Window window);
+Context createContext(Display& dpy, Window window)
 {
 	return createContext(dpy, window, {});
 }

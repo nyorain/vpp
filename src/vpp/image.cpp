@@ -7,7 +7,7 @@
 #include <vpp/vk.hpp>
 #include <vpp/utility/debug.hpp>
 
-#include <utility>
+#include <utility> 
 
 namespace vpp
 {
@@ -44,6 +44,22 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, std::uint32_t m
 	dev.deviceAllocator().request(vkHandle(), reqs, info.tiling, memoryEntry_);
 }
 
+Image::Image(const Device& dev, vk::Image image, vk::ImageTiling tiling,
+	vk::MemoryPropertyFlags mflags) : MemoryResource(image)
+{
+	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), vkHandle());
+	reqs.memoryTypeBits = device().memoryTypeBits(mflags, reqs.memoryTypeBits);
+	dev.deviceAllocator().request(vkHandle(), reqs, tiling, memoryEntry_);
+}
+
+Image::Image(const Device& dev, vk::Image image, vk::ImageTiling tiling,
+	std::uint32_t memoryTypeBits)
+{
+	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), vkHandle());
+	reqs.memoryTypeBits &= memoryTypeBits;
+	dev.deviceAllocator().request(vkHandle(), reqs, tiling, memoryEntry_);
+}
+
 Image::~Image()
 {
 	if(vkHandle()) vk::destroyImage(device(), vkHandle());
@@ -65,8 +81,7 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 
 		//dataoffset
 		auto doffset = 0u;
-		for(auto d = offset.z; d < offset.z + extent.depth; ++d)
-		{
+		for(auto d = offset.z; d < offset.z + extent.depth; ++d) {
 			for(auto h = offset.y; h < offset.y + extent.height; ++h)
 			{
 				//image offset

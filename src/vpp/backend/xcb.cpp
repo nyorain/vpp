@@ -1,12 +1,11 @@
 #include <vpp/backend/xcb.hpp>
+#include <vpp/procAddr.hpp>
 
 namespace vpp
 {
 
-Surface createSurface(vk::Instance instance, xcb_connection_t& con, xcb_window_t window);
+Surface createSurface(vk::Instance instance, xcb_connection_t& con, xcb_window_t window)
 {
-	if(module == nullptr) module = ::GetModuleHandle(nullptr);
-
 	vk::XcbSurfaceCreateInfoKHR info;
     info.connection = &con;
     info.window = window;
@@ -16,7 +15,7 @@ Surface createSurface(vk::Instance instance, xcb_connection_t& con, xcb_window_t
 	return {instance, ret};
 }
 
-Context createContext(xcb_connection_t& con, xcb_window_t window, Context::CreateInfo info);
+Context createContext(xcb_connection_t& con, xcb_window_t window, Context::CreateInfo info)
 {
 	info.instanceExtensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
 
@@ -32,7 +31,7 @@ Context createContext(xcb_connection_t& con, xcb_window_t window, Context::Creat
 	return ret;
 }
 
-Context createContext(xcb_connection_t& con, xcb_window_t window);
+Context createContext(xcb_connection_t& con, xcb_window_t window)
 {
 	return createContext(con, window, {});
 }

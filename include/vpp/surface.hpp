@@ -40,6 +40,9 @@ public:
 	friend void swap(Surface& a, Surface& b) noexcept;
 
 protected:
+	void release();
+
+protected:
     vk::Instance instance_ {};
     vk::SurfaceKHR surface_ {};
 };

@@ -21,8 +21,7 @@ class Buffer : public MemoryResource<vk::Buffer>
 public:
 	Buffer() = default;
 	Buffer(const Device& dev, const vk::BufferCreateInfo& info, std::uint32_t memoryTypesBits);
-	Buffer(const Device& dev, const vk::BufferCreateInfo& info,
-		vk::MemoryPropertyFlags mflags = {});
+	Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mf = {});
 	Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
 		std::uint32_t memoryTypeBits);
 	Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
@@ -33,6 +32,5 @@ public:
 	Buffer(Buffer&& other) noexcept = default;
 	Buffer& operator=(Buffer&& other) noexcept = default;
 };
-
 
 };

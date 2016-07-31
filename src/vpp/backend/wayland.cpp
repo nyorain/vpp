@@ -1,14 +1,13 @@
 #include <vpp/backend/wayland.hpp>
+#include <vpp/procAddr.hpp>
 
 namespace vpp
 {
 
-Surface createSurface(vk::Instance instance, struct wl_display& dislay, struct wl_surface& surface);
+Surface createSurface(vk::Instance instance, struct wl_display& dpy, struct wl_surface& surface)
 {
-	if(module == nullptr) module = ::GetModuleHandle(nullptr);
-
 	vk::WaylandSurfaceCreateInfoKHR info;
-    info.display = &display;
+    info.display = &dpy;
     info.surface = &surface;
 
 	vk::SurfaceKHR ret;
@@ -16,14 +15,14 @@ Surface createSurface(vk::Instance instance, struct wl_display& dislay, struct w
 	return {instance, ret};
 }
 
-Context createContext(struct wl_display& dpy, struct wl_surface& surface, Context::CreateInfo info);
+Context createContext(struct wl_display& dpy, struct wl_surface& surface, Context::CreateInfo info)
 {
 	info.instanceExtensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 
 	Context ret;
 	ret.initInstance(info);
 
-	auto vsurface = createSurface(ret.vkInstance(), cpy, surface);
+	auto vsurface = createSurface(ret.vkInstance(), dpy, surface);
 	ret.initSurface(std::move(vsurface));
 
 	ret.initDevice(info);
@@ -32,7 +31,7 @@ Context createContext(struct wl_display& dpy, struct wl_surface& surface, Contex
 	return ret;
 }
 
-Context createContext(struct wl_display& display, struct wl_surface& surface);
+Context createContext(struct wl_display& display, struct wl_surface& surface)
 {
 	return createContext(display, surface, {});
 }

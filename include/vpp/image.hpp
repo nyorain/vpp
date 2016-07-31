@@ -23,7 +23,6 @@ unsigned int formatSize(vk::Format format);
 ///\sa formatSize
 vk::Extent2D blockSize(vk::Format format);
 
-
 ///Representing a vulkan image on a device and having its own memory allocation bound to it.
 ///The Image class does not store further information like size, type, format or layout.
 ///All of this must be handled by the application to guarantee the best performance.
@@ -33,6 +32,8 @@ public:
 	Image() = default;
 	Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
 	Image(const Device& dev, const vk::ImageCreateInfo& info, std::uint32_t memoryTypeBits);
+	Image(const Device& dev, vk::Image image, vk::ImageTiling, vk::MemoryPropertyFlags mflags = {});
+	Image(const Device& dev, vk::Image image, vk::ImageTiling, std::uint32_t memoryTypeBits);
 	~Image();
 
 	Image(Image&& other) noexcept = default;
