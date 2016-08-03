@@ -119,7 +119,7 @@ void ShaderProgram::stage(const StringParam& filename, const ShaderStage::Create
 	else stages_.emplace_back(device(), filename, createInfo);
 }
 
-void ShaderProgram::stage(const Range<std::uint32_t>& bytes, 
+void ShaderProgram::stage(const Range<std::uint32_t>& bytes,
 	const ShaderStage::CreateInfo& createInfo)
 {
 	auto s = stage(createInfo.stage);

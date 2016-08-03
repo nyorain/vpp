@@ -67,6 +67,7 @@ public:
 ///\param allowMap If set to false, the image fill always be filled using a transfer command
 ///rather than mapping its memory. Needed e.g. if the image has an optimal tiling since
 ///optimal tiling images cannot be filled using memory maps. True by default.
+///\note for 2D images you have to specify extent.z as 1 and NOT as 0.
 WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 	vk::ImageLayout layout, const vk::Extent3D& extent, const vk::ImageSubresource& subres,
 	const vk::Offset3D& offset = {}, bool allowMap = true);
@@ -76,6 +77,7 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 ///as usage and must not be multisampled.
 ///\param allowMap If set to false, the image fill always be filled using a transfer command
 ///rather than mapping its memory. Needed e.g. if the image has an optimal tiling.
+///\note for 2D images you have to specify extent.z as 1 and NOT as 0.
 DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format format,
 	const vk::Extent3D& extent, const vk::ImageSubresource& subres,
 	const vk::Offset3D& offset = {}, bool allowMap = true);

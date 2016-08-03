@@ -7,7 +7,7 @@
 #include <vpp/vk.hpp>
 #include <vpp/utility/debug.hpp>
 
-#include <utility> 
+#include <utility>
 
 namespace vpp
 {
@@ -81,7 +81,8 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 
 		//dataoffset
 		auto doffset = 0u;
-		for(auto d = offset.z; d < offset.z + extent.depth; ++d) {
+		for(auto d = offset.z; d < offset.z + extent.depth; ++d)
+		{
 			for(auto h = offset.y; h < offset.y + extent.height; ++h)
 			{
 				//image offset
@@ -122,7 +123,7 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 	}
 }
 
-DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format format, 
+DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format format,
 	const vk::Extent3D& extent, const vk::ImageSubresource& subres, const vk::Offset3D& offset,
 	bool allowMap)
 {
