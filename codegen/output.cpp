@@ -201,11 +201,11 @@ CCOutputGenerator::CCOutputGenerator(Registry& reg, const CCOutputGeneratorSetti
 {
 	auto& fold = settings.outputFolder;
 
-	main_.open(fold + "/vulkan.hpp");
-	functions_.open(fold + "/functions.hpp");
-	enums_.open(fold + "/enums.hpp");
-	fwd_.open(fold + "/fwd.hpp");
-	structs_.open(fold + "/structs.hpp");
+	main_.open(fold + "/vulkan.hpp", std::ios_base::out | std::ios_base::binary);
+	functions_.open(fold + "/functions.hpp", std::ios_base::out | std::ios_base::binary);
+	enums_.open(fold + "/enums.hpp", std::ios_base::out | std::ios_base::binary);
+	fwd_.open(fold + "/fwd.hpp", std::ios_base::out | std::ios_base::binary);
+	structs_.open(fold + "/structs.hpp", std::ios_base::out | std::ios_base::binary);
 }
 
 void CCOutputGenerator::generate()

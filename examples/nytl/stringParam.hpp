@@ -1,17 +1,17 @@
 // The MIT License (MIT)
-// 
+//
 // Copyright (c) 2016 nyorain
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -53,7 +53,7 @@ class StringParam
 public:
 	constexpr StringParam() noexcept = default;
 	constexpr StringParam(const char* chars) noexcept : data_(chars) {}
-	StringParam(const std::string& string) noexcept : data_(string.c_str()) {} 
+	StringParam(const std::string& string) noexcept : data_(string.c_str()) {}
 
 	constexpr bool empty() const noexcept { return data_ == nullptr; }
 	constexpr const char* data() const noexcept { return data_; }
@@ -65,9 +65,9 @@ public:
 	const char* data_ = nullptr;
 };
 
-inline bool operator==(const StringParam& param, const char* other) 
+inline bool operator==(const StringParam& param, const char* other)
 	{ return std::strcmp(param.data(), other) == 0; }
-inline bool operator!=(const StringParam& param, const char* other) 
+inline bool operator!=(const StringParam& param, const char* other)
 	{ return std::strcmp(param.data(), other) != 0; }
 
 inline bool operator==(const StringParam& param, const std::string& other)
