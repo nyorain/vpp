@@ -64,11 +64,16 @@
 
 #include <vulkan/vk_platform.h>
 
+namespace nytl
+{
+	template<typename T> class Range;
+}
+
 namespace vk
 {
 
 enum class DummyEnum : int32_t {};
-template<typename T> class Range; //range.hpp
+using nytl::Range; //range.hpp
 
 constexpr auto lodClampNone = 1000.0f;
 constexpr auto remainingMipLevels = (~0U);

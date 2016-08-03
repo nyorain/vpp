@@ -229,7 +229,7 @@ void CCOutputGenerator::generate()
 
 	//fwd dummy enum
 	fwd_ << "enum class DummyEnum : int32_t {};\n";
-	fwd_ << "template<typename T> class Range; //range.hpp\n\n";
+	fwd_ << "using nytl::Range; //range.hpp\n\n";
 
 	//all printed requirements
 	Requirements fulfilled;
@@ -389,7 +389,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 
 		enums_ << "\n};\n";
 
-		if(type.bitmask) enums_<< "VPP_BITMASK_OPS(" << name << ")\n";
+		if(type.bitmask) enums_<< "NYTL_FLAG_OPS(" << name << ")\n";
 		enums_ << "\n";
 	}
 

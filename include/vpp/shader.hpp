@@ -2,6 +2,7 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
+#include <vpp/utility/stringParam.hpp>
 
 #include <string>
 #include <vector>
@@ -10,15 +11,17 @@ namespace vpp
 {
 
 ///Utility function that can be used to read binary shader files.
-vk::ShaderModule loadShaderModule(vk::Device dev, const char* filename);
-vk::ShaderModule loadShaderModule(vk::Device dev, const std::vector<std::uint8_t>& code);
+///Note that the code size must be a multiple of 4 (bytes) and therefore ranges with
+///4 byte integers are used.
+vk::ShaderModule loadShaderModule(vk::Device dev, const StringParam& filename);
+vk::ShaderModule loadShaderModule(vk::Device dev, const Range<std::uint32_t>& code);
 
 class ShaderModule : public ResourceHandle<vk::ShaderModule>
 {
 public:
 	ShaderModule() = default;
-	ShaderModule(const Device& dev, const char* file);
-	ShaderModule(const Device& dev, const std::vector<std::uint8_t>& bytes);
+	ShaderModule(const Device& dev, const StringParam& file);
+	ShaderModule(const Device& dev, const Range<std::uint32_t>& bytes);
 	~ShaderModule();
 
 	ShaderModule(ShaderModule&& other) noexcept = default;
@@ -39,8 +42,8 @@ public:
 public:
 	ShaderStage() = default;
 	ShaderStage(const Device& dev, vk::ShaderModule module, const CreateInfo& info);
-	ShaderStage(const Device& dev, const char* name, const CreateInfo& info);
-	ShaderStage(const Device& dev, const std::vector<std::uint8_t>& code, const CreateInfo& info);
+	ShaderStage(const Device& dev, const StringParam& name, const CreateInfo& info);
+	ShaderStage(const Device& dev, const Range<std::uint32_t>& code, const CreateInfo& info);
 	~ShaderStage();
 
 	ShaderStage(ShaderStage&& other) noexcept;
@@ -79,7 +82,8 @@ public:
 
 	///\{
 	///Changes or adds a new shader stage (depending on info::stage).
-	void stage(const char* filename, const ShaderStage::CreateInfo& info);
+	void stage(const StringParam& filename, const ShaderStage::CreateInfo& info);
+	void stage(const Range<std::uint32_t>& bytes, const ShaderStage::CreateInfo& info);
 	void stage(vk::ShaderModule module, const ShaderStage::CreateInfo& info);
 	///\}
 

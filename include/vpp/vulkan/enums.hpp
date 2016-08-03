@@ -68,7 +68,7 @@ enum class PipelineCacheHeaderVersion : int32_t
 {
 	one = 1
 };
-VPP_BITMASK_OPS(PipelineCacheHeaderVersion)
+NYTL_FLAG_OPS(PipelineCacheHeaderVersion)
 
 enum class StructureType : int32_t
 {
@@ -388,7 +388,7 @@ enum class FormatFeatureBits : int32_t
 	sampledImageFilterLinear = (1 << 12),
 	sampledImageFilterCubicBitIMG = 1000015000
 };
-VPP_BITMASK_OPS(FormatFeatureBits)
+NYTL_FLAG_OPS(FormatFeatureBits)
 
 enum class ImageType : int32_t
 {
@@ -414,7 +414,7 @@ enum class ImageUsageBits : int32_t
 	transientAttachment = (1 << 6),
 	inputAttachment = (1 << 7)
 };
-VPP_BITMASK_OPS(ImageUsageBits)
+NYTL_FLAG_OPS(ImageUsageBits)
 
 enum class ImageCreateBits : int32_t
 {
@@ -424,7 +424,7 @@ enum class ImageCreateBits : int32_t
 	mutableFormat = (1 << 3),
 	cubeCompatible = (1 << 4)
 };
-VPP_BITMASK_OPS(ImageCreateBits)
+NYTL_FLAG_OPS(ImageCreateBits)
 
 enum class SampleCountBits : int32_t
 {
@@ -436,7 +436,7 @@ enum class SampleCountBits : int32_t
 	e32 = (1 << 5),
 	e64 = (1 << 6)
 };
-VPP_BITMASK_OPS(SampleCountBits)
+NYTL_FLAG_OPS(SampleCountBits)
 
 enum class PhysicalDeviceType : int32_t
 {
@@ -454,7 +454,7 @@ enum class QueueBits : int32_t
 	transfer = (1 << 2),
 	sparseBinding = (1 << 3)
 };
-VPP_BITMASK_OPS(QueueBits)
+NYTL_FLAG_OPS(QueueBits)
 
 enum class MemoryPropertyBits : int32_t
 {
@@ -464,13 +464,13 @@ enum class MemoryPropertyBits : int32_t
 	hostCached = (1 << 3),
 	lazilyAllocated = (1 << 4)
 };
-VPP_BITMASK_OPS(MemoryPropertyBits)
+NYTL_FLAG_OPS(MemoryPropertyBits)
 
 enum class MemoryHeapBits : int32_t
 {
 	deviceLocal = (1 << 0)
 };
-VPP_BITMASK_OPS(MemoryHeapBits)
+NYTL_FLAG_OPS(MemoryHeapBits)
 
 enum class PipelineStageBits : int32_t
 {
@@ -492,7 +492,7 @@ enum class PipelineStageBits : int32_t
 	allGraphics = (1 << 15),
 	allCommands = (1 << 16)
 };
-VPP_BITMASK_OPS(PipelineStageBits)
+NYTL_FLAG_OPS(PipelineStageBits)
 
 enum class ImageAspectBits : int32_t
 {
@@ -501,7 +501,7 @@ enum class ImageAspectBits : int32_t
 	stencil = (1 << 2),
 	metadata = (1 << 3)
 };
-VPP_BITMASK_OPS(ImageAspectBits)
+NYTL_FLAG_OPS(ImageAspectBits)
 
 enum class SparseImageFormatBits : int32_t
 {
@@ -509,19 +509,19 @@ enum class SparseImageFormatBits : int32_t
 	alignedMipSize = (1 << 1),
 	nonstandardBlockSize = (1 << 2)
 };
-VPP_BITMASK_OPS(SparseImageFormatBits)
+NYTL_FLAG_OPS(SparseImageFormatBits)
 
 enum class SparseMemoryBindBits : int32_t
 {
 	metadata = (1 << 0)
 };
-VPP_BITMASK_OPS(SparseMemoryBindBits)
+NYTL_FLAG_OPS(SparseMemoryBindBits)
 
 enum class FenceCreateBits : int32_t
 {
 	signaled = (1 << 0)
 };
-VPP_BITMASK_OPS(FenceCreateBits)
+NYTL_FLAG_OPS(FenceCreateBits)
 
 enum class QueryType : int32_t
 {
@@ -544,7 +544,7 @@ enum class QueryPipelineStatisticBits : int32_t
 	tessellationEvaluationShaderInvocations = (1 << 9),
 	computeShaderInvocations = (1 << 10)
 };
-VPP_BITMASK_OPS(QueryPipelineStatisticBits)
+NYTL_FLAG_OPS(QueryPipelineStatisticBits)
 
 enum class QueryResultBits : int32_t
 {
@@ -553,7 +553,7 @@ enum class QueryResultBits : int32_t
 	withAvailability = (1 << 2),
 	partial = (1 << 3)
 };
-VPP_BITMASK_OPS(QueryResultBits)
+NYTL_FLAG_OPS(QueryResultBits)
 
 enum class BufferCreateBits : int32_t
 {
@@ -561,7 +561,7 @@ enum class BufferCreateBits : int32_t
 	sparseResidency = (1 << 1),
 	sparseAliased = (1 << 2)
 };
-VPP_BITMASK_OPS(BufferCreateBits)
+NYTL_FLAG_OPS(BufferCreateBits)
 
 enum class BufferUsageBits : int32_t
 {
@@ -575,7 +575,7 @@ enum class BufferUsageBits : int32_t
 	vertexBuffer = (1 << 7),
 	indirectBuffer = (1 << 8)
 };
-VPP_BITMASK_OPS(BufferUsageBits)
+NYTL_FLAG_OPS(BufferUsageBits)
 
 enum class SharingMode : int32_t
 {
@@ -625,7 +625,7 @@ enum class PipelineCreateBits : int32_t
 	allowDerivatives = (1 << 1),
 	derivative = (1 << 2)
 };
-VPP_BITMASK_OPS(PipelineCreateBits)
+NYTL_FLAG_OPS(PipelineCreateBits)
 
 enum class ShaderStageBits : int32_t
 {
@@ -638,7 +638,7 @@ enum class ShaderStageBits : int32_t
 	allGraphics = 31,
 	all = 2147483647
 };
-VPP_BITMASK_OPS(ShaderStageBits)
+NYTL_FLAG_OPS(ShaderStageBits)
 
 enum class VertexInputRate : int32_t
 {
@@ -675,7 +675,7 @@ enum class CullModeBits : int32_t
 	back = (1 << 1),
 	frontAndBack = 3
 };
-VPP_BITMASK_OPS(CullModeBits)
+NYTL_FLAG_OPS(CullModeBits)
 
 enum class FrontFace : int32_t
 {
@@ -766,7 +766,7 @@ enum class ColorComponentBits : int32_t
 	b = (1 << 2),
 	a = (1 << 3)
 };
-VPP_BITMASK_OPS(ColorComponentBits)
+NYTL_FLAG_OPS(ColorComponentBits)
 
 enum class DynamicState : int32_t
 {
@@ -832,13 +832,13 @@ enum class DescriptorPoolCreateBits : int32_t
 {
 	freeDescriptorSet = (1 << 0)
 };
-VPP_BITMASK_OPS(DescriptorPoolCreateBits)
+NYTL_FLAG_OPS(DescriptorPoolCreateBits)
 
 enum class AttachmentDescriptionBits : int32_t
 {
 	mayAlias = (1 << 0)
 };
-VPP_BITMASK_OPS(AttachmentDescriptionBits)
+NYTL_FLAG_OPS(AttachmentDescriptionBits)
 
 enum class AttachmentLoadOp : int32_t
 {
@@ -879,26 +879,26 @@ enum class AccessBits : int32_t
 	memoryRead = (1 << 15),
 	memoryWrite = (1 << 16)
 };
-VPP_BITMASK_OPS(AccessBits)
+NYTL_FLAG_OPS(AccessBits)
 
 enum class DependencyBits : int32_t
 {
 	byRegion = (1 << 0)
 };
-VPP_BITMASK_OPS(DependencyBits)
+NYTL_FLAG_OPS(DependencyBits)
 
 enum class CommandPoolCreateBits : int32_t
 {
 	transient = (1 << 0),
 	resetCommandBuffer = (1 << 1)
 };
-VPP_BITMASK_OPS(CommandPoolCreateBits)
+NYTL_FLAG_OPS(CommandPoolCreateBits)
 
 enum class CommandPoolResetBits : int32_t
 {
 	releaseResources = (1 << 0)
 };
-VPP_BITMASK_OPS(CommandPoolResetBits)
+NYTL_FLAG_OPS(CommandPoolResetBits)
 
 enum class CommandBufferLevel : int32_t
 {
@@ -912,19 +912,19 @@ enum class CommandBufferUsageBits : int32_t
 	renderPassContinue = (1 << 1),
 	simultaneousUse = (1 << 2)
 };
-VPP_BITMASK_OPS(CommandBufferUsageBits)
+NYTL_FLAG_OPS(CommandBufferUsageBits)
 
 enum class QueryControlBits : int32_t
 {
 	precise = (1 << 0)
 };
-VPP_BITMASK_OPS(QueryControlBits)
+NYTL_FLAG_OPS(QueryControlBits)
 
 enum class CommandBufferResetBits : int32_t
 {
 	releaseResources = (1 << 0)
 };
-VPP_BITMASK_OPS(CommandBufferResetBits)
+NYTL_FLAG_OPS(CommandBufferResetBits)
 
 enum class StencilFaceBits : int32_t
 {
@@ -932,7 +932,7 @@ enum class StencilFaceBits : int32_t
 	back = (1 << 1),
 	rontAndBack = 3
 };
-VPP_BITMASK_OPS(StencilFaceBits)
+NYTL_FLAG_OPS(StencilFaceBits)
 
 enum class IndexType : int32_t
 {
@@ -959,7 +959,7 @@ enum class SurfaceTransformBitsKHR : int32_t
 	horizontalMirrorRotate270 = (1 << 7),
 	inherit = (1 << 8)
 };
-VPP_BITMASK_OPS(SurfaceTransformBitsKHR)
+NYTL_FLAG_OPS(SurfaceTransformBitsKHR)
 
 enum class CompositeAlphaBitsKHR : int32_t
 {
@@ -968,7 +968,7 @@ enum class CompositeAlphaBitsKHR : int32_t
 	postMultiplied = (1 << 2),
 	inherit = (1 << 3)
 };
-VPP_BITMASK_OPS(CompositeAlphaBitsKHR)
+NYTL_FLAG_OPS(CompositeAlphaBitsKHR)
 
 enum class ColorSpaceKHR : int32_t
 {
@@ -991,7 +991,7 @@ enum class DisplayPlaneAlphaBitsKHR : int32_t
 	perPixel = (1 << 2),
 	perPixelPremultiplied = (1 << 3)
 };
-VPP_BITMASK_OPS(DisplayPlaneAlphaBitsKHR)
+NYTL_FLAG_OPS(DisplayPlaneAlphaBitsKHR)
 
 
 enum class DebugReportObjectTypeEXT : int32_t
@@ -1041,7 +1041,7 @@ enum class DebugReportBitsEXT : int32_t
 	error = (1 << 3),
 	debug = (1 << 4)
 };
-VPP_BITMASK_OPS(DebugReportBitsEXT)
+NYTL_FLAG_OPS(DebugReportBitsEXT)
 
 
 enum class RasterizationOrderAMD : int32_t

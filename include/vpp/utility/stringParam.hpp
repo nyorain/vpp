@@ -1,11 +1,39 @@
-//This file is taken from nyorain/nytl nytl/stringParam
+// The MIT License (MIT)
+// 
+// Copyright (c) 2016 nyorain
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+
+///\file
+///\brief Defined the StringParam and SizedStringParam classes for efficient string paramters.
+
 #pragma once
+
+#ifndef NYTL_INCLUDE_STRINGPARAM_HPP
+#define NYTL_INCLUDE_STRINGPARAM_HPP
 
 #include <string>
 #include <cstring>
-#include <vpp/utility/range.hpp>
+#include <nytl/range.hpp>
 
-namespace vpp
+namespace nytl
 {
 
 ///This Overload class can be used to effeciently accept string parameters.
@@ -23,19 +51,30 @@ namespace vpp
 class StringParam
 {
 public:
-	constexpr StringParam() = default;
-	constexpr StringParam(const char* chars) : data_(chars) {}
-	StringParam(const std::string& string) : data_(string.c_str())
-		{ if(string.empty()) data_ = nullptr; } ///XXX: is this check needed/useful?
+	constexpr StringParam() noexcept = default;
+	constexpr StringParam(const char* chars) noexcept : data_(chars) {}
+	StringParam(const std::string& string) noexcept : data_(string.c_str()) {} 
 
-	constexpr bool empty() const { return data_ == nullptr; }
-	constexpr const char* data() const { return data_; }
+	constexpr bool empty() const noexcept { return data_ == nullptr; }
+	constexpr const char* data() const noexcept { return data_; }
+	std::string string() const { return data_; }
 
-	constexpr operator const char*() const { return data_; }
+	constexpr operator const char*() const noexcept { return data_; }
 
 public:
 	const char* data_ = nullptr;
 };
+
+inline bool operator==(const StringParam& param, const char* other) 
+	{ return std::strcmp(param.data(), other) == 0; }
+inline bool operator!=(const StringParam& param, const char* other) 
+	{ return std::strcmp(param.data(), other) != 0; }
+
+inline bool operator==(const StringParam& param, const std::string& other)
+	{ return std::strcmp(param.data(), other.c_str()) == 0; }
+inline bool operator!=(const StringParam& param, const std::string& other)
+	{ return std::strcmp(param.data(), other.c_str()) != 0; }
+
 
 ///Class dervied from StringParam that also holds the length of the stored string.
 ///Can be used as parameter type for strings which size is needed in performance-critical
@@ -44,26 +83,40 @@ public:
 class SizedStringParam : public StringParam
 {
 public:
-	constexpr SizedStringParam() = default;
-	SizedStringParam(const std::string& string) : StringParam(string), length_(string.size()) {}
-	SizedStringParam(const char* chars) : StringParam(chars), length_(std::strlen(chars)) {}
-	constexpr SizedStringParam(const Range<char>& range) : StringParam(range.data()),
-		length_(range.size()) {}
+	constexpr SizedStringParam() noexcept = default;
+	constexpr SizedStringParam(const char* chars, std::size_t length) noexcept
+		: StringParam(chars), length_(length) {}
+	constexpr SizedStringParam(const Range<char>& range) noexcept
+		: StringParam(range.data()), length_(range.size()) {}
 
-	constexpr std::size_t length() const { return length_; }
-	constexpr std::size_t size() const { return length_; }
+	SizedStringParam(const char* chars) noexcept
+		: StringParam(chars), length_(std::strlen(chars)) {}
+	SizedStringParam(const std::string& string) noexcept
+		: StringParam(string), length_(string.size()) {}
 
-	constexpr const char* begin() const { return data_; }
-	constexpr const char* end() const { return data_ + length_; }
+	constexpr std::size_t length() const noexcept { return length_; }
+	constexpr std::size_t size() const noexcept { return length_; }
 
-	constexpr const char* cbegin() const { return data_; }
-	constexpr const char* cend() const { return data_ + length_; }
+	constexpr const char* begin() const noexcept { return data_; }
+	constexpr const char* end() const noexcept { return data_ + length_; }
 
-	constexpr operator const char*() const { return data_; }
-	constexpr operator Range<char>() const { return {data_, length_}; }
+	constexpr const char* cbegin() const noexcept { return data_; }
+	constexpr const char* cend() const noexcept { return data_ + length_; }
+
+	constexpr operator const char*() const noexcept { return data_; }
+	constexpr operator Range<char>() const noexcept { return {data_, length_}; }
 
 public:
 	std::size_t length_ = 0;
 };
 
 }
+
+#endif //header guard
+
+namespace vpp 
+{
+	using nytl::StringParam;
+	using nytl::SizedStringParam;
+}
+

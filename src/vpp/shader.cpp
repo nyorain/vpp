@@ -11,33 +11,33 @@
 namespace vpp
 {
 
-vk::ShaderModule loadShaderModule(vk::Device dev, const char* filename)
+vk::ShaderModule loadShaderModule(vk::Device dev, const StringParam& filename)
 {
 	auto code = readFile(filename, true);
-	return loadShaderModule(dev, code);
+	if(code.size() % 4) throw std::runtime_error(filename.string() + " has an invalid size");
+	auto ptr = reinterpret_cast<const std::uint32_t*>(code.data());
+	return loadShaderModule(dev, {ptr, code.size() / 4});
 }
 
-vk::ShaderModule loadShaderModule(vk::Device dev, const std::vector<std::uint8_t>& code)
+vk::ShaderModule loadShaderModule(vk::Device dev, const Range<std::uint32_t>& code)
 {
-	if(code.size() % 4) throw std::runtime_error("vpp::loadShaderModule: invalid code size");
-
 	vk::ShaderModuleCreateInfo info;
-	info.codeSize = code.size();
-	info.pCode = reinterpret_cast<const std::uint32_t*>(code.data());
+	info.codeSize = code.size() * 4;
+	info.pCode = code.data();
 
 	return vk::createShaderModule(dev, info);
 }
 
 //ShaderModule
-ShaderModule::ShaderModule(const Device& dev, const char* filename) : ResourceHandle(dev)
+ShaderModule::ShaderModule(const Device& dev, const StringParam& filename) : ResourceHandle(dev)
 {
 	const static std::string errorMsg = "vpp::ShaderMoudle: failed to create from ";
 
 	vkHandle() = loadShaderModule(dev, filename);
-	if(!vkHandle()) throw std::runtime_error(errorMsg + filename);
+	if(!vkHandle()) throw std::runtime_error(errorMsg + filename.data());
 }
 
-ShaderModule::ShaderModule(const Device& dev, const std::vector<std::uint8_t>& code)
+ShaderModule::ShaderModule(const Device& dev, const Range<std::uint32_t>& code)
 	: ResourceHandle(dev)
 {
 	vkHandle() = loadShaderModule(dev, code);
@@ -50,16 +50,16 @@ ShaderModule::~ShaderModule()
 }
 
 //ShaderStage
-ShaderStage::ShaderStage(const Device& dev, const char* filename, const CreateInfo& info)
+ShaderStage::ShaderStage(const Device& dev, const StringParam& filename, const CreateInfo& info)
 	: Resource(dev), owned_(true), info_(info)
 {
 	const static std::string errorMsg = "vpp::ShaderMoudle: failed to create from ";
 
 	module_ = loadShaderModule(dev, filename);
-	if(!module_) throw std::runtime_error(errorMsg + filename);
+	if(!module_) throw std::runtime_error(errorMsg + filename.data());
 }
 
-ShaderStage::ShaderStage(const Device& dev, const std::vector<std::uint8_t>& code,
+ShaderStage::ShaderStage(const Device& dev, const Range<std::uint32_t>& code,
 	const CreateInfo& info) : Resource(dev), owned_(true), info_(info)
 {
 	module_ = loadShaderModule(dev, code);
@@ -112,11 +112,19 @@ ShaderProgram::ShaderProgram(const Device& device) : Resource(device)
 {
 }
 
-void ShaderProgram::stage(const char* filename, const ShaderStage::CreateInfo& createInfo)
+void ShaderProgram::stage(const StringParam& filename, const ShaderStage::CreateInfo& createInfo)
 {
 	auto s = stage(createInfo.stage);
 	if(s) *s = {device(), filename, createInfo};
 	else stages_.emplace_back(device(), filename, createInfo);
+}
+
+void ShaderProgram::stage(const Range<std::uint32_t>& bytes, 
+	const ShaderStage::CreateInfo& createInfo)
+{
+	auto s = stage(createInfo.stage);
+	if(s) *s = {device(), bytes, createInfo};
+	else stages_.emplace_back(device(), bytes, createInfo);
 }
 
 void ShaderProgram::stage(vk::ShaderModule module, const ShaderStage::CreateInfo& createInfo)

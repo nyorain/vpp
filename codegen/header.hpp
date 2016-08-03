@@ -4,6 +4,11 @@ auto constexpr fwdHeader = 1 + R"SRC(
 
 #include <vulkan/vk_platform.h>
 
+namespace nytl
+{
+	template<typename T> class Range;
+}
+
 )SRC";
 
 

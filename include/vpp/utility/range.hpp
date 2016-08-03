@@ -5,5 +5,5 @@
 
 namespace vpp
 {
-	using vk::makeRange;
+	using nytl::makeRange;
 }

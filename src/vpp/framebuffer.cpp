@@ -135,7 +135,7 @@ Framebuffer::AttachmentsInfo Framebuffer::parseRenderPass(const RenderPass& rp, 
 				aspect |= vk::ImageAspectBits::depth | vk::ImageAspectBits::stencil;
 			}
 
-			for(auto& ref : makeRange(sub.pInputAttachments, sub.inputAttachmentCount))
+			for(auto& ref : makeRange(*sub.pInputAttachments, sub.inputAttachmentCount))
 			{
 				if(ref.attachment == i)
 				{
@@ -144,7 +144,7 @@ Framebuffer::AttachmentsInfo Framebuffer::parseRenderPass(const RenderPass& rp, 
 				}
 			}
 
-			for(auto& ref : makeRange(sub.pColorAttachments, sub.colorAttachmentCount))
+			for(auto& ref : makeRange(*sub.pColorAttachments, sub.colorAttachmentCount))
 			{
 				if(ref.attachment == i)
 				{

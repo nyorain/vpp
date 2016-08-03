@@ -1,12 +1,34 @@
-//This file is directly taken from nyorain/nytl nytl/range.hpp
+// The MIT License (MIT)
+// 
+// Copyright (c) 2016 nyorain
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 #pragma once
 
+#ifndef NYTL_INCLUDE_RANGE_HPP
+#define NYTL_INCLUDE_RANGE_HPP
+
 #include <cstdlib>
-#include <vector>
 #include <stdexcept>
 
-namespace vk
+namespace nytl
 {
 
 namespace detail { template<typename T, typename C, typename = void> struct ValidContainer; }
@@ -46,7 +68,7 @@ public:
 
 public:
 	constexpr Range() noexcept = default;
-	constexpr Range(std::nullptr_t ptr, std::size_t size = 1) noexcept : data_(nullptr), size_(0) {}
+	constexpr Range(std::nullptr_t, std::size_t = 1) noexcept : data_(nullptr), size_(0) {}
 	constexpr Range(const T& value, std::size_t size = 1) noexcept : data_(&value), size_(size) {}
 	constexpr Range(const T* value, std::size_t size = 1) noexcept : data_(value), size_(size) {}
 	template<std::size_t N> constexpr Range(const T (&value)[N]) noexcept : data_(value), size_(N) {}
@@ -58,7 +80,7 @@ public:
 	Range(const C& con) noexcept : data_(&(*con.begin())), size_(con.end() - con.begin()) {}
 
 	constexpr ConstPointer data() const noexcept { return data_; }
-	constexpr Size size() const noexcept { return size_; }
+	constexpr std::size_t size() const noexcept { return size_; }
 	constexpr bool empty() const noexcept { return size() == 0; }
 	constexpr Size max_size() const noexcept { return size(); }
 
@@ -87,8 +109,8 @@ public:
 	///Those function can be used to copy the range to an owned container.
 	///range.as<std::vector>() will convert into an vector of the range type (T).
 	///range.as<std::vector<float>>() will convert into an float-vector (if possible).
-	template<typename C> C as() const noexcept { return C(data_, data_ + size_); }
-	template<template<class...> typename C> C<T> as() const noexcept { return C<T>(data_, data_ + size_); }
+	template<typename C> C as() const { return C(data_, data_ + size_); }
+	template<template<class...> typename C> C<T> as() const { return C<T>(data_, data_ + size_); }
 	///\}
 
 protected:
@@ -99,11 +121,8 @@ protected:
 ///\{
 ///Utility functions for easily constructing a range object.
 ///Only needed until c++17.
-template<typename T> Range<T>
-makeRange(const T& value, std::size_t size){ return Range<T>(value, size); }
-
-template<typename T> Range<T>
-makeRange(const T* value, std::size_t size){ return Range<T>(value, size); }
+template<typename T, typename = std::enable_if_t<!std::is_pointer<T>::value>>
+Range<T> constexpr makeRange(const T& value, std::size_t size){ return {value, size}; }
 
 template<template<class...> typename C, typename T, typename... TA> Range<T>
 makeRange(const C<T, TA...>& container){ return Range<T>(container); }
@@ -111,6 +130,7 @@ makeRange(const C<T, TA...>& container){ return Range<T>(container); }
 template<typename T, std::size_t N> Range<T>
 makeRange(const T (&array)[N]) { return Range<T>(array); }
 ///\}
+
 
 namespace detail
 {
@@ -132,3 +152,12 @@ struct ValidContainer<T, C,
 }
 
 }
+
+namespace vk
+{
+	using nytl::Range;
+	using nytl::makeRange;
+}
+
+#endif //header guard
+
