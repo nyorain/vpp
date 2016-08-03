@@ -90,48 +90,6 @@ class polymorphic_allocator
    void deallocate(T* p, size_t n)
    {  m_resource->deallocate(p, n*sizeof(T), ::boost::move_detail::alignment_of<T>::value);  }
 
-   // #if !defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES) || defined(BOOST_CONTAINER_DOXYGEN_INVOKED)
-   //! <b>Requires</b>: Uses-allocator construction of T with allocator
-   //!   `this->resource()` and constructor arguments `std::forward<Args>(args)...`
-   //!   is well-formed. [Note: uses-allocator construction is always well formed for
-   //!   types that do not use allocators. - end note]
-   //!
-   //! <b>Effects</b>: Construct a T object at p by uses-allocator construction with allocator
-   //!   `this->resource()` and constructor arguments `std::forward<Args>(args)...`.
-   //!
-   //! <b>Throws</b>: Nothing unless the constructor for T throws.
-   // template < typename U, class ...Args>
-   // void construct(U* p, BOOST_FWD_REF(Args)...args)
-   // {
-   //    new_allocator<U> na;
-   //    container_detail::dispatch_uses_allocator
-   //       (na, this->resource(), p, ::boost::forward<Args>(args)...);
-   // }
-   //
-   // #else // #if !defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES) || defined(BOOST_CONTAINER_DOXYGEN_INVOKED)
-   //
-   // //Disable this overload if the first argument is pair as some compilers have
-   // //overload selection problems when the first parameter is a pair.
-   // #define BOOST_CONTAINER_PMR_POLYMORPHIC_ALLOCATOR_CONSTRUCT_CODE(N) \
-   // template < typename U BOOST_MOVE_I##N BOOST_MOVE_CLASSQ##N >\
-   // void construct(U* p BOOST_MOVE_I##N BOOST_MOVE_UREFQ##N)\
-   // {\
-   //    new_allocator<U> na;\
-   //    container_detail::dispatch_uses_allocator\
-   //       (na, this->resource(), p BOOST_MOVE_I##N BOOST_MOVE_FWDQ##N);\
-   // }\
-   // //
-   // BOOST_MOVE_ITERATE_0TO9(BOOST_CONTAINER_PMR_POLYMORPHIC_ALLOCATOR_CONSTRUCT_CODE)
-   // #undef BOOST_CONTAINER_PMR_POLYMORPHIC_ALLOCATOR_CONSTRUCT_CODE
-   //
-   // #endif   //#if !defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES) || defined(BOOST_CONTAINER_DOXYGEN_INVOKED)
-   //
-   // //! <b>Effects</b>:
-   // //!   p->~U().
-   // template <class U>
-   // void destroy(U* p)
-   // {  (void)p; p->~U(); }
-
    //! <b>Returns</b>: Equivalent to
    //!   `polymorphic_allocator()`.
    polymorphic_allocator select_on_container_copy_construction() const

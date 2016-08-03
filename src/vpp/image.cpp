@@ -122,8 +122,8 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 	}
 }
 
-DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, const vk::Extent3D& extent,
-	const vk::ImageSubresource& subres, vk::Format format, const vk::Offset3D& offset,
+DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format format, 
+	const vk::Extent3D& extent, const vk::ImageSubresource& subres, const vk::Offset3D& offset,
 	bool allowMap)
 {
 	VPP_DEBUG_CHECK(vpp::retrieve(image),
