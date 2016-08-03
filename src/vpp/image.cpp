@@ -372,7 +372,7 @@ Sampler::Sampler(const Device& dev, const vk::SamplerCreateInfo& info) : Resourc
 
 Sampler::~Sampler()
 {
-	vk::destroySampler(device(), vkHandle());
+	if(vkHandle()) vk::destroySampler(device(), vkHandle());
 }
 
 //utility. format size in bits
