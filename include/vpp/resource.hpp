@@ -101,8 +101,11 @@ public:
 	using T::T;
 	~NonOwned() { T::release(); }
 
-	NonOwned(NonOwned&& other) noexcept = default;
-	NonOwned& operator=(NonOwned&& other) noexcept = default;
+	// NonOwned(NonOwned&& other) noexcept(noexcept(T(std::declval<T>()))) = default;
+	// NonOwned& operator=(NonOwned&& other) 
+	// 	noexcept(noexcept(std::declval<T> = std::declval<T>)) = default;
+	NonOwned(NonOwned&& other) = default;
+	NonOwned& operator=(NonOwned&& other) = default;
 };
 
 ///Resource class that already holds another resource and does therefore not have to hold a second

@@ -1,6 +1,7 @@
 #include <vpp/transfer.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/vk.hpp>
+#include <vpp/utility/debug.hpp>
 #include <algorithm>
 
 namespace vpp
@@ -20,10 +21,11 @@ TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t s
 
 TransferManager::TransferBuffer::~TransferBuffer()
 {
-	auto rc = ranges_.size();
-#ifndef NDEBUG
-	if(rc > 0) std::cerr << "vpp::TransferManager::~TransferBuffer: " << rc << " allocations left\n";
-#endif
+	VPP_DEBUG_CHECK(vpp::~TransferBuffer,
+	{
+		auto rc = ranges_.size();
+		if(rc > 0) VPP_DEBUG_OUTPUT(rc, " allocations left");
+	})
 }
 
 Allocation TransferManager::TransferBuffer::use(std::size_t size)
@@ -142,7 +144,7 @@ void TransferManager::shrink()
 void TransferManager::optimize()
 {
 	std::lock_guard<std::mutex> guard(mutex_);
-	std::size_t size;
+	std::size_t size = 0;
 	for(auto it = buffers_.begin(); it < buffers_.end();)
 	{
 		if((*it)->rangesCount() == 0)
