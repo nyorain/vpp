@@ -185,8 +185,8 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 {
 	static constexpr auto defaultBinding = std::uint32_t(-1);
 
-	std::vector<vk::DescriptorSetLayoutBinding> vkbindgs;
-	vkbindgs.reserve(bindings.size());
+	std::vector<vk::DescriptorSetLayoutBinding> vkbindings;
+	vkbindings.reserve(bindings.size());
 
 	unsigned int highestBinding = 0u;
 	for(auto& binding : bindings)
@@ -198,8 +198,8 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	}
 
 	vk::DescriptorSetLayoutCreateInfo descriptorLayout;
-	descriptorLayout.bindingCount = vkbindgs.size();
-	descriptorLayout.pBindings = vkbindgs.data();
+	descriptorLayout.bindingCount = vkbindings.size();
+	descriptorLayout.pBindings = vkbindings.data();
 
 	vkHandle() = vk::createDescriptorSetLayout(vkDevice(), descriptorLayout);
 }
