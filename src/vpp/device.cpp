@@ -114,7 +114,7 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 	for(std::size_t i(0); i < queues.size(); ++i)
 	{
 		auto id = queueIds[queues[i].second]++;
-		impl_->queues[i].reset(new Queue(queues[i].first, 
+		impl_->queues[i].reset(new Queue(queues[i].first,
 			impl_->qFamilyProperties[queues[i].second], id, queues[i].second));
 	}
 
@@ -129,6 +129,7 @@ Device::~Device()
 
 void Device::release()
 {
+	impl_.reset();
 	device_ = {};
 }
 
