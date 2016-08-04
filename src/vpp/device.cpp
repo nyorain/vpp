@@ -97,6 +97,30 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 	tlStorage(); //automatically provide storage for this thread. XXX: useful?
 }
 
+Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
+	const Range<std::pair<vk::Queue, unsigned int>>& queues)
+		: instance_(ini), physicalDevice_(phdev), device_(device)
+{
+	auto qProps = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
+
+	impl_.reset(new Impl(*this));
+	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());
+	impl_->memoryProperties = vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
+	impl_->qFamilyProperties = qProps;
+
+	impl_->queues.resize(queues.size());
+
+	std::map<unsigned int, unsigned int> queueIds;
+	for(std::size_t i(0); i < queues.size(); ++i)
+	{
+		auto id = queueIds[queues[i].second]++;
+		impl_->queues[i].reset(new Queue(queues[i].first, 
+			impl_->qFamilyProperties[queues[i].second], id, queues[i].second));
+	}
+
+	tlStorage(); //automatically provide storage for this thread. XXX: useful?
+}
+
 Device::~Device()
 {
 	impl_.reset();

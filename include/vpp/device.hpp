@@ -37,6 +37,12 @@ public:
 	Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 		const Range<std::pair<unsigned int, unsigned int>>& queues);
 
+	///Transfers ownership of the given devic to this object.
+	///\param queues A range of queues this Device should manage. The second member of 
+	///the pair of each range value holds the queue family of the given queue.
+	Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
+		const Range<std::pair<vk::Queue, unsigned int>>& queues);
+
 	///By default destructs the owned vk::Device.
 	~Device();
 

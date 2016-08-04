@@ -30,6 +30,7 @@ public:
 
 	///Returns the vulkan queue handle.
 	vk::Queue vkQueue() const { return queue_; }
+	vk::Queue vkHandle() const { return queue_; }
 
 	///The queue must be locked before performing any operations (such as presenting or sparse
 	///binding) on the queue.

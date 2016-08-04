@@ -100,6 +100,9 @@ class NonOwned : public T
 public:
 	using T::T;
 	~NonOwned() { T::release(); }
+
+	NonOwned(NonOwned&& other) noexcept = default;
+	NonOwned& operator=(NonOwned&& other) noexcept = default;
 };
 
 ///Resource class that already holds another resource and does therefore not have to hold a second
