@@ -81,8 +81,8 @@ public:
 	void imageSampler(ImageInfos images, int binding = -1, unsigned int elem = 0);
 	void inputAttachment(ImageInfos images, int binding = -1, unsigned int elem = 0);
 
-	void uniform(BufferViewInfos views, int binding = -1, unsigned int elem = 0);
-	void storage(BufferViewInfos views, int binding = -1, unsigned int elem = 0);
+	void uniformView(BufferViewInfos views, int binding = -1, unsigned int elem = 0);
+	void storageView(BufferViewInfos views, int binding = -1, unsigned int elem = 0);
 
 	void copy(const vk::CopyDescriptorSet& copySet);
 
