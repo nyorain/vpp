@@ -78,8 +78,9 @@ protected:
 class SubmitManager : public Resource
 {
 public:
-	struct Lock : public NonMovable, public Resource
+	class Lock : public NonMovable, public Resource
 	{
+	public:
 		Lock(const Device& dev);
 		~Lock();
 	};

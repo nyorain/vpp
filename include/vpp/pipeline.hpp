@@ -19,8 +19,9 @@ namespace vpp
 //	with a vertex buffer binding.
 
 ///Defines the different vertex inputs a pipeline takes.
-struct VertexBufferLayout
+class VertexBufferLayout
 {
+public:
 	std::vector<vk::Format> attributes;
 	unsigned int binding {0};
 };
