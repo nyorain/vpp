@@ -153,7 +153,7 @@ void DescriptorSetUpdate::inputAttachment(ImageInfos images, int binding, unsign
 		vk::DescriptorType::inputAttachment, images_.back().data(), nullptr, nullptr);
 }
 
-void DescriptorSetUpdate::uniform(BufferViewInfos views, int binding, unsigned int elem)
+void DescriptorSetUpdate::uniformView(BufferViewInfos views, int binding, unsigned int elem)
 {
 	if(binding == -1) binding = currentBinding_++;
 	else currentBinding_ = binding + 1;
@@ -163,7 +163,7 @@ void DescriptorSetUpdate::uniform(BufferViewInfos views, int binding, unsigned i
 	writes_.emplace_back(*set_, binding, elem, views_.back().size(),
 		vk::DescriptorType::uniformTexelBuffer, nullptr, nullptr, views_.back().data());
 }
-void DescriptorSetUpdate::storage(BufferViewInfos views, int binding, unsigned int elem)
+void DescriptorSetUpdate::storageView(BufferViewInfos views, int binding, unsigned int elem)
 {
 	if(binding == -1) binding = currentBinding_++;
 	else currentBinding_ = binding + 1;
@@ -183,10 +183,10 @@ void DescriptorSetUpdate::copy(const vk::CopyDescriptorSet& copySet)
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	const Range<vk::DescriptorSetLayoutBinding>& bindings) : ResourceHandle(dev)
 {
-	constexpr auto defaultBinding = std::uint32_t(-1);
+	static constexpr auto defaultBinding = std::uint32_t(-1);
 
-	std::vector<vk::DescriptorSetLayoutBinding> vkbindings;
-	vkbindings.reserve(bindings.size());
+	std::vector<vk::DescriptorSetLayoutBinding> vkbindgs;
+	vkbindgs.reserve(bindings.size());
 
 	unsigned int highestBinding = 0u;
 	for(auto& binding : bindings)
@@ -198,8 +198,8 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	}
 
 	vk::DescriptorSetLayoutCreateInfo descriptorLayout;
-	descriptorLayout.bindingCount = vkbindings.size();
-	descriptorLayout.pBindings = vkbindings.data();
+	descriptorLayout.bindingCount = vkbindgs.size();
+	descriptorLayout.pBindings = vkbindgs.data();
 
 	vkHandle() = vk::createDescriptorSetLayout(vkDevice(), descriptorLayout);
 }

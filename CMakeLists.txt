@@ -7,14 +7,14 @@ set(VPatch 0)
 
 include(CMakeDependentOption)
 
-option(BuildExamples "Build Examples" OFF)
-option(Debug "Compile in debug mode" ON)
-option(OneDevice "Enable the one device optimization. Not recommended" OFF)
+option(BuildExamples "Build Examples" on)
+option(Debug "Compile in debug mode" on)
+option(OneDevice "Enable the one device optimization. Not recommended" off)
 
 #DebugThrow option can only be set if debug is enabled
 cmake_dependent_option(DebugThrow
-	"Throw debug exceptions instead of printing warnings" ON
-	"Debug" OFF)
+	"Throw debug exceptions instead of printing warnings" on
+	"Debug" off)
 
 if(Debug)
 	set(CMAKE_BUILD_TYPE Debug)
@@ -70,9 +70,9 @@ configure_file(
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/vpp/config.hpp" DESTINATION include/vpp)
 
 if(BuildExamples)
-	if(UNIX)
-		message(WARNING "The examples do only work on windows")
-	else()
+	if(Win32 OR MSYS OR MINGW)
 		add_subdirectory(examples)
+	else()
+		message("The examples are windows-only at the moment. Pull requests appreciated.")
 	endif()
 endif()
