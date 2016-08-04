@@ -183,6 +183,8 @@ void DescriptorSetUpdate::copy(const vk::CopyDescriptorSet& copySet)
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	const Range<vk::DescriptorSetLayoutBinding>& bindings) : ResourceHandle(dev)
 {
+	constexpr auto defaultBinding = std::uint32_t(-1);
+
 	std::vector<vk::DescriptorSetLayoutBinding> vkbindings;
 	vkbindings.reserve(bindings.size());
 
@@ -190,8 +192,9 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	for(auto& binding : bindings)
 	{
 		vkbindings.emplace_back(binding);
-		if(vkbindings.back().binding == -1) vkbindings.back().binding = highestBinding++;
-		else highestBinding = std::max(highestBinding, vkbindings.back().binding + 1);
+		auto& bid = vkbindings.back().binding;
+		if(bid == defaultBinding) bid = highestBinding++;
+		else highestBinding = std::max(highestBinding, bid + 1);
 	}
 
 	vk::DescriptorSetLayoutCreateInfo descriptorLayout;

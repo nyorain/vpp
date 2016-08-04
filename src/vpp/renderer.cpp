@@ -81,7 +81,7 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 	auto size = swapChain.size();
 	auto i = 0u;
 
-	for(auto& attachInfo : info.attachments)
+	for(auto& attachInfo : info_.attachments)
 	{
 		if(i == info.swapChainAttachment) ++i;
 		if(attachInfo.external)
@@ -90,17 +90,17 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 		}
 		else if(attachInfo.dynamic)
 		{
-			auto imgInfo = attachInfo.createInfo.imgInfo;
-			imgInfo.extent.width = std::max(swapChain.size().width, info.maxWidth);
-			imgInfo.extent.height = std::max(swapChain.size().height, info.maxHeight);
+			auto& imgInfo = attachInfo.createInfo.imgInfo;
+			imgInfo.extent.width = std::max(size.width, info.maxWidth);
+			imgInfo.extent.height = std::max(size.height, info.maxHeight);
 			imgInfo.extent.depth = 1;
 			dynamic.push_back(attachInfo.createInfo);
 		}
 		else
 		{
-			auto imgInfo = attachInfo.createInfo.imgInfo;
-			imgInfo.extent.width = std::max(swapChain.size().width, info.maxWidth);
-			imgInfo.extent.height = std::max(swapChain.size().height, info.maxHeight);
+			auto& imgInfo = attachInfo.createInfo.imgInfo;
+			imgInfo.extent.width = std::max(size.width, info.maxWidth);
+			imgInfo.extent.height = std::max(size.height, info.maxHeight);
 			imgInfo.extent.depth = 1;
 			staticAttachments_.emplace_back();
 			staticAttachments_.back().create(device(), imgInfo, attachInfo.createInfo.memoryFlags);
@@ -262,8 +262,9 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, cons
 	auto renderComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 
 	unsigned int currentBuffer;
-    auto result = swapChain().acquire(currentBuffer, acquireComplete);
+    swapChain().acquire(currentBuffer, acquireComplete);
 	//TODO: result error handling, out_of_date or suboptimal/invalid
+    // auto result = swapChain().acquire(currentBuffer, acquireComplete);
 
 	renderImpl_->frame(currentBuffer);
 
@@ -355,8 +356,9 @@ void SwapChainRenderer::renderBlock(const Queue* gfx, const Queue* present)
 	auto renderComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 
 	unsigned int currentBuffer;
-    auto result = swapChain().acquire(currentBuffer, acquireComplete);
+    swapChain().acquire(currentBuffer, acquireComplete);
 	//TODO: result error handling, out_of_date or suboptimal/invalid
+    // auto result = swapChain().acquire(currentBuffer, acquireComplete);
 	
 	renderImpl_->frame(currentBuffer);
 

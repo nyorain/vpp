@@ -95,7 +95,7 @@ protected:
 };
 
 ///\{
-///Duplicates a given ShaderProgram/ShaderModule. Note that this is implemented as extra
+///Duplicates a given ShaderProgram/ShaderStage. Note that this is implemented as extra
 ///function instead of a copy operator since it does not perform a deep copy. The new
 ///instance will still reference the same vk::ShaderModules as the old original one,
 ///so it must be assured that they remain when the new objects is used.

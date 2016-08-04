@@ -10,8 +10,9 @@ namespace vpp
 template<typename... Args>
 void outputDebugMsg(Args... args)
 {
+	using Expand = int[];
 	std::stringstream stream;
-	int e1[] = {(stream << args, 0)...};
+	(void)Expand{(stream << args, 0)...};
 	std::cerr << stream.str() << '\n';
 
 	#ifdef VPP_DEBUG_THROW

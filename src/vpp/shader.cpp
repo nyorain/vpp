@@ -51,7 +51,7 @@ ShaderModule::~ShaderModule()
 
 //ShaderStage
 ShaderStage::ShaderStage(const Device& dev, const StringParam& filename, const CreateInfo& info)
-	: Resource(dev), owned_(true), info_(info)
+	: Resource(dev), info_(info), owned_(true)
 {
 	const static std::string errorMsg = "vpp::ShaderMoudle: failed to create from ";
 
@@ -60,14 +60,14 @@ ShaderStage::ShaderStage(const Device& dev, const StringParam& filename, const C
 }
 
 ShaderStage::ShaderStage(const Device& dev, const Range<std::uint32_t>& code,
-	const CreateInfo& info) : Resource(dev), owned_(true), info_(info)
+	const CreateInfo& info) : Resource(dev), info_(info), owned_(true)
 {
 	module_ = loadShaderModule(dev, code);
 	if(!module_) throw std::runtime_error("vpp::ShaderModule: failed to create from given code");
 }
 
 ShaderStage::ShaderStage(const Device& dev, vk::ShaderModule module, const CreateInfo& info)
-	: Resource(dev), owned_(false), module_(module), info_(info)
+	: Resource(dev), module_(module), info_(info), owned_(false)
 {
 }
 

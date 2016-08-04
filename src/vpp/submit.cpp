@@ -65,6 +65,8 @@ CommandExecutionState& CommandExecutionState::operator=(CommandExecutionState&& 
 	self_ = other.self_;
 	if(self_) *self_ = this;
 	other.self_ = nullptr;
+
+	return *this;
 }
 
 void CommandExecutionState::submit()

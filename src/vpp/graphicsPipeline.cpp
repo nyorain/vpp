@@ -54,9 +54,9 @@ GraphicsPipelineBuilder::GraphicsPipelineBuilder(const Device& dev, vk::RenderPa
 }
 
 GraphicsPipelineBuilder::GraphicsPipelineBuilder(const GraphicsPipelineBuilder& other)
-	: renderPass(other.renderPass), subpass(other.subpass), layout(other.layout),
-		vertexBufferLayouts(other.vertexBufferLayouts), flags(other.flags),
-		dynamicStates(other.dynamicStates), states(other.states), shader(copy(other.shader))
+	: shader(copy(other.shader)), renderPass(other.renderPass), subpass(other.subpass), 
+		layout(other.layout), vertexBufferLayouts(other.vertexBufferLayouts), flags(other.flags),
+		dynamicStates(other.dynamicStates), states(other.states)
 {
 }
 

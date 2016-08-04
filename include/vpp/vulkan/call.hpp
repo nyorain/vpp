@@ -119,6 +119,7 @@ inline vk::Result checkResultWarn(vk::Result result, const char* function, const
 		"\n\tin function " + function + " ,calling " + called;
 
 	std::cerr << "vk::call::checkResultWarn: " << err << std::endl;
+	return result;
 }
 
 } //namespace call

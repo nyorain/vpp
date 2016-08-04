@@ -222,7 +222,7 @@ void BufferSizer::alignTexel()
 
 //BufferReader
 BufferReader::BufferReader(const Device& dev, BufferLayout align, const Range<std::uint8_t>& data)
-	: Resource(dev), BufferOperator(align), data_(data)
+	: BufferOperator(align), Resource(dev), data_(data)
 {
 }
 

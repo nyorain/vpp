@@ -10,13 +10,11 @@ include(CMakeDependentOption)
 option(BuildExamples "Build Examples" OFF)
 option(Debug "Compile in debug mode" ON)
 option(OneDevice "Enable the one device optimization. Not recommended" OFF)
-# option(32bit "Forces compilation for 32 bit. For testing" OFF)
 
 #DebugThrow option can only be set if debug is enabled
 cmake_dependent_option(DebugThrow
 	"Throw debug exceptions instead of printing warnings" ON
 	"Debug" OFF)
-
 
 if(Debug)
 	set(CMAKE_BUILD_TYPE Debug)
@@ -24,17 +22,23 @@ else()
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# if(32bit)
-# 	list(APPEND CMAKE_C_FLAGS "-m32")
-# 	list(APPEND CMAKE_CXX_FLAGS "-m32")
-# 	list(APPEND LINK_FLAGS "-m32")
-# endif()
-
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED on)
+
+#enable warnings
+#for msvc we first check if some level is set by default and replace it
+if(MSVC)
+  if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+    string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  else()
+	  list(APPEND CMAKE_CXX_FLAGS "/W4")
+  endif()
+elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+	list(APPEND CMAKE_CXX_FLAGS "-Wall -Wno-long-long")
+endif()
 
 #to disable ninja byproduct warning
 cmake_policy(SET CMP0058 NEW)

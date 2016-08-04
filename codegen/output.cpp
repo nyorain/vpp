@@ -796,7 +796,10 @@ std::string CCOutputGenerator::paramName(const Param& param, const std::string& 
 	std::string ret;
 
 	for(auto& lvl : param.type.arraylvl)
+	{
+		(void)lvl; //unused
 		ret += "std::array<";
+	}
 
 	ret += typeName(param.type);
 

@@ -9,7 +9,7 @@ public:
 	std::size_t size;
 
 public:
-	template<typename T> RawBufferData(const T& obj, std::size_t count = 1)
+	template<typename T> constexpr RawBufferData(const T& obj, std::size_t count = 1)
 		: data(reinterpret_cast<const std::uint8_t&>(obj)), size(sizeof(T) * count) {}
 };
 
@@ -21,7 +21,7 @@ constexpr RawBufferData raw(const T& obj, std::size_t count = 1) { return {obj, 
 template<typename T> constexpr RawBufferData
 raw(const T* obj, std::size_t count = 1) { return {*obj, count}; }
 
-template<template<class...> typename C, typename T, typename... TA> constexpr RawBufferData
+template<template<class...> class C, typename T, typename... TA> constexpr RawBufferData
 raw(const C<T, TA...>& container) { return {*container.begin(), container.size()}; }
 ///\}
 

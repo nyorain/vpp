@@ -1,5 +1,7 @@
 #pragma once
 
+using Expand = int[];
+
 namespace detail
 {
 
@@ -28,11 +30,11 @@ struct MembersApplier<std::index_sequence<I...>>
 		auto sa = 0u;
 		if(update.std140()) sa = 16u;
 
-		int e1[] = {(sa = std::max(sa,
+		(void)Expand{(sa = std::max(sa,
 			align(VulkanType<decltype(obj.*(std::get<I>(tup)))>::type)), 0)...};
 		if(sa) update.align(sa);
 
-		int e2[] = {(bufferApply(update, obj.*(std::get<I>(tup))), 0) ...};
+		(void)Expand{(bufferApply(update, obj.*(std::get<I>(tup))), 0) ...};
 		if(sa) update.align(sa);
 	}
 };
@@ -159,7 +161,7 @@ void BufferOperator<B>::addSingle(T&& obj)
 template<typename B> template<typename... T>
 void BufferOperator<B>::add(T&&... objs)
 {
-	int e1[] = {(addSingle(objs), 0)...};
+	(void)Expand{(addSingle(objs), 0)...};
 }
 
 template<typename... T> WorkPtr read(const Buffer& buf, BufferLayout align, T&... args)

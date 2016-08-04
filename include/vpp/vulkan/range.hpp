@@ -110,7 +110,7 @@ public:
 	///range.as<std::vector>() will convert into an vector of the range type (T).
 	///range.as<std::vector<float>>() will convert into an float-vector (if possible).
 	template<typename C> C as() const { return C(data_, data_ + size_); }
-	template<template<class...> typename C> C<T> as() const { return C<T>(data_, data_ + size_); }
+	template<template<class...> class C> C<T> as() const { return C<T>(data_, data_ + size_); }
 	///\}
 
 protected:
@@ -124,7 +124,7 @@ protected:
 template<typename T, typename = std::enable_if_t<!std::is_pointer<T>::value>>
 Range<T> constexpr makeRange(const T& value, std::size_t size){ return {value, size}; }
 
-template<template<class...> typename C, typename T, typename... TA> Range<T>
+template<template<class...> class C, typename T, typename... TA> Range<T>
 makeRange(const C<T, TA...>& container){ return Range<T>(container); }
 
 template<typename T, std::size_t N> Range<T>

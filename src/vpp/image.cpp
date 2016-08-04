@@ -81,9 +81,9 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 
 		//dataoffset
 		auto doffset = 0u;
-		for(auto d = offset.z; d < offset.z + extent.depth; ++d)
+		for(unsigned int d = offset.z; d < offset.z + extent.depth; ++d)
 		{
-			for(auto h = offset.y; h < offset.y + extent.height; ++h)
+			for(unsigned int h = offset.y; h < offset.y + extent.height; ++h)
 			{
 				//image offset
 				auto ioff = imageAddress(sresLayout, texSize, offset.x, h, d, subres.arrayLayer);
@@ -148,9 +148,9 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 
 		//dataOffset
 		auto doffset = 0u;
-		for(auto d = offset.z; d < offset.z + extent.depth; ++d)
+		for(unsigned int d = offset.z; d < offset.z + extent.depth; ++d)
 		{
-			for(auto h = offset.y; h < offset.y + extent.height; ++h)
+			for(unsigned int h = offset.y; h < offset.y + extent.height; ++h)
 			{
 				//image offset
 				auto ioffset = imageAddress(subresLayout, texelSize, 0, h, d, subres.arrayLayer);
@@ -215,6 +215,7 @@ void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::Image img, vk::ImageLa
 		barrier.srcAccessMask = vk::AccessBits::transferWrite; break;
 	case vk::ImageLayout::shaderReadOnlyOptimal:
 		barrier.srcAccessMask = vk::AccessBits::shaderRead; break;
+	default: break;
 	}
 
 	switch(nl)
@@ -242,6 +243,8 @@ void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::Image img, vk::ImageLa
 			barrier.srcAccessMask = vk::AccessBits::hostWrite | vk::AccessBits::transferWrite;
 		barrier.dstAccessMask = vk::AccessBits::shaderRead;
 		break;
+	
+	default: break;
 	}
 
 	const auto stage = vk::PipelineStageBits::topOfPipe;

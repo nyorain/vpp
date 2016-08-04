@@ -10,11 +10,11 @@
 namespace vpp
 {
 
-//TODO: something about derivates when copying builder.
+//TODO: something about derivates (e.g. when copying builder).
 
 ///Class to easier create vulkan graphics pipelines.
 ///Note that objects of this class can be copied, but this will not duplicate the
-///undeerlaying shader modules. So if a pipelineBuilder owns a shader module, its copies
+///underlaying shader modules. So if a pipelineBuilder owns a shader module, its copies
 ///(which still reference those modules) shall not be used to create a pipeline after
 ///the original goes out of scope.
 class GraphicsPipelineBuilder
