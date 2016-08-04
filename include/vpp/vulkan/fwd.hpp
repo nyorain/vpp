@@ -588,5 +588,3 @@ using PfnCmdDebugMarkerInsertEXT = void(*VKAPI_PTR)(CommandBuffer commandBuffer,
 
 } //namespace vk
 
-#undef VK_DEFINE_HANDLE
-#undef VK_DEFINE_NON_DISPATCHABLE_HANDLE

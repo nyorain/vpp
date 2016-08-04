@@ -252,8 +252,6 @@ void CCOutputGenerator::generate()
 	outputAllHeader("\n\n} //namespace vk");
 
 	fwd_ << "\n\n";
-	fwd_ << "#undef VK_DEFINE_HANDLE\n";
-	fwd_ << "#undef VK_DEFINE_NON_DISPATCHABLE_HANDLE\n";
 }
 
 void CCOutputGenerator::outputAll(const std::string& string)
@@ -325,7 +323,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 
 		//fwd
 		auto name = typeName(type);
-		//fwd_ << "using " << name << " = " << type.name << ";\n";
+		// fwd_ << "using " << name << " = Handle<" << type.name << ">;\n";
 		fwd_ << type.type << "(" << name << ")" << ";\n";
 	}
 	if(count > 0) std::cout << "\tOutputted " << count << " handles\n";
@@ -1061,7 +1059,7 @@ std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify
 	std::string ret = sepr;
 	if(retParam && &param == retParam && !param.countPar) //is return param (data)
 	{
-		ret += "reinterpret_cast<" + typeName(param.param->type, false) + ">(&ret)";
+		ret += "(" + typeName(param.param->type, false) + ")(&ret)";
 		return ret;
 	}
 	else if(!param.memberAsCount && rangeify && retParam && &param == retParam->countPar) //is count part of return param
@@ -1087,7 +1085,7 @@ std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify
 	{
 		if(retParam && &param == retParam)
 		{
-			ret += "reinterpret_cast<" + typeName(param.param->type, false) + ">(ret.data())";
+			ret += "(" + typeName(param.param->type, false) + ")(ret.data())";
 			return ret;
 		}
 		else if(!param.dataPars.empty()) //is count part of normal range
@@ -1102,7 +1100,7 @@ std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify
 		else if(param.countPar) //is data part of normal (nonRet) range
 		{
 			std::string ret = sepr;
-			ret += "reinterpret_cast<" + typeName(param.param->type, false) + ">(";
+			ret += "(" + typeName(param.param->type, false) + ")(";
 			ret += param.param->name;
 			ret += ".data())";
 			return ret;
@@ -1121,9 +1119,9 @@ std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify
 			param.param->type.type->name != "void" && param.param->type.type->name != "char")
 		ref = "&";
 
-		ret += "reinterpret_cast<";
+		ret += "(";
 		ret += typeName(param.param->type, false);
-		ret += ">(";
+		ret += ")(";
 		ret += ref;
 		ret += param.param->name;
 		ret += ")";

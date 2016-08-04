@@ -39,7 +39,7 @@ set(vpp-sources
 	utility/file.cpp)
 
 #add backends
-if(${VPP_WINDOWS})
+if(WIN32 OR MSYS OR MINGW)
 	set(vpp-sources ${vpp-sources} backend/win32.cpp)
 elseif(UNIX)
 	set(vpp-sources ${vpp-sources} backend/xcb.cpp backend/wayland.cpp backend/xlib.cpp)
@@ -50,8 +50,8 @@ add_library(vpp SHARED ${vpp-sources})
 add_dependencies(vpp vkHeaders)
 
 #link to vulkan
-link_directories("${CMAKE_SOURCE_DIR}/external/lib")
-target_link_libraries(vpp ${vulkan-lib})
+target_link_libraries(vpp ${VULKAN_LIBRARY})
+target_include_directories(vpp PUBLIC ${VULKAN_INCLUDE_DIR})
 
 #install
 install(TARGETS vpp

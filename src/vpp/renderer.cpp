@@ -66,9 +66,9 @@ void swap(SwapChainRenderer& a, SwapChainRenderer& b) noexcept
 
 void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& info)
 {
-	if(info.renderPass == nullptr)
+	if(!info.renderPass)
 	{
-		throw std::runtime_error("SwapChainRenderer: nullptr renderPass");
+		throw std::runtime_error("vpp::SwapChainRenderer: invalid renderPass");
 	}
 
 	swapChain_ = &swapChain;

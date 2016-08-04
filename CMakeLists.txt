@@ -9,19 +9,26 @@ include(CMakeDependentOption)
 
 option(BuildExamples "Build Examples" OFF)
 option(Debug "Compile in debug mode" ON)
+option(OneDevice "Enable the one device optimization. Not recommended" OFF)
+# option(32bit "Forces compilation for 32 bit. For testing" OFF)
 
 #DebugThrow option can only be set if debug is enabled
 cmake_dependent_option(DebugThrow
 	"Throw debug exceptions instead of printing warnings" ON
 	"Debug" OFF)
 
-option(OneDevice "Enable the one device optimization. Not recommended" OFF)
 
 if(Debug)
 	set(CMAKE_BUILD_TYPE Debug)
 else()
 	set(CMAKE_BUILD_TYPE Release)
 endif()
+
+# if(32bit)
+# 	list(APPEND CMAKE_C_FLAGS "-m32")
+# 	list(APPEND CMAKE_CXX_FLAGS "-m32")
+# 	list(APPEND LINK_FLAGS "-m32")
+# endif()
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
@@ -40,19 +47,8 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include) #e.g. config file
 
 install(DIRECTORY external/boost DESTINATION include)
 
-if(WIN32 OR MSYS OR MINGW)
-	set(VPP_WINDOWS 1)
-else()
-	set(VPP_WINDOWS 0)
-endif()
-
-if(${VPP_WINDOWS})
-	include_directories("$ENV{VK_SDK_PATH}/Include")
-	set(vulkan-lib "$ENV{VK_SDK_PATH}/Source/lib/vulkan-1.dll")
-else()
-	include_directories("/usr/include/vulkan") #needed?
-	set(vulkan-lib "vulkan")
-endif()
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
+find_package(Vulkan REQUIRED)
 
 add_subdirectory(codegen)
 add_subdirectory(include/vpp)
@@ -70,5 +66,9 @@ configure_file(
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/vpp/config.hpp" DESTINATION include/vpp)
 
 if(BuildExamples)
-	add_subdirectory(examples)
+	if(UNIX)
+		message(WARNING "The examples do only work on windows")
+	else()
+		add_subdirectory(examples)
+	endif()
 endif()

@@ -364,7 +364,7 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 			if(newWaste < bestWaste)
 			{
 				bestWaste = newWaste;
-				best = {alignedOffset, size};
+				best = {std::size_t(alignedOffset), size};
 			}
 		}
 
@@ -385,7 +385,7 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 		if(newWaste < bestWaste)
 		{
 			bestWaste = newWaste;
-			best = {alignedOffset, size};
+			best = {std::size_t(alignedOffset), size};
 		}
 	}
 
