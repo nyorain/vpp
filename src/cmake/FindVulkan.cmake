@@ -10,8 +10,8 @@ if (WIN32)
         "$ENV{VK_SDK_PATH}/Include")
     if (CMAKE_CL_64)
         find_library(VULKAN_LIBRARY NAMES vulkan-1 HINTS
-            "$ENV{VULKAN_SDK}/Bin"
-            "$ENV{VK_SDK_PATH}/Bin")
+            "$ENV{VULKAN_SDK}/Bin32"
+			"$ENV{VK_SDK_PATH}/Bin32")
     else()
         find_library(VULKAN_LIBRARY NAMES vulkan-1 HINTS
             "$ENV{VULKAN_SDK}/Bin"
