@@ -1,7 +1,8 @@
-# vpp
-vpp is a vulkan abstraction library written in modern C++14 and licensed by the __MIT License__.
-It does not aim to be a full-sized graphics engine, it rather focuses on providing some useful
-features that make programming vulkan applications in c++ more convenient and less repetitive.
+# Vulkan++
+
+A vulkan abstraction library written in modern C++14 and licensed by the __MIT License__.
+It does not aim to be a full-sized graphics engine, but rather focuses on providing some useful
+features that make programming vulkan applications in C++ more convenient and less repetitive.
 
 vpp also includes a C++ codegenerator for the vulkan api which focuses on typesafety and less typing
 while still being more explicit as well as it tries to not introduce a huge compile time overhead.
@@ -14,6 +15,7 @@ __Any contributions (feature requests, critics and recommendations as well) are 
 If you want to improve the library or add your own ideas, just start a pull request.__
 
 ## Examples
+
 Here are some examples to give you an idea on how the api will probably look like and in
 which way in may be useful to program vulkan applications.
 Examples as well as a full documentation will be provided at some first release of a stable api.
@@ -23,6 +25,7 @@ kind of concept, it just exists to show how one would do certain things with vpp
 Some parts of the examples are more concepts and not yet fully implemented in the library!
 
 ### Contexts
+
 If you just want a vulkan context you can play around with and do not care about the exact
 details of creation, you can just use a vpp::Context which will create a vulkan
 instance, device, surface and swapchain for a given backend.
@@ -43,7 +46,8 @@ auto& swapChain = context->swapChain();
 auto& surface = constext->surface();
 
 //create a render pass matching your needs
-auto renderPass = createRenderPass();
+//In future vpp will probably offer some sane render pass presets 
+vpp::RenderPass renderPass = ...;
 
 //To render somethin now, you could e.g. use the vpp::SwapChainRenderer which requires you to
 //build your render command buffers, but manages all the rest for you.
@@ -79,8 +83,8 @@ vpp::SwapChainRenderer renderer(swapChain, builderObject, {renderPass, context->
 //Usually before rendering there would be some kind of (backend-specific) event handling,
 //which would cause the application to quit (break the loop) if the window is closed, and a resize
 //of the swapchain (which would result in the need to recreate the SwapChainRenderer) if the
-//window is resized. Here, we just render.
-while(true) renderer.render();
+//window is resized. Here, we just render and block until the device finishes its work.
+while(true) renderer.renderBlock();
 ```````````````````````
 
 The example above does bascially picture the structure of a simple vulkan app using vpp.
@@ -149,27 +153,32 @@ This example shows how to fill or retrieve the data from buffers and images asyn
 ``````````````````cpp
 //Easily fill multiple data segments into buffers and retrieve the async work objects.
 
-//Fill buffer1 with the 32 bit int and the data of a vector (will extract it correctly)
+//Fill buffer1 with the 32 bit int and the data of a 
+//vector (will extract it correctly) using std140 layout.
 std::uint32_t a = 420;
 std::vector<std::int32_t> b = {1, 4, 2, 5, 6, 3, 2, 4, 3};
-auto work1 = bufferA.fill({{a}, {b}});
+auto work1 = fill140(bufferA, a, b);
 
 
-//Fill buffer2 with the float[4] array, and two floats
+//Fill buffer2 with the float[4] array, and two floats using std140 layout.
 //The extra number (4) in the last data segment signals that it should have an
 //offset of 4 to the previous segment.
 float[4] c = {1.0, 7.7, 4.9, 2.9};
-auto work2 = bufferB.fill({c}, {34.f}, {45.f, 4}});
+auto work2 = fill140(bufferB, c, 34.f, 45.f, 4);
 
 
-//In this case the buffer is just filles using a pointer to data and the size of the data.
-void* dData = ...;
-std::size_t dSize = ...;
-auto work3 = bufferC.fill({{0.f}, {dData, dSize}});
+//In this case the buffer is just filles the buffer with a raw copy of the given type.
+SomeType data = ...;
+auto work3 = fill140(bufferC, 0.f, vpp::raw(data));
 
 
-//Retrieve the data from a buffer
-auto work4 = bufferD.retrieve();
+//Retrieve the aligned data from a buffer using std430 layout into the given variables.
+//Note that the given variable references must remain valid until the returned work is finished
+//since they will be filled with the buffers data on work finish.
+float d;
+Vec2 e; //for custom types (e.g. when using it with glm) you can just specialize vpp::VulkanType
+std::vector<std::uint32_t> f(200);
+auto work4 = retrieve430(bufferD, d, e, f);
 
 
 //If we now want to make sure all the needed work is done, we can simply wait for it to finish.
@@ -187,20 +196,17 @@ WorkManager workManager;
 workManager.add({std::move(work1), std::move(work2), std::move(work3), std::move(work4)});
 
 //...
-//later on
+//The workManager would automatically finish the owned work on destruction or
+//you can call it manually.
 workManager.finish();
-
-
-//Now retrieve the data of the last buffer
-std::uint8_t& data = work4->data();
 `````````````````
 
 Note that here again will usually just one batch of work (CommandBuffers) be submitted to the
 vulkan device which may bring huge performance gains since this is considered a heavy operation.
 
-All the examples here are using the highest level of abstraction of vpp (vpp in
+All the examples here are using the highest level of abstraction of vpp (vpp is
 NOT an engine, so there will be no abstraction like Mesh, Material or Camera), but the api
-can also be accessed on a lower level of abstraction using e.g. the DeviceMemory,
+can also be accessed on a lower level of abstraction using e.g. DeviceMemory,
 SubmitManager, Device or SwapChain.
 
 
