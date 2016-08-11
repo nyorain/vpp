@@ -13,6 +13,7 @@ set(vpp-sources
 	shader.cpp
 	framebuffer.cpp
 	image.cpp
+	instance.cpp
 	debug.cpp
 	pipeline.cpp
 	graphicsPipeline.cpp
