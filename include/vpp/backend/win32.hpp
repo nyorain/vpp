@@ -9,6 +9,13 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+//We undef the shittiest win32 macros here since it is our reponsibiility we have to pull
+//in this big pile of shit.
+#undef near
+#undef far
+#undef max
+#undef min
+
 namespace vpp
 {
 

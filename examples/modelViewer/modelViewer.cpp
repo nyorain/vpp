@@ -1,8 +1,9 @@
-#include <example.hpp>
+#include "model.hpp"
 #include <vpp/pipeline.hpp>
 #include <vpp/graphicsPipeline.hpp>
 #include <vpp/descriptor.hpp>
 #include <vpp/vk.hpp>
+#include <example.hpp>
 
 #include <nytl/vec.hpp>
 #include <nytl/stringParam.hpp>
@@ -35,55 +36,6 @@ template<> struct Converter<Vec3f, aiVector3D>
 template<> struct Converter<Vec4f, aiColor4D>
 	{ static Vec4f call(const aiColor4D& col) { return {col.r, col.g, col.b, col.a}; } };
 }
-
-//mesh loading
-struct Vertex
-{
-	nytl::Vec3f position;
-	nytl::Vec2f texCoords;
-	nytl::Vec3f normal;
-};
-
-struct Mesh
-{
-	std::vector<Vertex> vertices;
-	std::vector<std::uint32_t> indices;
-	unsigned int materialIndex;
-	vpp::Buffer buffer;
-};
-
-struct Material
-{
-	std::string name;
-
-	nytl::Vec4f ambient;
-	nytl::Vec4f diffuse;
-	nytl::Vec4f specular;
-	float opacity;
-
-	vpp::DescriptorSet descriptorSet;
-	vpp::ViewableImage texture;
-	vpp::Buffer ubo;
-};
-
-struct Scene
-{
-	std::vector<Mesh> meshes;
-	std::vector<Material> materials;
-};
-
-struct ModelData
-{
-	App& app;
-	std::string filename;
-	Scene scene;
-
-	vpp::PipelineLayout pipelineLayout;
-	vpp::Pipeline pipeline;
-	vpp::DescriptorSetLayout descriptorSetLayout;
-	vpp::DescriptorPool descriptorPool;
-	vpp::Sampler sampler;
-};
 
 class ModelRenderer : public vpp::RendererBuilder
 {
@@ -201,24 +153,55 @@ void loadScene(const vpp::Device& dev, ModelData& modeldata)
 
 		aiColor4D color;
 		material->Get(AI_MATKEY_COLOR_AMBIENT, color);
-		mmat.ambient = nytl::convert(color);
+		mmat.colors.ambient = nytl::convert(color);
 		material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-		mmat.diffuse = nytl::convert(color);
+		mmat.colors.diffuse = nytl::convert(color);
 		material->Get(AI_MATKEY_COLOR_SPECULAR, color);
-		mmat.specular = nytl::convert(color);
+		mmat.colors.specular = nytl::convert(color);
 		material->Get(AI_MATKEY_OPACITY, mmat.opacity);
+		material->Get(AI_MATKEY_SHININESS, mmat.opacity);
 
+		//load texture
+		int width, height, comp;
+		const std::uint8_t* imgdata;
 		if(material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 		{
 			material->GetTexture(aiTextureType_DIFFUSE, 0, &aistr);
-
-			//load texture
-			int width, height, comp;
-			auto imgdata = stbi_load(aistr.C_Str(), &width, &height, &comp, 4);
-			if(!imgdata)
+			if(aistr.data[0] == '*') //embedded texture
 			{
-				auto msg = std::string("Failed to load texture ") + aistr.C_Str();
-				throw std::runtime_error(msg);
+				auto id = std::stoi(aistr.data + 1);
+				if(aiscene->mNumTextures <= id)
+				{
+					auto msg = std::string("Invalid texture id ") + (aistr.data + 1);
+					throw std::runtime_error(msg);
+				}
+
+				auto tex = aiscene->mTextures[id];
+				auto tdata = reinterpret_cast<std::uint8_t*>(tex->pcData);
+				if(tex->mHeight)
+				{
+					width = tex->mWidth;
+					height = tex->mHeight;
+					imgdata = tdata;
+				}
+				else
+				{
+					imgdata = stbi_load_from_memory(tdata, tex->mWidth, &width, &height, &comp, 4);
+					if(!imgdata)
+					{
+						auto msg = std::string("Failed to load texture ") + aistr.C_Str();
+						throw std::runtime_error(msg);
+					}
+				}
+			}
+			else
+			{
+				auto imgdata = stbi_load(aistr.C_Str(), &width, &height, &comp, 4);
+				if(!imgdata)
+				{
+					auto msg = std::string("Failed to load texture ") + aistr.C_Str();
+					throw std::runtime_error(msg);
+				}
 			}
 
 			vk::Extent3D extent;
@@ -234,9 +217,9 @@ void loadScene(const vpp::Device& dev, ModelData& modeldata)
 			info.imgInfo.tiling = vk::ImageTiling::optimal;
 			info.imgInfo.usage |= vk::ImageUsageBits::transferDst;
 
-			mmat.texture = {dev, info};
+			mmat.diffuseMap = {dev, info};
 
-			vpp::fill(mmat.texture.image(), *imgdata, vk::Format::r8g8b8a8Unorm,
+			vpp::fill(mmat.diffuseMap.image(), *imgdata, vk::Format::r8g8b8a8Unorm,
 				vk::ImageLayout::undefined, extent, {vk::ImageAspectBits::color, 0, 0})->finish();
 		}
 
@@ -244,11 +227,13 @@ void loadScene(const vpp::Device& dev, ModelData& modeldata)
 		mmat.descriptorSet = {modeldata.descriptorSetLayout, modeldata.descriptorPool};
 		mmat.ubo = {dev, bufferInfo};
 
-		vpp::fill140(mmat.ubo, mmat.ambient, mmat.diffuse, mmat.specular, mmat.opacity);
+		auto& cols = mmat.colors;
+		vpp::fill140(mmat.ubo, cols.ambient, cols.diffuse, cols.specular, mmat.shininess,
+			mmat.opacity);
 
 		vpp::DescriptorSetUpdate update(mmat.descriptorSet);
 		update.uniform({{mmat.ubo, 0ul, uboSize}});
-		update.image({{{}, mmat.texture.vkImageView(), vk::ImageLayout::shaderReadOnlyOptimal}});
+		update.image({{{}, mmat.diffuseMap.vkImageView(), vk::ImageLayout::shaderReadOnlyOptimal}});
 	}
 }
 

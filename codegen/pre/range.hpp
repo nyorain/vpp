@@ -121,7 +121,7 @@ protected:
 ///\{
 ///Utility functions for easily constructing a range object.
 ///Only needed until c++17.
-template<typename T, typename = std::enable_if_t<!std::is_pointer<T>::value>>
+template<typename T>
 Range<T> constexpr makeRange(const T& value, std::size_t size){ return {value, size}; }
 
 template<template<class...> class C, typename T, typename... TA> Range<T>

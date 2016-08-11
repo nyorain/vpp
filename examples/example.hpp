@@ -8,6 +8,7 @@
 #include <vpp/renderer.hpp>
 #include <vpp/image.hpp>
 #include <vpp/queue.hpp>
+#include <vpp/vk.hpp>
 
 #include <nytl/vec.hpp>
 #include <nytl/mat.hpp>
