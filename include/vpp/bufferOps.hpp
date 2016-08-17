@@ -45,7 +45,7 @@ public:
 	using Size = std::size_t;
 
 public:
-	BufferOperator(BufferLayout align) : align_(align) {}
+	constexpr BufferOperator(BufferLayout align) : align_(align) {}
 	~BufferOperator() = default;
 
 	///Will operator on the given object. The type of the given object must have
@@ -61,15 +61,19 @@ public:
 	template<typename... T> void add(T&&... obj);
 
 	///Returns the current offset on the buffer.
-	Size offset() const { return offset_; }
+	constexpr Size offset() const { return offset_; }
 
-	BufferLayout alignType() const { return align_; }
-	bool std140() const { return align_ == BufferLayout::std140; }
-	bool std430() const { return align_ == BufferLayout::std430; }
+	constexpr BufferLayout alignType() const { return align_; }
+	constexpr bool std140() const { return align_ == BufferLayout::std140; }
+	constexpr bool std430() const { return align_ == BufferLayout::std430; }
+
+	constexpr void nextOffset(Size noffset) { nextOffset_ = noffset; }
+	constexpr void nextOffsetAlign(Size align) { nextOffset_ = vpp::align(offset_, align); }
 
 protected:
 	BufferLayout align_;
 	Size offset_ {};
+	Size nextOffset_ {}; //structs or arrays may have offset requirement for next member.
 };
 
 ///This class can be used to update the contents of a buffer.
@@ -138,17 +142,17 @@ protected:
 class BufferSizer : public BufferOperator<BufferSizer>, public Resource
 {
 public:
-	BufferSizer(BufferLayout layout) : BufferOperator(layout) {}
+	constexpr BufferSizer(BufferLayout layout) : BufferOperator(layout) {}
 	BufferSizer(const Device& dev, BufferLayout align) : BufferOperator(align), Resource(dev) {}
 	~BufferSizer() = default;
 
 	using BufferOperator::add;
-	template<typename... T> void add();
+	template<typename... T> constexpr void add();
 
-	void operate(const void*, Size size) { offset_ += size; }
+	constexpr void operate(const void*, Size size);
 
-	void offset(Size size) { offset_ += size; }
-	void align(Size align) { offset_ = vpp::align(offset_, align); }
+	constexpr void offset(Size size) { offset_ += size; }
+	constexpr void align(Size align) { offset_ = vpp::align(offset_, align); }
 
 	using BufferOperator::offset;
 	using BufferOperator::alignType;
@@ -172,7 +176,7 @@ public:
 
 	void operate(void* ptr, Size size);
 
-	void offset(Size size) { offset_ += size; }
+	void offset(Size size) { align(0); offset_ += size; }
 	void align(Size align) { offset_ = vpp::align(offset_, align); }
 
 	using BufferOperator::offset;
@@ -272,7 +276,7 @@ std::size_t neededBufferSize(BufferLayout align, const T&... args)
 }
 
 template<typename... T>
-std::size_t neededBufferSize(BufferLayout align)
+constexpr std::size_t neededBufferSize(BufferLayout align)
 {
 	BufferSizer sizer(align);
 	sizer.add<T...>();
@@ -286,7 +290,7 @@ std::size_t neededBufferSize(BufferLayout align)
 template<typename... T> std::size_t neededBufferSize140(const T&... args)
 	{ return neededBufferSize(BufferLayout::std140, args...); }
 
-template<typename... T> std::size_t neededBufferSize140()
+template<typename... T> constexpr std::size_t neededBufferSize140()
 	{ return neededBufferSize<T...>(BufferLayout::std140); }
 
 ///Calcualtes the size a vulkan buffer must have to be able to store all the given objects using
@@ -296,7 +300,7 @@ template<typename... T> std::size_t neededBufferSize140()
 template<typename... T> std::size_t neededBufferSize430(const T&... args)
 	{ return neededBufferSize(BufferLayout::std430, args...); }
 
-template<typename... T> std::size_t neededBufferSize430()
+template<typename... T> constexpr std::size_t neededBufferSize430()
 	{ return neededBufferSize<T...>(BufferLayout::std430); }
 
 ///Implementation of buffer operations and vukan types

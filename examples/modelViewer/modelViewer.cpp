@@ -41,7 +41,7 @@ template<> struct Converter<Vec4f, aiColor4D>
 namespace vpp
 {
 
-template<> struct VulkanType<MaterialData> : public VulkanTypeStruct<false>
+template<> struct VulkanType<MaterialData> : public VulkanTypeStruct<true>
 {
 	static constexpr auto members = std::make_tuple(
 		&MaterialData::colors,
@@ -164,7 +164,10 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 	vk::BufferCreateInfo bufferInfo;
 	bufferInfo.usage = vk::BufferUsageBits::uniformBuffer;
 	// bufferInfo.size = vpp::neededBufferSize140(MaterialData{});
-	bufferInfo.size = vpp::neededBufferSize140<MaterialData>();
+	constexpr auto size = vpp::neededBufferSize140<MaterialData>();
+	// static_assert(size == 56, "TEST");
+	static_assert(size == 56, "TEST");
+	bufferInfo.size = size;
 
 	//load the materials
 	modeldata.scene.materials.reserve(aiscene->mNumMaterials);

@@ -128,7 +128,7 @@ void BufferUpdate::align(std::size_t align)
 void BufferUpdate::operate(const void* ptr, std::size_t size)
 {
 	std::memcpy(&data(), ptr, size);
-	offset_ += size;
+	offset_ = std::max(offset_, nextOffset_) + size;
 	internalOffset_ += size;
 	if(!buffer().mappable()) copies_.back().size += size;
 	checkCopies();
@@ -228,7 +228,7 @@ BufferReader::BufferReader(const Device& dev, BufferLayout align, const Range<st
 
 void BufferReader::operate(void* ptr, Size size)
 {
-	// std::cout << offset_ << " --- " << size << "\n";
+	offset_ = std::max(offset_, nextOffset_);
 	std::memcpy(ptr, &data_[offset_], size);
 	offset_ += size;
 }

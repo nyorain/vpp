@@ -2,7 +2,6 @@
 
 ///TMP utility.
 using Expand = int[];
-template<typename... T> constexpr void unused(T&&...) noexcept {};
 
 namespace detail
 {
@@ -15,6 +14,7 @@ constexpr unsigned int vecAlign()
 	return (S == 3) ? 4 : S;
 }
 
+///Rounds up the given align to a multiple of 16 if the layout is std140
 constexpr unsigned int roundAlign(unsigned int align, bool std140)
 {
 	return std140 ? std::ceil(align / 16.f) * 16.f : align;
@@ -22,15 +22,14 @@ constexpr unsigned int roundAlign(unsigned int align, bool std140)
 
 
 ///Utility to get the member type of a pointer to member object (Used with decltype).
-template<typename T, typename M> M memPtr(M T::*);
+template<typename T, typename M> constexpr M memPtr(M T::*);
 
 ///Utility template class that can be used to write an object of type T to a buffer update.
 ///Implementations of this class for different ShaderTypes must implement the following
 ///member functions:
 /// - template<typename T, typename O> static void call(O& op, T& obj);
-/// - template<typename T> static unsigned int align(bool std140);
-/// - template<typename O> static void size(O& op); [optional; if possible]
-///All of the functions should be constexpr if possible.
+/// - template<typename T> static unsigned int align(bool std140); constexpr
+/// - template<typename O> static void size(O& op); [optional; if possible] constexpr
 ///The first function is used by BufferUpdate/BufferReader to read/write the actual data
 ///while the second function is used by BufferSizer to determine the size that would be needed
 ///to fit the given data on the buffer.
@@ -48,7 +47,7 @@ void bufferApply(O& op, T&& obj) { BufferApplier<VT>::call(op, obj); }
 
 ///Utillity function to using the different BufferApplier::size implementations.
 template<typename VT, typename O>
-void bufferSize(O& op)
+constexpr void bufferSize(O& op)
 {
 	static_assert(HasSizeFunction<BufferApplier<VT>>::value,
 		"You can call this version of BufferSizer::add only with static sized types. "
@@ -58,7 +57,7 @@ void bufferSize(O& op)
 }
 
 ///Utility function to use the different BufferApplier::align implementations.
-template<typename VT, typename T = void>
+template<typename VT, typename T = void> constexpr
 unsigned int bufferAlign(bool std140) { return BufferApplier<VT>::template align<T>(std140); }
 
 ///Utility template class used to write the members of a structure to a buffer update.
@@ -69,40 +68,52 @@ template<typename VT, typename Seq = std::make_index_sequence<
 template<typename VT, std::size_t... I>
 struct MembersOp<VT, std::index_sequence<I...>>
 {
+	static constexpr decltype(VT::members) members = VT::members;
+
 	//call
 	template<typename O, typename T>
 	static void call(O& op, T&& obj)
 	{
-		(void)Expand{(bufferApply(op, obj.*(std::get<I>(VT::members))), 0) ...};
+		auto sa = VT::align ? align(op.std140()) : 0u;
+		if(sa) op.align(sa);
+		(void)Expand{(bufferApply(op, obj.*(std::get<I>(members))), 0) ...};
+		if(sa) op.align(sa);
+	}
+
+	//waiting for constexpr lambdas...
+	//applySize - utility for size
+	template<typename MP, typename O> constexpr static void applySize(const MP& memptr, O& op)
+		{ bufferSize<VulkanType<decltype(memPtr(memptr))>>(op); }
+
+	//applyAlign - utility for align
+	template<typename MP> constexpr static unsigned int applyAlign(const MP& memptr, bool std140)
+	{
+		using V = decltype(memPtr(memptr));
+		return bufferAlign<VulkanType<V>, V>(std140);
 	}
 
 	//size
 	template<typename O>
-	constexpr static void size(O& op, bool xalign = true)
+	constexpr static void size(O& op)
 	{
-		auto apply = [&](auto&& memptr)
-			{ bufferSize<VulkanType<decltype(memPtr(memptr))>>(op); };
-
-		auto sa = xalign ? align(op.std140()) : 0u;
+		auto sa = VT::align ? align(op.std140()) : 0u;
 		if(sa) op.align(sa);
-		(void)Expand{(apply(std::get<I>(VT::members)), 0) ...};
-		if(sa) op.align(sa);
+		(void)Expand{(applySize(std::get<I>(members), op), 0) ...};
+		if(sa) op.nextOffsetAlign(sa);
 	}
 
 	//align
 	constexpr static unsigned int align(bool std140)
 	{
-		auto align = [&](auto&& memptr) {
-			using V = decltype(memPtr(memptr));
-			return bufferAlign<VulkanType<V>, V>(std140);
-		};
-
 		auto sa = 0u;
-		Expand{(sa = std::max(sa, align(std::get<I>(VT::members))), 0)...};
-		if(std140) sa = std::ceil(sa / 16.f) * 16.f;
-		return sa;
+		(void)Expand{(sa = std::max(sa, applyAlign(std::get<I>(members), std140)), 0)...};
+		return roundAlign(sa, std140);
 	}
 };
+
+//otherwise we get an undefined reference
+template<typename VT, std::size_t... I> constexpr
+decltype(VT::members) MembersOp<VT, std::index_sequence<I...>>::members;
 
 ///Default specialization for scalar
 template<typename VT>
@@ -161,7 +172,7 @@ struct BufferApplier<VT, ShaderType::vec>
 template<typename VT>
 struct BufferApplier<VT, ShaderType::custom>
 {
-	using Impl = typename VulkanType<VT>::impl;
+	using Impl = typename VT::impl;
 
 	template<typename O, typename T> static void call(O& op, T&& obj) { Impl::call(op, obj); }
 	template<typename O> static constexpr void size(O& op) { Impl::size(op); }
@@ -182,7 +193,7 @@ struct BufferApplier<VT, ShaderType::buffer>
 
 	//align
 	template<typename T>
-	static unsigned int align(bool) { return 0; }
+	static constexpr unsigned int align(bool) { return 0; }
 };
 
 ///Specialization for matrix types.
@@ -190,10 +201,10 @@ template<typename VT>
 struct BufferApplier<VT, ShaderType::mat>
 {
 	//utility shortcuts
-	static constexpr auto major = VulkanType<VT>::major;
-	static constexpr auto minor = VulkanType<VT>::minor;
-	static constexpr auto transpose = VulkanType<VT>::transpose;
-	static constexpr auto csize = 4 + VulkanType<VT>::size64 * 4;
+	static constexpr auto major = VT::major;
+	static constexpr auto minor = VT::minor;
+	static constexpr auto transpose = VT::transpose;
+	static constexpr auto csize = 4 + VT::size64 * 4;
 
 	static_assert(major > 1 && minor > 1 && major < 5 && minor < 5, "Invalid matrix dimensions!");
 
@@ -201,9 +212,9 @@ struct BufferApplier<VT, ShaderType::mat>
 	template<typename O, typename T>
 	static void call(O& op, T&& obj)
 	{
-		using Value = decltype(obj[0][0]);
+		using Value = std::remove_cv_t<std::remove_reference_t<decltype(obj[0][0])>>;
 		static_assert(std::is_same<Value, float>::value || std::is_same<Value, double>::value,
-			"vpp::BufferApplier<matrix>: Only floating point value types are supported!");
+			"Only floating point matrix types are supported!");
 
 		auto sa = roundAlign(minor * csize, op.std140());
 		op.align(sa);
@@ -231,17 +242,17 @@ struct BufferApplier<VT, ShaderType::mat>
 		}
 
 		//the member following is rounded up to the base alignment
-		op.align(sa);
+		op.nextOffsetAlign(sa);
 	}
 
 	//size
 	template<typename O>
-	static void size(O& op)
+	static constexpr void size(O& op)
 	{
 		auto sa = roundAlign(minor * csize, op.std140());
 		op.align(sa);
 		op.operate(nullptr, major * roundAlign(minor * csize, op.std140()));
-		op.align(sa);
+		op.nextOffsetAlign(sa);
 	}
 
 	template<typename T>
@@ -262,13 +273,13 @@ struct BufferApplier<VT, ShaderType::structure>
 	}
 
 	template<typename O>
-	static void size(O& op)
+	static constexpr void size(O& op)
 	{
 		MembersOp<VT>::size(op);
 	}
 
 	template<typename T>
-	static unsigned int align(bool std140)
+	static constexpr unsigned int align(bool std140)
 	{
 		return MembersOp<VT>::align(std140);
 	}
@@ -295,11 +306,11 @@ struct BufferApplier<VT, ShaderType::none>
 			bufferApply(op, a);
 		}
 
-		if(op.std140()) op.align(sa);
+		op.nextOffsetAlign(sa);
 	}
 
 	template<typename T>
-	constexpr static unsigned int align(bool std140)
+	static constexpr unsigned int align(bool std140)
 	{
 		using Value = decltype(*std::begin(std::declval<T>()));
 		return roundAlign(bufferAlign<VulkanType<Value>, Value>(std140), std140);
@@ -332,9 +343,14 @@ void BufferOperator<B>::add(T&&... objs)
 }
 
 template<typename... T>
-void BufferSizer::add()
+constexpr void BufferSizer::add()
 {
 	(void)Expand{(detail::bufferSize<VulkanType<T>>(*this), 0)...};
+}
+
+constexpr void BufferSizer::operate(const void* ptr, Size size)
+{
+	offset_ = std::max(nextOffset_, offset_) + size;
 }
 
 template<typename... T> WorkPtr read(const Buffer& buf, BufferLayout align, T&... args)

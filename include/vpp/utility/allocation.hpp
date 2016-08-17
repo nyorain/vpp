@@ -17,7 +17,7 @@ struct Allocation
 };
 
 ///Aligns an offset.
-template<typename A, typename B> auto align(A offset, B alignment)
+template<typename A, typename B> constexpr auto align(A offset, B alignment)
 	{ return std::ceil(offset / double(alignment)) * alignment; }
 
 }

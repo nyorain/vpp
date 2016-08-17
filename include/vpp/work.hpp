@@ -10,7 +10,7 @@ namespace vpp
 {
 
 ///Work base class.
-///The Work classes abstract possible gpu work do be done. They are therefore not executed
+///The Work classes abstract possible (device) work do be done. They are therefore not executed
 ///automatically, but usually batched together for performance gains.
 ///Work implementations should finish their operations on work object descruction.
 ///Although this may lead to blocking destructors, it will assure that no work discarded.
@@ -41,18 +41,23 @@ public:
 };
 
 ///Abstract base class representing (possibly async) work which might return data of type R.
+///Used for example to fetch data from the device (e.g. read a buffer or image).
 template <typename R>
 class Work : public WorkBase
 {
 public:
-	virtual R data() = 0; //will implicitly wait for work finish (if needed)
+	///Will wait for the work to finish and the return the associated data.
+	///Note that if the returned data is a reference or pointer it is only required to
+	///stay valid as long as the Work objects exists.
+	///So if this function is called on a temporary object, one must copy the returned data
+	///if it is not owned (e.g. a vector or unique ptr).
+	virtual R data() = 0;
 };
 
-///Work specialization for void without the possibility to retrn data.
-template<>
-class Work<void> : public WorkBase
-{
-};
+///Work specialization for void without the possibility to return data.
+///Used e.g. for data-less device operations such as command buffer submissions or uploading
+///data (e.g. for a buffer or image) to the device.
+template<> class Work<void> : public WorkBase { };
 
 //Convinience typedefs
 using WorkPtr = std::unique_ptr<Work<void>>;
@@ -74,7 +79,7 @@ public:
 	virtual WorkBase::State state() override { return WorkBase::State::finished; }
 };
 
-///Class that implements the work interface for command buffers and gpu submissions.
+///Class that implements the work interface for command buffers and device submissions.
 template<typename R>
 class CommandWork : public Work<R>
 {

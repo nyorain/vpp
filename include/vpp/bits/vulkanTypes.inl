@@ -38,7 +38,7 @@ template<typename T> struct VulkanType<volatile T> : public VulkanType<T> {};
 
 ///Some VulkanType utility implementations that can be derived from when specializing for
 ///custom types.
-///\{
+
 ///Major and minor always specify the size of the host matrix.
 ///If transpose is set to true the device matrix is transposed (size and components).
 ///Note that glsl (and spirv) lets you specify the layout of matrix in memory.
@@ -77,12 +77,17 @@ using VulkanTypeScalar64 = VulkanTypeScalar<true>;
 
 ///Default struct base. One must declare the "members" member as a tuple of pointers to the
 ///structs members in the order they should be transferred to the device.
+///The "align" member defines whether the structure is treated as a structure on the device or
+///if it is only a host structure that will be unpacked on the device.
 template<bool Align>
 struct VulkanTypeStruct
 {
 	static constexpr auto type = ShaderType::structure;
-	static constexpr auto align = Align;
-	//static constexpr auto members = std::make_tuple(members...); //must be custom specified
+	static constexpr auto align = Align; //defines whether it should be aligned like a structure
+
+	//The static constexpr "members" tuple must be custom specified.
+	//The tuple will determine which members will be written/read in which order to/from the device
+	//static constexpr auto members = std::make_tuple(&Type::member1, &Type::member2, ...);
 };
 
 ///Default raw buffer base.
@@ -90,7 +95,6 @@ struct VulkanTypeBuffer
 {
 	static constexpr auto type = ShaderType::buffer;
 };
-///\}
 
 ///\{
 ///Some VulkanType specializations for default types.

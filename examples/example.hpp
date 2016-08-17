@@ -24,6 +24,7 @@
 namespace vpp
 {
 
+//not handling double precision mat atm
 template<std::size_t R, std::size_t C, typename V>
 struct VulkanType<nytl::Mat<R, C, V>> : public VulkanTypeMat<R, C, true> {};
 
@@ -31,7 +32,7 @@ template<std::size_t N> struct VulkanType<nytl::Vec<N, float>> : public VulkanTy
 template<std::size_t N> struct VulkanType<nytl::Vec<N, bool>> : public VulkanTypeVec<N> {};
 template<std::size_t N> struct VulkanType<nytl::Vec<N, std::int32_t>> : public VulkanTypeVec<N> {};
 template<std::size_t N> struct VulkanType<nytl::Vec<N, std::uint32_t>> : public VulkanTypeVec<N> {};
-template<std::size_t N> struct VulkanType<nytl::Vec<N, double>> : public VulkanTypeVec<N, 8> {};
+template<std::size_t N> struct VulkanType<nytl::Vec<N, double>> : public VulkanTypeVec<N, true> {};
 
 }
 
@@ -299,7 +300,6 @@ void initRenderPass(App& app)
 //
 void initApp(App& app, const std::function<std::unique_ptr<vpp::RendererBuilder>()>& func)
 {
-	std::uint32_t computeQF; //queueFamily
 	gApp = &app;
 	app.func = func;
 

@@ -469,15 +469,10 @@ void ParticleSystem::ParticleSystem::update(const nytl::Vec2ui& mousePos)
 	if(!map.coherent())map.flush();
 }
 
-constexpr int a(const int& x) { return 7; }
-constexpr int b(const int& x) { return a(x); }
-
 int main(int argc, char** argv)
 {
 	auto count = 500;
 	if(argc > 1) count = std::stoi(argv[1]);
-
-	constexpr auto xc = b(count);
 
 	App app;
 	ParticleSystem system(app, count * 1024);
