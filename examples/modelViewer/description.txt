@@ -1,0 +1,8 @@
+- Just one rendering pipeline for meshes
+- Every Material has its own ubo and textures
+- Mesh is defined as a set of vertices with the same material
+- Every Mesh has its own descriptorSet
+	- ubo holding the combined transform matrix [mesh buffer]
+	- ubo holding the material data [material buffer]
+	- ubo holding the scene data [scene buffer]
+	- bunch of textures (diffuseMap) [material textures]

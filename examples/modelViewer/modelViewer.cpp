@@ -163,11 +163,7 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 	//uniform buffer info
 	vk::BufferCreateInfo bufferInfo;
 	bufferInfo.usage = vk::BufferUsageBits::uniformBuffer;
-	// bufferInfo.size = vpp::neededBufferSize140(MaterialData{});
-	constexpr auto size = vpp::neededBufferSize140<MaterialData>();
-	// static_assert(size == 56, "TEST");
-	static_assert(size == 56, "TEST");
-	bufferInfo.size = size;
+	bufferInfo.size = vpp::neededBufferSize140<MaterialData>();
 
 	//load the materials
 	modeldata.scene.materials.reserve(aiscene->mNumMaterials);
