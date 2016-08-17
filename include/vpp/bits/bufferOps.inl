@@ -1,152 +1,319 @@
 #pragma once
 
+///TMP utility.
 using Expand = int[];
+template<typename... T> constexpr void unused(T&&...) noexcept {};
 
 namespace detail
 {
 
-///Utility template class that can be used to write an object of type T to a buffer update.
-template<typename T, ShaderType V = VulkanType<T>::type>
-struct BufferApplier;
-
-///Utility function using the different BufferWriter specializations.
-template<typename U, typename T, ShaderType V = VulkanType<T>::type>
-void bufferApply(U& update, T&& obj)
+///Function for matrix and vector size mapping.
+template<unsigned int S>
+constexpr unsigned int vecAlign()
 {
-	BufferApplier<T, V>::call(update, obj);
+	static_assert(S > 0 && S < 5, "Invalid matrix or vector size");
+	return (S == 3) ? 4 : S;
 }
 
-///Utility template class used to write the members of a structure to a buffer update.
-template<typename T> struct MembersApplier;
-
-template<std::size_t... I>
-struct MembersApplier<std::index_sequence<I...>>
+constexpr unsigned int roundAlign(unsigned int align, bool std140)
 {
-	template<typename U, typename T>
-	static void call(U& update, T&& obj)
+	return std140 ? std::ceil(align / 16.f) * 16.f : align;
+}
+
+
+///Utility to get the member type of a pointer to member object (Used with decltype).
+template<typename T, typename M> M memPtr(M T::*);
+
+///Utility template class that can be used to write an object of type T to a buffer update.
+///Implementations of this class for different ShaderTypes must implement the following
+///member functions:
+/// - template<typename T, typename O> static void call(O& op, T& obj);
+/// - template<typename T> static unsigned int align(bool std140);
+/// - template<typename O> static void size(O& op); [optional; if possible]
+///All of the functions should be constexpr if possible.
+///The first function is used by BufferUpdate/BufferReader to read/write the actual data
+///while the second function is used by BufferSizer to determine the size that would be needed
+///to fit the given data on the buffer.
+template<typename VT, ShaderType V = VT::type>
+struct BufferApplier;
+
+///Checks that the given BufferApplier specialization has the size function available.
+template<typename T>
+struct HasSizeFunction;
+
+///Utility function using the different BufferApplier specializations.
+///Prefer to use this function instead of directly calling the BufferApplier Structure.
+template<typename O, typename T, typename VT = VulkanType<T>>
+void bufferApply(O& op, T&& obj) { BufferApplier<VT>::call(op, obj); }
+
+///Utillity function to using the different BufferApplier::size implementations.
+template<typename VT, typename O>
+void bufferSize(O& op)
+{
+	static_assert(HasSizeFunction<BufferApplier<VT>>::value,
+		"You can call this version of BufferSizer::add only with static sized types. "
+		"Try to use the neededSize function with actual objects instead. "
+		"Read its documentation for more information. ");
+	BufferApplier<VT>::size(op);
+}
+
+///Utility function to use the different BufferApplier::align implementations.
+template<typename VT, typename T = void>
+unsigned int bufferAlign(bool std140) { return BufferApplier<VT>::template align<T>(std140); }
+
+///Utility template class used to write the members of a structure to a buffer update.
+///\tparam VT VulkanType of the structure
+template<typename VT, typename Seq = std::make_index_sequence<
+	std::tuple_size<decltype(VT::members)>::value>> struct MembersOp;
+
+template<typename VT, std::size_t... I>
+struct MembersOp<VT, std::index_sequence<I...>>
+{
+	//call
+	template<typename O, typename T>
+	static void call(O& op, T&& obj)
 	{
-		static auto constexpr tup = VulkanType<T>::members;
+		(void)Expand{(bufferApply(op, obj.*(std::get<I>(VT::members))), 0) ...};
+	}
+
+	//size
+	template<typename O>
+	constexpr static void size(O& op, bool xalign = true)
+	{
+		auto apply = [&](auto&& memptr)
+			{ bufferSize<VulkanType<decltype(memPtr(memptr))>>(op); };
+
+		auto sa = xalign ? align(op.std140()) : 0u;
+		if(sa) op.align(sa);
+		(void)Expand{(apply(std::get<I>(VT::members)), 0) ...};
+		if(sa) op.align(sa);
+	}
+
+	//align
+	constexpr static unsigned int align(bool std140)
+	{
+		auto align = [&](auto&& memptr) {
+			using V = decltype(memPtr(memptr));
+			return bufferAlign<VulkanType<V>, V>(std140);
+		};
 
 		auto sa = 0u;
-		if(update.std140()) sa = 16u;
-
-		(void)Expand{(sa = std::max(sa,
-			align(VulkanType<decltype(obj.*(std::get<I>(tup)))>::type)), 0)...};
-		if(sa) update.align(sa);
-
-		(void)Expand{(bufferApply(update, obj.*(std::get<I>(tup))), 0) ...};
-		if(sa) update.align(sa);
+		Expand{(sa = std::max(sa, align(std::get<I>(VT::members))), 0)...};
+		if(std140) sa = std::ceil(sa / 16.f) * 16.f;
+		return sa;
 	}
 };
 
-///Default specialization for all default shader types.
-template<typename T, ShaderType V>
-struct BufferApplier
+///Default specialization for scalar
+template<typename VT>
+struct BufferApplier<VT, ShaderType::scalar>
 {
-	template<typename U>
-	static void call(U& update, T&& obj)
+	template<typename T, typename O>
+	static void call(O& op, T&& obj)
 	{
-		if(align(V)) update.align(align(V));
-		update.operate(&obj, sizeof(obj));
+		op.align(align<void>(op.std140()));
+		op.operate(&obj, sizeof(obj));
+	};
+
+	template<typename O>
+	constexpr static void size(O& op)
+	{
+		op.align(align<void>(op.std140()));
+		op.operate(nullptr, 4 + VT::size64 * 4);
+	};
+
+	template<typename T>
+	static constexpr unsigned int align(bool std140)
+	{
+		return 4 + VT::size64 * 4;
 	}
+};
+
+///Default specialization for vec
+template<typename VT>
+struct BufferApplier<VT, ShaderType::vec>
+{
+	//call
+	template<typename T, typename O>
+	static void call(O& op, T&& obj)
+	{
+		op.align(align<void>(op.std140()));
+		op.operate(&obj, sizeof(obj));
+	}
+
+	//size
+	template<typename O>
+	constexpr static void size(O& op)
+	{
+		op.align(align<void>(op.std140()));
+		op.operate(nullptr, VT::dimension * (4 + VT::size64 * 4));
+	}
+
+	//align
+	template<typename T>
+	static constexpr unsigned int align(bool std140)
+	{
+		return detail::vecAlign<VT::dimension>() * (4 + VT::size64 * 4);
+	}
+};
+
+///Specialization for custom shader types.
+template<typename VT>
+struct BufferApplier<VT, ShaderType::custom>
+{
+	using Impl = typename VulkanType<VT>::impl;
+
+	template<typename O, typename T> static void call(O& op, T&& obj) { Impl::call(op, obj); }
+	template<typename O> static constexpr void size(O& op) { Impl::size(op); }
+	template<typename T> static constexpr auto align(bool std140)
+		{ return Impl::template align<T>(std140); }
 };
 
 ///Specialization for raw buffers.
-template<typename T>
-struct BufferApplier<T, ShaderType::buffer>
+///Does not implementation BufferApplier::size since it depends on the given object.
+template<typename VT>
+struct BufferApplier<VT, ShaderType::buffer>
 {
-	template<
-		typename U,
-		typename = decltype(std::declval<T>().size),
-		typename = decltype(std::declval<T>().data)>
-	static void call(U& update, T&& obj)
-	{
-		update.operate(&obj.data, obj.size);
-	}
+	//call
+	template<typename O, typename T,
+		typename = decltype(std::declval<T>().size()),
+		typename = decltype(std::declval<T>().data())>
+	static void call(O& op, T&& obj) { op.operate(&obj.data(), obj.size()); }
+
+	//align
+	template<typename T>
+	static unsigned int align(bool) { return 0; }
 };
 
 ///Specialization for matrix types.
-template<typename T>
-struct BufferApplier<T, ShaderType::matrix>
+template<typename VT>
+struct BufferApplier<VT, ShaderType::mat>
 {
-	using VT = std::decay_t<decltype(std::declval<T>()[0][0])>;
-	static constexpr auto major = VulkanType<T>::major;
-	static constexpr auto minor = VulkanType<T>::minor;
-	static constexpr auto transpose = VulkanType<T>::transpose;
-	static constexpr auto aligno = align(VulkanType<VT>::type) * (minor > 2 ? 4 : 2);
+	//utility shortcuts
+	static constexpr auto major = VulkanType<VT>::major;
+	static constexpr auto minor = VulkanType<VT>::minor;
+	static constexpr auto transpose = VulkanType<VT>::transpose;
+	static constexpr auto csize = 4 + VulkanType<VT>::size64 * 4;
 
-	static_assert(std::is_same<VT, float>::value || std::is_same<VT, double>::value,
-		"vpp::BufferUpdate::add(matrix): Only floating point value types are supported!");
-	static_assert(major > 1 && minor > 1 && major < 5 && minor < 5,
-		"vpp::BufferUpdate::add(matrix): Invalid matrix dimensions!");
+	static_assert(major > 1 && minor > 1 && major < 5 && minor < 5, "Invalid matrix dimensions!");
 
-	template<typename U>
-	static void call(U& update, T&& obj)
+	//call
+	template<typename O, typename T>
+	static void call(O& op, T&& obj)
 	{
-		auto maligno = aligno; //needed for std::max since it takes a reference (otherwise link err)
-		auto sa = (update.std140()) ? maligno : std::max(maligno, 16u);
+		using Value = decltype(obj[0][0]);
+		static_assert(std::is_same<Value, float>::value || std::is_same<Value, double>::value,
+			"vpp::BufferApplier<matrix>: Only floating point value types are supported!");
 
-		if(sa) update.align(sa);
-		if(sa == sizeof(VT) && sizeof(obj) == major * minor * sizeof(VT) && !transpose)
+		auto sa = roundAlign(minor * csize, op.std140());
+		op.align(sa);
+
+		//raw write sometimes possible
+		if(minor != 3 && sizeof(obj) == major * minor * csize && !transpose)
 		{
-			update.operate(&obj, sizeof(obj));
+			op.operate(&obj, sizeof(obj));
 		}
-		else if(transpose)
+		else if(!transpose)
 		{
 			for(auto mj = 0u; mj < major; ++mj)
 			{
-				if(sa) update.align(sa);
-				for(auto mn = 0u; mn < minor; ++mn) update.operate(&obj[mj][mn], sizeof(VT));
+				op.align(sa);
+				for(auto mn = 0u; mn < minor; ++mn) op.operate(&obj[mj][mn], csize);
 			}
 		}
 		else
 		{
 			for(auto mn = 0u; mn < minor; ++mn)
 			{
-				if(sa) update.align(sa);
-				for(auto mj = 0u; mj < major; ++mj) update.operate(&obj[mj][mn], sizeof(VT));
+				op.align(sa);
+				for(auto mj = 0u; mj < major; ++mj) op.operate(&obj[mj][mn], csize);
 			}
 		}
 
-		if(sa) update.align(sa);
+		//the member following is rounded up to the base alignment
+		op.align(sa);
+	}
+
+	//size
+	template<typename O>
+	static void size(O& op)
+	{
+		auto sa = roundAlign(minor * csize, op.std140());
+		op.align(sa);
+		op.operate(nullptr, major * roundAlign(minor * csize, op.std140()));
+		op.align(sa);
+	}
+
+	template<typename T>
+	constexpr static unsigned int align(bool std140)
+	{
+		return detail::roundAlign(minor * csize, std140);
 	}
 };
 
 ///Specialization for structures.
-template<typename T>
-struct BufferApplier<T, ShaderType::structure>
+template<typename VT>
+struct BufferApplier<VT, ShaderType::structure>
 {
-	using V = VulkanType<T>;
-	using Seq = std::make_index_sequence<std::tuple_size<decltype(V::members)>::value>;
-
-	template<typename U>
-	static void call(U& update, T&& obj)
+	template<typename O, typename T>
+	static void call(O& op, T&& obj)
 	{
-		MembersApplier<Seq>::call(update, obj);
+		MembersOp<VT>::call(op, obj);
+	}
+
+	template<typename O>
+	static void size(O& op)
+	{
+		MembersOp<VT>::size(op);
+	}
+
+	template<typename T>
+	static unsigned int align(bool std140)
+	{
+		return MembersOp<VT>::align(std140);
+	}
+};
+
+///Containers specialization.
+template<typename VT>
+struct BufferApplier<VT, ShaderType::none>
+{
+
+	template<
+		typename O, typename T,
+		typename B = decltype(*std::begin(std::declval<T>())),
+		typename E = decltype(*std::end(std::declval<T>())),
+		ShaderType V = VulkanType<B>::type>
+	static void call(O& op, T&& obj)
+	{
+		auto sa = roundAlign(bufferAlign<VulkanType<B>, B>(op.std140()), op.std140());
+		op.align(sa);
+
+		for(auto& a : obj)
+		{
+			if(op.std140()) op.align(sa);
+			bufferApply(op, a);
+		}
+
+		if(op.std140()) op.align(sa);
+	}
+
+	template<typename T>
+	constexpr static unsigned int align(bool std140)
+	{
+		using Value = decltype(*std::begin(std::declval<T>()));
+		return roundAlign(bufferAlign<VulkanType<Value>, Value>(std140), std140);
 	}
 };
 
 template<typename T>
-struct BufferApplier<T, ShaderType::none>
+struct HasSizeFunction
 {
-	static constexpr auto V = VulkanType<decltype(std::declval<T>().begin())>::type;
+	template <typename C> static char
+		test(decltype(std::declval<C>().size(std::declval<BufferSizer&>()))*);
+    template <typename C> static long test(...);
 
-	template<
-		typename U,
-		typename = decltype(std::begin(std::declval<T>())),
-		typename = decltype(std::begin(std::declval<T>()))>
-	static void call(U& update, T&& obj)
-	{
-		if(update.std140()) update.align(std::max(align(V), 16u));
-		else if(align(V)) update.align(align(V));
-		for(auto& a : obj)
-		{
-			if(update.std140()) update.align(16);
-			bufferApply(update, a);
-		}
-
-		if(update.std140()) update.align(std::max(align(V), 16u));
-	}
+    enum { value = sizeof(test<T>(0)) == sizeof(char) };
 };
 
 } //namespace detail
@@ -164,8 +331,16 @@ void BufferOperator<B>::add(T&&... objs)
 	(void)Expand{(addSingle(objs), 0)...};
 }
 
+template<typename... T>
+void BufferSizer::add()
+{
+	(void)Expand{(detail::bufferSize<VulkanType<T>>(*this), 0)...};
+}
+
 template<typename... T> WorkPtr read(const Buffer& buf, BufferLayout align, T&... args)
 {
+	///WorkImpl that will store references to the given args and write the buffer data into
+	///it once it was retrieved
 	struct WorkImpl : public Work<void>
 	{
 		WorkImpl(const Buffer& buf, BufferLayout align, T&... args)
@@ -197,20 +372,4 @@ template<typename... T> WorkPtr read(const Buffer& buf, BufferLayout align, T&..
 	};
 
 	return std::make_unique<WorkImpl>(buf, align, args...);
-}
-
-constexpr unsigned int align(ShaderType type)
-{
-	switch(type)
-	{
-		case ShaderType::scalar: return 4;
-		case ShaderType::scalar_64:
-		case ShaderType::vec2: return 8;
-		case ShaderType::vec3:
-		case ShaderType::vec4:
-		case ShaderType::vec2_64: return 16;
-		case ShaderType::vec3_64:
-		case ShaderType::vec4_64: return 32;
-		default: return 0;
-	}
 }

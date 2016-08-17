@@ -31,9 +31,8 @@ struct Particle
 namespace vpp
 {
 
-template<> struct VulkanType<Particle>
+template<> struct VulkanType<Particle> : public VulkanTypeStruct<true>
 {
-	static constexpr auto type = vpp::ShaderType::structure;
 	static constexpr auto members = std::make_tuple(
 		&Particle::position,
 		&Particle::velocity,

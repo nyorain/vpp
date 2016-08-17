@@ -4,7 +4,9 @@
 #include <vpp/descriptor.hpp>
 #include <vpp/image.hpp>
 #include <vpp/pipeline.hpp>
+
 #include <nytl/vec.hpp>
+#include <nytl/mat.hpp>
 
 struct App;
 
@@ -21,7 +23,7 @@ struct Mesh
 {
 	std::vector<Vertex> vertices;
 	std::vector<std::uint32_t> indices;
-	unsigned int materialIndex;
+	unsigned int materialIndex {};
 	vpp::Buffer buffer; //verts, indcs, combined (view, model) transform matrix
 };
 
@@ -44,15 +46,21 @@ struct PointLight
 	MaterialColors colors;
 };
 
+///Host representation of the gpu material/ubo
+struct MaterialData
+{
+	MaterialColors colors;
+	float shininess;
+	bool texture;
+};
+
 struct Material
 {
 	std::string name;
 	vpp::DescriptorSet descriptorSet;
 	vpp::ViewableImage diffuseMap;
-	MaterialColors colors;
-	float shininess;
-	float opacity;
-	vpp::Buffer ubo; //holds the material colors
+	MaterialData data;
+	vpp::Buffer ubo; //holds the material data
 };
 
 struct Scene

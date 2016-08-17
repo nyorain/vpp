@@ -9,7 +9,14 @@ layout(location = 2) in vec3 inormal;
 
 layout(location = 0) out vec4 ocol;
 
-layout(set = 0, binding = 1) uniform UBOA
+layout(set = 0, binding = 1) uniform UboScene
+{
+	vec3 lightColor;
+	vec3 lightPos;
+	vec3 viewPos;
+} scene;
+
+layout(set = 0, binding = 2) uniform UboMaterial
 {
 	vec4 ambient;
 	vec4 diffuse;
@@ -17,13 +24,6 @@ layout(set = 0, binding = 1) uniform UBOA
 	float shininess;
 	bool texture;
 } material;
-
-layout(set = 0, binding = 2) uniform UBOB
-{
-	vec3 lightColor;
-	vec2 lightPos;
-	vec2 viewPos;
-} scene;
 
 layout(set = 0, binding = 3) sampler2D diffuseMap;
 

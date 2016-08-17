@@ -24,17 +24,14 @@
 namespace vpp
 {
 
-template<std::size_t R, std::size_t C, typename V> struct VulkanType<nytl::Mat<R, C, V>>
-{
-	static constexpr auto type = vpp::ShaderType::matrix;
-	static constexpr auto major = R;
-	static constexpr auto minor = C;
-	static constexpr auto transpose = true;
-};
+template<std::size_t R, std::size_t C, typename V>
+struct VulkanType<nytl::Mat<R, C, V>> : public VulkanTypeMat<R, C, true> {};
 
-template<> struct VulkanType<nytl::Vec2f> { static constexpr auto type = vpp::ShaderType::vec2; };
-template<> struct VulkanType<nytl::Vec3f> { static constexpr auto type = vpp::ShaderType::vec3; };
-template<> struct VulkanType<nytl::Vec4f> { static constexpr auto type = vpp::ShaderType::vec4; };
+template<std::size_t N> struct VulkanType<nytl::Vec<N, float>> : public VulkanTypeVec<N> {};
+template<std::size_t N> struct VulkanType<nytl::Vec<N, bool>> : public VulkanTypeVec<N> {};
+template<std::size_t N> struct VulkanType<nytl::Vec<N, std::int32_t>> : public VulkanTypeVec<N> {};
+template<std::size_t N> struct VulkanType<nytl::Vec<N, std::uint32_t>> : public VulkanTypeVec<N> {};
+template<std::size_t N> struct VulkanType<nytl::Vec<N, double>> : public VulkanTypeVec<N, 8> {};
 
 }
 

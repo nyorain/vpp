@@ -13,13 +13,12 @@ layout(location = 2) out vec3 opos;
 
 layout(set = 0, binding = 0) uniform UBO
 {
-	mat4 viewMat;
-	mat4 transformMat;
+	mat4 transform;
 } ubo;
 
 int main()
 {
 	ouv = iuv;
 	onormal = inormal;
-	gl_Position = ubo.viewMat * ubo.transformMat * ipos;
+	gl_Position = ubo.viewMat * ubo.transform * ipos;
 }

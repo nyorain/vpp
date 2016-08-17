@@ -104,8 +104,19 @@ public:
 	WorkManager() = default;
 	~WorkManager();
 
-	void add(std::unique_ptr<WorkBase> work);
+	WorkManager(WorkManager&& other) = default;
+	WorkManager& operator=(WorkManager&& other) = default;
+
+	///Transfers ownership of the given work objects to the WorkManager.
+	void add(std::unique_ptr<WorkBase>&& work);
+	void add(std::vector<std::unique_ptr<WorkBase>>&& work);
+	void add(WorkManager&& works);
+
+	///Assures that all owned work objects are submitted.
 	void submit();
+
+	///Finished all owned work objects.
+	///This function might block.
 	void finish();
 
 protected:

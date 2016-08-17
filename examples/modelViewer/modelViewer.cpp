@@ -17,6 +17,7 @@
 #define STBI_IMPLEMENTATION
 #include <stb_image.h>
 
+
 //specialization for aiVec <-> nytlVec
 namespace nytl
 {
@@ -37,13 +38,36 @@ template<> struct Converter<Vec4f, aiColor4D>
 	{ static Vec4f call(const aiColor4D& col) { return {col.r, col.g, col.b, col.a}; } };
 }
 
+namespace vpp
+{
+
+template<> struct VulkanType<MaterialData> : public VulkanTypeStruct<false>
+{
+	static constexpr auto members = std::make_tuple(
+		&MaterialData::colors,
+		&MaterialData::shininess,
+		&MaterialData::texture);
+};
+
+template<> struct VulkanType<MaterialColors> : public VulkanTypeStruct<false>
+{
+	static constexpr auto members = std::make_tuple(
+		&MaterialColors::ambient,
+		&MaterialColors::diffuse,
+		&MaterialColors::specular);
+};
+
+}
+
+
 class ModelRenderer : public vpp::RendererBuilder
 {
 public:
 	ModelRenderer(ModelData& data) : data_(data) {}
 
 	void build(unsigned int, const vpp::RenderPassInstance& ini) override;
-	void init(vpp::SwapChainRenderer& renderer);
+	void init(vpp::SwapChainRenderer& renderer) override;
+	void frame(unsigned int id) override;
 	std::vector<vk::ClearValue> clearValues(unsigned int) override;
 
 protected:
@@ -52,7 +76,7 @@ protected:
 
 //implementation
 //TODO: both load/init functions can be really improved. Use vpp::WorkManager.
-void loadScene(const vpp::Device& dev, ModelData& modeldata)
+vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 {
 	Scene& scene = modeldata.scene;
 
@@ -66,6 +90,8 @@ void loadScene(const vpp::Device& dev, ModelData& modeldata)
 		throw std::runtime_error("assimp ReadFile failed for file " + modeldata.filename);
 
 	modeldata.scene.meshes.reserve(aiscene->mNumMeshes);
+	vpp::WorkManager workManager;
+
 	for(auto& mesh : nytl::makeRange(*aiscene->mMeshes, aiscene->mNumMeshes))
 	{
 		Mesh mmesh;
@@ -112,7 +138,7 @@ void loadScene(const vpp::Device& dev, ModelData& modeldata)
 		bufferInfo.usage = vk::BufferUsageBits::vertexBuffer | vk::BufferUsageBits::indexBuffer;
 
 		mmesh.buffer = {dev, bufferInfo, vk::MemoryPropertyBits::deviceLocal};
-		vpp::fill140(mmesh.buffer, vpp::raw(bufferData));
+		workManager.add(vpp::fill140(mmesh.buffer, vpp::raw(bufferData)));
 
 		//mesh
 		modeldata.scene.meshes.push_back(std::move(mmesh));
@@ -135,10 +161,10 @@ void loadScene(const vpp::Device& dev, ModelData& modeldata)
 	modeldata.descriptorPool = {dev, poolInfo};
 
 	//uniform buffer info
-	auto uboSize = 32ul; ///XXX
 	vk::BufferCreateInfo bufferInfo;
 	bufferInfo.usage = vk::BufferUsageBits::uniformBuffer;
-	bufferInfo.size = uboSize; //XXX
+	// bufferInfo.size = vpp::neededBufferSize140(MaterialData{});
+	bufferInfo.size = vpp::neededBufferSize140<MaterialData>();
 
 	//load the materials
 	modeldata.scene.materials.reserve(aiscene->mNumMaterials);
@@ -153,19 +179,20 @@ void loadScene(const vpp::Device& dev, ModelData& modeldata)
 
 		aiColor4D color;
 		material->Get(AI_MATKEY_COLOR_AMBIENT, color);
-		mmat.colors.ambient = nytl::convert(color);
+		mmat.data.colors.ambient = nytl::convert(color);
 		material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-		mmat.colors.diffuse = nytl::convert(color);
+		mmat.data.colors.diffuse = nytl::convert(color);
 		material->Get(AI_MATKEY_COLOR_SPECULAR, color);
-		mmat.colors.specular = nytl::convert(color);
-		material->Get(AI_MATKEY_OPACITY, mmat.opacity);
-		material->Get(AI_MATKEY_SHININESS, mmat.opacity);
+		mmat.data.colors.specular = nytl::convert(color);
+		// material->Get(AI_MATKEY_OPACITY, mmat.opacity);
+		material->Get(AI_MATKEY_SHININESS, mmat.data.shininess);
 
 		//load texture
-		int width, height, comp;
-		const std::uint8_t* imgdata;
 		if(material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 		{
+			mmat.data.texture = true;
+			int width, height, comp;
+			const std::uint8_t* imgdata;
 			material->GetTexture(aiTextureType_DIFFUSE, 0, &aistr);
 			if(aistr.data[0] == '*') //embedded texture
 			{
@@ -186,7 +213,8 @@ void loadScene(const vpp::Device& dev, ModelData& modeldata)
 				}
 				else
 				{
-					imgdata = stbi_load_from_memory(tdata, tex->mWidth, &width, &height, &comp, 4);
+					imgdata = stbi_load_from_memory(tdata, tex->mWidth, &width,
+						&height, &comp, 4);
 					if(!imgdata)
 					{
 						auto msg = std::string("Failed to load texture ") + aistr.C_Str();
@@ -219,20 +247,19 @@ void loadScene(const vpp::Device& dev, ModelData& modeldata)
 
 			mmat.diffuseMap = {dev, info};
 
-			vpp::fill(mmat.diffuseMap.image(), *imgdata, vk::Format::r8g8b8a8Unorm,
-				vk::ImageLayout::undefined, extent, {vk::ImageAspectBits::color, 0, 0})->finish();
+			auto& img = mmat.diffuseMap.image();
+			workManager.add(vpp::fill(img, *imgdata, vk::Format::r8g8b8a8Unorm,
+				vk::ImageLayout::undefined, extent, {vk::ImageAspectBits::color, 0, 0}));
 		}
 
 		//vulkan resources
 		mmat.descriptorSet = {modeldata.descriptorSetLayout, modeldata.descriptorPool};
 		mmat.ubo = {dev, bufferInfo};
 
-		auto& cols = mmat.colors;
-		vpp::fill140(mmat.ubo, cols.ambient, cols.diffuse, cols.specular, mmat.shininess,
-			mmat.opacity);
+		workManager.add(vpp::fill140(mmat.ubo, mmat.data));
 
 		vpp::DescriptorSetUpdate update(mmat.descriptorSet);
-		update.uniform({{mmat.ubo, 0ul, uboSize}});
+		update.uniform({{mmat.ubo, 0ul, bufferInfo.size}});
 		update.image({{{}, mmat.diffuseMap.vkImageView(), vk::ImageLayout::shaderReadOnlyOptimal}});
 	}
 }
@@ -264,8 +291,31 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	data.sampler = {dev, samplerInfo};
 
 	//descriptorSetLayout
-	data.descriptorSetLayout = {dev, {vpp::descriptorBinding(
-		vk::DescriptorType::combinedImageSampler, vk::ShaderStageBits::fragment)}};
+	using vpp::descriptorBinding;
+	constexpr auto fragmentStage = vk::ShaderStageBits::fragment;
+	constexpr auto vertexStage = vk::ShaderStageBits::fragment;
+	constexpr auto fragVertStages = fragmentStage | vertexStage;
+
+	//first set
+	//ubo for transform
+	//ubo for scene data (light)
+	//ubo for material
+	//texture
+	data.descriptorSetLayout = {dev, {
+		descriptorBinding(vk::DescriptorType::uniformBuffer, vertexStage),
+		descriptorBinding(vk::DescriptorType::uniformBuffer, fragmentStage),
+		descriptorBinding(vk::DescriptorType::uniformBuffer, fragmentStage),
+		descriptorBinding(vk::DescriptorType::combinedImageSampler, fragmentStage)
+	}};
+
+	//vertexBufferLayout
+	vpp::VertexBufferLayout vertexBufferLayout = {
+		{
+			vk::Format::r32g32b32Sfloat, //position
+			vk::Format::r32g32b32Sfloat, //normal
+			vk::Format::r32g32Sfloat //uv
+		},
+	0}; //at binding 0
 
 	//pipeline
 	data.pipelineLayout = {dev, {data.descriptorSetLayout}};
@@ -273,25 +323,38 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	vpp::GraphicsPipelineBuilder builder(dev, data.app.renderPass);
 	builder.layout = data.pipelineLayout;
 	builder.dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
+	builder.vertexBufferLayouts = {vertexBufferLayout};
 
 	builder.shader.stage("texture.vert.spv", {vk::ShaderStageBits::vertex});
 	builder.shader.stage("texture.frag.spv", {vk::ShaderStageBits::fragment});
 
-	builder.states.blendAttachments[0].blendEnable = true;
-	builder.states.blendAttachments[0].colorBlendOp = vk::BlendOp::add;
-	builder.states.blendAttachments[0].srcColorBlendFactor = vk::BlendFactor::srcAlpha;
-	builder.states.blendAttachments[0].dstColorBlendFactor =
-		vk::BlendFactor::oneMinusSrcAlpha;
-	builder.states.blendAttachments[0].srcAlphaBlendFactor = vk::BlendFactor::one;
-	builder.states.blendAttachments[0].dstAlphaBlendFactor = vk::BlendFactor::zero;
-	builder.states.blendAttachments[0].alphaBlendOp = vk::BlendOp::add;
+	auto& ba = builder.states.blendAttachments;
+	ba[0].blendEnable = true;
+	ba[0].colorBlendOp = vk::BlendOp::add;
+	ba[0].srcColorBlendFactor = vk::BlendFactor::srcAlpha;
+	ba[0].dstColorBlendFactor = vk::BlendFactor::oneMinusSrcAlpha;
+	ba[0].srcAlphaBlendFactor = vk::BlendFactor::one;
+	ba[0].dstAlphaBlendFactor = vk::BlendFactor::zero;
+	ba[0].alphaBlendOp = vk::BlendOp::add;
 
 	builder.states.rasterization.cullMode = vk::CullModeBits::none;
 	builder.states.inputAssembly.topology = vk::PrimitiveTopology::triangleList;
 
 	data.pipeline = builder.build();
 
-	loadScene(dev, data);
+	//init scene data
+	const nytl::Vec3f lightPos = {0.f, 3.f, 5.f};
+	const nytl::Vec3f lightDir = {0.f, -1.f, -0.5f};
+	const nytl::Vec3f lightCol = {1.f, 1.f, 1.f};
+
+	vk::BufferCreateInfo bufferInfo;
+	bufferInfo.usage = vk::BufferUsageBits::uniformBuffer;
+	bufferInfo.size = vpp::neededBufferSize140(lightPos, lightDir, lightCol);
+	data.sceneBuffer = {dev, bufferInfo};
+
+	vpp::WorkManager workManager;
+	workManager.add(vpp::fill140(data.sceneBuffer, lightPos, lightDir, lightCol));
+	workManager.add(loadScene(dev, data));
 }
 
 void ModelRenderer::init(vpp::SwapChainRenderer& renderer)
@@ -326,6 +389,11 @@ std::vector<vk::ClearValue> ModelRenderer::clearValues(unsigned int id)
 	ret[0].color = {{0.f, 0.f, 0.f, 1.0f}};
 	ret[1].depthStencil = {1.f, 0};
 	return ret;
+}
+
+void ModelRenderer::frame(unsigned int id)
+{
+
 }
 
 int main(int argc, char** argv)

@@ -14,25 +14,17 @@ namespace vpp
 
 ///Vulkan shader data types.
 ///Defines all possible types that can be passed as buffer update paramter.
+///See bits/vulkanTypes.inl for more information.
 enum class ShaderType
 {
 	none, //used for things like e.g. containers
 	buffer, //used for buffer that shall be plain copied
-	scalar,
-	scalar_64,
-	vec2,
-	vec3,
-	vec4,
-	vec2_64,
-	vec3_64,
-	vec4_64,
-	matrix, //Vulkan type has additional "major" and "minor" and "transpose" members
-	structure //Vulkan type has additional "member" tuples with member pointers
+	scalar, //VulkanType has "size64" bool member
+	vec, //VulkanType has "dimension" "size64" members
+	mat, //VulkanType has "major" "minor" "transpose" "size64" members
+	structure, //VulkanType has "member" tuples with member pointers and a bool "align"
+	custom //Vulkan type holds "impl" type that will be called instead. See BufferApplier
 };
-
-///Returns the alignment the given ShaderType requires.
-///Returns 0 for special values such as none, buffer, structure or matrix.
-constexpr unsigned int align(ShaderType type);
 
 ///Specifies the different buffer alignment methods.
 ///For the differences, read https://www.opengl.org/wiki/Interface_Block_(GLSL)#Memory_layout.
@@ -146,10 +138,14 @@ protected:
 class BufferSizer : public BufferOperator<BufferSizer>, public Resource
 {
 public:
+	BufferSizer(BufferLayout layout) : BufferOperator(layout) {}
 	BufferSizer(const Device& dev, BufferLayout align) : BufferOperator(align), Resource(dev) {}
 	~BufferSizer() = default;
 
-	void operate(const void* ptr, Size size) { offset_ += size; }
+	using BufferOperator::add;
+	template<typename... T> void add();
+
+	void operate(const void*, Size size) { offset_ += size; }
 
 	void offset(Size size) { offset_ += size; }
 	void align(Size align) { offset_ = vpp::align(offset_, align); }
@@ -268,10 +264,18 @@ template<typename... T> WorkPtr read430(const Buffer& buf, T&... args)
 ///Calculates the size a vulkan buffer must have to be able to store all the given objects.
 ///\sa BufferSizer
 template<typename... T>
-std::size_t needeBufferSize(const Device& dev, BufferLayout align, const T&... args)
+std::size_t neededBufferSize(BufferLayout align, const T&... args)
 {
-	BufferSizer sizer(dev, align);
+	BufferSizer sizer(align);
 	sizer.add(args...);
+	return sizer.offset();
+}
+
+template<typename... T>
+std::size_t neededBufferSize(BufferLayout align)
+{
+	BufferSizer sizer(align);
+	sizer.add<T...>();
 	return sizer.offset();
 }
 
@@ -279,16 +283,21 @@ std::size_t needeBufferSize(const Device& dev, BufferLayout align, const T&... a
 ///the std140 layout.
 ///\sa neededBufferSize
 ///\sa BufferSizer
-template<typename... T> std::size_t neededBufferSize140(const Device& dev, const T&... args)
-	{ return neededBufferSize(dev, BufferLayout::std140, args...); }
+template<typename... T> std::size_t neededBufferSize140(const T&... args)
+	{ return neededBufferSize(BufferLayout::std140, args...); }
+
+template<typename... T> std::size_t neededBufferSize140()
+	{ return neededBufferSize<T...>(BufferLayout::std140); }
 
 ///Calcualtes the size a vulkan buffer must have to be able to store all the given objects using
 ///the std430 layout.
 ///\sa neededBufferSize
 ///\sa BufferSizer
-template<typename... T> std::size_t neededBufferSize430(const Device& dev, const T&... args)
-	{ return neededBufferSize(dev, BufferLayout::std430, args...); }
+template<typename... T> std::size_t neededBufferSize430(const T&... args)
+	{ return neededBufferSize(BufferLayout::std430, args...); }
 
+template<typename... T> std::size_t neededBufferSize430()
+	{ return neededBufferSize<T...>(BufferLayout::std430); }
 
 ///Implementation of buffer operations and vukan types
 #include <vpp/bits/vulkanTypes.inl>
