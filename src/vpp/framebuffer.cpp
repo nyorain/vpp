@@ -30,7 +30,7 @@ void Framebuffer::create(const Device& dev, const vk::Extent2D& size,
 	const AttachmentsInfo& attachments)
 {
 	std::vector<vk::ImageCreateInfo> info;
-	info.resize(attachments.size());
+	info.reserve(attachments.size());
 	for(auto& at : attachments) info.push_back(at.imgInfo);
 
 	create(dev, size, info);
@@ -58,7 +58,7 @@ void Framebuffer::init(vk::RenderPass rp, const AttachmentsInfo& attachments,
 	const ExtAttachments& extAttachments)
 {
 	std::vector<vk::ImageViewCreateInfo> info;
-	info.resize(attachments.size());
+	info.reserve(attachments.size());
 	for(auto& at : attachments) info.push_back(at.viewInfo);
 
 	init(rp, info, extAttachments);
@@ -80,7 +80,7 @@ void Framebuffer::init(vk::RenderPass rp, const std::vector<vk::ImageViewCreateI
 	for(auto& extView : extAttachments)
 	{
 		if(extView.first > attachments.size())
-			throw std::logic_error("bpp::Framebuffer: invalid external Attachment id given");
+			throw std::logic_error("vpp::Framebuffer: invalid external Attachment id given");
 
 		attachments[extView.first] = extView.second;
 	}

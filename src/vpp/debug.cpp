@@ -11,7 +11,7 @@ std::vector<const char*> validationLayerNames =
 {
 	//"VK_LAYER_LUNARG_api_dump",
 	"VK_LAYER_LUNARG_core_validation",
-	"VK_LAYER_LUNARG_device_limits",
+	// "VK_LAYER_LUNARG_device_limits",
 	"VK_LAYER_LUNARG_image",
 	"VK_LAYER_LUNARG_object_tracker",
 	"VK_LAYER_LUNARG_parameter_validation",
