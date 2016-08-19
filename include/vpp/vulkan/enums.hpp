@@ -68,6 +68,7 @@ enum class PipelineCacheHeaderVersion : int32_t
 {
 	one = 1
 };
+NYTL_FLAG_OPS(PipelineCacheHeaderVersion)
 
 enum class StructureType : int32_t
 {

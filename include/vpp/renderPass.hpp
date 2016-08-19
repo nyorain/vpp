@@ -52,4 +52,7 @@ public:
 	const vk::Framebuffer& vkFramebuffer() const { return framebuffer_; }
 };
 
+///\warning not threadsafe.
+vk::RenderPassCreateInfo& defaultRenderPassCreateInfo(vk::Format format);
+
 }
