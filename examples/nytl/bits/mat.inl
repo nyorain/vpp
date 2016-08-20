@@ -113,10 +113,11 @@ template<std::size_t D, typename P>
 SquareMat<D, P> inverse(const SquareMat<D, P>& m)
 {
 	auto cpy = m;
-	return m.invert();
+	cpy.invert();
+	return cpy;
 }
 
-//XXX: corRect implementation?
+//XXX: correct implementation?
 //full pivot?
 
 ///\relates Mat

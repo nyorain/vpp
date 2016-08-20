@@ -81,7 +81,7 @@ vk::RenderPassCreateInfo& defaultRenderPassCreateInfo(vk::Format colorFormat)
 		colorReference.layout = vk::ImageLayout::colorAttachmentOptimal;
 
 		//depth from own depth stencil
-		attachments[1].format = vk::Format::d16UnormS8Uint;
+		attachments[1].format = vk::Format::d32Sfloat;
 		attachments[1].samples = vk::SampleCountBits::e1;
 		attachments[1].loadOp = vk::AttachmentLoadOp::clear;
 		attachments[1].storeOp = vk::AttachmentStoreOp::store;

@@ -10,6 +10,12 @@
 
 struct App;
 
+struct SizedBuffer : public vpp::Buffer
+{
+	using vpp::Buffer::Buffer;
+	vk::DeviceSize bufferSize;
+};
+
 ///Represents one vertex of a mesh and all data it could possibly hold.
 struct Vertex
 {
@@ -24,7 +30,11 @@ struct Mesh
 	std::vector<Vertex> vertices;
 	std::vector<std::uint32_t> indices;
 	unsigned int materialIndex {};
-	vpp::Buffer buffer; //verts, indcs, combined (view, model) transform matrix
+
+	//we use two buffers per mesh, since one is deviceLocal and the other one hostVisible
+	SizedBuffer buffer; //verts, indcs
+	SizedBuffer ubo; //combined (view, model) transform matrix
+	vpp::DescriptorSet descriptorSet;
 };
 
 struct MaterialColors
@@ -46,7 +56,7 @@ struct PointLight
 	MaterialColors colors;
 };
 
-///Host representation of the gpu material/ubo
+///Host representation of the device material/ubo
 struct MaterialData
 {
 	MaterialColors colors;
@@ -57,10 +67,9 @@ struct MaterialData
 struct Material
 {
 	std::string name;
-	vpp::DescriptorSet descriptorSet;
 	vpp::ViewableImage diffuseMap;
 	MaterialData data;
-	vpp::Buffer ubo; //holds the material data
+	SizedBuffer ubo; //holds the material data
 };
 
 struct Scene
@@ -80,7 +89,8 @@ struct ModelData
 	vpp::DescriptorSetLayout descriptorSetLayout;
 	vpp::DescriptorPool descriptorPool;
 	vpp::Sampler sampler;
+	nytl::Vec3f viewPos;
 
 	//holds light and view position
-	vpp::Buffer sceneBuffer;
+	SizedBuffer sceneBuffer;
 };

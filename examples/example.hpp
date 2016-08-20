@@ -21,6 +21,8 @@
 #include <functional>
 #include <memory>
 
+#include <windowsx.h>
+
 namespace vpp
 {
 
@@ -51,6 +53,8 @@ struct App
 
 	std::function<std::unique_ptr<vpp::RendererBuilder>()> func;
 	bool initialized = false;
+
+	std::function<void(const nytl::Vec2i&)> onMove;
 };
 
 App* gApp;
@@ -150,6 +154,16 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 				gApp->height = HIWORD(lparam);
 			}
 
+			break;
+		}
+
+		case WM_MOUSEMOVE:
+		{
+			nytl::Vec2i pos{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
+			if(gApp->onMove)
+			{
+				gApp->onMove(pos);
+			}
 			break;
 		}
 
@@ -258,7 +272,7 @@ void initRenderPass(App& app)
 	colorReference.layout = vk::ImageLayout::colorAttachmentOptimal;
 
 	//depth from own depth stencil
-	attachments[1].format = vk::Format::d16UnormS8Uint;
+	attachments[1].format = vk::Format::d32Sfloat;
 	attachments[1].samples = vk::SampleCountBits::e1;
 	attachments[1].loadOp = vk::AttachmentLoadOp::clear;
 	attachments[1].storeOp = vk::AttachmentStoreOp::store;

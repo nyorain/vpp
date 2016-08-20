@@ -20,3 +20,9 @@ add_subdirectory(particles)
 add_subdirectory(fragment)
 add_subdirectory(texture)
 add_subdirectory(font)
+
+
+find_package(ASSIMP)
+if(ASSIMP_FOUND)
+	add_subdirectory(modelViewer)
+endif()

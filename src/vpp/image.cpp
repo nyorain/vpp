@@ -243,7 +243,7 @@ void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::Image img, vk::ImageLa
 			barrier.srcAccessMask = vk::AccessBits::hostWrite | vk::AccessBits::transferWrite;
 		barrier.dstAccessMask = vk::AccessBits::shaderRead;
 		break;
-	
+
 	default: break;
 	}
 
@@ -300,7 +300,7 @@ ViewableImage::CreateInfo ViewableImage::defaultDepth2D()
 		{
 			{},
 			vk::ImageType::e2d,
-			vk::Format::d16UnormS8Uint,
+			vk::Format::d32Sfloat,
 			{},
 			1, 1,
 			vk::SampleCountBits::e1,
@@ -312,14 +312,39 @@ ViewableImage::CreateInfo ViewableImage::defaultDepth2D()
 		{
 			{}, {},
 			vk::ImageViewType::e2d,
-			vk::Format::d16UnormS8Uint,
+			vk::Format::d32Sfloat,
 			{},
 			{
-				vk::ImageAspectBits::depth | vk::ImageAspectBits::stencil,
+				vk::ImageAspectBits::depth,
 				0, 1, 0, 1
 			}
 		}
 	};
+
+	// return {
+	// 	{
+	// 		{},
+	// 		vk::ImageType::e2d,
+	// 		vk::Format::d16UnormS8Uint,
+	// 		{},
+	// 		1, 1,
+	// 		vk::SampleCountBits::e1,
+	// 		vk::ImageTiling::optimal,
+	// 		vk::ImageUsageBits::depthStencilAttachment | vk::ImageUsageBits::sampled,
+	// 		vk::SharingMode::exclusive,
+	// 		0, nullptr, vk::ImageLayout::undefined
+	// 	},
+	// 	{
+	// 		{}, {},
+	// 		vk::ImageViewType::e2d,
+	// 		vk::Format::d16UnormS8Uint,
+	// 		{},
+	// 		{
+	// 			vk::ImageAspectBits::depth | vk::ImageAspectBits::stencil,
+	// 			0, 1, 0, 1
+	// 		}
+	// 	}
+	// };
 }
 
 //attachment

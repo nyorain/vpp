@@ -185,9 +185,9 @@ SquareMat<4, P> perspective3(P fov, P aspect, P pnear, P pfar)
 	ret[1][1] = f;
 
 	ret[2][2] = -(pfar + pnear) / (pfar - pnear);
-	ret[2][3] = -1;
+	ret[3][2] = -1;
 
-	ret[3][2] = -(P(2) * pfar * pnear) / (pfar - pnear);
+	ret[2][3] = -(P(2) * pfar * pnear) / (pfar - pnear);
 	return ret;
 }
 
@@ -218,17 +218,19 @@ SquareMat<4, P> ortho3(P width, P height, P pnear, P pfar)
 template<typename P>
 SquareMat<4, P> lookAt(const Vec3<P>& eye, const Vec3<P>& center, const Vec3<P>& up)
 {
-	const auto f = normalize(center - eye);
-	const auto s = normalize(cross(f, up));
-	const auto u = cross(s, f);
+	const auto z = normalize(center - eye); //z
+	const auto x = normalize(cross(z, up)); //x
+	const auto y = cross(x, z); //y
 
 	auto ret = identityMat<4, P>();
-	ret.col(0) = s;
-	ret.col(1) = u;
-	ret.col(2) = -f;
-	ret[3][0] = -dot(s, eye);
-	ret[3][1] = -dot(u, eye);
-	ret[3][2] = dot(f, eye);
+
+	ret.row(0) = x;
+	ret.row(1) = y;
+	ret.row(2) = -z;
+
+	ret[0][3] = -dot(x, eye);
+	ret[1][3] = -dot(y, eye);
+	ret[2][3] = dot(z, eye);
 
 	return ret;
 }

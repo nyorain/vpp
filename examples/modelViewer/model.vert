@@ -7,18 +7,21 @@ layout(location = 0) in vec3 ipos;
 layout(location = 1) in vec3 inormal;
 layout(location = 2) in vec2 iuv;
 
-layout(location = 0) out vec2 ouv;
+layout(location = 0) out vec3 opos;
 layout(location = 1) out vec3 onormal;
-layout(location = 2) out vec3 opos;
+layout(location = 2) out vec2 ouv;
 
 layout(set = 0, binding = 0) uniform UBO
 {
 	mat4 transform;
 } ubo;
 
-int main()
+void main()
 {
 	ouv = iuv;
 	onormal = inormal;
-	gl_Position = ubo.viewMat * ubo.transform * ipos;
+
+	vec3 pos = ipos;
+	pos.z -= 3.0;
+	gl_Position = ubo.transform * vec4(pos, 1.0);
 }

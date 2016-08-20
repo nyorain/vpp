@@ -8,15 +8,24 @@
 #include <nytl/vec.hpp>
 #include <nytl/stringParam.hpp>
 #include <nytl/convert.hpp>
+#include <nytl/transform.hpp>
+#include <nytl/time.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/cimport.h>
 
-#define STBI_IMPLEMENTATION
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#endif
+
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#ifdef __GNUC__
+#pragma GCC diagnostic warning "-Wmisleading-indentation"
+#endif
 
 //specialization for aiVec <-> nytlVec
 namespace nytl
@@ -78,16 +87,31 @@ protected:
 //TODO: both load/init functions can be really improved. Use vpp::WorkManager.
 vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 {
-	Scene& scene = modeldata.scene;
-
 	auto flags =
+		// aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices |
+		// aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals;
+
 		aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices |
-		aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals;
+		aiProcess_CalcTangentSpace;
 
 	Assimp::Importer importer;
 	auto aiscene = importer.ReadFile(modeldata.filename, flags);
 	if(!aiscene)
 		throw std::runtime_error("assimp ReadFile failed for file " + modeldata.filename);
+
+	vk::DescriptorPoolSize typeCounts[2];
+	typeCounts[0].type = vk::DescriptorType::uniformBuffer;
+	typeCounts[0].descriptorCount = aiscene->mNumMeshes * 3;
+
+	typeCounts[1].type = vk::DescriptorType::combinedImageSampler;
+	typeCounts[1].descriptorCount = aiscene->mNumMeshes;
+
+	vk::DescriptorPoolCreateInfo poolInfo;
+	poolInfo.poolSizeCount = 2;
+	poolInfo.pPoolSizes = typeCounts;
+	poolInfo.maxSets = aiscene->mNumMaterials;
+
+	modeldata.descriptorPool = {dev, poolInfo};
 
 	modeldata.scene.meshes.reserve(aiscene->mNumMeshes);
 	vpp::WorkManager workManager;
@@ -106,10 +130,15 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 			vertex.position = nytl::convert(mesh->mVertices[i]);
 			vertex.normal = nytl::convert(mesh->mNormals[i]);
 
+			std::cout << vertex.position << "\n";
+			std::cout << vertex.normal << "\n";
+
 			//why have assimp tex coords 3 components?
 			if(mesh->HasTextureCoords(0))
 				vertex.texCoords = nytl::convert<nytl::Vec3f>(mesh->mTextureCoords[0][i]);
 		}
+
+		std::cout << "incs \n";
 
 		mmesh.indices.resize(mesh->mNumFaces * 3);
 		for(std::size_t i(0); i < mesh->mNumFaces; ++i)
@@ -119,6 +148,10 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 			mmesh.indices[i * 3] = face.mIndices[0];
 			mmesh.indices[i * 3 + 1] = face.mIndices[1];
 			mmesh.indices[i * 3 + 2] = face.mIndices[2];
+
+			std::cout << mmesh.indices[i * 3] << "\n";
+			std::cout << mmesh.indices[i * 3 + 1] << "\n";
+			std::cout << mmesh.indices[i * 3 + 2] << "\n";
 		}
 
 		//buffer data
@@ -126,19 +159,35 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 		auto indicesSize = mmesh.indices.size() * sizeof(std::uint32_t);
 
 		std::vector<std::uint8_t> bufferData(verticesSize + indicesSize);
-		std::size_t offset = 0;
+		if(bufferData.empty()) continue;
 
 		//first all vertices then all indices
 		std::memcpy(bufferData.data(), mmesh.vertices.data(), verticesSize);
 		std::memcpy(bufferData.data() + verticesSize, mmesh.indices.data(), indicesSize);
 
 		//create the buffer
+		//vertex index
 		vk::BufferCreateInfo bufferInfo;
-		bufferInfo.size = offset;
-		bufferInfo.usage = vk::BufferUsageBits::vertexBuffer | vk::BufferUsageBits::indexBuffer;
-
+		bufferInfo.size = bufferData.size();
+		bufferInfo.usage =
+			vk::BufferUsageBits::vertexBuffer |
+			vk::BufferUsageBits::indexBuffer |
+			vk::BufferUsageBits::transferDst;
 		mmesh.buffer = {dev, bufferInfo, vk::MemoryPropertyBits::deviceLocal};
+		mmesh.buffer.bufferSize = bufferInfo.size;
 		workManager.add(vpp::fill140(mmesh.buffer, vpp::raw(bufferData)));
+
+		//transform ubo
+		bufferInfo.size = sizeof(nytl::Mat4f);
+		bufferInfo.usage = vk::BufferUsageBits::uniformBuffer;
+		mmesh.ubo = {dev, bufferInfo, vk::MemoryPropertyBits::hostVisible};
+		mmesh.ubo.bufferSize = bufferInfo.size;
+
+		// auto cameraMat = nytl::perspective3(110.f, 900.f / 900.f, 0.01f, 100.f);
+		// auto cameraMat = nytl::identityMat<4, float>();
+		// workManager.add(vpp::fill140(mmesh.ubo, cameraMat));
+
+		mmesh.descriptorSet = {modeldata.descriptorSetLayout, modeldata.descriptorPool};
 
 		//mesh
 		modeldata.scene.meshes.push_back(std::move(mmesh));
@@ -146,23 +195,10 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 
 	//vulkan descriptor pool for materials
 	//pool
-	vk::DescriptorPoolSize typeCounts[2];
-	typeCounts[0].type = vk::DescriptorType::uniformBuffer;
-	typeCounts[0].descriptorCount = aiscene->mNumMaterials;
-
-	typeCounts[1].type = vk::DescriptorType::combinedImageSampler;
-	typeCounts[1].descriptorCount = aiscene->mNumMaterials;
-
-	vk::DescriptorPoolCreateInfo poolInfo;
-	poolInfo.poolSizeCount = 2;
-	poolInfo.pPoolSizes = typeCounts;
-	poolInfo.maxSets = aiscene->mNumMaterials;
-
-	modeldata.descriptorPool = {dev, poolInfo};
 
 	//uniform buffer info
 	vk::BufferCreateInfo bufferInfo;
-	bufferInfo.usage = vk::BufferUsageBits::uniformBuffer;
+	bufferInfo.usage = vk::BufferUsageBits::uniformBuffer | vk::BufferUsageBits::transferDst;
 	bufferInfo.size = vpp::neededBufferSize140<MaterialData>();
 
 	//load the materials
@@ -195,7 +231,7 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 			material->GetTexture(aiTextureType_DIFFUSE, 0, &aistr);
 			if(aistr.data[0] == '*') //embedded texture
 			{
-				auto id = std::stoi(aistr.data + 1);
+				auto id = static_cast<unsigned int>(std::stoi(aistr.data + 1));
 				if(aiscene->mNumTextures <= id)
 				{
 					auto msg = std::string("Invalid texture id ") + (aistr.data + 1);
@@ -252,15 +288,31 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 		}
 
 		//vulkan resources
-		mmat.descriptorSet = {modeldata.descriptorSetLayout, modeldata.descriptorPool};
 		mmat.ubo = {dev, bufferInfo};
+		mmat.ubo.bufferSize = bufferInfo.size;
 
 		workManager.add(vpp::fill140(mmat.ubo, mmat.data));
-
-		vpp::DescriptorSetUpdate update(mmat.descriptorSet);
-		update.uniform({{mmat.ubo, 0ul, bufferInfo.size}});
-		update.image({{{}, mmat.diffuseMap.vkImageView(), vk::ImageLayout::shaderReadOnlyOptimal}});
 	}
+
+	//update mesh descriptors
+	for(auto& mesh : modeldata.scene.meshes)
+	{
+		vpp::DescriptorSetUpdate update(mesh.descriptorSet);
+
+		update.uniform({{mesh.ubo, 0ul, mesh.ubo.bufferSize}}); //transform ubo
+
+		auto& mat = modeldata.scene.materials[mesh.materialIndex];
+		update.uniform({{modeldata.sceneBuffer, 0ul, modeldata.sceneBuffer.bufferSize}});
+		update.uniform({{mat.ubo, 0ul, mat.ubo.bufferSize}});
+
+		if(mat.data.texture)
+		{
+			update.image({{{}, mat.diffuseMap.vkImageView(),
+				vk::ImageLayout::shaderReadOnlyOptimal}});
+		}
+	}
+
+	return workManager;
 }
 
 void initModelData(const vpp::Device& dev, ModelData& data)
@@ -292,7 +344,7 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	//descriptorSetLayout
 	using vpp::descriptorBinding;
 	constexpr auto fragmentStage = vk::ShaderStageBits::fragment;
-	constexpr auto vertexStage = vk::ShaderStageBits::fragment;
+	constexpr auto vertexStage = vk::ShaderStageBits::vertex;
 	constexpr auto fragVertStages = fragmentStage | vertexStage;
 
 	//first set
@@ -324,8 +376,8 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	builder.dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
 	builder.vertexBufferLayouts = {vertexBufferLayout};
 
-	builder.shader.stage("texture.vert.spv", {vk::ShaderStageBits::vertex});
-	builder.shader.stage("texture.frag.spv", {vk::ShaderStageBits::fragment});
+	builder.shader.stage("model.vert.spv", {vk::ShaderStageBits::vertex});
+	builder.shader.stage("model.frag.spv", {vk::ShaderStageBits::fragment});
 
 	auto& ba = builder.states.blendAttachments;
 	ba[0].blendEnable = true;
@@ -336,23 +388,25 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	ba[0].dstAlphaBlendFactor = vk::BlendFactor::zero;
 	ba[0].alphaBlendOp = vk::BlendOp::add;
 
+	builder.states.depthStencil.depthTestEnable = true;
+	builder.states.depthStencil.depthWriteEnable = true;
 	builder.states.rasterization.cullMode = vk::CullModeBits::none;
-	builder.states.inputAssembly.topology = vk::PrimitiveTopology::triangleList;
 
 	data.pipeline = builder.build();
 
 	//init scene data
-	const nytl::Vec3f lightPos = {0.f, 3.f, 5.f};
-	const nytl::Vec3f lightDir = {0.f, -1.f, -0.5f};
-	const nytl::Vec3f lightCol = {1.f, 1.f, 1.f};
+	const nytl::Vec3f viewPos = {0.f, 0.f, 0.f};
+	const nytl::Vec3f lightPos = {0.f, -4.f, 5.f};
+	const nytl::Vec3f lightCol = {1.f, 0.f, 0.f};
 
 	vk::BufferCreateInfo bufferInfo;
 	bufferInfo.usage = vk::BufferUsageBits::uniformBuffer;
-	bufferInfo.size = vpp::neededBufferSize140(lightPos, lightDir, lightCol);
-	data.sceneBuffer = {dev, bufferInfo};
+	bufferInfo.size = vpp::neededBufferSize140<nytl::Vec3f, nytl::Vec3f, nytl::Vec3f>();
+	data.sceneBuffer = {dev, bufferInfo, vk::MemoryPropertyBits::hostVisible};
+	data.sceneBuffer.bufferSize = bufferInfo.size;
 
 	vpp::WorkManager workManager;
-	workManager.add(vpp::fill140(data.sceneBuffer, lightPos, lightDir, lightCol));
+	workManager.add(vpp::fill140(data.sceneBuffer, viewPos, lightPos, lightCol));
 	workManager.add(loadScene(dev, data));
 }
 
@@ -374,10 +428,9 @@ void ModelRenderer::build(unsigned int id, const vpp::RenderPassInstance& ini)
 		vk::cmdBindVertexBuffers(cmdBuffer, 0, {mesh.buffer}, {{0}});
 		vk::cmdBindIndexBuffer(cmdBuffer, mesh.buffer, indOffset, vk::IndexType::uint32);
 
-		auto& mat = data_.scene.materials[mesh.materialIndex];
-
+		// auto& mat = data_.scene.materials[mesh.materialIndex];
 		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
-			data_.pipelineLayout, 0, {mat.descriptorSet}, {});
+			data_.pipelineLayout, 0, {mesh.descriptorSet}, {});
 		vk::cmdDrawIndexed(cmdBuffer, mesh.indices.size(), 1, 0, 0, 0);
 	}
 }
@@ -402,5 +455,74 @@ int main(int argc, char** argv)
 	App app;
 	ModelData data {app, filename};
 	initApp(app, [&](){ return std::make_unique<ModelRenderer>(data); });
-	mainLoop(app, [&](){ });
+
+	nytl::Vec2i mpos;
+	float yaw = -90.f;
+	float pitch  = 0.f;
+	nytl::Vec3f cameraFront = {0.f, 0.f, -1.f};
+	bool firstMouse = true;
+	app.onMove = [&](const nytl::Vec2i& vec) {
+		if(firstMouse)
+		{
+			mpos = vec;
+			firstMouse = false;
+			return;
+		}
+
+		auto delta = vec - mpos;
+		mpos = vec;
+
+		yaw += delta.x * 0.5;
+		pitch += delta.y * 0.5;
+
+		if(pitch > 89.0f) pitch = 89.0f;
+    	if(pitch < -89.0f) pitch = -89.0f;
+
+		nytl::Vec3f front;
+	    front.x = cos(nytl::radians(yaw)) * cos(nytl::radians(pitch));
+	    front.y = sin(nytl::radians(pitch));
+	    front.z = sin(nytl::radians(yaw)) * cos(nytl::radians(pitch));
+	    cameraFront = nytl::normalize(front);
+	};
+
+	nytl::Timer timer;
+	mainLoop(app, [&](){
+		auto time = timer.elapsedTime().microseconds();
+		timer.reset();
+		auto timeFac = time / 100000.;
+
+		nytl::Vec3f delta;
+
+		//wsadqe
+		auto xaxis = nytl::normalize(nytl::cross(cameraFront, nytl::Vec3f{0.f, 1.f, 0.f}));
+		auto yaxis = nytl::normalize(nytl::cross(cameraFront, xaxis));
+		if((1 << 16) & ::GetAsyncKeyState(0x57)) delta += timeFac * cameraFront;
+		if((1 << 16) & ::GetAsyncKeyState(0x53)) delta -= timeFac * cameraFront;
+
+		if((1 << 16) & ::GetAsyncKeyState(0x41)) delta -= timeFac * xaxis;
+		if((1 << 16) & ::GetAsyncKeyState(0x44)) delta += timeFac * xaxis;
+
+		if((1 << 16) & ::GetAsyncKeyState(0x51)) delta += timeFac * yaxis;
+		if((1 << 16) & ::GetAsyncKeyState(0x45)) delta -= timeFac * yaxis;
+
+		data.viewPos += delta;
+
+		// auto viewMat = nytl::identityMat<4, float>();
+		// nytl::translate(viewMat, data.viewPos);
+		// nytl::rotate(viewMat, {0.f, 1.f, 0.f});
+		// viewMat.invert();
+
+		auto viewMat = nytl::lookAt(data.viewPos, data.viewPos + cameraFront, {0.f, 1.f, 0.f});
+		auto cameraMat = nytl::perspective3(45.f, 1400.f / 900.f, 0.1f, 100.f);
+		auto mat = cameraMat * viewMat;
+
+		// std::cout << viewMat << "\n";
+		// std::cout << cameraMat << "\n";
+		// std::cout << mat << "\n";
+
+		for(auto& mesh : data.scene.meshes)
+		{
+			vpp::fill140(mesh.ubo, mat)->finish();
+		}
+	});
 }

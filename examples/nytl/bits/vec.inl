@@ -37,7 +37,7 @@ constexpr std::size_t dMax(std::size_t a, std::size_t b)
 //general operators
 ///\relates nytl::Vec
 ///Prints all values individually to an output stream.
-template<std::size_t D, typename T> std::ostream& 
+template<std::size_t D, typename T> std::ostream&
 operator<<(std::ostream& os, const Vec<D, T>& obj)
 {
     const char* c = "";
@@ -57,7 +57,7 @@ operator<<(std::ostream& os, const Vec<D, T>& obj)
 
 ///\relates nytl::Vec
 ///Loads all components from an input stream.
-template<std::size_t D, typename T> std::istream& 
+template<std::size_t D, typename T> std::istream&
 operator>>(std::istream& is, Vec<D, T>& obj)
 {
     for(auto& val : obj)
@@ -68,9 +68,9 @@ operator>>(std::istream& is, Vec<D, T>& obj)
     return is;
 }
 
-//+todo: Vec and Vec unefficient atm, some proxy class 
+//+todo: Vec and Vec unefficient atm, some proxy class
 ///\relates nytl::Vec
-template<std::size_t D, typename T, typename O>  
+template<std::size_t D, typename T, typename O>
 auto operator+(const Vec<D, T>& mVec, const O& other)
 	-> Vec<D, decltype(mVec[0] + other)>
 {
@@ -80,7 +80,7 @@ auto operator+(const Vec<D, T>& mVec, const O& other)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T, typename O>  
+template<std::size_t D, typename T, typename O>
 auto operator+(const O& other, const Vec<D, T>& mVec)
 	-> Vec<D, decltype(other + mVec[0])>
 {
@@ -90,8 +90,8 @@ auto operator+(const O& other, const Vec<D, T>& mVec)
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, typename TA, std::size_t DB, typename TB>  
-auto operator+(const Vec<DA, TA>& a, const Vec<DB, TB>& b) 
+template<std::size_t DA, typename TA, std::size_t DB, typename TB>
+auto operator+(const Vec<DA, TA>& a, const Vec<DB, TB>& b)
 	-> Vec<detail::dMax(DA, DB), decltype(a[0] + b[0])>
 {
 	using V = Vec<detail::dMax(DA, DB), decltype(a[0] + b[0])>;
@@ -103,7 +103,7 @@ auto operator+(const Vec<DA, TA>& a, const Vec<DB, TB>& b)
 
 //-
 ///\relates nytl::Vec
-template<std::size_t D, typename T, typename O>  
+template<std::size_t D, typename T, typename O>
 auto operator-(Vec<D, T> mVec, const O& other)
 	-> Vec<D, decltype(mVec[0] - other)>
 {
@@ -112,7 +112,7 @@ auto operator-(Vec<D, T> mVec, const O& other)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T, typename OT>  
+template<std::size_t D, typename T, typename OT>
 auto operator-(const OT& other, const Vec<D, T>& mVec)
 	-> Vec<D, decltype(other - mVec[0])>
 {
@@ -124,8 +124,8 @@ auto operator-(const OT& other, const Vec<D, T>& mVec)
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, typename TA, std::size_t DB, typename TB>  
-auto operator-(const Vec<DA, TA>& a, const Vec<DB, TB>& b) 
+template<std::size_t DA, typename TA, std::size_t DB, typename TB>
+auto operator-(const Vec<DA, TA>& a, const Vec<DB, TB>& b)
 	-> Vec<detail::dMax(DA, DB), decltype(a[0] - b[0])>
 {
 	using V = Vec<detail::dMax(DA, DB), decltype(a[0] - b[0])>;
@@ -137,7 +137,7 @@ auto operator-(const Vec<DA, TA>& a, const Vec<DB, TB>& b)
 
 //*
 ///\relates nytl::Vec
-template<std::size_t D, typename T, typename O>  
+template<std::size_t D, typename T, typename O>
 auto operator*(const Vec<D, T>& mVec, const O& other)
 	-> Vec<D, decltype(mVec[0] * other)>
 {
@@ -147,7 +147,7 @@ auto operator*(const Vec<D, T>& mVec, const O& other)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T, typename O>  
+template<std::size_t D, typename T, typename O>
 auto operator*(const O& other, const Vec<D, T>& mVec)
 	-> Vec<D, decltype(other * mVec[0])>
 {
@@ -157,8 +157,8 @@ auto operator*(const O& other, const Vec<D, T>& mVec)
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, typename TA, std::size_t DB, typename TB>  
-auto operator*(const Vec<DA, TA>& a, const Vec<DB, TB>& b) 
+template<std::size_t DA, typename TA, std::size_t DB, typename TB>
+auto operator*(const Vec<DA, TA>& a, const Vec<DB, TB>& b)
 	-> Vec<detail::dMax(DA, DB), decltype(a[0] * b[0])>
 {
 	using V = Vec<detail::dMax(DA, DB), decltype(a[0] * b[0])>;
@@ -169,7 +169,7 @@ auto operator*(const Vec<DA, TA>& a, const Vec<DB, TB>& b)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T, typename O>  
+template<std::size_t D, typename T, typename O>
 auto operator/(Vec<D, T> mVec, const O& other)
 	-> Vec<D, decltype(mVec[0] / other)>
 {
@@ -178,7 +178,7 @@ auto operator/(Vec<D, T> mVec, const O& other)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T, typename OT>  
+template<std::size_t D, typename T, typename OT>
 auto operator/(const OT& other, const Vec<D, T>& mVec)
 	-> Vec<D, decltype(other / mVec[0])>
 {
@@ -190,8 +190,8 @@ auto operator/(const OT& other, const Vec<D, T>& mVec)
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, typename TA, std::size_t DB, typename TB>  
-auto operator/(const Vec<DA, TA>& a, const Vec<DB, TB>& b) 
+template<std::size_t DA, typename TA, std::size_t DB, typename TB>
+auto operator/(const Vec<DA, TA>& a, const Vec<DB, TB>& b)
 	-> Vec<detail::dMax(DA, DB), decltype(a[0] / b[0])>
 {
 	using V = Vec<detail::dMax(DA, DB), decltype(a[0] / b[0])>;
@@ -203,7 +203,7 @@ auto operator/(const Vec<DA, TA>& a, const Vec<DB, TB>& b)
 
 //%
 ///\relates nytl::Vec
-template<std::size_t D, typename T, typename O>  
+template<std::size_t D, typename T, typename O>
 auto operator%(Vec<D, T> mVec, const O& other)
 	-> Vec<D, decltype(mVec[0] % other)>
 {
@@ -212,7 +212,7 @@ auto operator%(Vec<D, T> mVec, const O& other)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T, typename OT>  
+template<std::size_t D, typename T, typename OT>
 auto operator%(const OT& other, const Vec<D, T>& mVec)
 	-> Vec<D, decltype(other % mVec[0])>
 {
@@ -224,8 +224,8 @@ auto operator%(const OT& other, const Vec<D, T>& mVec)
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, typename TA, std::size_t DB, typename TB>  
-auto operator%(const Vec<DA, TA>& a, const Vec<DB, TB>& b) 
+template<std::size_t DA, typename TA, std::size_t DB, typename TB>
+auto operator%(const Vec<DA, TA>& a, const Vec<DB, TB>& b)
 	-> Vec<detail::dMax(DA, DB), decltype(a[0] % b[0])>
 {
 	using V = Vec<detail::dMax(DA, DB), decltype(a[0] % b[0])>;
@@ -247,7 +247,7 @@ Vec<detail::dMin(DA, DB), bool> equal(const Vec<DA, TA>& va, const Vec<DB, TB>& 
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename TA, typename TB>  
+template<std::size_t D, typename TA, typename TB>
 Vec<D, bool> equal(const Vec<D, TA>& va, const TB& value)
 {
     Vec<D, bool> ret(va.size());
@@ -257,7 +257,7 @@ Vec<D, bool> equal(const Vec<D, TA>& va, const TB& value)
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, std::size_t DB, typename TA, typename TB>  
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 Vec<detail::dMin(DA, DB), bool> notEqual(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 {
     Vec<detail::dMin(DA, DB), bool> ret(min(va.size(), vb.size()));
@@ -267,7 +267,7 @@ Vec<detail::dMin(DA, DB), bool> notEqual(const Vec<DA, TA>& va, const Vec<DB, TB
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename TA, typename TB>  
+template<std::size_t D, typename TA, typename TB>
 Vec<D, bool> notEqual(const Vec<D, TA>& va, const TB& value)
 {
     Vec<D, bool> ret(va.size());
@@ -277,7 +277,7 @@ Vec<D, bool> notEqual(const Vec<D, TA>& va, const TB& value)
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, std::size_t DB, typename TA, typename TB>  
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 Vec<detail::dMin(DA, DB), bool> lessThan(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 {
     Vec<detail::dMin(DA, DB), bool> ret(min(va.size(), vb.size()));
@@ -287,7 +287,7 @@ Vec<detail::dMin(DA, DB), bool> lessThan(const Vec<DA, TA>& va, const Vec<DB, TB
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, std::size_t DB, typename TA, typename TB>  
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 Vec<min(DA, DB), bool> greaterThan(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 {
     Vec<min(DA, DB), bool> ret(min(va.size(), vb.size()));
@@ -307,7 +307,7 @@ Vec<detail::dMin(DA, DB), bool> lessThanEqual(const Vec<DA, TA>& va, const Vec<D
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, std::size_t DB, typename TA, typename TB>  
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 Vec<detail::dMin(DA, DB), bool> greaterThanEqual(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 {
     Vec<detail::dMin(DA, DB), bool> ret(min(va.size(), vb.size()));
@@ -317,7 +317,7 @@ Vec<detail::dMin(DA, DB), bool> greaterThanEqual(const Vec<DA, TA>& va, const Ve
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename TA, typename TB>  
+template<std::size_t D, typename TA, typename TB>
 Vec<D, bool> lessThan(const Vec<D, TA>& va, const TB& value)
 {
     Vec<D, bool> ret(va.size());
@@ -327,7 +327,7 @@ Vec<D, bool> lessThan(const Vec<D, TA>& va, const TB& value)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename TA, typename TB>  
+template<std::size_t D, typename TA, typename TB>
 Vec<D, bool> greaterThan(const Vec<D, TA>& va, const TB& value)
 {
     Vec<D, bool> ret(va.size());
@@ -337,7 +337,7 @@ Vec<D, bool> greaterThan(const Vec<D, TA>& va, const TB& value)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename TA, typename TB>  
+template<std::size_t D, typename TA, typename TB>
 Vec<D, bool> lessThanEqual(const Vec<D, TA>& va, const TB& value)
 {
     Vec<D, bool> ret(va.size());
@@ -347,7 +347,7 @@ Vec<D, bool> lessThanEqual(const Vec<D, TA>& va, const TB& value)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename TA, typename TB>  
+template<std::size_t D, typename TA, typename TB>
 Vec<D, bool> greaterThanEqual(const Vec<D, TA>& va, const TB& value)
 {
     Vec<D, bool> ret(va.size());
@@ -356,87 +356,87 @@ Vec<D, bool> greaterThanEqual(const Vec<D, TA>& va, const TB& value)
     return ret;
 }
 
-//todo: allow comparison of Vec and value with operator? 
+//todo: allow comparison of Vec and value with operator?
 //Vec<D, bool> operator==(Vec<D, TA> v, TB value);
 ///\relates nytl::Vec
-template<std::size_t DA, std::size_t DB, typename TA, typename TB> 
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 Vec<detail::dMin(DA, DB), bool> operator==(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 {
     return equal(va, vb);
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, std::size_t DB, typename TA, typename TB>  
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 Vec<detail::dMin(DA, DB), bool> operator!=(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 {
     return notEqual(va, vb);
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, std::size_t DB, typename TA, typename TB> 
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 Vec<detail::dMin(DA, DB), bool> operator<(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 {
     return lessThan(va, vb);
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, std::size_t DB, typename TA, typename TB>  
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 Vec<detail::dMin(DA, DB), bool> operator>(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 {
     return greaterThan(va, vb);
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, std::size_t DB, typename TA, typename TB> 
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 Vec<detail::dMin(DA,DB), bool> operator<=(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 {
     return lessThanEqual(va, vb);
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, std::size_t DB, typename TA, typename TB> 
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 Vec<detail::dMin(DA, DB), bool> operator>=(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 {
     return greaterThanEqual(va, vb);
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, typename TA, typename TB> 
+template<std::size_t DA, typename TA, typename TB>
 Vec<DA, bool> operator==(const Vec<DA, TA>& va, const TB& b)
 {
     return equal(va, b);
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, typename TA, typename TB> 
+template<std::size_t DA, typename TA, typename TB>
 Vec<DA, bool> operator!=(const Vec<DA, TA>& va, const TB& b)
 {
     return notEqual(va, b);
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, typename TA, typename TB> 
+template<std::size_t DA, typename TA, typename TB>
 Vec<DA, bool> operator<(const Vec<DA, TA>& va, const TB& b)
 {
     return lessThan(va, b);
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, typename TA, typename TB> 
+template<std::size_t DA, typename TA, typename TB>
 Vec<DA, bool> operator>(const Vec<DA, TA>& va, const TB& b)
 {
     return greaterThan(va, b);
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, typename TA, typename TB> 
+template<std::size_t DA, typename TA, typename TB>
 Vec<DA, bool> operator<=(const Vec<DA, TA>& va, const TB& b)
 {
     return lessThanEqual(va, b);
 }
 
 ///\relates nytl::Vec
-template<std::size_t DA, typename TA, typename TB> 
+template<std::size_t DA, typename TA, typename TB>
 Vec<DA, bool> operator>=(const Vec<DA, TA>& va, const TB& b)
 {
     return greaterThanEqual(va, b);
@@ -459,19 +459,19 @@ bool allEqual(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 ///\relates nytl::Vec
 ///Tests whether all components of the given Vec are equal to the given value.
 ///More efficient alternative to all(a == b) since it does only have to run 1 loops instead of 2.
-template<std::size_t D, typename TA, typename TB>  
+template<std::size_t D, typename TA, typename TB>
 bool allEqual(const Vec<D, TA>& va, const TB& value)
 {
     for(std::size_t i(0); i < D; ++i)
 		if(va[i] != value) return 0;
 
-	return 1; 
+	return 1;
 }
 
 //utility
 ///\relates nytl::Vec
 ///\return The sum of all Vector components.
-template<std::size_t D, typename T>  
+template<std::size_t D, typename T>
 auto sum(const Vec<D, T>& v) -> decltype(v[0] + v[0])
 {
     auto ret = decltype(v[0] + v[0]) {};
@@ -481,7 +481,7 @@ auto sum(const Vec<D, T>& v) -> decltype(v[0] + v[0])
 
 ///\relates nytl::Vec
 ///\return The product of all Vector components.
-template<std::size_t D, typename T>  
+template<std::size_t D, typename T>
 auto multiply(const Vec<D, T>& v) -> decltype(v[0] * v[0])
 {
     auto ret = decltype(v[0] * v[0]) (1);
@@ -510,7 +510,7 @@ auto norm(const Vec<D, T>& v) -> decltype(length(v))
 
 ///\relates nytl::Vec
 ///\return The dot product of the given Vectors.
-template<std::size_t DA, std::size_t DB, typename TA, typename TB> 
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 auto dot(const Vec<DA, TA>& va, const Vec<DB, TB>& vb) -> decltype(sum(va * vb))
 {
     return sum(va * vb);
@@ -519,7 +519,7 @@ auto dot(const Vec<DA, TA>& va, const Vec<DB, TB>& vb) -> decltype(sum(va * vb))
 ///\relates nytl::Vec
 ///Alias function for dot.
 ///\return The dot (scalar) product of the given Vectors.
-template<std::size_t DA, std::size_t DB, typename TA, typename TB> 
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 auto scalar(const Vec<DA, TA>& va, const Vec<DB, TB>& vb) -> decltype(sum(va * vb))
 {
     return sum(va * vb);
@@ -527,19 +527,20 @@ auto scalar(const Vec<DA, TA>& va, const Vec<DB, TB>& vb) -> decltype(sum(va * v
 
 ///\relates nytl::Vec
 ///\return The cross product for 2 3-Densional Vectors.
-template<typename TA, typename TB> 
+template<typename TA, typename TB>
 auto cross(const Vec<3, TA>& va, const Vec<3, TB>& vb) -> Vec<3, decltype(va[0] * vb[0])>
 {
-    return Vec<3, decltype(va[0] * vb[0])>
-		{
-			va[2] * va[3] - va[3] * vb[2], 
-			va[3] * va[1] - va[1] * vb[3], 
-			va[1] * va[2] - va[2] * vb[1]
-		};
+    auto vec = Vec<3, decltype(va[0] * vb[0])>(
+		va[1] * vb[2] - va[2] * vb[1],
+		va[2] * vb[0] - va[0] * vb[2],
+		va[0] * vb[1] - va[1] * vb[0]
+	);
+
+	return vec;
 }
 
 ///\relates nytl::Vec
-///\return The angle between 2 Vecs in radiant form. Returns always the smaller one; angle <= PI. 
+///\return The angle between 2 Vecs in radiant form. Returns always the smaller one; angle <= PI.
 template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 double angle(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 {
@@ -547,9 +548,9 @@ double angle(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 }
 
 ///\relates nytl::Vec
-///\return The smallest angle between two Lines with the given Vectors as diRection in radiant 
-///form. The Returned angle is always <= PI/2. 
-template<std::size_t DA, std::size_t DB, typename TA, typename TB> 
+///\return The smallest angle between two Lines with the given Vectors as diRection in radiant
+///form. The Returned angle is always <= PI/2.
+template<std::size_t DA, std::size_t DB, typename TA, typename TB>
 double smallerAngle(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 {
     return std::acos(abs(sum(va * vb)) / (length(va) * length(vb)));
@@ -558,7 +559,7 @@ double smallerAngle(const Vec<DA, TA>& va, const Vec<DB, TB>& vb)
 //todo: cangle for 3-Densional (or all) Vectors
 ///\relates nytl::Vec
 ///\return The absolute, clockwise angle between two 2-Densional Vectors in radian form.
-template<typename TA, typename TB> 
+template<typename TA, typename TB>
 double cangle(const Vec<2, TA>& va, const Vec<2, TB>& vb)
 {
     auto val = atan2(va.y, va.x) - atan2(vb.y, vb.x);
@@ -581,7 +582,7 @@ auto pow(Vec<D, TA> base, const TB& exp) -> Vec<D, decltype(std::pow(base[0], ex
 	for(auto& val : base)
 	   val = std::pow(val, exp);
 
-	return base;	
+	return base;
 }
 
 ///\relates nytl::Vec
@@ -593,7 +594,7 @@ auto distance(const Vec<D, T>& va, const Vec<D, T>& vb) -> decltype(length(va - 
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T> 
+template<std::size_t D, typename T>
 Vec<D, double> radians(Vec<D, T> va)
 {
     for(auto& val : va) val = radians(val);
@@ -601,7 +602,7 @@ Vec<D, double> radians(Vec<D, T> va)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T>  
+template<std::size_t D, typename T>
 Vec<D, double> degrees(Vec<D, T> va)
 {
     for(auto& val : va) val = degrees(val);
@@ -617,16 +618,16 @@ Vec<D, T> abs(Vec<D, T> va)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename TA, typename TB, typename Tc>  
+template<std::size_t D, typename TA, typename TB, typename Tc>
 Vec<D, TA> clamp(Vec<D, TA> val, const Vec<D, TB>& minVal, const Vec<D, Tc>& maxVal)
 {
-    for(std::size_t i(0); i < min(min(val.size(), minVal.size()), maxVal.size()); ++i) 
+    for(std::size_t i(0); i < min(min(val.size(), minVal.size()), maxVal.size()); ++i)
 		val[i] = clamp(val[i], minVal[i], maxVal[i]);
     return val;
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename TA, typename TB, typename Tc>  
+template<std::size_t D, typename TA, typename TB, typename Tc>
 Vec<D, TA> clamp(Vec<D, TA> val, const TB& minVal, const Tc& maxVal)
 {
     for(auto& v : val) v = clamp(v, minVal, maxVal);
@@ -634,25 +635,25 @@ Vec<D, TA> clamp(Vec<D, TA> val, const TB& minVal, const Tc& maxVal)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename TA, typename TB>  
+template<std::size_t D, typename TA, typename TB>
 Vec<D, TA> mix(Vec<D, TA> x, const Vec<D, TA>& y, const Vec<D, TB>& a)
 {
-    for(std::size_t i(0); i < min(min(x.size(), y.size()), a.size()); ++i) 
+    for(std::size_t i(0); i < min(min(x.size(), y.size()), a.size()); ++i)
 		x[i] = mix(x[i], y[i], a[i]);
     return x;
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename TA, typename TB>  
+template<std::size_t D, typename TA, typename TB>
 Vec<D, TA> mix(Vec<D, TA> x, const Vec<D, TA>& y, const TB& a)
 {
-    for(std::size_t i(0); i < min(min(x.size(), y.size()), a.size()); ++i) 
+    for(std::size_t i(0); i < min(min(x.size(), y.size()), a.size()); ++i)
 		x[i] = mix(x[i], y[i], a);
     return x;
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename TA, typename TB>  
+template<std::size_t D, typename TA, typename TB>
 Vec<D, TA> mix(const TA& x, const TA& y, const Vec<D, TB>& a)
 {
 	Vec<D, TA> ret(a.size());
@@ -661,7 +662,7 @@ Vec<D, TA> mix(const TA& x, const TA& y, const Vec<D, TB>& a)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T>  
+template<std::size_t D, typename T>
 auto smallest(const Vec<D, T>& a)
 {
     auto ret = a[0];
@@ -672,7 +673,7 @@ auto smallest(const Vec<D, T>& a)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T>  
+template<std::size_t D, typename T>
 auto greatest(const Vec<D, T>& a)
 {
     auto ret = a[0];
@@ -684,7 +685,7 @@ auto greatest(const Vec<D, T>& a)
 
 //boolean Vec operations
 ///\relates nytl::Vec
-template<std::size_t D>  
+template<std::size_t D>
 bool any(const Vec<D, bool>& v)
 {
     for(auto val : v) if(val) return 1;
@@ -692,7 +693,7 @@ bool any(const Vec<D, bool>& v)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D>  
+template<std::size_t D>
 bool all(const Vec<D, bool>& v)
 {
     for(auto val : v) if(!val) return 0;
@@ -700,7 +701,7 @@ bool all(const Vec<D, bool>& v)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D>  
+template<std::size_t D>
 bool none(const Vec<D, bool>& v)
 {
     for(auto val : v) if(val) return 0;
@@ -716,7 +717,7 @@ Vec<N, T> subVec(const Vec<D, T>& va, std::size_t pos = 0)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T>  
+template<std::size_t D, typename T>
 Vec<D, T> operator!(Vec<D, T> v)
 {
     for(auto& val : v) val = !val;
@@ -725,7 +726,7 @@ Vec<D, T> operator!(Vec<D, T> v)
 
 //component-wise
 ///\relates nytl::Vec
-template<std::size_t D, typename T>  
+template<std::size_t D, typename T>
 Vec<D, T> max(const Vec<D, T>& va, const Vec<D, T>& vb)
 {
     Vec<D, T> ret(min(va.size(), vb.size()));
@@ -736,7 +737,7 @@ Vec<D, T> max(const Vec<D, T>& va, const Vec<D, T>& vb)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T>  
+template<std::size_t D, typename T>
 Vec<D, T> max(const Vec<D, T>& va, const T& value)
 {
     Vec<D, T> ret(va.size());
@@ -747,7 +748,7 @@ Vec<D, T> max(const Vec<D, T>& va, const T& value)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T>  
+template<std::size_t D, typename T>
 Vec<D, T> min(const Vec<D, T>& va, const Vec<D, T>& vb)
 {
     Vec<D, T> ret(min(va.size(), vb.size()));
@@ -758,13 +759,12 @@ Vec<D, T> min(const Vec<D, T>& va, const Vec<D, T>& vb)
 }
 
 ///\relates nytl::Vec
-template<std::size_t D, typename T>  
+template<std::size_t D, typename T>
 Vec<D, T> min(const Vec<D, T>& va, const T& value)
 {
     Vec<D, T> ret(va.size());
     for(std::size_t i(0); i < va.size(); ++i)
         ret[i] = min(va[i], value);
-    
+
     return ret;
 }
-

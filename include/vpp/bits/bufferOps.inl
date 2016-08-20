@@ -23,7 +23,7 @@ constexpr unsigned int roundAlign(unsigned int align, bool std140)
 
 ///Utility to get the member type of a pointer to member object (Used with decltype).
 template<typename T> struct TypeDummy { using type = T; };
-template<typename T, typename M> constexpr TypeDummy<T> memPtr(M T::*);
+template<typename T, typename M> constexpr TypeDummy<M> memPtr(M T::*);
 
 ///Utility template class that can be used to write an object of type T to a buffer update.
 ///Implementations of this class for different ShaderTypes must implement the following
