@@ -72,6 +72,10 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 	vk::ImageLayout layout, const vk::Extent3D& extent, const vk::ImageSubresource& subres,
 	const vk::Offset3D& offset = {}, bool allowMap = true);
 
+//TODO: somehow signal whether image layout was changed by this command
+// make the layout parameter a reference? or a pointer since it can be optinal (mapping)?
+// maybe overload without layout that will simply throw if image cannot be mapped?
+
 ///Retrieves the data from the given image.
 ///The image must be either allocated on host visible memory or must have the transferSrc bit set
 ///as usage and must not be multisampled.

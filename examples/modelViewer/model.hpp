@@ -4,6 +4,8 @@
 #include <vpp/descriptor.hpp>
 #include <vpp/image.hpp>
 #include <vpp/pipeline.hpp>
+#include <vpp/renderPass.hpp>
+#include <vpp/framebuffer.hpp>
 
 #include <nytl/vec.hpp>
 #include <nytl/mat.hpp>
@@ -91,6 +93,30 @@ struct ModelData
 	vpp::Sampler sampler;
 	nytl::Vec3f viewPos;
 
-	//holds light and view position
+	struct
+	{
+		vpp::Pipeline pipeline;
+		vpp::PipelineLayout pipelineLayout;
+		vpp::DescriptorSetLayout descriptorSetLayout;
+		vpp::RenderPass renderPass;
+		vpp::CommandBuffer commandBuffer;
+		vpp::Framebuffer framebuffer;
+		vpp::DescriptorSet descriptorSet;
+		vk::Semaphore semaphore;
+
+		unsigned int width = 1024;
+		unsigned int height = 1024;
+	} offscreen;
+
+	struct
+	{
+		vpp::Pipeline pipeline;
+		vpp::PipelineLayout pipelineLayout;
+		vpp::DescriptorSetLayout descriptorSetLayout;
+		vpp::DescriptorSet descriptorSet;
+	} quad;
+
+	//holds light and view position/dir
+	//also holds the transform matrix for the shadow map
 	SizedBuffer sceneBuffer;
 };

@@ -199,12 +199,11 @@ SquareMat<4, P> ortho3(P left, P right, P top, P bottom, P pnear, P far)
 
 	ret[0][0] = P(2) / (right - left);
 	ret[1][1] = P(2) / (top - bottom);
+	ret[2][2] = P(2) / (far - pnear);
 
-	ret[2][2] = P(-2) / (far - pnear);
-
-	ret[3][0] = - ((right + left) / (right - left));
-	ret[3][1] = - ((top + bottom) / (top - bottom));
-	ret[3][2] = - (far + pnear) / (far - pnear);
+	ret[0][3] = - ((right + left) / (right - left));
+	ret[1][3] = - ((top + bottom) / (top - bottom));
+	ret[2][3] = - ((far + pnear) / (far - pnear));
 	ret[3][3] = 1;
 	return ret;
 }

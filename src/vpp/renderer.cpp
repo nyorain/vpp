@@ -67,9 +67,7 @@ void swap(SwapChainRenderer& a, SwapChainRenderer& b) noexcept
 void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& info)
 {
 	if(!info.renderPass)
-	{
 		throw std::runtime_error("vpp::SwapChainRenderer: invalid renderPass");
-	}
 
 	swapChain_ = &swapChain;
 	info_ = info;
@@ -254,6 +252,7 @@ void SwapChainRenderer::record(int id)
 
 std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, const Queue* gfx)
 {
+	//TODO
 	if(present == nullptr) present = device().queues()[0].get();
 	if(gfx == nullptr) gfx = device().queues()[0].get();
 
@@ -359,7 +358,7 @@ void SwapChainRenderer::renderBlock(const Queue* gfx, const Queue* present)
     swapChain().acquire(currentBuffer, acquireComplete);
 	//TODO: result error handling, out_of_date or suboptimal/invalid
     // auto result = swapChain().acquire(currentBuffer, acquireComplete);
-	
+
 	renderImpl_->frame(currentBuffer);
 
 	auto& cmdBuf = renderBuffers_[currentBuffer].commandBuffer;

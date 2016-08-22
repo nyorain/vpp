@@ -20,8 +20,7 @@ void main()
 {
 	ouv = iuv;
 	onormal = inormal;
-
-	vec3 pos = ipos;
-	pos.z -= 3.0;
-	gl_Position = ubo.transform * vec4(pos, 1.0);
+	opos = ipos;
+	gl_Position = ubo.transform * vec4(ipos, 1.0);
+	// gl_Position = vec4(ipos, 1.0);
 }

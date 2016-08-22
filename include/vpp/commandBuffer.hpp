@@ -80,7 +80,7 @@ public:
 	///Allocates a CommandBuffer from the first CommandPool of the already existent
 	///commandBuffer for which the given predicate returns true.
 	///If there are no CommandPools yet, or the predicate returns false for all of
-	///them, an default-constructed CommandBuffer object is returned.
+	///them, a default-constructed CommandBuffer object is returned.
 	CommandBuffer get(const std::function<bool(const CommandPool& pool)>& pred);
 
 	///Allcoated multiple CommandBuffers on a CommandPool that is accepted by the predicate.

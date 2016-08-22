@@ -55,6 +55,7 @@ struct App
 	bool initialized = false;
 
 	std::function<void(const nytl::Vec2i&)> onMove;
+	std::function<void(unsigned int)> onKeyPress;
 };
 
 App* gApp;
@@ -125,6 +126,8 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 					break;
 				}
 			}
+
+			if(gApp->onKeyPress) gApp->onKeyPress(wparam);
 			break;
 		}
 
@@ -145,7 +148,8 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 				auto& swapChain = gApp->context.swapChain();
 				auto& info = gApp->rendererInfo;
 				gApp->renderer = {};
-				gApp->renderer = vpp::SwapChainRenderer(swapChain, info, gApp->func());
+				gApp->renderer.create(swapChain, info);
+				gApp->renderer.init(gApp->func());
 
 				gApp->renderer.renderBlock();
 				//render(*gApp);
@@ -279,7 +283,7 @@ void initRenderPass(App& app)
 	attachments[1].stencilLoadOp = vk::AttachmentLoadOp::dontCare;
 	attachments[1].stencilStoreOp = vk::AttachmentStoreOp::dontCare;
 	attachments[1].initialLayout = vk::ImageLayout::undefined;
-	attachments[1].finalLayout = vk::ImageLayout::undefined;
+	attachments[1].finalLayout = vk::ImageLayout::shaderReadOnlyOptimal;
 	// attachments[1].initialLayout = vk::ImageLayout::depthStencilAttachmentOptimal;
 	// attachments[1].finalLayout = vk::ImageLayout::depthStencilAttachmentOptimal;
 
@@ -329,7 +333,9 @@ void initApp(App& app, const std::function<std::unique_ptr<vpp::RendererBuilder>
 	app.rendererInfo.attachments = {{vpp::ViewableImage::defaultDepth2D()}};
 	app.context.device().transferManager().shrink();
 
-	app.renderer = vpp::SwapChainRenderer(app.context.swapChain(), app.rendererInfo, func());
+	// app.renderer = vpp::SwapChainRenderer(app.context.swapChain(), app.rendererInfo, func());
+	app.renderer.create(app.context.swapChain(), app.rendererInfo);
+	app.renderer.init(func());
 
 	app.initialized = true;
 }

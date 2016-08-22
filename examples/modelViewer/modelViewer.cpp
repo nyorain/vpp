@@ -23,6 +23,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 #ifdef __GNUC__
 #pragma GCC diagnostic warning "-Wmisleading-indentation"
 #endif
@@ -68,6 +71,8 @@ template<> struct VulkanType<MaterialColors> : public VulkanTypeStruct<false>
 
 }
 
+//prototype. end of file
+vpp::RenderPass initOffscreenRenderPass(const vpp::Device& dev);
 
 class ModelRenderer : public vpp::RendererBuilder
 {
@@ -77,6 +82,7 @@ public:
 	void build(unsigned int, const vpp::RenderPassInstance& ini) override;
 	void init(vpp::SwapChainRenderer& renderer) override;
 	void frame(unsigned int id) override;
+	AdditionalSemaphores submit(unsigned int) override;
 	std::vector<vk::ClearValue> clearValues(unsigned int) override;
 
 protected:
@@ -99,17 +105,19 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 	if(!aiscene)
 		throw std::runtime_error("assimp ReadFile failed for file " + modeldata.filename);
 
+	//one extra uniform descriptor for offscreen rendering
+	//one extra combined image sampler descriptor for quad
 	vk::DescriptorPoolSize typeCounts[2];
 	typeCounts[0].type = vk::DescriptorType::uniformBuffer;
-	typeCounts[0].descriptorCount = aiscene->mNumMeshes * 3;
+	typeCounts[0].descriptorCount = aiscene->mNumMeshes * 3 + 1;
 
 	typeCounts[1].type = vk::DescriptorType::combinedImageSampler;
-	typeCounts[1].descriptorCount = aiscene->mNumMeshes;
+	typeCounts[1].descriptorCount = aiscene->mNumMeshes + 1;
 
 	vk::DescriptorPoolCreateInfo poolInfo;
 	poolInfo.poolSizeCount = 2;
 	poolInfo.pPoolSizes = typeCounts;
-	poolInfo.maxSets = aiscene->mNumMaterials;
+	poolInfo.maxSets = aiscene->mNumMaterials + 2;
 
 	modeldata.descriptorPool = {dev, poolInfo};
 
@@ -130,15 +138,15 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 			vertex.position = nytl::convert(mesh->mVertices[i]);
 			vertex.normal = nytl::convert(mesh->mNormals[i]);
 
-			std::cout << vertex.position << "\n";
-			std::cout << vertex.normal << "\n";
+			// std::cout << vertex.position << "\n";
+			// std::cout << vertex.normal << "\n";
 
 			//why have assimp tex coords 3 components?
 			if(mesh->HasTextureCoords(0))
 				vertex.texCoords = nytl::convert<nytl::Vec3f>(mesh->mTextureCoords[0][i]);
 		}
 
-		std::cout << "incs \n";
+		// std::cout << "incs \n";
 
 		mmesh.indices.resize(mesh->mNumFaces * 3);
 		for(std::size_t i(0); i < mesh->mNumFaces; ++i)
@@ -149,9 +157,9 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 			mmesh.indices[i * 3 + 1] = face.mIndices[1];
 			mmesh.indices[i * 3 + 2] = face.mIndices[2];
 
-			std::cout << mmesh.indices[i * 3] << "\n";
-			std::cout << mmesh.indices[i * 3 + 1] << "\n";
-			std::cout << mmesh.indices[i * 3 + 2] << "\n";
+			// std::cout << mmesh.indices[i * 3] << "\n";
+			// std::cout << mmesh.indices[i * 3 + 1] << "\n";
+			// std::cout << mmesh.indices[i * 3 + 2] << "\n";
 		}
 
 		//buffer data
@@ -326,18 +334,18 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	vk::SamplerCreateInfo samplerInfo;
 	samplerInfo.magFilter = vk::Filter::linear;
 	samplerInfo.minFilter = vk::Filter::linear;
-	samplerInfo.mipmapMode = vk::SamplerMipmapMode::nearest;
-	samplerInfo.addressModeU = vk::SamplerAddressMode::repeat;
-	samplerInfo.addressModeV = vk::SamplerAddressMode::repeat;
-	samplerInfo.addressModeW = vk::SamplerAddressMode::repeat;
+	samplerInfo.mipmapMode = vk::SamplerMipmapMode::linear;
+	samplerInfo.addressModeU = vk::SamplerAddressMode::clampToBorder;
+	samplerInfo.addressModeV = vk::SamplerAddressMode::clampToBorder;
+	samplerInfo.addressModeW = vk::SamplerAddressMode::clampToBorder;
 	samplerInfo.mipLodBias = 0;
 	samplerInfo.anisotropyEnable = true;
-	samplerInfo.maxAnisotropy = 16;
+	samplerInfo.maxAnisotropy = 0;
 	samplerInfo.compareEnable = false;
 	samplerInfo.compareOp = {};
 	samplerInfo.minLod = 0;
-	samplerInfo.maxLod = 0.25;
-	samplerInfo.borderColor = vk::BorderColor::floatTransparentBlack;
+	samplerInfo.maxLod = 1;
+	samplerInfo.borderColor = vk::BorderColor::floatOpaqueWhite;
 	samplerInfo.unnormalizedCoordinates = false;
 	data.sampler = {dev, samplerInfo};
 
@@ -356,7 +364,8 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 		descriptorBinding(vk::DescriptorType::uniformBuffer, vertexStage),
 		descriptorBinding(vk::DescriptorType::uniformBuffer, fragmentStage),
 		descriptorBinding(vk::DescriptorType::uniformBuffer, fragmentStage),
-		descriptorBinding(vk::DescriptorType::combinedImageSampler, fragmentStage)
+		descriptorBinding(vk::DescriptorType::combinedImageSampler, fragmentStage, -1, 1,
+			&data.sampler.vkHandle())
 	}};
 
 	//vertexBufferLayout
@@ -380,7 +389,7 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	builder.shader.stage("model.frag.spv", {vk::ShaderStageBits::fragment});
 
 	auto& ba = builder.states.blendAttachments;
-	ba[0].blendEnable = true;
+	ba[0].blendEnable = false;
 	ba[0].colorBlendOp = vk::BlendOp::add;
 	ba[0].srcColorBlendFactor = vk::BlendFactor::srcAlpha;
 	ba[0].dstColorBlendFactor = vk::BlendFactor::oneMinusSrcAlpha;
@@ -396,23 +405,179 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 
 	//init scene data
 	const nytl::Vec3f viewPos = {0.f, 0.f, 0.f};
-	const nytl::Vec3f lightPos = {0.f, -4.f, 5.f};
-	const nytl::Vec3f lightCol = {1.f, 0.f, 0.f};
+	const nytl::Vec3f lightPos = {0.f, 20.f, 0.f};
+	const nytl::Vec3f lightDir = {1.f, -1.f, 0.f};
+	const nytl::Vec3f lightCol = {1.f, 1.f, 1.f};
 
 	vk::BufferCreateInfo bufferInfo;
 	bufferInfo.usage = vk::BufferUsageBits::uniformBuffer;
-	bufferInfo.size = vpp::neededBufferSize140<nytl::Vec3f, nytl::Vec3f, nytl::Vec3f>();
+
+	//3 light vars, shadowMap transformMatrix
+	{
+		using namespace nytl;
+		bufferInfo.size = vpp::neededBufferSize140<Vec3f, Vec3f, Vec3f, Mat4f>();
+	}
+
+	//transformMatrix for shadow map
+	float ratio = data.offscreen.width / data.offscreen.height;
+
+	auto proj = nytl::ortho3(-10.f, 10.f, -10.f, 10.f, 1.f, 8.f);
+	// auto proj = nytl::perspective3(45.f, ratio, 0.1f, 100.f);
+	// auto view = nytl::lookAt(lightPos, lightPos + lightDir, {0.f, 1.f, 0.f});
+	// auto view = nytl::lookAt(lightPos, lightPos + lightDir, nytl::cross(lightDir, nytl::Vec3f{0.f, 0.f, 1.f}));
+
+	// auto up = nytl::cross(lightDir, nytl::Vec3f{0.f, 0.f, 1.f});
+	auto view = nytl::lookAt({-2.f, 4.f, -1.f}, nytl::Vec3f{0.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
+	auto mat = proj * view;
+
+	std::cout << mat << "\n";
+	std::cout << proj << "\n";
+	std::cout << view << "\n";
+
 	data.sceneBuffer = {dev, bufferInfo, vk::MemoryPropertyBits::hostVisible};
 	data.sceneBuffer.bufferSize = bufferInfo.size;
+	// auto offscreenTransformOffset = bufferInfo.size - sizeof(nytl::Mat4f);
 
-	vpp::WorkManager workManager;
-	workManager.add(vpp::fill140(data.sceneBuffer, viewPos, lightPos, lightCol));
-	workManager.add(loadScene(dev, data));
+	{
+		vpp::WorkManager workManager;
+		// workManager.add(vpp::fill140(data.sceneBuffer, viewPos, lightPos, lightCol));
+		workManager.add(vpp::fill140(data.sceneBuffer, viewPos, lightDir, lightCol, nytl::identityMat<4, float>()));
+		workManager.add(loadScene(dev, data));
+	}
+
+
+
+	//quad pipeline stuff since similiar to normal scene one
+	data.quad.descriptorSetLayout = {dev, {
+		descriptorBinding(vk::DescriptorType::combinedImageSampler, fragmentStage, 0, 1,
+			&data.sampler.vkHandle())
+	}};
+
+	data.quad.pipelineLayout = {dev, {data.quad.descriptorSetLayout}};
+	data.quad.descriptorSet = {data.quad.descriptorSetLayout, data.descriptorPool};
+
+	builder.layout = data.quad.pipelineLayout;
+	builder.vertexBufferLayouts = {};
+	builder.shader.stage("modelQuad.vert.spv", {vk::ShaderStageBits::vertex});
+	builder.shader.stage("modelQuad.frag.spv", {vk::ShaderStageBits::fragment});
+	data.quad.pipeline = builder.build();
+
+
+
+
+	//offscreen renderPass& pipeline
+	vk::Viewport viewport;
+	viewport.width = data.offscreen.width;
+	viewport.height = data.offscreen.height;
+	viewport.minDepth = 0.f;
+	viewport.maxDepth = 1.f;
+
+	vk::Rect2D scissor;
+	scissor.extent = {data.offscreen.width, data.offscreen.height};
+	scissor.offset = {0, 0};
+
+	data.offscreen.renderPass = initOffscreenRenderPass(dev);
+	data.offscreen.semaphore = vk::createSemaphore(dev, {});
+	data.offscreen.descriptorSetLayout = {dev, {
+		descriptorBinding(vk::DescriptorType::uniformBuffer, vertexStage),
+	}};
+
+	//vertexBufferLayout
+	data.offscreen.descriptorSet = {data.offscreen.descriptorSetLayout, data.descriptorPool};
+	data.offscreen.pipelineLayout = {dev, {data.offscreen.descriptorSetLayout}};
+
+	{
+		vpp::DescriptorSetUpdate update(data.offscreen.descriptorSet);
+		// update.uniform({{data.sceneBuffer, offscreenTransformOffset, sizeof(nytl::Mat4f)}});
+		update.uniform({{data.sceneBuffer, 0, data.sceneBuffer.bufferSize}});
+	}
+
+	//pipeline
+	{
+		vpp::GraphicsPipelineBuilder builder(dev, data.offscreen.renderPass);
+		builder.dynamicStates = {};
+		builder.layout = data.offscreen.pipelineLayout;
+		builder.vertexBufferLayouts = {vertexBufferLayout};
+
+		builder.states.viewport.pViewports = &viewport;
+		builder.states.viewport.pScissors = &scissor;
+		builder.states.blendAttachments.clear();
+
+		builder.shader.stage("modelOffscreen.vert.spv", {vk::ShaderStageBits::vertex});
+		builder.shader.stage("modelOffscreen.frag.spv", {vk::ShaderStageBits::fragment});
+
+		data.offscreen.pipeline = builder.build();
+		data.offscreen.framebuffer = {dev, data.offscreen.renderPass,
+			{data.offscreen.width, data.offscreen.height}, {vpp::ViewableImage::defaultDepth2D()}};
+
+		// auto qf = dev.queue(vk::QueueBits::graphics)->family();
+		auto qf = dev.queues()[0]->family();
+		data.offscreen.commandBuffer = dev.commandProvider().get(qf);
+	}
+
+	//record the commandBuffer
+	{
+		auto& cmd = data.offscreen.commandBuffer;
+		vk::beginCommandBuffer(cmd, {});
+
+		vk::ClearValue clearValue {};
+		clearValue.depthStencil = {1.f, 0};
+
+		vk::RenderPassBeginInfo rpbInfo;
+		rpbInfo.renderPass = data.offscreen.renderPass;
+		rpbInfo.framebuffer = data.offscreen.framebuffer;
+		rpbInfo.clearValueCount = 1;
+		rpbInfo.pClearValues = &clearValue;
+		rpbInfo.renderArea = {{0, 0}, {data.offscreen.width, data.offscreen.height}};
+		vk::cmdBeginRenderPass(cmd, rpbInfo, vk::SubpassContents::eInline);
+
+		vk::cmdBindPipeline(cmd, vk::PipelineBindPoint::graphics,
+			data.offscreen.pipeline);
+		vk::cmdBindDescriptorSets(cmd, vk::PipelineBindPoint::graphics,
+			data.offscreen.pipelineLayout, 0, {data.offscreen.descriptorSet}, {});
+
+		for(auto& mesh : data.scene.meshes)
+		{
+			auto indOffset = mesh.vertices.size() * sizeof(Vertex);
+			vk::cmdBindVertexBuffers(cmd, 0, {mesh.buffer}, {{0}});
+			vk::cmdBindIndexBuffer(cmd, mesh.buffer, indOffset, vk::IndexType::uint32);
+			vk::cmdDrawIndexed(cmd, mesh.indices.size(), 1, 0, 0, 0);
+		}
+
+		vk::cmdEndRenderPass(cmd);
+		vk::endCommandBuffer(cmd);
+	}
+
+
+
+
+	//init stuff for (test-) drawing the shadow map
+	{
+		vpp::DescriptorSetUpdate update(data.quad.descriptorSet);
+		auto imgView = data.offscreen.framebuffer.attachments()[0].vkImageView();
+		// auto imgView = data.app.renderer.staticAttachments()[0].vkImageView();
+		update.imageSampler({{data.sampler, imgView, vk::ImageLayout::shaderReadOnlyOptimal}});
+		update.apply();
+	}
+
 }
 
 void ModelRenderer::init(vpp::SwapChainRenderer& renderer)
 {
-	initModelData(renderer.device(), data_);
+	static bool i = false;
+	if(!i)
+	{
+		i = true;
+		initModelData(renderer.device(), data_);
+	}
+
+	// {
+	// 	vpp::DescriptorSetUpdate update(data_.quad.descriptorSet);
+	// 	// auto imgView = data.offscreen.framebuffer.attachments()[0].vkImageView();
+	// 	auto imgView = data_.app.renderer.staticAttachments()[0].vkImageView();
+	// 	update.imageSampler({{data_.sampler, imgView, vk::ImageLayout::general}});
+	// }
+
 	renderer.record();
 }
 
@@ -433,6 +598,15 @@ void ModelRenderer::build(unsigned int id, const vpp::RenderPassInstance& ini)
 			data_.pipelineLayout, 0, {mesh.descriptorSet}, {});
 		vk::cmdDrawIndexed(cmdBuffer, mesh.indices.size(), 1, 0, 0, 0);
 	}
+
+	//draw quad
+	{
+		vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::graphics,
+			data_.quad.pipeline);
+		vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
+			data_.quad.pipelineLayout, 0, {data_.quad.descriptorSet}, {});
+		vk::cmdDraw(cmdBuffer, 6, 1, 0, 0);
+	}
 }
 
 std::vector<vk::ClearValue> ModelRenderer::clearValues(unsigned int id)
@@ -446,6 +620,22 @@ std::vector<vk::ClearValue> ModelRenderer::clearValues(unsigned int id)
 void ModelRenderer::frame(unsigned int id)
 {
 
+}
+
+ModelRenderer::AdditionalSemaphores ModelRenderer::submit(unsigned int)
+{
+	auto& dev = data_.app.context.device();
+	auto* queue = dev.queues()[0].get();
+
+	vk::SubmitInfo submitInfo;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &data_.offscreen.commandBuffer.vkHandle();
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &data_.offscreen.semaphore;
+	dev.submitManager().add(*queue, submitInfo);
+	dev.submitManager().submit();
+
+	return {{data_.offscreen.semaphore, vk::PipelineStageBits::topOfPipe}};
 }
 
 int main(int argc, char** argv)
@@ -485,11 +675,47 @@ int main(int argc, char** argv)
 	    cameraFront = nytl::normalize(front);
 	};
 
+	auto linearize = [](float depth) {
+		float n = 0.1; //z near
+		float f = 100.0; //z far
+		float z = depth;
+		return (2.0 * n) / (f + n - z * (f - n));
+	};
+
+	app.onKeyPress = [&](unsigned int key) {
+		//key C
+		if(key == 0x43)
+		{
+			// auto width = app.context.swapChain().size().width;
+			// auto height = app.context.swapChain().size().height;
+
+			auto width = data.offscreen.width;
+			auto height = data.offscreen.height;
+
+			std::vector<std::uint8_t> uintData(width * height);
+
+			// auto work = vpp::retrieve(app.renderer.staticAttachments()[0].image(),
+			auto work = vpp::retrieve(data.offscreen.framebuffer.attachments()[0].image(),
+				vk::ImageLayout::shaderReadOnlyOptimal, vk::Format::d32Sfloat,
+				{width, height, 1},
+				{vk::ImageAspectBits::depth, 0, 0});
+
+			auto& floatData = reinterpret_cast<float&>(work->data());
+			for(auto i = 0u; i < uintData.size(); ++i)
+				uintData[i] = 255. * linearize((&floatData)[i]);
+
+			stbi_write_png("depthBuffer.png", width, height, 1,
+				uintData.data(), width);
+		}
+	};
+
 	nytl::Timer timer;
+	float totalTime;
 	mainLoop(app, [&](){
 		auto time = timer.elapsedTime().microseconds();
 		timer.reset();
 		auto timeFac = time / 100000.;
+		totalTime += time / 5000000.;
 
 		nytl::Vec3f delta;
 
@@ -512,17 +738,70 @@ int main(int argc, char** argv)
 		// nytl::rotate(viewMat, {0.f, 1.f, 0.f});
 		// viewMat.invert();
 
+		auto modelMat = nytl::identityMat<4, float>();
+		nytl::translate(modelMat, {0.f, 2.f, -5.f});
+
 		auto viewMat = nytl::lookAt(data.viewPos, data.viewPos + cameraFront, {0.f, 1.f, 0.f});
 		auto cameraMat = nytl::perspective3(45.f, 1400.f / 900.f, 0.1f, 100.f);
-		auto mat = cameraMat * viewMat;
+		auto mat = cameraMat * viewMat * modelMat;
 
 		// std::cout << viewMat << "\n";
 		// std::cout << cameraMat << "\n";
 		// std::cout << mat << "\n";
 
+		const nytl::Vec3f lightPos {0.f, 20.f, 0.f};
+		const nytl::Vec3f lightDir {std::sin(totalTime), -1.f, std::cos(totalTime)};
+		const nytl::Vec3f lightCol {1.f, std::sin(totalTime), 1.f};
+
+		vpp::WorkManager manager;
+		manager.add(vpp::fill140(data.sceneBuffer, data.viewPos, lightDir, lightCol, mat));
 		for(auto& mesh : data.scene.meshes)
 		{
-			vpp::fill140(mesh.ubo, mat)->finish();
+			manager.add(vpp::fill140(mesh.ubo, mat));
 		}
 	});
+
+	vk::destroySemaphore(app.context.device(), data.offscreen.semaphore);
+}
+
+vpp::RenderPass initOffscreenRenderPass(const vpp::Device& dev)
+{
+	vk::AttachmentDescription attachments[1] {};
+
+	//depth
+	attachments[0].format = vk::Format::d32Sfloat;
+	attachments[0].samples = vk::SampleCountBits::e1;
+	attachments[0].loadOp = vk::AttachmentLoadOp::clear;
+	attachments[0].storeOp = vk::AttachmentStoreOp::store;
+	attachments[0].stencilLoadOp = vk::AttachmentLoadOp::dontCare;
+	attachments[0].stencilStoreOp = vk::AttachmentStoreOp::dontCare;
+	attachments[0].initialLayout = vk::ImageLayout::undefined;
+	attachments[0].finalLayout = vk::ImageLayout::shaderReadOnlyOptimal;
+
+	vk::AttachmentReference depthReference;
+	depthReference.attachment = 0;
+	depthReference.layout = vk::ImageLayout::depthStencilAttachmentOptimal;
+
+	//only subpass
+	vk::SubpassDescription subpass;
+	subpass.pipelineBindPoint = vk::PipelineBindPoint::graphics;
+	subpass.flags = {};
+	subpass.inputAttachmentCount = 0;
+	subpass.pInputAttachments = nullptr;
+	subpass.colorAttachmentCount = 0;
+	subpass.pColorAttachments = nullptr;
+	subpass.pResolveAttachments = nullptr;
+	subpass.pDepthStencilAttachment = &depthReference;
+	subpass.preserveAttachmentCount = 0;
+	subpass.pPreserveAttachments = nullptr;
+
+	vk::RenderPassCreateInfo renderPassInfo;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = attachments;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = 0;
+	renderPassInfo.pDependencies = nullptr;
+
+	return {dev, renderPassInfo};
 }

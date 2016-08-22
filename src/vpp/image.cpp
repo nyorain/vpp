@@ -113,8 +113,11 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 
 		//change layout if needed
 		if(layout != vk::ImageLayout::transferDstOptimal && layout != vk::ImageLayout::general)
+		{
 			changeLayoutCommand(cmdBuffer, image, layout, vk::ImageLayout::transferDstOptimal,
 				subres.aspectMask);
+			layout = vk::ImageLayout::transferDstOptimal;
+		}
 
 		vk::cmdCopyBufferToImage(cmdBuffer, uploadBuffer.buffer(), image, layout, {region});
 		vk::endCommandBuffer(cmdBuffer);
@@ -172,8 +175,11 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 
 		//change layout if needed
 		if(layout != vk::ImageLayout::transferSrcOptimal && layout != vk::ImageLayout::general)
+		{
 			changeLayoutCommand(cmdBuffer, image, layout, vk::ImageLayout::transferSrcOptimal,
 				subres.aspectMask);
+			layout = vk::ImageLayout::transferSrcOptimal;
+		}
 
 		vk::BufferImageCopy region;
 		region.imageOffset = offset;
@@ -183,7 +189,6 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 		vk::cmdCopyImageToBuffer(cmdBuffer, image, layout, downloadBuffer.buffer(), {region});
 		vk::endCommandBuffer(cmdBuffer);
 
-		vk::endCommandBuffer(cmdBuffer);
 		return std::make_unique<DownloadWork>(std::move(cmdBuffer), *queue,
 			std::move(downloadBuffer));
 	}
@@ -305,7 +310,8 @@ ViewableImage::CreateInfo ViewableImage::defaultDepth2D()
 			1, 1,
 			vk::SampleCountBits::e1,
 			vk::ImageTiling::optimal,
-			vk::ImageUsageBits::depthStencilAttachment | vk::ImageUsageBits::sampled,
+			vk::ImageUsageBits::depthStencilAttachment | vk::ImageUsageBits::sampled |
+				vk::ImageUsageBits::transferSrc,
 			vk::SharingMode::exclusive,
 			0, nullptr, vk::ImageLayout::undefined
 		},

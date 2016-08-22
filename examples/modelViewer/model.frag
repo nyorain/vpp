@@ -12,7 +12,7 @@ layout(location = 0) out vec4 ocol;
 layout(set = 0, binding = 1) uniform UboScene
 {
 	vec3 viewPos;
-	vec3 lightPos;
+	vec3 lightDir;
 	vec3 lightCol;
 } scene;
 
@@ -34,26 +34,21 @@ void main()
 	// 	ocol = texture(diffuseMap, iuv);
 	// }
 
-	vec3 ambientCol = scene.lightCol * material.ambient.rgb;
+	vec3 ambientCol = 0.2 * scene.lightCol * material.diffuse.rgb;
 
-	vec3 norm = normalize(inormal);
-
-	vec3 lightDir = normalize(scene.lightPos - ipos);
+	vec3 norm = inormal;
+	// vec3 lightDir = normalize(scene.lightPos - ipos);
+	vec3 lightDir = scene.lightDir;
 
 	float diffuseFac = max(dot(norm, lightDir), 0.0);
-	// float diffuseFac = 1.0;
-	vec3 diffuseCol = diffuseFac * material.diffuse.rgb;
-	// vec3 diffuseCol = 0.5 + 0.5 * normalize(inormal);
-	// vec3 diffuseCol = material.diffuse.rgb;
-	// vec3 diffuseCol = scene.lightCol;
+	vec3 diffuseCol = 0.8 * diffuseFac * material.diffuse.rgb;
 
 	vec3 viewDir = normalize(scene.viewPos - ipos);
 	vec3 reflectDir = reflect(-lightDir, norm);
-	float specFac = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-	vec3 specularCol = scene.lightCol * (specFac * material.specular.rgb);
+	float specFac = pow(max(dot(viewDir, reflectDir), 0.0), 16);
+	vec3 specularCol = 0.2 * specFac * material.diffuse.rgb;
 
-	// vec3 result = specularCol + ambientCol + diffuseCol;
-	vec3 result = vec3(0.2, 0.2, 0.2) + diffuseCol;
+	vec3 result = ambientCol + specularCol + diffuseCol;
 	ocol = vec4(result, 1.0);
 
 	// ocol = vec4(1.0, 1.0, 1.0, 1.0);
