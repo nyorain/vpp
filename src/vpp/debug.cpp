@@ -19,7 +19,7 @@ std::vector<const char*> validationLayerNames =
 	"VK_LAYER_GOOGLE_threading",
 	"VK_LAYER_GOOGLE_unique_objects",
 	"VK_LAYER_LUNARG_standard_validation",
-	// "VK_LAYER_RENDERDOC_Capture"
+	"VK_LAYER_RENDERDOC_Capture"
 };
 
 //utility c free function callback

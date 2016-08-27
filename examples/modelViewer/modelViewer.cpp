@@ -441,7 +441,8 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	{
 		vpp::WorkManager workManager;
 		// workManager.add(vpp::fill140(data.sceneBuffer, viewPos, lightPos, lightCol));
-		workManager.add(vpp::fill140(data.sceneBuffer, viewPos, lightDir, lightCol, nytl::identityMat<4, float>()));
+		workManager.add(vpp::fill140(data.sceneBuffer, viewPos, lightDir, lightCol,
+			nytl::identityMat<4, float>()));
 		workManager.add(loadScene(dev, data));
 	}
 
@@ -494,26 +495,27 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 
 	//pipeline
 	{
-		vpp::GraphicsPipelineBuilder builder(dev, data.offscreen.renderPass);
-		builder.dynamicStates = {};
-		builder.layout = data.offscreen.pipelineLayout;
-		builder.vertexBufferLayouts = {vertexBufferLayout};
+		vpp::GraphicsPipelineBuilder b2(dev, data.offscreen.renderPass);
+		b2.dynamicStates = {};
+		b2.layout = data.offscreen.pipelineLayout;
+		b2.vertexBufferLayouts = {vertexBufferLayout};
 
-		builder.states.viewport.pViewports = &viewport;
-		builder.states.viewport.pScissors = &scissor;
-		builder.states.blendAttachments.clear();
+		b2.states.viewport.pViewports = &viewport;
+		b2.states.viewport.pScissors = &scissor;
+		b2.states.blendAttachments.clear();
 
-		builder.shader.stage("modelOffscreen.vert.spv", {vk::ShaderStageBits::vertex});
-		builder.shader.stage("modelOffscreen.frag.spv", {vk::ShaderStageBits::fragment});
+		b2.shader.stage("modelOffscreen.vert.spv", {vk::ShaderStageBits::vertex});
+		b2.shader.stage("modelOffscreen.frag.spv", {vk::ShaderStageBits::fragment});
 
-		data.offscreen.pipeline = builder.build();
-		data.offscreen.framebuffer = {dev, data.offscreen.renderPass,
-			{data.offscreen.width, data.offscreen.height}, {vpp::ViewableImage::defaultDepth2D()}};
-
-		// auto qf = dev.queue(vk::QueueBits::graphics)->family();
-		auto qf = dev.queues()[0]->family();
-		data.offscreen.commandBuffer = dev.commandProvider().get(qf);
+		data.offscreen.pipeline = b2.build();
 	}
+
+	data.offscreen.framebuffer = {dev, data.offscreen.renderPass,
+		{data.offscreen.width, data.offscreen.height}, {vpp::ViewableImage::defaultDepth2D()}};
+
+	// auto qf = dev.queue(vk::QueueBits::graphics)->family();
+	auto qf = dev.queues()[0]->family();
+	data.offscreen.commandBuffer = dev.commandProvider().get(qf);
 
 	//record the commandBuffer
 	{
@@ -775,7 +777,7 @@ vpp::RenderPass initOffscreenRenderPass(const vpp::Device& dev)
 	attachments[0].storeOp = vk::AttachmentStoreOp::store;
 	attachments[0].stencilLoadOp = vk::AttachmentLoadOp::dontCare;
 	attachments[0].stencilStoreOp = vk::AttachmentStoreOp::dontCare;
-	attachments[0].initialLayout = vk::ImageLayout::undefined;
+	attachments[0].initialLayout = vk::ImageLayout::shaderReadOnlyOptimal;
 	attachments[0].finalLayout = vk::ImageLayout::shaderReadOnlyOptimal;
 
 	vk::AttachmentReference depthReference;
