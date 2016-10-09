@@ -11,6 +11,7 @@ namespace vpp
 {
 
 //TODO: something about derivates (e.g. when copying builder).
+//TODO: use shared pointer for shader modules somehow?
 
 ///Class to easier create vulkan graphics pipelines.
 ///Note that objects of this class can be copied, but this will not duplicate the
@@ -49,11 +50,9 @@ public:
 
 		vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
 		vk::PipelineTessellationStateCreateInfo tessellation;
-		vk::PipelineViewportStateCreateInfo viewport;
 		vk::PipelineRasterizationStateCreateInfo rasterization;
 		vk::PipelineMultisampleStateCreateInfo multisample;
 		vk::PipelineDepthStencilStateCreateInfo depthStencil;
-		vk::PipelineColorBlendStateCreateInfo colorBlend;
 	} states;
 
 protected:
@@ -62,6 +61,8 @@ protected:
 	std::vector<vk::PipelineShaderStageCreateInfo> stageInfos_;
 	std::vector<vk::VertexInputBindingDescription> bindingDescriptions_;
 	std::vector<vk::VertexInputAttributeDescription> attributeDescriptions_;
+	vk::PipelineViewportStateCreateInfo viewport_;
+	vk::PipelineColorBlendStateCreateInfo colorBlend_;
 };
 
 ///\{

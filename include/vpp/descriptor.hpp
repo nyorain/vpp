@@ -89,6 +89,9 @@ public:
 	///Will be automatically triggered on destruction.
 	void apply();
 
+	///Skips the given number of descriptors.
+	void skip(unsigned int count = 1) { currentBinding_ += count; };
+
 	//XXX: more convinient copy function?
 	// void copy(const DescriptorSet& set, const std::uint32_t (&binding)[2],
 	// 	const std::uint32_t (&elem)[2] = {0, 0}, unsigned int count = 1);

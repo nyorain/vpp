@@ -56,7 +56,8 @@ GraphicsPipelineBuilder::GraphicsPipelineBuilder(const Device& dev, vk::RenderPa
 GraphicsPipelineBuilder::GraphicsPipelineBuilder(const GraphicsPipelineBuilder& other)
 	: shader(copy(other.shader)), renderPass(other.renderPass), subpass(other.subpass),
 		layout(other.layout), vertexBufferLayouts(other.vertexBufferLayouts), flags(other.flags),
-		dynamicStates(other.dynamicStates), states(other.states)
+		dynamicStates(other.dynamicStates), states(other.states), viewport_(other.viewport_),
+		colorBlend_(other.colorBlend_)
 {
 }
 
@@ -70,6 +71,8 @@ GraphicsPipelineBuilder& GraphicsPipelineBuilder::operator=(const GraphicsPipeli
 	dynamicStates = other.dynamicStates;
 	states = other.states;
 	shader = copy(other.shader);
+	colorBlend_ = other.colorBlend_;
+	viewport_ = other.viewport_;
 
 	return *this;
 }
@@ -125,19 +128,19 @@ vk::GraphicsPipelineCreateInfo GraphicsPipelineBuilder::parse()
 	vertexInfo_.pVertexAttributeDescriptions = attributeDescriptions_.data();
 
 	//update states with data
-	states.colorBlend.attachmentCount = states.blendAttachments.size();
-	states.colorBlend.pAttachments = states.blendAttachments.data();
+	colorBlend_.attachmentCount = states.blendAttachments.size();
+	colorBlend_.pAttachments = states.blendAttachments.data();
 
-	states.viewport.viewportCount = states.viewports.size();
-	states.viewport.pViewports = states.viewports.data();
-	states.viewport.scissorCount = states.scissors.size();
-	states.viewport.pScissors = states.scissors.data();
+	viewport_.viewportCount = states.viewports.size();
+	viewport_.pViewports = states.viewports.data();
+	viewport_.scissorCount = states.scissors.size();
+	viewport_.pScissors = states.scissors.data();
 
 	if(std::find(dynamicStates.begin(), dynamicStates.end(), vk::DynamicState::scissor)
-		!= dynamicStates.end() && !states.scissors.size()) states.viewport.scissorCount = 1;
+		!= dynamicStates.end() && !states.scissors.size()) viewport_.scissorCount = 1;
 
 	if(std::find(dynamicStates.begin(), dynamicStates.end(), vk::DynamicState::viewport)
-		!= dynamicStates.end() && !states.viewports.size()) states.viewport.viewportCount = 1;
+		!= dynamicStates.end() && !states.viewports.size()) viewport_.viewportCount = 1;
 
 	//dynamic state
 	if(!dynamicStates.empty())
@@ -151,14 +154,14 @@ vk::GraphicsPipelineCreateInfo GraphicsPipelineBuilder::parse()
 	ret.stageCount = stageInfos_.size();
 	ret.pStages = stageInfos_.data();
 
-	ret.pViewportState = &states.viewport;
+	ret.pViewportState = &viewport_;
 	ret.layout = layout;
 	ret.pVertexInputState = &vertexInfo_;
 	ret.renderPass = renderPass;
 	ret.subpass = subpass;
 	ret.pInputAssemblyState = &states.inputAssembly;
 	ret.pRasterizationState = &states.rasterization;
-	ret.pColorBlendState = &states.colorBlend;
+	ret.pColorBlendState = &colorBlend_;
 	ret.pMultisampleState = &states.multisample;
 	ret.pDepthStencilState = &states.depthStencil;
 	ret.pTessellationState = nullptr;

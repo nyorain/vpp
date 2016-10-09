@@ -112,7 +112,7 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 	typeCounts[0].descriptorCount = aiscene->mNumMeshes * 3 + 1;
 
 	typeCounts[1].type = vk::DescriptorType::combinedImageSampler;
-	typeCounts[1].descriptorCount = aiscene->mNumMeshes + 1;
+	typeCounts[1].descriptorCount = 2 * aiscene->mNumMeshes + 1;
 
 	vk::DescriptorPoolCreateInfo poolInfo;
 	poolInfo.poolSizeCount = 2;
@@ -299,6 +299,7 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 		mmat.ubo = {dev, bufferInfo};
 		mmat.ubo.bufferSize = bufferInfo.size;
 
+		mmat.ubo.assureMemory();
 		workManager.add(vpp::fill140(mmat.ubo, mmat.data));
 	}
 
@@ -315,9 +316,12 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 
 		if(mat.data.texture)
 		{
-			update.image({{{}, mat.diffuseMap.vkImageView(),
+			update.imageSampler({{{}, mat.diffuseMap.vkImageView(),
 				vk::ImageLayout::shaderReadOnlyOptimal}});
 		}
+
+		auto imageView = modeldata.offscreen.framebuffer.attachments()[0].vkImageView();
+		update.imageSampler({{{}, imageView, vk::ImageLayout::shaderReadOnlyOptimal}}, 4);
 	}
 
 	return workManager;
@@ -345,7 +349,7 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	samplerInfo.compareOp = {};
 	samplerInfo.minLod = 0;
 	samplerInfo.maxLod = 1;
-	samplerInfo.borderColor = vk::BorderColor::floatOpaqueWhite;
+	samplerInfo.borderColor = vk::BorderColor::floatOpaqueBlack;
 	samplerInfo.unnormalizedCoordinates = false;
 	data.sampler = {dev, samplerInfo};
 
@@ -362,8 +366,10 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	//texture
 	data.descriptorSetLayout = {dev, {
 		descriptorBinding(vk::DescriptorType::uniformBuffer, vertexStage),
+		descriptorBinding(vk::DescriptorType::uniformBuffer, fragVertStages),
 		descriptorBinding(vk::DescriptorType::uniformBuffer, fragmentStage),
-		descriptorBinding(vk::DescriptorType::uniformBuffer, fragmentStage),
+		descriptorBinding(vk::DescriptorType::combinedImageSampler, fragmentStage, -1, 1,
+			&data.sampler.vkHandle()),
 		descriptorBinding(vk::DescriptorType::combinedImageSampler, fragmentStage, -1, 1,
 			&data.sampler.vkHandle())
 	}};
@@ -427,7 +433,7 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	// auto view = nytl::lookAt(lightPos, lightPos + lightDir, nytl::cross(lightDir, nytl::Vec3f{0.f, 0.f, 1.f}));
 
 	// auto up = nytl::cross(lightDir, nytl::Vec3f{0.f, 0.f, 1.f});
-	auto view = nytl::lookAt({-2.f, 4.f, -1.f}, nytl::Vec3f{0.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
+	auto view = nytl::lookAt({-1.f, 4.f, -1.f}, nytl::Vec3f{0.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
 	auto mat = proj * view;
 
 	std::cout << mat << "\n";
@@ -436,13 +442,20 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 
 	data.sceneBuffer = {dev, bufferInfo, vk::MemoryPropertyBits::hostVisible};
 	data.sceneBuffer.bufferSize = bufferInfo.size;
+	data.sceneBuffer.assureMemory();
 	// auto offscreenTransformOffset = bufferInfo.size - sizeof(nytl::Mat4f);
+
+	// need to be done before init the scene
+	data.offscreen.renderPass = initOffscreenRenderPass(dev);
+	data.offscreen.framebuffer = {dev, data.offscreen.renderPass,
+		{data.offscreen.width, data.offscreen.height}, {vpp::ViewableImage::defaultDepth2D()}};
+
 
 	{
 		vpp::WorkManager workManager;
 		// workManager.add(vpp::fill140(data.sceneBuffer, viewPos, lightPos, lightCol));
 		workManager.add(vpp::fill140(data.sceneBuffer, viewPos, lightDir, lightCol,
-			nytl::identityMat<4, float>()));
+			mat));
 		workManager.add(loadScene(dev, data));
 	}
 
@@ -477,7 +490,6 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	scissor.extent = {data.offscreen.width, data.offscreen.height};
 	scissor.offset = {0, 0};
 
-	data.offscreen.renderPass = initOffscreenRenderPass(dev);
 	data.offscreen.semaphore = vk::createSemaphore(dev, {});
 	data.offscreen.descriptorSetLayout = {dev, {
 		descriptorBinding(vk::DescriptorType::uniformBuffer, vertexStage),
@@ -500,8 +512,10 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 		b2.layout = data.offscreen.pipelineLayout;
 		b2.vertexBufferLayouts = {vertexBufferLayout};
 
-		b2.states.viewport.pViewports = &viewport;
-		b2.states.viewport.pScissors = &scissor;
+		// b2.states.viewport.pViewports = &viewport;
+		// b2.states.viewport.pScissors = &scissor;
+		b2.states.viewports.push_back(viewport);
+		b2.states.scissors.push_back(scissor);
 		b2.states.blendAttachments.clear();
 
 		b2.shader.stage("modelOffscreen.vert.spv", {vk::ShaderStageBits::vertex});
@@ -509,9 +523,6 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 
 		data.offscreen.pipeline = b2.build();
 	}
-
-	data.offscreen.framebuffer = {dev, data.offscreen.renderPass,
-		{data.offscreen.width, data.offscreen.height}, {vpp::ViewableImage::defaultDepth2D()}};
 
 	// auto qf = dev.queue(vk::QueueBits::graphics)->family();
 	auto qf = dev.queues()[0]->family();
@@ -558,7 +569,7 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 		vpp::DescriptorSetUpdate update(data.quad.descriptorSet);
 		auto imgView = data.offscreen.framebuffer.attachments()[0].vkImageView();
 		// auto imgView = data.app.renderer.staticAttachments()[0].vkImageView();
-		update.imageSampler({{data.sampler, imgView, vk::ImageLayout::shaderReadOnlyOptimal}});
+		update.imageSampler({{{}, imgView, vk::ImageLayout::shaderReadOnlyOptimal}});
 		update.apply();
 	}
 
@@ -684,32 +695,32 @@ int main(int argc, char** argv)
 		return (2.0 * n) / (f + n - z * (f - n));
 	};
 
-	app.onKeyPress = [&](unsigned int key) {
-		//key C
-		if(key == 0x43)
-		{
-			// auto width = app.context.swapChain().size().width;
-			// auto height = app.context.swapChain().size().height;
-
-			auto width = data.offscreen.width;
-			auto height = data.offscreen.height;
-
-			std::vector<std::uint8_t> uintData(width * height);
-
-			// auto work = vpp::retrieve(app.renderer.staticAttachments()[0].image(),
-			auto work = vpp::retrieve(data.offscreen.framebuffer.attachments()[0].image(),
-				vk::ImageLayout::shaderReadOnlyOptimal, vk::Format::d32Sfloat,
-				{width, height, 1},
-				{vk::ImageAspectBits::depth, 0, 0});
-
-			auto& floatData = reinterpret_cast<float&>(work->data());
-			for(auto i = 0u; i < uintData.size(); ++i)
-				uintData[i] = 255. * linearize((&floatData)[i]);
-
-			stbi_write_png("depthBuffer.png", width, height, 1,
-				uintData.data(), width);
-		}
-	};
+	// app.onKeyPress = [&](unsigned int key) {
+	// 	//key C
+	// 	if(key == 0x43)
+	// 	{
+	// 		// auto width = app.context.swapChain().size().width;
+	// 		// auto height = app.context.swapChain().size().height;
+	//
+	// 		auto width = data.offscreen.width;
+	// 		auto height = data.offscreen.height;
+	//
+	// 		std::vector<std::uint8_t> uintData(width * height);
+	//
+	// 		// auto work = vpp::retrieve(app.renderer.staticAttachments()[0].image(),
+	// 		auto work = vpp::retrieve(data.offscreen.framebuffer.attachments()[0].image(),
+	// 			vk::ImageLayout::shaderReadOnlyOptimal, vk::Format::d32Sfloat,
+	// 			{width, height, 1},
+	// 			{vk::ImageAspectBits::depth, 0, 0});
+	//
+	// 		auto& floatData = reinterpret_cast<float&>(work->data());
+	// 		for(auto i = 0u; i < uintData.size(); ++i)
+	// 			uintData[i] = 255. * linearize((&floatData)[i]);
+	//
+	// 		stbi_write_png("depthBuffer.png", width, height, 1,
+	// 			uintData.data(), width);
+	// 	}
+	// };
 
 	nytl::Timer timer;
 	float totalTime;
@@ -741,7 +752,7 @@ int main(int argc, char** argv)
 		// viewMat.invert();
 
 		auto modelMat = nytl::identityMat<4, float>();
-		nytl::translate(modelMat, {0.f, 2.f, -5.f});
+		// nytl::translate(modelMat, {0.f, 2.f, -5.f});
 
 		auto viewMat = nytl::lookAt(data.viewPos, data.viewPos + cameraFront, {0.f, 1.f, 0.f});
 		auto cameraMat = nytl::perspective3(45.f, 1400.f / 900.f, 0.1f, 100.f);
@@ -752,11 +763,13 @@ int main(int argc, char** argv)
 		// std::cout << mat << "\n";
 
 		const nytl::Vec3f lightPos {0.f, 20.f, 0.f};
-		const nytl::Vec3f lightDir {std::sin(totalTime), -1.f, std::cos(totalTime)};
-		const nytl::Vec3f lightCol {1.f, std::sin(totalTime), 1.f};
+		const nytl::Vec3f lightDir {-1.f, -1.f, -1.f};
+		// const nytl::Vec3f lightDir {std::sin(totalTime), -1.f, std::cos(totalTime)};
+		// const nytl::Vec3f lightCol {1.f, std::sin(totalTime), 1.f};
+		const nytl::Vec3f lightCol {1.f, 1.f, 1.f};
 
 		vpp::WorkManager manager;
-		manager.add(vpp::fill140(data.sceneBuffer, data.viewPos, lightDir, lightCol, mat));
+		manager.add(vpp::fill140(data.sceneBuffer, data.viewPos, lightDir, lightCol));
 		for(auto& mesh : data.scene.meshes)
 		{
 			manager.add(vpp::fill140(mesh.ubo, mat));
@@ -777,7 +790,7 @@ vpp::RenderPass initOffscreenRenderPass(const vpp::Device& dev)
 	attachments[0].storeOp = vk::AttachmentStoreOp::store;
 	attachments[0].stencilLoadOp = vk::AttachmentLoadOp::dontCare;
 	attachments[0].stencilStoreOp = vk::AttachmentStoreOp::dontCare;
-	attachments[0].initialLayout = vk::ImageLayout::shaderReadOnlyOptimal;
+	attachments[0].initialLayout = vk::ImageLayout::undefined;
 	attachments[0].finalLayout = vk::ImageLayout::shaderReadOnlyOptimal;
 
 	vk::AttachmentReference depthReference;
