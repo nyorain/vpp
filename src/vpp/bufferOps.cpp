@@ -178,7 +178,11 @@ WorkPtr BufferUpdate::apply()
 
 		vk::beginCommandBuffer(cmdBuf, {});
 		for(auto& upd : copies_)
-			vk::cmdUpdateBuffer(cmdBuf, buffer(), upd.dstOffset, upd.size, data_[upd.srcOffset]);
+		{
+			auto* data = static_cast<void*>(&data_[upd.srcOffset]);
+			vk::cmdUpdateBuffer(cmdBuf, buffer(), upd.dstOffset, upd.size, data);
+		}
+
 		vk::endCommandBuffer(cmdBuf);
 	}
 

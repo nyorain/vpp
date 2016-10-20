@@ -55,8 +55,8 @@
 // language incorporated into the Specification and reference pages, and other
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
-// maintained in the master branch of the Khronos Vulkan Github project.
-    
+// maintained in the master branch of the Khronos Vulkan GitHub project.
+	
 // Automaitcally generated vulkan header file for the nyorain/vpp library.
 // Do not edit manually, rather edit the codegen files.
 
@@ -138,7 +138,16 @@ enum class StructureType : int32_t
 	pipelineRasterizationStateRasterizationOrderAMD = 1000018000,
 	debugMarkerObjectNameInfoEXT = 1000022000,
 	debugMarkerObjectTagInfoEXT = 1000022001,
-	debugMarkerMarkerInfoEXT = 1000022002
+	debugMarkerMarkerInfoEXT = 1000022002,
+	dedicatedAllocationImageCreateInfoNV = 1000026000,
+	dedicatedAllocationBufferCreateInfoNV = 1000026001,
+	dedicatedAllocationMemoryAllocateInfoNV = 1000026002,
+	externalMemoryImageCreateInfoNV = 1000056000,
+	exportMemoryAllocateInfoNV = 1000056001,
+	importMemoryWin32HandleInfoNV = 1000057000,
+	exportMemoryWin32HandleInfoNV = 1000057001,
+	win32KeyedMutexAcquireReleaseInfoNV = 1000058000,
+	validationFlagsEXT = 1000061000
 };
 
 enum class SystemAllocationScope : int32_t
@@ -174,6 +183,7 @@ enum class Result : int32_t
 	errorIncompatibleDriver = -9,
 	errorTooManyObjects = -10,
 	errorFormatNotSupported = -11,
+	errorFragmentedPool = -12,
 	errorSurfaceLostKHR = -1000000000,
 	errorNativeWindowInUseKHR = -1000000001,
 	suboptimalKHR = 1000001003,
@@ -370,7 +380,15 @@ enum class Format : int32_t
 	astc12x10UnormBlock = 181,
 	astc12x10SrgbBlock = 182,
 	astc12x12UnormBlock = 183,
-	astc12x12SrgbBlock = 184
+	astc12x12SrgbBlock = 184,
+	pvrtc12bppUnormBlockIMG = 1000054000,
+	pvrtc14bppUnormBlockIMG = 1000054001,
+	pvrtc22bppUnormBlockIMG = 1000054002,
+	pvrtc24bppUnormBlockIMG = 1000054003,
+	pvrtc12bppSrgbBlockIMG = 1000054004,
+	pvrtc14bppSrgbBlockIMG = 1000054005,
+	pvrtc22bppSrgbBlockIMG = 1000054006,
+	pvrtc24bppSrgbBlockIMG = 1000054007
 };
 
 enum class FormatFeatureBits : int32_t
@@ -1050,6 +1068,30 @@ enum class RasterizationOrderAMD : int32_t
 {
 	strict = 0,
 	relaxed = 1
+};
+
+
+enum class ExternalMemoryHandleTypeBitsNV : int32_t
+{
+	opaqueWin32 = (1 << 0),
+	opaqueWin32Kmt = (1 << 1),
+	d3d11Image = (1 << 2),
+	d3d11ImageKmt = (1 << 3)
+};
+NYTL_FLAG_OPS(ExternalMemoryHandleTypeBitsNV)
+
+enum class ExternalMemoryFeatureBitsNV : int32_t
+{
+	dedicatedOnly = (1 << 0),
+	exportable = (1 << 1),
+	importable = (1 << 2)
+};
+NYTL_FLAG_OPS(ExternalMemoryFeatureBitsNV)
+
+
+enum class ValidationCheckEXT : int32_t
+{
+	all = 0
 };
 
 

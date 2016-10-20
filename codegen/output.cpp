@@ -952,7 +952,7 @@ ParsedCommand CCOutputGenerator::parseCommand(const Command& cmd) const
 		std::string paramName = len;
 		std::string memName;
 
-		auto memAcc = len.find("->");
+		auto memAcc = len.find("::");
 		if(memAcc != std::string::npos)
 		{
 			paramName = len.substr(0, memAcc);

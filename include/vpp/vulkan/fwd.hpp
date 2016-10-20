@@ -55,8 +55,8 @@
 // language incorporated into the Specification and reference pages, and other
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
-// maintained in the master branch of the Khronos Vulkan Github project.
-    
+// maintained in the master branch of the Khronos Vulkan GitHub project.
+	
 // Automaitcally generated vulkan header file for the nyorain/vpp library.
 // Do not edit manually, rather edit the codegen files.
 
@@ -522,7 +522,7 @@ constexpr auto androidNativeBufferSpecVersion = 4;
 constexpr auto androidNativeBufferNumber = 11;
 constexpr auto androidNativeBufferName = "VK_ANDROID_native_buffer";
 
-constexpr auto extDebugReportSpecVersion = 2;
+constexpr auto extDebugReportSpecVersion = 3;
 constexpr auto extDebugReportExtensionName = "VK_EXT_debug_report";
 
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(DebugReportCallbackEXT);
@@ -552,11 +552,11 @@ constexpr auto khrSamplerMirrorClampToEdgeExtensionName = "VK_KHR_sampler_mirror
 constexpr auto imgFilterCubicSpecVersion = 1;
 constexpr auto imgFilterCubicExtensionName = "VK_IMG_filter_cubic";
 
-constexpr auto amdExtension1SpecVersion = 0;
-constexpr auto amdExtension1ExtensionName = "VK_AMD_extension_1";
+constexpr auto amdExtension17SpecVersion = 0;
+constexpr auto amdExtension17ExtensionName = "VK_AMD_extension_17";
 
-constexpr auto amdExtension2SpecVersion = 0;
-constexpr auto amdExtension2ExtensionName = "VK_AMD_extension_2";
+constexpr auto amdExtension18SpecVersion = 0;
+constexpr auto amdExtension18ExtensionName = "VK_AMD_extension_18";
 
 constexpr auto amdRasterizationOrderSpecVersion = 1;
 constexpr auto amdRasterizationOrderExtensionName = "VK_AMD_rasterization_order";
@@ -565,14 +565,14 @@ enum class RasterizationOrderAMD : int32_t;
 
 struct PipelineRasterizationStateRasterizationOrderAMD;
 
-constexpr auto amdExtension4SpecVersion = 0;
-constexpr auto amdExtension4ExtensionName = "VK_AMD_extension_4";
+constexpr auto amdExtension20SpecVersion = 0;
+constexpr auto amdExtension20ExtensionName = "VK_AMD_extension_20";
 
-constexpr auto amdExtension5SpecVersion = 0;
-constexpr auto amdExtension5ExtensionName = "VK_AMD_extension_5";
+constexpr auto amdShaderTrinaryMinmaxSpecVersion = 1;
+constexpr auto amdShaderTrinaryMinmaxExtensionName = "VK_AMD_shader_trinary_minmax";
 
-constexpr auto amdExtension6SpecVersion = 0;
-constexpr auto amdExtension6ExtensionName = "VK_AMD_extension_6";
+constexpr auto amdShaderExplicitVertexParameterSpecVersion = 1;
+constexpr auto amdShaderExplicitVertexParameterExtensionName = "VK_AMD_shader_explicit_vertex_parameter";
 
 constexpr auto extDebugMarkerSpecVersion = 3;
 constexpr auto extDebugMarkerExtensionName = "VK_EXT_debug_marker";
@@ -586,6 +586,186 @@ using PfnDebugMarkerSetObjectNameEXT = Result(*VKAPI_PTR)(Device device, DebugMa
 using PfnCmdDebugMarkerBeginEXT = void(*VKAPI_PTR)(CommandBuffer commandBuffer, DebugMarkerMarkerInfoEXT* pMarkerInfo);
 using PfnCmdDebugMarkerEndEXT = void(*VKAPI_PTR)(CommandBuffer commandBuffer);
 using PfnCmdDebugMarkerInsertEXT = void(*VKAPI_PTR)(CommandBuffer commandBuffer, DebugMarkerMarkerInfoEXT* pMarkerInfo);
+
+constexpr auto amdExtension24SpecVersion = 0;
+constexpr auto amdExtension24ExtensionName = "VK_AMD_extension_24";
+
+constexpr auto amdExtension25SpecVersion = 0;
+constexpr auto amdExtension25ExtensionName = "VK_AMD_extension_25";
+
+constexpr auto amdGcnShaderSpecVersion = 1;
+constexpr auto amdGcnShaderExtensionName = "VK_AMD_gcn_shader";
+
+constexpr auto nvDedicatedAllocationSpecVersion = 1;
+constexpr auto nvDedicatedAllocationExtensionName = "VK_NV_dedicated_allocation";
+
+struct DedicatedAllocationImageCreateInfoNV;
+struct DedicatedAllocationBufferCreateInfoNV;
+struct DedicatedAllocationMemoryAllocateInfoNV;
+
+constexpr auto extExtension28SpecVersion = 0;
+constexpr auto extExtension28ExtensionName = "VK_NV_extension_28";
+
+constexpr auto nvxExtension29SpecVersion = 0;
+constexpr auto nvxExtension29ExtensionName = "VK_NVX_extension_29";
+
+constexpr auto nvxExtension30SpecVersion = 0;
+constexpr auto nvxExtension30ExtensionName = "VK_NVX_extension_30";
+
+constexpr auto nvxExtension31SpecVersion = 0;
+constexpr auto nvxExtension31ExtensionName = "VK_NVX_extension_31";
+
+constexpr auto amdExtension32SpecVersion = 0;
+constexpr auto amdExtension32ExtensionName = "VK_AMD_extension_32";
+
+constexpr auto amdExtension33SpecVersion = 0;
+constexpr auto amdExtension33ExtensionName = "VK_AMD_extension_33";
+
+constexpr auto amdDrawIndirectCountSpecVersion = 1;
+constexpr auto amdDrawIndirectCountExtensionName = "VK_AMD_draw_indirect_count";
+
+using PfnCmdDrawIndirectCountAMD = void(*VKAPI_PTR)(CommandBuffer commandBuffer, Buffer buffer, DeviceSize offset, Buffer countBuffer, DeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
+using PfnCmdDrawIndexedIndirectCountAMD = void(*VKAPI_PTR)(CommandBuffer commandBuffer, Buffer buffer, DeviceSize offset, Buffer countBuffer, DeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
+
+constexpr auto amdExtension35SpecVersion = 0;
+constexpr auto amdExtension35ExtensionName = "VK_AMD_extension_35";
+
+constexpr auto amdNegativeViewportHeightSpecVersion = 0;
+constexpr auto amdNegativeViewportHeightExtensionName = "VK_AMD_negative_viewport_height";
+
+constexpr auto amdGpuShaderHalfFloatSpecVersion = 1;
+constexpr auto amdGpuShaderHalfFloatExtensionName = "VK_AMD_gpu_shader_half_float";
+
+constexpr auto amdShaderBallotSpecVersion = 0;
+constexpr auto amdShaderBallotExtensionName = "VK_AMD_shader_ballot";
+
+constexpr auto amdExtension39SpecVersion = 0;
+constexpr auto amdExtension39ExtensionName = "VK_AMD_extension_39";
+
+constexpr auto amdExtension40SpecVersion = 0;
+constexpr auto amdExtension40ExtensionName = "VK_AMD_extension_40";
+
+constexpr auto amdExtension41SpecVersion = 0;
+constexpr auto amdExtension41ExtensionName = "VK_AMD_extension_41";
+
+constexpr auto amdExtension42SpecVersion = 0;
+constexpr auto amdExtension42ExtensionName = "VK_AMD_extension_42";
+
+constexpr auto amdExtension43SpecVersion = 0;
+constexpr auto amdExtension43ExtensionName = "VK_AMD_extension_43";
+
+constexpr auto amdExtension44SpecVersion = 0;
+constexpr auto amdExtension44ExtensionName = "VK_AMD_extension_44";
+
+constexpr auto amdExtension45SpecVersion = 0;
+constexpr auto amdExtension45ExtensionName = "VK_AMD_extension_45";
+
+constexpr auto amdExtension46SpecVersion = 0;
+constexpr auto amdExtension46ExtensionName = "VK_AMD_extension_46";
+
+constexpr auto amdExtension47SpecVersion = 0;
+constexpr auto amdExtension47ExtensionName = "VK_AMD_extension_47";
+
+constexpr auto nvxExtension48SpecVersion = 0;
+constexpr auto nvxExtension48ExtensionName = "VK_NVX_extension_48";
+
+constexpr auto googleExtension49SpecVersion = 0;
+constexpr auto googleExtension49ExtensionName = "VK_GOOGLE_extension_49";
+
+constexpr auto googleExtension50SpecVersion = 0;
+constexpr auto googleExtension50ExtensionName = "VK_GOOGLE_extension_50";
+
+constexpr auto nvxExtension51SpecVersion = 0;
+constexpr auto nvxExtension51ExtensionName = "VK_NVX_extension_51";
+
+constexpr auto nvxExtension52SpecVersion = 0;
+constexpr auto nvxExtension52ExtensionName = "VK_NVX_extension_52";
+
+constexpr auto nvExtension53SpecVersion = 0;
+constexpr auto nvExtension53ExtensionName = "VK_NV_extension_53";
+
+constexpr auto nvExtension54SpecVersion = 0;
+constexpr auto nvExtension54ExtensionName = "VK_NV_extension_54";
+
+constexpr auto imgFormatPvrtcSpecVersion = 1;
+constexpr auto imgFormatPvrtcExtensionName = "VK_IMG_format_pvrtc";
+
+constexpr auto nvExternalMemoryCapabilitiesSpecVersion = 1;
+constexpr auto nvExternalMemoryCapabilitiesExtensionName = "VK_NV_external_memory_capabilities";
+
+enum class ExternalMemoryHandleTypeBitsNV : int32_t;
+enum class ExternalMemoryFeatureBitsNV : int32_t;
+
+using ExternalMemoryHandleTypeFlagsNV = Flags<ExternalMemoryHandleTypeBitsNV>;
+using ExternalMemoryFeatureFlagsNV = Flags<ExternalMemoryFeatureBitsNV>;
+
+struct ExternalImageFormatPropertiesNV;
+
+using PfnGetPhysicalDeviceExternalImageFormatPropertiesNV = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, Format format, ImageType type, ImageTiling tiling, ImageUsageFlags usage, ImageCreateFlags flags, ExternalMemoryHandleTypeFlagsNV externalHandleType, ExternalImageFormatPropertiesNV* pExternalImageFormatProperties);
+
+constexpr auto nvExternalMemorySpecVersion = 1;
+constexpr auto nvExternalMemoryExtensionName = "VK_NV_external_memory";
+
+struct ExternalMemoryImageCreateInfoNV;
+struct ExportMemoryAllocateInfoNV;
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+
+constexpr auto nvExternalMemoryWin32SpecVersion = 1;
+constexpr auto nvExternalMemoryWin32ExtensionName = "VK_NV_external_memory_win32";
+
+struct ImportMemoryWin32HandleInfoNV;
+struct ExportMemoryWin32HandleInfoNV;
+
+using PfnGetMemoryWin32HandleNV = Result(*VKAPI_PTR)(Device device, DeviceMemory memory, ExternalMemoryHandleTypeFlagsNV handleType, HANDLE* pHandle);
+
+#endif //VK_USE_PLATFORM_WIN32_KHR
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+
+constexpr auto nvWin32KeyedMutexSpecVersion = 1;
+constexpr auto nvWin32KeyedMutexExtensionName = "VK_NV_win32_keyed_mutex";
+
+struct Win32KeyedMutexAcquireReleaseInfoNV;
+
+#endif //VK_USE_PLATFORM_WIN32_KHR
+
+constexpr auto khrExtension60SpecVersion = 0;
+constexpr auto khrExtension60ExtensionName = "VK_KHR_extension_60";
+
+constexpr auto khrExtension61SpecVersion = 0;
+constexpr auto khrExtension61ExtensionName = "VK_KHR_extension_61";
+
+constexpr auto extValidationFlagsSpecVersion = 1;
+constexpr auto extValidationFlagsExtensionName = "VK_EXT_validation_flags";
+
+enum class ValidationCheckEXT : int32_t;
+
+struct ValidationFlagsEXT;
+
+constexpr auto nvExtension63SpecVersion = 0;
+constexpr auto nvExtension63ExtensionName = "VK_NV_extension_63";
+
+constexpr auto khrExtension64SpecVersion = 0;
+constexpr auto khrExtension64ExtensionName = "VK_KHR_extension_64";
+
+constexpr auto nvExtension65SpecVersion = 0;
+constexpr auto nvExtension65ExtensionName = "VK_NV_extension_65";
+
+constexpr auto nvExtension66SpecVersion = 0;
+constexpr auto nvExtension66ExtensionName = "VK_NV_extension_66";
+
+constexpr auto armExtension01SpecVersion = 0;
+constexpr auto armExtension01ExtensionName = "VK_ARM_extension_01";
+
+constexpr auto armExtension02SpecVersion = 0;
+constexpr auto armExtension02ExtensionName = "VK_ARM_extension_02";
+
+constexpr auto imgExtension69SpecVersion = 0;
+constexpr auto imgExtension69ExtensionName = "VK_IMG_extension_69";
+
+constexpr auto khrExtension70SpecVersion = 0;
+constexpr auto khrExtension70ExtensionName = "VK_KHR_extension_70";
 
 
 

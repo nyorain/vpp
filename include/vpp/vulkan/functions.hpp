@@ -55,8 +55,8 @@
 // language incorporated into the Specification and reference pages, and other
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
-// maintained in the master branch of the Khronos Vulkan Github project.
-    
+// maintained in the master branch of the Khronos Vulkan GitHub project.
+	
 // Automaitcally generated vulkan header file for the nyorain/vpp library.
 // Do not edit manually, rather edit the codegen files.
 
@@ -794,9 +794,13 @@ inline void cmdCopyImageToBuffer(CommandBuffer commandBuffer, Image srcImage, Im
 {
 	vkCmdCopyImageToBuffer((VkCommandBuffer)(commandBuffer), (VkImage)(srcImage), static_cast<VkImageLayout>(srcImageLayout), (VkBuffer)(dstBuffer), pRegions.size(), (const VkBufferImageCopy*)(pRegions.data()));
 }
-inline void cmdUpdateBuffer(CommandBuffer commandBuffer, Buffer dstBuffer, DeviceSize dstOffset, DeviceSize dataSize, const uint32_t& pData)
+inline void cmdUpdateBuffer(CommandBuffer commandBuffer, Buffer dstBuffer, DeviceSize dstOffset, DeviceSize dataSize, const void* pData)
 {
-	return vkCmdUpdateBuffer((VkCommandBuffer)(commandBuffer), (VkBuffer)(dstBuffer), dstOffset, dataSize, (const uint32_t*)(&pData));
+	return vkCmdUpdateBuffer((VkCommandBuffer)(commandBuffer), (VkBuffer)(dstBuffer), dstOffset, dataSize, (const void*)(pData));
+}
+inline void cmdUpdateBuffer(CommandBuffer commandBuffer, Buffer dstBuffer, DeviceSize dstOffset, const Range<const uint8_t>& pData)
+{
+	vkCmdUpdateBuffer((VkCommandBuffer)(commandBuffer), (VkBuffer)(dstBuffer), dstOffset, pData.size(), (const void*)(pData.data()));
 }
 inline void cmdFillBuffer(CommandBuffer commandBuffer, Buffer dstBuffer, DeviceSize dstOffset, DeviceSize size, uint32_t data)
 {
