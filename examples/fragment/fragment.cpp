@@ -159,7 +159,7 @@ void FragmentData::writeDescriptorSets()
 {
 	//write buffers
 	vpp::DescriptorSetUpdate update(descriptorSet_);
-	update.uniform({{ubo_, 0, sizeof(nytl::Mat4f) * 2}});
+	update.uniform({{ubo_, 0, sizeof(float) * 5}});
 }
 
 void FragmentData::update(const nytl::Vec2ui& mousePos)
@@ -175,8 +175,6 @@ FragmentRenderer::FragmentRenderer(FragmentData& data) : data_(&data)
 void FragmentRenderer::build(unsigned int, const vpp::RenderPassInstance& instance)
 {
 	auto cmdBuffer = instance.vkCommandBuffer();
-	VkDeviceSize offsets[1] = { 0 };
-
 	auto& gd = data().descriptorSet_;
 
 	vk::cmdBindPipeline(cmdBuffer, vk::PipelineBindPoint::graphics, data().pipeline_);

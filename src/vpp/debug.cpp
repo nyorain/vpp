@@ -6,22 +6,6 @@
 namespace vpp
 {
 
-//layer names
-std::vector<const char*> validationLayerNames =
-{
-	//"VK_LAYER_LUNARG_api_dump",
-	"VK_LAYER_LUNARG_core_validation",
-	// "VK_LAYER_LUNARG_device_limits",
-	"VK_LAYER_LUNARG_image",
-	"VK_LAYER_LUNARG_object_tracker",
-	"VK_LAYER_LUNARG_parameter_validation",
-	"VK_LAYER_LUNARG_swapchain",
-	"VK_LAYER_GOOGLE_threading",
-	"VK_LAYER_GOOGLE_unique_objects",
-	"VK_LAYER_LUNARG_standard_validation",
-	// "VK_LAYER_RENDERDOC_Capture"
-};
-
 //utility c free function callback
 namespace
 {
@@ -30,6 +14,12 @@ vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags, vk::DebugReport
 	std::uint64_t srcObject, std::size_t location, std::int32_t msgCode, const char* pLayerPrefix,
 	const char* pMsg, void* pUserData)
 {
+	if(!pUserData)
+	{
+		std::cout << "vpp: debug callback called without user data\n";
+		return false;
+	}
+
 	auto callback = static_cast<DebugCallback*>(pUserData);
 	return callback->call({flags, objType, srcObject, location, msgCode, pLayerPrefix, pMsg});
 }
@@ -38,10 +28,10 @@ std::string to_string(vk::DebugReportFlagsEXT flags)
 {
 	std::string ret = "";
 	if(flags & vk::DebugReportBitsEXT::information) ret += "information | ";
-    if(flags & vk::DebugReportBitsEXT::warning) ret += "warning | ";
-    if(flags & vk::DebugReportBitsEXT::performanceWarning) ret += "performanceWarning | ";
-    if(flags & vk::DebugReportBitsEXT::error) ret += "error | ";
-    if(flags & vk::DebugReportBitsEXT::debug) ret += "debug | ";
+	if(flags & vk::DebugReportBitsEXT::warning) ret += "warning | ";
+	if(flags & vk::DebugReportBitsEXT::performanceWarning) ret += "performanceWarning | ";
+	if(flags & vk::DebugReportBitsEXT::error) ret += "error | ";
+	if(flags & vk::DebugReportBitsEXT::debug) ret += "debug | ";
 	return "{" + ret.substr(0, ret.size() > 0 ? ret.size() - 3 : 0) + "}";
 }
 
@@ -85,6 +75,44 @@ std::string to_string(vk::DebugReportObjectTypeEXT type)
 }
 
 //DebugCallback
+vk::DebugReportFlagsEXT DebugCallback::defaultFlags()
+{
+	//not used: debug, information
+	return vk::DebugReportBitsEXT::warning | vk::DebugReportBitsEXT::error |
+		vk::DebugReportBitsEXT::performanceWarning;
+}
+
+const std::vector<const char*>& DebugCallback::defaultInstanceLayerNames()
+{
+	static const std::vector<const char*> ret {
+		// "VK_LAYER_LUNARG_api_dump",
+		"VK_LAYER_LUNARG_core_validation",
+		"VK_LAYER_LUNARG_image",
+		"VK_LAYER_LUNARG_object_tracker",
+		"VK_LAYER_LUNARG_parameter_validation",
+		// "VK_LAYER_LUNARG_screenshot",
+		"VK_LAYER_LUNARG_swapchain",
+		"VK_LAYER_GOOGLE_threading",
+		"VK_LAYER_GOOGLE_unique_objects",
+		// "VK_LAYER_LUNARG_vktrace",
+		// "VK_LAYER_RENDERDOC_Capture",
+		// "VK_LAYER_VALVE_steam_overlay",
+		"VK_LAYER_LUNARG_standard_validation",
+	};
+
+	return ret;
+}
+
+const std::vector<const char*>& DebugCallback::defaultDeviceLayerNames()
+{
+	static const std::vector<const char*> ret {
+		"VK_LAYER_LUNARG_standard_validation",
+	};
+
+	return ret;
+}
+
+//
 DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags)
 	: instance_(instance)
 {
@@ -97,8 +125,6 @@ DebugCallback::~DebugCallback()
 {
 	if(vkCallback() && vkInstance())
 		VPP_PROC(vkInstance(), DestroyDebugReportCallbackEXT)(vkInstance(), vkCallback(), nullptr);
-
-	debugCallback_ = {};
 }
 
 bool DebugCallback::call(const CallbackInfo& info)

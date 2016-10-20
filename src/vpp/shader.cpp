@@ -76,24 +76,13 @@ ShaderStage::~ShaderStage()
 	if(owned_ && module_) vk::destroyShaderModule(vkDevice(), module_, nullptr);
 }
 
-ShaderStage::ShaderStage(ShaderStage&& other) noexcept
-{
-	swap(*this, other);
-}
-
-ShaderStage& ShaderStage::operator=(ShaderStage other) noexcept
-{
-	swap(*this, other);
-	return *this;
-}
-
-void swap(ShaderStage& a, ShaderStage& b) noexcept
+void ShaderStage::swap(ShaderStage& lhs) noexcept
 {
 	using std::swap;
-	swap(a.resourceBase(), b.resourceBase());
-	swap(a.info_, b.info_);
-	swap(a.owned_, b.owned_);
-	swap(a.module_, b.module_);
+	swap(resourceBase(), lhs.resourceBase());
+	swap(info_, lhs.info_);
+	swap(owned_, lhs.owned_);
+	swap(module_, lhs.module_);
 }
 
 vk::PipelineShaderStageCreateInfo ShaderStage::vkStageInfo() const

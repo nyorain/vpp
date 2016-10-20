@@ -126,10 +126,10 @@ public:
 	ViewableImage(const Device& dev, const CreateInfo& info);
 	~ViewableImage();
 
-	ViewableImage(ViewableImage&& other) noexcept;
-	ViewableImage& operator=(ViewableImage other) noexcept;
+	ViewableImage(ViewableImage&& lhs) noexcept { swap(lhs); }
+	ViewableImage& operator=(ViewableImage lhs) noexcept { swap(lhs); return *this; }
 
-	void create(const Device& dev, const vk::ImageCreateInfo& img, vk::MemoryPropertyFlags flgs = {});
+	void create(const Device&, const vk::ImageCreateInfo&, vk::MemoryPropertyFlags flgs = {});
 	void init(const vk::ImageViewCreateInfo& info);
 
 	const Image& image() const { return image_; }
@@ -137,7 +137,7 @@ public:
 	vk::Image vkImage() const { return image(); }
 
 	const Image& resourceRef() const { return image_; }
-	friend void swap(ViewableImage& a, ViewableImage& b) noexcept;
+	void swap(ViewableImage& lhs) noexcept;
 
 protected:
 	Image image_;
@@ -152,17 +152,16 @@ public:
 	Sampler(const Device& dev, const vk::SamplerCreateInfo& info);
 	~Sampler();
 
-	Sampler(Sampler&& other) noexcept = default;
-	Sampler& operator=(Sampler&& other) noexcept = default;
+	Sampler(Sampler&& lhs) noexcept { swap(lhs); }
+	Sampler& operator=(Sampler lhs) noexcept { swap(lhs); return *this; }
 };
 
 ///TODO:
 ///Vulkan image view.
-class ImageView : public Resource
+class ImageView : public ResourceHandle<vk::ImageView>
 {
 public:
 protected:
-	vk::ImageView imageView_ {};
 };
 
 };

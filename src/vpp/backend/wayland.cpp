@@ -7,8 +7,8 @@ namespace vpp
 Surface createSurface(vk::Instance instance, struct wl_display& dpy, struct wl_surface& surface)
 {
 	vk::WaylandSurfaceCreateInfoKHR info;
-    info.display = &dpy;
-    info.surface = &surface;
+	info.display = &dpy;
+	info.surface = &surface;
 
 	vk::SurfaceKHR ret;
 	VPP_PROC(instance, CreateWaylandSurfaceKHR)(instance, &info, nullptr, &ret);
@@ -20,13 +20,14 @@ Context createContext(struct wl_display& dpy, struct wl_surface& surface, Contex
 	info.instanceExtensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 
 	Context ret;
-	ret.initInstance(info);
+	ret.initInstance(info.debugFlags, info.instanceExtensions,
+		info.instanceLayers, info.reverseInstanceLayers);
 
 	auto vsurface = createSurface(ret.vkInstance(), dpy, surface);
 	ret.initSurface(std::move(vsurface));
 
-	ret.initDevice(info);
-	ret.initSwapChain(info);
+	ret.initDevice(info.deviceExtensions, info.deviceLayers, info.reverseDeviceLayers);
+	ret.initSwapChain({info.width, info.height}, info.swapChainSettings);
 
 	return ret;
 }

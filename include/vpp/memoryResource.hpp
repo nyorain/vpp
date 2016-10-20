@@ -10,10 +10,15 @@ namespace vpp
 ///Non-virtual base class for all memory resources, i.e. buffers and images.
 ///Since this class is not virtual it should not (and cannot) be used to delete
 ///images or buffer dynamically (i.e. with delete).
-template<typename T>
-class MemoryResource : public ResourceHandleReference<T, MemoryResource<T>>
+template<typename H>
+class MemoryResource : public ResourceReferenceHandle<MemoryResource<H>, H>
 {
 public:
+	//XXX: why cant these made protected?
+	MemoryResource(MemoryResource&& lhs) noexcept { swap(lhs); }
+	MemoryResource& operator=(MemoryResource lhs) noexcept { swap(lhs); return *this; }
+	~MemoryResource() = default;
+
 	///Checks if this memory resource was initialized yet and if not it will be initialized.
 	///Will be implicitly called on member functions that require it.
 	void assureMemory() const { if(!memoryEntry().allocated()) memoryEntry().allocate(); }
@@ -41,13 +46,16 @@ public:
 
 	const MemoryEntry& resourceRef() const { return memoryEntry(); }
 
-protected:
-	using ResourceHandleReference<T, MemoryResource<T>>::ResourceHandleReference;
-	MemoryResource() = default;
-	~MemoryResource() = default;
+	void swap(MemoryResource& lhs) noexcept
+	{
+		using std::swap;
+		swap(this->resourceBase(), lhs.resourceBase());
+		swap(memoryEntry_, lhs.memoryEntry_);
+	}
 
-	MemoryResource(MemoryResource&& other) noexcept = default;
-	MemoryResource& operator=(MemoryResource&& other) noexcept = default;
+protected:
+	using ResourceReferenceHandle<MemoryResource<H>, H>::ResourceReferenceHandle;
+	MemoryResource() = default;
 
 protected:
 	MemoryEntry memoryEntry_;

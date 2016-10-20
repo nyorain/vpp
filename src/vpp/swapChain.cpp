@@ -10,6 +10,12 @@ namespace vpp
 {
 
 //SwapChainSettings
+const SwapChainSettings& SwapChainSettings::instance()
+{
+	static SwapChainSettings ret;
+	return ret;
+}
+
 vk::SwapchainCreateInfoKHR SwapChainSettings::parse(const vk::SurfaceCapabilitiesKHR& caps,
 	const Range<vk::PresentModeKHR>& modes,
 	const Range<vk::SurfaceFormatKHR>& formats,
@@ -263,6 +269,17 @@ SwapChain::~SwapChain()
 
 	VPP_LOAD_PROC(device(), DestroySwapchainKHR);
 	pfDestroySwapchainKHR(device(), vkHandle(), nullptr);
+}
+
+void SwapChain::swap(SwapChain& lhs) noexcept
+{
+	using std::swap;
+	swap(resourceBase(), lhs.resourceBase());
+	swap(surface_, lhs.surface_);
+	swap(buffers_, lhs.buffers_);
+	swap(width_, lhs.width_);
+	swap(height_, lhs.height_);
+	swap(format_, lhs.format_);
 }
 
 void SwapChain::createBuffers()

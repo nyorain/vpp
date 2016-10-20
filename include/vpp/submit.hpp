@@ -11,7 +11,9 @@
 namespace vpp
 {
 
-class Fence : public Resource
+///XXX: better design!
+
+class Fence : public ResourceHandle<vk::Fence>
 {
 public:
 	Fence() = default;
@@ -19,14 +21,8 @@ public:
 	Fence(const Device& dev, const vk::FenceCreateInfo& info);
 	~Fence();
 
-	Fence(Fence&& other) noexcept { swap(*this, other); }
-	Fence& operator=(Fence other) noexcept { swap(*this, other); return *this; }
-
-	operator vk::Fence() const { return fence_; }
-	friend void swap(Fence& a, Fence& b) noexcept;
-
-protected:
-	vk::Fence fence_ {};
+	Fence(Fence&& lhs) noexcept { swap(lhs); }
+	Fence& operator=(Fence lhs) noexcept { swap(lhs); return *this; }
 };
 
 ///Can be used to track the state of a queued command buffer or to submit it to the device.

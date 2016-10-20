@@ -18,6 +18,7 @@
 
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -28,6 +29,7 @@
 
 #ifdef __GNUC__
 #pragma GCC diagnostic warning "-Wmisleading-indentation"
+#pragma GCC diagnostic warning "-Wunused-variable"
 #endif
 
 //specialization for aiVec <-> nytlVec
@@ -425,7 +427,7 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 	}
 
 	//transformMatrix for shadow map
-	float ratio = data.offscreen.width / data.offscreen.height;
+	// float ratio = data.offscreen.width / data.offscreen.height;
 
 	auto proj = nytl::ortho3(-10.f, 10.f, -10.f, 10.f, 1.f, 8.f);
 	// auto proj = nytl::perspective3(45.f, ratio, 0.1f, 100.f);
@@ -679,20 +681,13 @@ int main(int argc, char** argv)
 		pitch += delta.y * 0.5;
 
 		if(pitch > 89.0f) pitch = 89.0f;
-    	if(pitch < -89.0f) pitch = -89.0f;
+		if(pitch < -89.0f) pitch = -89.0f;
 
 		nytl::Vec3f front;
-	    front.x = cos(nytl::radians(yaw)) * cos(nytl::radians(pitch));
-	    front.y = sin(nytl::radians(pitch));
-	    front.z = sin(nytl::radians(yaw)) * cos(nytl::radians(pitch));
-	    cameraFront = nytl::normalize(front);
-	};
-
-	auto linearize = [](float depth) {
-		float n = 0.1; //z near
-		float f = 100.0; //z far
-		float z = depth;
-		return (2.0 * n) / (f + n - z * (f - n));
+		front.x = cos(nytl::radians(yaw)) * cos(nytl::radians(pitch));
+		front.y = sin(nytl::radians(pitch));
+		front.z = sin(nytl::radians(yaw)) * cos(nytl::radians(pitch));
+		cameraFront = nytl::normalize(front);
 	};
 
 	// app.onKeyPress = [&](unsigned int key) {

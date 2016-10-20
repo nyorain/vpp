@@ -23,8 +23,8 @@ public:
 	MemoryMap(const DeviceMemory& memory, const Allocation& alloc);
 	~MemoryMap();
 
-	MemoryMap(MemoryMap&& other) noexcept;
-	MemoryMap& operator=(MemoryMap other) noexcept;
+	MemoryMap(MemoryMap&& lhs) noexcept { swap(lhs); }
+	MemoryMap& operator=(MemoryMap lhs) noexcept { swap(lhs); return *this; }
 
 	///Might remaps the mapped range to assure it also includes the given allocation.
 	void remap(const Allocation& allocation);
@@ -49,7 +49,7 @@ public:
 	vk::MappedMemoryRange mappedMemoryRange() const;
 
 	const DeviceMemory& resourceRef() const { return *memory_; }
-	friend void swap(MemoryMap& a, MemoryMap& b) noexcept;
+	void swap(MemoryMap& lhs) noexcept;
 
 protected:
 	friend class MemoryMapView;
@@ -75,18 +75,18 @@ public:
 	MemoryMapView(MemoryMap& map, const Allocation& range);
 	~MemoryMapView();
 
-	MemoryMapView(MemoryMapView&& other) noexcept;
-	MemoryMapView& operator=(MemoryMapView other) noexcept;
+	MemoryMapView(MemoryMapView&& lhs) noexcept { swap(lhs); }
+	MemoryMapView& operator=(MemoryMapView lhs) noexcept { swap(lhs); return *this; }
 
 	///Makes sure the mapped data is visibile on the device.
 	///Not needed when memory is coherent, look at vkFlushMappedMemoryRanges.
 	///Can be checked with coherent().
-	void flush() const; //XXX: raname flush?
+	void flush() const;
 
 	///Reloads the device memory into mapped memory, i.e. makes sure writes by the device
 	///are made visible. Not needed when memory is coherent, look at vkInvalidateMappedMemoryRanges.
 	///Can be checked with coherent().
-	void reload() const; //XXX: rename invalidte/reload?
+	void reload() const;
 
 	MemoryMap& memoryMap() const { return *memoryMap_; }
 	const DeviceMemory& memory() const { return memoryMap().memory(); }
@@ -100,7 +100,7 @@ public:
 	vk::MappedMemoryRange mappedMemoryRange() const;
 
 	const MemoryMap& resourceRef() const { return *memoryMap_; }
-	friend void swap(MemoryMapView& a, MemoryMapView& b) noexcept;
+	void swap(MemoryMapView& lhs) noexcept;
 
 protected:
 	MemoryMap* memoryMap_ {};

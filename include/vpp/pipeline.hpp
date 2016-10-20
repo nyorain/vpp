@@ -40,8 +40,8 @@ public:
 		const Range<vk::PushConstantRange>& ranges = {});
 	~PipelineLayout();
 
-	PipelineLayout(PipelineLayout&& other) noexcept = default;
-	PipelineLayout& operator=(PipelineLayout&& other) noexcept = default;
+	PipelineLayout(PipelineLayout&& lhs) noexcept { swap(lhs); }
+	PipelineLayout& operator=(PipelineLayout&& lhs) noexcept { swap(lhs); return *this; }
 };
 
 ///RAII vulkan pipeline cache wrapper.
@@ -63,8 +63,8 @@ public:
 	PipelineCache(const Device& dev, const StringParam& filename);
 	~PipelineCache();
 
-	PipelineCache(PipelineCache&& other) noexcept = default;
-	PipelineCache& operator=(PipelineCache&& other) noexcept = default;
+	PipelineCache(PipelineCache&& other) noexcept { swap(other); }
+	PipelineCache& operator=(PipelineCache other) noexcept { swap(other); return *this; }
 };
 
 ///\{
@@ -86,8 +86,8 @@ public:
 	Pipeline(const Device& dev, vk::Pipeline pipeline) : ResourceHandle(dev, pipeline) {}
 	~Pipeline();
 
-	Pipeline(Pipeline&& other) noexcept = default;
-	Pipeline& operator=(Pipeline&& other) noexcept = default;
+	Pipeline(Pipeline&& lhs) noexcept { swap(lhs); }
+	Pipeline& operator=(Pipeline&& lhs) noexcept { swap(lhs); return *this; }
 };
 
 }

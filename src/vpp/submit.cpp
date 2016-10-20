@@ -21,20 +21,14 @@ Fence::Fence(const Device& dev) : Fence(dev, {})
 {
 }
 
-Fence::Fence(const Device& dev, const vk::FenceCreateInfo& info) : Resource(dev)
+Fence::Fence(const Device& dev, const vk::FenceCreateInfo& info) : ResourceHandle(dev)
 {
-	fence_ = vk::createFence(device(), info);
+	vkHandle() = vk::createFence(device(), info);
 }
 
 Fence::~Fence()
 {
-	if(fence_) vk::destroyFence(device(), fence_);
-}
-
-void swap(Fence& a, Fence& b) noexcept
-{
-	std::swap(a.fence_, b.fence_);
-	std::swap(a.resourceBase(), b.resourceBase());
+	if(vkHandle()) vk::destroyFence(device(), vkHandle());
 }
 
 //ExecutionState

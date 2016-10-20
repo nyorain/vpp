@@ -110,8 +110,10 @@ public:
 				auto& c = printString[i];
 
 				// auto charData = &sdf_spacing[(c - 32) * 8];
-				const auto& charData = *ddf_get_glyph_properties(&font, c);
-				if(!&charData) continue;
+				const auto* pcharData = ddf_get_glyph_properties(&font, c);
+				if(!pcharData) continue;
+
+				const auto& charData = *pcharData;
 
 				float xstart = xoff;
 				float ystart = ypos + charData.offset_y;

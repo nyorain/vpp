@@ -34,11 +34,11 @@ public:
 	Framebuffer(const Device& dev, const vk::Extent2D& size, vk::Framebuffer framebuffer);
 	~Framebuffer();
 
-	Framebuffer(Framebuffer&& other) noexcept = default;
-	Framebuffer& operator=(Framebuffer&& other) noexcept = default;
+	Framebuffer(Framebuffer&& lhs) noexcept { swap(lhs); }
+	Framebuffer& operator=(Framebuffer lhs) noexcept { swap(lhs); return *this; }
 
-	void create(const Device& dev, const vk::Extent2D& size, const std::vector<vk::ImageCreateInfo>&);
-	void create(const Device& dev, const vk::Extent2D& size, const AttachmentsInfo& info);
+	void create(const Device&, const vk::Extent2D& size, const std::vector<vk::ImageCreateInfo>&);
+	void create(const Device&, const vk::Extent2D& size, const AttachmentsInfo& info);
 
 	///\exception std::logic_error if there are less view infos than image infos passed to create.
 	void init(vk::RenderPass rp, const AttachmentsInfo& info, const ExtAttachments& ext = {});
@@ -47,6 +47,8 @@ public:
 
 	const std::vector<ViewableImage>& attachments() const { return attachments_; }
 	vk::Extent2D size() const;
+
+	void swap(Framebuffer& lhs) noexcept;
 
 protected:
 	std::vector<ViewableImage> attachments_;

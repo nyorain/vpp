@@ -40,13 +40,13 @@ template<std::size_t N> struct VulkanType<nytl::Vec<N, double>> : public VulkanT
 
 struct App
 {
-    HINSTANCE hinstance = nullptr;
-    HWND window = nullptr;
+	HINSTANCE hinstance = nullptr;
+	HWND window = nullptr;
 
-    unsigned int width = 1400;
-    unsigned int height = 900;
+	unsigned int width = 1400;
+	unsigned int height = 900;
 
-    vpp::Context context;
+	vpp::Context context;
 	vpp::RenderPass renderPass {};
 	vpp::SwapChainRenderer renderer;
 	vpp::SwapChainRenderer::CreateInfo rendererInfo {};
@@ -73,7 +73,7 @@ void toggleFullscreen(HWND hwnd)
 
 		MONITORINFO monitorinfo;
 		monitorinfo.cbSize = sizeof(monitorinfo);
-	    ::GetMonitorInfo(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST),
+		::GetMonitorInfo(::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST),
 			&monitorinfo);
 
 		auto& rect = monitorinfo.rcMonitor;
@@ -101,8 +101,8 @@ void toggleFullscreen(HWND hwnd)
 
 LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
-    switch(message)
-    {
+	switch(message)
+	{
 		case WM_ERASEBKGND:
 		{
 			//dont erase it to avoid flickering
@@ -131,7 +131,7 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 			break;
 		}
 
-        case WM_CLOSE:
+		case WM_CLOSE:
 		{
 			DestroyWindow(hwnd);
 			PostQuitMessage(0);
@@ -171,9 +171,9 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 			break;
 		}
 
-        default:
-            return DefWindowProc(hwnd, message, wparam, lparam);
-    }
+		default:
+			return DefWindowProc(hwnd, message, wparam, lparam);
+	}
 
 	return 0;
 }
@@ -181,42 +181,42 @@ LRESULT CALLBACK wndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 //
 void initWindow(App& app)
 {
-    std::string name = "test";
+	std::string name = "test";
 
-    WNDCLASSEX wndClass;
-    wndClass.cbSize = sizeof(WNDCLASSEX);
-    wndClass.style = CS_HREDRAW | CS_VREDRAW;
-    wndClass.lpfnWndProc = wndProc;
-    wndClass.cbClsExtra = 0;
-    wndClass.cbWndExtra = 0;
-    wndClass.hInstance = app.hinstance;
-    wndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-    wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wndClass.hbrBackground = nullptr;
-    wndClass.lpszMenuName = NULL;
-    wndClass.lpszClassName = name.c_str();
-    wndClass.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
+	WNDCLASSEX wndClass;
+	wndClass.cbSize = sizeof(WNDCLASSEX);
+	wndClass.style = CS_HREDRAW | CS_VREDRAW;
+	wndClass.lpfnWndProc = wndProc;
+	wndClass.cbClsExtra = 0;
+	wndClass.cbWndExtra = 0;
+	wndClass.hInstance = app.hinstance;
+	wndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndClass.hbrBackground = nullptr;
+	wndClass.lpszMenuName = NULL;
+	wndClass.lpszClassName = name.c_str();
+	wndClass.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
 
-    if (!RegisterClassEx(&wndClass))
-    {
-        throw std::runtime_error("Failed to register window class");
-    }
+	if (!RegisterClassEx(&wndClass))
+	{
+		throw std::runtime_error("Failed to register window class");
+	}
 
 	auto flags = WS_EX_COMPOSITED | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_OVERLAPPEDWINDOW;
-    app.window = CreateWindowEx(0, name.c_str(), name.c_str(), flags, CW_USEDEFAULT,
-        CW_USEDEFAULT, app.width, app.height, nullptr, nullptr, app.hinstance, nullptr);
+	app.window = CreateWindowEx(0, name.c_str(), name.c_str(), flags, CW_USEDEFAULT,
+		CW_USEDEFAULT, app.width, app.height, nullptr, nullptr, app.hinstance, nullptr);
 
-    if(!app.window)
-    {
-        throw std::runtime_error("Failed to create window");
-    }
+	if(!app.window)
+	{
+		throw std::runtime_error("Failed to create window");
+	}
 
 	COLORREF RRR = RGB(255, 0, 255);
 	SetLayeredWindowAttributes(app.window, RRR, (BYTE)0, LWA_COLORKEY);
 
-    ShowWindow(app.window, SW_SHOW);
-    SetForegroundWindow(app.window);
-    SetFocus(app.window);
+	ShowWindow(app.window, SW_SHOW);
+	SetForegroundWindow(app.window);
+	SetFocus(app.window);
 }
 
 //
@@ -227,19 +227,19 @@ void mainLoop(App& app, const std::function<void()>& update)
 	auto point = clock::now();
 	auto frames = 0u;
 
-    while(1)
-    {
-        MSG msg;
-        PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
-        if(msg.message == WM_QUIT)
-        {
-            break;
-        }
-        else
-        {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
+	while(1)
+	{
+		MSG msg;
+		PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
+		if(msg.message == WM_QUIT)
+		{
+			break;
+		}
+		else
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
 
 		app.renderer.renderBlock();
 		update();
@@ -251,7 +251,7 @@ void mainLoop(App& app, const std::function<void()>& update)
 			point = clock::now();
 			frames = 0u;
 		}
-    }
+	}
 }
 
 void initRenderPass(App& app)
@@ -321,14 +321,14 @@ void initApp(App& app, const std::function<std::unique_ptr<vpp::RendererBuilder>
 	gApp = &app;
 	app.func = func;
 
-    app.hinstance = GetModuleHandle(nullptr);
-    initWindow(app);
+	app.hinstance = GetModuleHandle(nullptr);
+	initWindow(app);
 
 	app.context = vpp::createContext(app.window, {app.width, app.height});
 
 	initRenderPass(app);
 
-	app.rendererInfo.queueFamily = app.context.graphicsComputeQueue()->family();
+	app.rendererInfo.queueFamily = app.context.graphicsComputeQueue().family();
 	app.rendererInfo.renderPass = app.renderPass;
 	app.rendererInfo.attachments = {{vpp::ViewableImage::defaultDepth2D()}};
 	app.context.device().transferManager().shrink();

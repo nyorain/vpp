@@ -20,6 +20,12 @@ namespace vpp
 class SwapChainSettings
 {
 public:
+	///Returns a static instance of the default implementatoin.
+	///Since the default implementation is stateless the returned object can
+	///also safely be used from multiple threads.
+	static const SwapChainSettings& instance();
+
+public:
 	///This function will be called by the SwapChain this object was passed to.
 	///The returned SwapChainCreateInfo will be used to create the vulkan swapchain.
 	///\param caps The queried capabilities for the surface the swapChain will be created for.
@@ -71,11 +77,11 @@ public:
 class SwapChain : public ResourceHandle<vk::SwapchainKHR>
 {
 public:
-    struct RenderBuffer
-    {
-        vk::Image image;
-        vk::ImageView imageView;
-    };
+	struct RenderBuffer
+	{
+		vk::Image image;
+		vk::ImageView imageView;
+	};
 
 	struct CreateInfo
 	{
@@ -97,10 +103,10 @@ public:
 	SwapChain(const Device& dev, vk::SwapchainKHR swapChain, vk::SurfaceKHR surface,
 		const vk::Extent2D& size, vk::Format format);
 
-    ~SwapChain();
+	~SwapChain();
 
-	SwapChain(SwapChain&& other) noexcept = default;
-	SwapChain& operator=(SwapChain&& other) noexcept = default;
+	SwapChain(SwapChain&& lhs) noexcept { swap(lhs); }
+	SwapChain& operator=(SwapChain&& lhs) noexcept { swap(lhs); return *this; }
 
 	///Resizes the swapchain to the given size. Should be called if the native window of the
 	///underlaying surface handle changes it size to make sure the swapchain fills the
@@ -118,7 +124,7 @@ public:
 	///\return The result returned by vkAcquireImageKHR. The caller has to handle
 	///results like outOfDate or suboptimal and can decide if to recreate (resize()) the
 	///swapChain. There will not be any check performed on the result.
-    vk::Result acquire(unsigned int& id, vk::Semaphore sem = {}, vk::Fence fence = {}) const;
+	vk::Result acquire(unsigned int& id, vk::Semaphore sem = {}, vk::Fence fence = {}) const;
 
 	///Queues commands to present the image with the given id on the given queue.
 	///\param wait The semaphore to wait on before presenting (usually signaled at the end
@@ -126,13 +132,15 @@ public:
 	///\return The result returned by vkQueuePresentKHR. The caller has to handle
 	///results like outOfDate or suboptimal and can decide if to recreate (resize()) the
 	///swapChain. There will not be any check performed on the result.
-    vk::Result present(const Queue& queue, unsigned int image, vk::Semaphore wait = {}) const;
+	vk::Result present(const Queue& queue, unsigned int image, vk::Semaphore wait = {}) const;
 
 	const vk::SurfaceKHR& vkSurface() const { return surface_; }
 
 	vk::Format format() const { return format_; }
 	vk::Extent2D size() const;
-    const std::vector<RenderBuffer>& renderBuffers() const { return buffers_; }
+	const std::vector<RenderBuffer>& renderBuffers() const { return buffers_; }
+
+	void swap(SwapChain& lhs) noexcept;
 
 protected:
 	void destroyBuffers();
@@ -145,7 +153,7 @@ protected:
 	//not needed to store these parameters. just done for convinience. reasonable?
 	unsigned int width_ = 0;
 	unsigned int height_ = 0;
-    vk::Format format_;
+	vk::Format format_;
 };
 
 }

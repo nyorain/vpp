@@ -6,7 +6,7 @@ namespace vpp
 
 //CommandBuffer
 CommandBuffer::CommandBuffer(vk::CommandBuffer buffer, const CommandPool& pool)
-	: ResourceHandleReference(buffer), commandPool_(&pool)
+	: ResourceReferenceHandle(buffer), commandPool_(&pool)
 {
 }
 
@@ -17,6 +17,13 @@ CommandBuffer::~CommandBuffer()
 		//TODO. cannot always be done
 		//vk::freeCommandBuffers(vkDevice(), commandPool().vkCommandPool(), {commandBuffer_});
 	}
+}
+
+void CommandBuffer::swap(CommandBuffer& lhs) noexcept
+{
+	using std::swap;
+	swap(resourceBase(), lhs.resourceBase());
+	swap(commandPool_, lhs.commandPool_);
 }
 
 //CommandPool
@@ -32,6 +39,14 @@ CommandPool::CommandPool(const Device& dev, std::uint32_t qfam, vk::CommandPoolC
 CommandPool::~CommandPool()
 {
 	if(vkHandle()) vk::destroyCommandPool(vkDevice(), vkHandle(), nullptr);
+}
+
+void CommandPool::swap(CommandPool& lhs) noexcept
+{
+	using std::swap;
+	swap(resourceBase(), lhs.resourceBase());
+	swap(flags_, lhs.flags_);
+	swap(qFamily_, lhs.qFamily_);
 }
 
 std::vector<CommandBuffer> CommandPool::allocate(std::size_t count, vk::CommandBufferLevel lvl)
@@ -77,7 +92,7 @@ CommandProvider::CommandProvider(const Device& dev) : Resource(dev)
 }
 
 CommandBuffer CommandProvider::get(std::uint32_t family,
- 	vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
+	 vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
 {
 	auto& pools = device().tlCommandPools();
 	for(auto& pool : pools)

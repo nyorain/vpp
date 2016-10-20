@@ -20,6 +20,8 @@ public:
 	using AdditionalSemaphores = std::vector<std::pair<vk::Semaphore, vk::PipelineStageBits>>;
 
 public:
+	virtual ~RendererBuilder() = default;
+	
 	///This function is called to record the render commands into the given renderpass instance.
 	virtual void build(unsigned int id, const RenderPassInstance& ini) = 0;
 
@@ -129,8 +131,8 @@ public:
 	SwapChainRenderer(const SwapChain& swapChain, const CreateInfo& info, RenderImpl builder);
 	~SwapChainRenderer();
 
-	SwapChainRenderer(SwapChainRenderer&& other) noexcept;
-	SwapChainRenderer& operator=(SwapChainRenderer other) noexcept;
+	SwapChainRenderer(SwapChainRenderer&& lhs) noexcept { swap(lhs); }
+	SwapChainRenderer& operator=(SwapChainRenderer lhs) noexcept { swap(lhs); return *this; }
 
 	///Creates all static attachments and all framebuffers.
 	void create(const SwapChain& swapChain, const CreateInfo& info);
@@ -171,7 +173,7 @@ public:
 	const std::vector<AttachmentInfo>& attachmentInfos() const { return info_.attachments; }
 
 	const SwapChain& resourceRef() const { return *swapChain_; }
-	friend void swap(SwapChainRenderer& a, SwapChainRenderer& b) noexcept;
+	void swap(SwapChainRenderer& lhs) noexcept;
 
 protected:
 	const SwapChain* swapChain_ = nullptr;

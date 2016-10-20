@@ -18,22 +18,6 @@ SwapChainRenderer::SwapChainRenderer(const SwapChain& sc, const CreateInfo& inf,
 	init(std::move(bld));
 }
 
-SwapChainRenderer::SwapChainRenderer(SwapChainRenderer&& other) noexcept
-{
-	renderImpl_ = std::move(other.renderImpl_);
-	renderBuffers_ = std::move(other.renderBuffers_);
-	staticAttachments_ = std::move(other.staticAttachments_);
-	info_ = std::move(other.info_);
-
-	std::swap(swapChain_, other.swapChain_);
-}
-
-SwapChainRenderer& SwapChainRenderer::operator=(SwapChainRenderer other) noexcept
-{
-	swap(*this, other);
-	return *this;
-}
-
 SwapChainRenderer::~SwapChainRenderer()
 {
 	///TODO: part of command buffer destruction rework
@@ -53,15 +37,16 @@ SwapChainRenderer::~SwapChainRenderer()
 	}
 }
 
-void swap(SwapChainRenderer& a, SwapChainRenderer& b) noexcept
+void SwapChainRenderer::swap(SwapChainRenderer& lhs) noexcept
 {
 	using std::swap;
 
-	swap(a.swapChain_, b.swapChain_);
-	swap(a.renderBuffers_, b.renderBuffers_);
-	swap(a.staticAttachments_, b.staticAttachments_);
-	swap(a.renderImpl_, b.renderImpl_);
-	swap(a.info_, b.info_);
+	swap(resourceBase(), lhs.resourceBase());
+	swap(swapChain_, lhs.swapChain_);
+	swap(renderBuffers_, lhs.renderBuffers_);
+	swap(staticAttachments_, lhs.staticAttachments_);
+	swap(renderImpl_, lhs.renderImpl_);
+	swap(info_, lhs.info_);
 }
 
 void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& info)
@@ -256,14 +241,14 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, cons
 	if(present == nullptr) present = device().queues()[0].get();
 	if(gfx == nullptr) gfx = device().queues()[0].get();
 
-    vk::SemaphoreCreateInfo semaphoreCI;
+	vk::SemaphoreCreateInfo semaphoreCI;
 	auto acquireComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 	auto renderComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 
 	unsigned int currentBuffer;
-    swapChain().acquire(currentBuffer, acquireComplete);
+	swapChain().acquire(currentBuffer, acquireComplete);
 	//TODO: result error handling, out_of_date or suboptimal/invalid
-    // auto result = swapChain().acquire(currentBuffer, acquireComplete);
+	// auto result = swapChain().acquire(currentBuffer, acquireComplete);
 
 	renderImpl_->frame(currentBuffer);
 
@@ -299,7 +284,7 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, cons
 
 	//TODO: some kind of queue lock? must be synchronized.
 	//need some submitmanager improvements as general queue sync manager.
-    swapChain().present(*present, currentBuffer, renderComplete);
+	swapChain().present(*present, currentBuffer, renderComplete);
 
 	class WorkImpl : public Work<void>
 	{
@@ -317,8 +302,8 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, cons
 			wait();
 			auto& dev = executionState_.device();
 
-    		if(acquire_) vk::destroySemaphore(dev, acquire_, nullptr);
-    		if(render_) vk::destroySemaphore(dev, render_, nullptr);
+			if(acquire_) vk::destroySemaphore(dev, acquire_, nullptr);
+			if(render_) vk::destroySemaphore(dev, render_, nullptr);
 
 			acquire_ = {};
 			render_ = {};
@@ -350,14 +335,14 @@ void SwapChainRenderer::renderBlock(const Queue* gfx, const Queue* present)
 	if(present == nullptr) present = device().queues()[0].get();
 	if(gfx == nullptr) gfx = device().queues()[0].get();
 
-    vk::SemaphoreCreateInfo semaphoreCI;
+	vk::SemaphoreCreateInfo semaphoreCI;
 	auto acquireComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 	auto renderComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
 
 	unsigned int currentBuffer;
-    swapChain().acquire(currentBuffer, acquireComplete);
+	swapChain().acquire(currentBuffer, acquireComplete);
 	//TODO: result error handling, out_of_date or suboptimal/invalid
-    // auto result = swapChain().acquire(currentBuffer, acquireComplete);
+	// auto result = swapChain().acquire(currentBuffer, acquireComplete);
 
 	renderImpl_->frame(currentBuffer);
 
@@ -393,11 +378,11 @@ void SwapChainRenderer::renderBlock(const Queue* gfx, const Queue* present)
 
 	//TODO: some kind of queue lock? must be synchronized.
 	//need some submitmanager improvements as general queue sync manager.
-    swapChain().present(*present, currentBuffer, renderComplete);
+	swapChain().present(*present, currentBuffer, renderComplete);
 
 	execState.wait();
 
-    vk::destroySemaphore(device(), acquireComplete, nullptr);
+	vk::destroySemaphore(device(), acquireComplete, nullptr);
 	vk::destroySemaphore(device(), renderComplete, nullptr);
 }
 

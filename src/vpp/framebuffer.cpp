@@ -26,6 +26,15 @@ Framebuffer::~Framebuffer()
 	if(vkHandle()) vk::destroyFramebuffer(vkDevice(), vkHandle(), nullptr);
 }
 
+void Framebuffer::swap(Framebuffer& lhs) noexcept
+{
+	using std::swap;
+	swap(resourceBase(), lhs.resourceBase());
+	swap(attachments_, lhs.attachments_);
+	swap(width_, lhs.width_);
+	swap(height_, lhs.height_);
+}
+
 void Framebuffer::create(const Device& dev, const vk::Extent2D& size,
 	const AttachmentsInfo& attachments)
 {

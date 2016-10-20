@@ -24,8 +24,8 @@ public:
 	ShaderModule(const Device& dev, const Range<std::uint32_t>& bytes);
 	~ShaderModule();
 
-	ShaderModule(ShaderModule&& other) noexcept = default;
-	ShaderModule& operator=(ShaderModule&& other) noexcept = default;
+	ShaderModule(ShaderModule&& lhs) noexcept { swap(lhs); }
+	ShaderModule& operator=(ShaderModule&& lhs) noexcept { swap(lhs); return *this; }
 };
 
 ///Vulkan Shader Stage wrapper around owned or non-owned shader modules.
@@ -46,8 +46,8 @@ public:
 	ShaderStage(const Device& dev, const Range<std::uint32_t>& code, const CreateInfo& info);
 	~ShaderStage();
 
-	ShaderStage(ShaderStage&& other) noexcept;
-	ShaderStage& operator=(ShaderStage other) noexcept;
+	ShaderStage(ShaderStage&& lhs) noexcept { swap(lhs); }
+	ShaderStage& operator=(ShaderStage lhs) noexcept { swap(lhs); return *this; }
 
 	vk::PipelineShaderStageCreateInfo vkStageInfo() const;
 	vk::ShaderModule vkShaderModule() const { return module_; }
@@ -55,7 +55,7 @@ public:
 	bool owned() const { return owned_; }
 
 	operator vk::PipelineShaderStageCreateInfo() const;
-	friend void swap(ShaderStage& a, ShaderStage& b) noexcept;
+	void swap(ShaderStage& lhs) noexcept;
 
 protected:
 	vk::ShaderModule module_ {};
@@ -71,8 +71,8 @@ public:
 	ShaderProgram(const Device& device);
 	~ShaderProgram() = default;
 
-	ShaderProgram(ShaderProgram&& other) noexcept = default;
-	ShaderProgram& operator=(ShaderProgram&& other) noexcept = default;
+	ShaderProgram(ShaderProgram&& lhs) noexcept = default;
+	ShaderProgram& operator=(ShaderProgram&& lhs) noexcept = default;
 
 	///\{
 	///Returns the given shader stage if there is any, nullptr otherwise.

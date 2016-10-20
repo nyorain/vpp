@@ -19,8 +19,8 @@ public:
 	DescriptorSetLayout(const Device& dev, const Range<vk::DescriptorSetLayoutBinding>& bindings);
 	~DescriptorSetLayout();
 
-	DescriptorSetLayout(DescriptorSetLayout&& other) noexcept = default;
-	DescriptorSetLayout& operator=(DescriptorSetLayout&& other) noexcept = default;
+	DescriptorSetLayout(DescriptorSetLayout&& lhs) noexcept { swap(lhs); }
+	DescriptorSetLayout& operator=(DescriptorSetLayout lhs) noexcept { swap(lhs); return *this; }
 };
 
 ///XXX: store a reference to pool/layout instead of the device pointer for additional information.
@@ -36,8 +36,8 @@ public:
 	DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPool pool);
 	~DescriptorSet();
 
-	DescriptorSet(DescriptorSet&& other) noexcept = default;
-	DescriptorSet& operator=(DescriptorSet&& other) noexcept = default;
+	DescriptorSet(DescriptorSet&& lhs) noexcept { swap(lhs); }
+	DescriptorSet& operator=(DescriptorSet lhs) noexcept { swap(lhs); return *this; }
 };
 
 ///RAII vulkan descriptor pool wrapper.
@@ -48,8 +48,8 @@ public:
 	DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info);
 	~DescriptorPool();
 
-	DescriptorPool(DescriptorPool&& other) noexcept = default;
-	DescriptorPool& operator=(DescriptorPool&& other) noexcept = default;
+	DescriptorPool(DescriptorPool&& lhs) noexcept { swap(lhs); }
+	DescriptorPool& operator=(DescriptorPool lhs) noexcept { swap(lhs); return *this; }
 };
 
 //TODO: rename to DescriptorUpdate? easier and probably also better

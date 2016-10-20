@@ -2,6 +2,7 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/device.hpp>
+#include <utility>
 
 namespace vpp
 {
@@ -102,7 +103,7 @@ public:
 	~NonOwned() { T::release(); }
 
 	// NonOwned(NonOwned&& other) noexcept(noexcept(T(std::declval<T>()))) = default;
-	// NonOwned& operator=(NonOwned&& other) 
+	// NonOwned& operator=(NonOwned&& other)
 	// 	noexcept(noexcept(std::declval<T> = std::declval<T>)) = default;
 	NonOwned(NonOwned&& other) = default;
 	NonOwned& operator=(NonOwned&& other) = default;
@@ -120,12 +121,11 @@ public:
 ///by this template class).
 ///\sa Resource
 ///\sa Device
-template <typename T>
+template <typename B>
 class ResourceReference
 {
 public:
-	const Device& device() const
-		{ return reinterpret_cast<const T&>(*this).resourceRef().device(); }
+	const Device& device() const { return tSelf().resourceRef().device(); }
 
 	const vk::Instance& vkInstance() const { return device().vkInstance(); }
 	const vk::PhysicalDevice& vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
@@ -133,78 +133,96 @@ public:
 
 	ResourceReference& resourceBase() noexcept { return *this; }
 	const ResourceReference& resourceBase() const noexcept { return *this; }
+
+	const B& tSelf() const { return reinterpret_cast<const B&>(*this); }
 };
 
 ///Utility template base class that makes RAII wrappers easier.
-///Derives from Resource and holds a vulkan handle of type T.
-///Implements the conversion and move operators/constructors.
-template<typename T>
-class ResourceHandle : public Resource
+///Note that move constructor and assignment operator can be defined using the swap
+///member function if there are no additional data members.
+///\tparam H The vulkan handle type.
+template<typename H>
+class ResourceHandle : public Resource, public NonCopyable
 {
 public:
-	ResourceHandle(ResourceHandle&& other) noexcept { swap(*this, other); }
-	ResourceHandle& operator=(ResourceHandle other) noexcept { swap(*this, other); return *this; }
+	using Handle = H;
 
+public:
+	const Handle& vkHandle() const noexcept { return handle_; }
+	Handle& vkHandle() noexcept { return handle_; } //XXX: public for now. Why cant this be protected??
+
+	operator Handle() const noexcept { return vkHandle(); }
+
+protected:
+	ResourceHandle() = default;
+	ResourceHandle(const Device& dev, const Handle& hndl = {}) : Resource(dev), handle_(hndl) {}
 	~ResourceHandle() = default;
 
-	const T& vkHandle() const noexcept { return handle_; }
-	T& vkHandle() noexcept { return handle_; } //XXX: public for now. Why cant this be protected??
-
-	operator T() const noexcept { return vkHandle(); }
+	ResourceHandle(ResourceHandle&& other) noexcept = delete;
+	ResourceHandle& operator=(ResourceHandle&& other) noexcept = delete;
 
 	ResourceHandle& resourceBase() noexcept { return *this; }
 	const ResourceHandle& resourceBase() const noexcept { return *this; }
 
-	friend void swap(ResourceHandle<T>& a, ResourceHandle<T>& b) noexcept
+	void swap(ResourceHandle<H>& other) noexcept
 	{
 		using std::swap;
-		swap(static_cast<Resource&>(a), static_cast<Resource&>(b));
-		swap(a.handle_, b.handle_);
+		swap(static_cast<Resource&>(*this), static_cast<Resource&>(other));
+		swap(handle_, other.handle_);
 	}
 
-protected:
-	ResourceHandle() = default;
-	ResourceHandle(const Device& dev, const T& handle = {}) : Resource(dev), handle_(handle) {}
+	friend void swap(ResourceHandle<H>& a, ResourceHandle<H>& b) noexcept { return a.swap(b); }
 
+	template<typename> friend class NonOwned;
 	void release() { handle_ = {}; }
 
 protected:
-	T handle_ {};
+	Handle handle_ {};
 };
 
 ///ResourceHandle base for classes that already hold a Device reference in some way.
-template<typename T, typename B>
-class ResourceHandleReference : public ResourceReference<B>
+///\tparam B The deriving class, needed for the ResourceReference base
+///\tparam H The vulkan handle type.
+template<typename B, typename H>
+class ResourceReferenceHandle : public ResourceReference<B>, public NonCopyable
 {
 public:
-	ResourceHandleReference(ResourceHandleReference&& other) noexcept { swap(*this, other); }
-	ResourceHandleReference& operator=(ResourceHandleReference other) noexcept
-		{ swap(*this, other); return *this; }
+	using Handle = H;
 
-	~ResourceHandleReference() = default;
+public:
+	const Handle& vkHandle() const noexcept { return handle_; }
+	Handle& vkHandle() noexcept { return handle_; } //XXX: public for now. Why cant this be protected??
 
-	const T& vkHandle() const noexcept { return handle_; }
-	T& vkHandle() noexcept { return handle_; } //XXX: public for now. Why cant this be protected??
-
-	operator T() const noexcept { return vkHandle(); }
-
-	ResourceHandleReference& resourceBase() noexcept { return *this; }
-	const ResourceHandleReference& resourceBase() const noexcept { return *this; }
-
-	friend void swap(ResourceHandleReference<T, B>& a, ResourceHandleReference<T, B>& b) noexcept
-	{
-		using std::swap;
-		swap(a.handle_, b.handle_);
-	}
+	operator Handle() const noexcept { return vkHandle(); }
 
 protected:
-	ResourceHandleReference() = default;
-	ResourceHandleReference(const T& handle) : handle_(handle) {}
+	ResourceReferenceHandle() = default;
+	ResourceReferenceHandle(const Handle& handle) : handle_(handle) {}
+	~ResourceReferenceHandle() noexcept = default;
 
+	ResourceReferenceHandle(ResourceReferenceHandle&& other) noexcept = delete;
+	ResourceReferenceHandle& operator=(ResourceReferenceHandle&& other) noexcept = delete;
+
+	ResourceReferenceHandle& resourceBase() noexcept { return *this; }
+	const ResourceReferenceHandle& resourceBase() const noexcept { return *this; }
+
+	void swap(ResourceReferenceHandle<B, H>& other) noexcept
+	{
+		using std::swap;
+		swap(static_cast<ResourceReference<B>&>(*this), static_cast<ResourceReference<B>&>(other));
+		swap(handle_, other.handle_);
+	}
+
+	friend void swap(ResourceReferenceHandle<B, H>& a, ResourceReferenceHandle<B, H>& b) noexcept
+	{
+		return a.swap(b);
+	}
+
+	template<typename> friend class NonOwned;
 	void release() { handle_ = {}; }
 
 protected:
-	T handle_ {};
+	Handle handle_ {};
 };
 
 }

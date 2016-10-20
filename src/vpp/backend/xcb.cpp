@@ -7,8 +7,8 @@ namespace vpp
 Surface createSurface(vk::Instance instance, xcb_connection_t& con, xcb_window_t window)
 {
 	vk::XcbSurfaceCreateInfoKHR info;
-    info.connection = &con;
-    info.window = window;
+	info.connection = &con;
+	info.window = window;
 
 	vk::SurfaceKHR ret;
 	VPP_PROC(instance, CreateXcbSurfaceKHR)(instance, &info, nullptr, &ret);
@@ -20,13 +20,14 @@ Context createContext(xcb_connection_t& con, xcb_window_t window, Context::Creat
 	info.instanceExtensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
 
 	Context ret;
-	ret.initInstance(info);
+	ret.initInstance(info.debugFlags, info.instanceExtensions,
+		info.instanceLayers, info.reverseInstanceLayers);
 
 	auto vsurface = createSurface(ret.vkInstance(), con, window);
 	ret.initSurface(std::move(vsurface));
 
-	ret.initDevice(info);
-	ret.initSwapChain(info);
+	ret.initDevice(info.deviceExtensions, info.deviceLayers, info.reverseDeviceLayers);
+	ret.initSwapChain({info.width, info.height}, info.swapChainSettings);
 
 	return ret;
 }

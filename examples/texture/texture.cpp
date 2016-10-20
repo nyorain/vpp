@@ -5,8 +5,16 @@
 #include <vpp/graphicsPipeline.hpp>
 #include <vpp/vk.hpp>
 
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#endif
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+#ifdef __GNUC__
+#pragma GCC diagnostic warning "-Wmisleading-indentation"
+#endif
 
 class TextureData : public vpp::Resource
 {

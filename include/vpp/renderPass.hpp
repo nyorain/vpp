@@ -18,8 +18,8 @@ public:
 	RenderPass(const Device& dev, vk::RenderPass pass, const vk::RenderPassCreateInfo& info);
 	~RenderPass();
 
-	RenderPass(RenderPass&& other) noexcept = default;
-	RenderPass& operator=(RenderPass&& other) noexcept = default;
+	RenderPass(RenderPass&& lhs) noexcept { swap(lhs); }
+	RenderPass& operator=(RenderPass&& lhs) noexcept { swap(lhs); return *this; }
 
 	const std::vector<vk::AttachmentDescription>& attachments() const { return attachments_; }
 	const std::vector<vk::SubpassDependency>& dependencies() const { return dependencies_; }

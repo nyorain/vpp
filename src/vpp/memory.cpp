@@ -18,18 +18,6 @@ MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
 	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
 }
 
-MemoryMap::MemoryMap(MemoryMap&& other) noexcept
-{
-	swap(*this, other);
-}
-
-MemoryMap& MemoryMap::operator=(MemoryMap other) noexcept
-{
-	unmap();
-	swap(*this, other);
-	return *this;
-}
-
 MemoryMap::~MemoryMap()
 {
 	unmap();
@@ -51,14 +39,15 @@ void MemoryMap::remap(const Allocation& allocation)
 	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
 }
 
-void swap(MemoryMap& a, MemoryMap& b) noexcept
+void MemoryMap::swap(MemoryMap& lhs) noexcept
 {
 	using std::swap;
 
-	swap(a.memory_, b.memory_);
-	swap(a.allocation_, b.allocation_);
-	swap(a.ptr_, b.ptr_);
-	swap(a.views_, b.views_);
+	swap(resourceBase(), lhs.resourceBase());
+	swap(memory_, lhs.memory_);
+	swap(allocation_, lhs.allocation_);
+	swap(ptr_, lhs.ptr_);
+	swap(views_, lhs.views_);
 }
 
 vk::MappedMemoryRange MemoryMap::mappedMemoryRange() const
@@ -139,15 +128,12 @@ MemoryMapView::~MemoryMapView()
 	if(memoryMap_) memoryMap_->unref();
 }
 
-MemoryMapView::MemoryMapView(MemoryMapView&& other) noexcept
+void MemoryMapView::swap(MemoryMapView& lhs) noexcept
 {
-	swap(*this, other);
-}
+	using std::swap;
 
-MemoryMapView& MemoryMapView::operator=(MemoryMapView other) noexcept
-{
-	swap(*this, other);
-	return *this;
+	swap(memoryMap_, lhs.memoryMap_);
+	swap(allocation_, lhs.allocation_);
 }
 
 vk::MappedMemoryRange MemoryMapView::mappedMemoryRange() const
@@ -193,14 +179,6 @@ std::uint8_t* MemoryMapView::ptr() const
 bool MemoryMapView::coherent() const
 {
 	return memory().properties() & vk::MemoryPropertyBits::hostCoherent;
-}
-
-void swap(MemoryMapView& a, MemoryMapView& b) noexcept
-{
-	using std::swap;
-
-	swap(a.memoryMap_, b.memoryMap_);
-	swap(a.allocation_, b.allocation_);
 }
 
 //Memory

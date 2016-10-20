@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
+#include <vpp/utility/nonCopyable.hpp>
 #include <vector>
 #include <cstdint>
 
@@ -16,11 +17,9 @@ vk::DebugReportFlagBitsEXT::DebugEXT
 vk::DebugReportFlagBitsEXT::PerformanceWarningEXT
 */
 
-///LayerNames
-extern std::vector<const char*> validationLayerNames;
-
 ///Vulkan DebugCallback.
-class DebugCallback
+///NonMovable since it registers a pointer to itself as callback user data.
+class DebugCallback : public NonMovable
 {
 public:
 	struct CallbackInfo
@@ -34,9 +33,16 @@ public:
 		const char* message;
 	};
 
-protected:
-	vk::Instance instance_ {};
-	vk::DebugReportCallbackEXT debugCallback_ {};
+public:
+	///May be outdated at some times.
+	///Returns the common names of all useful instance validation layers.
+	static const std::vector<const char*>& defaultInstanceLayerNames();
+
+	///Returns the common names of all useful device validation layers.
+	static const std::vector<const char*>& defaultDeviceLayerNames();
+
+	///Returns the default debug report flags, which are all except debug and information.
+	static vk::DebugReportFlagsEXT defaultFlags();
 
 public:
 	DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags);
@@ -45,7 +51,13 @@ public:
 	vk::Instance vkInstance() const { return instance_; }
 	vk::DebugReportCallbackEXT vkCallback() const { return debugCallback_; }
 
+	///Custom debug callbacks can derive from this function.
 	virtual bool call(const CallbackInfo& info);
+
+protected:
+	vk::Instance instance_ {};
+	vk::DebugReportCallbackEXT debugCallback_ {};
+
 };
 
 };

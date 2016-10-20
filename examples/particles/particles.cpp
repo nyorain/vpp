@@ -131,7 +131,7 @@ ParticleRenderer::ParticleRenderer(ParticleSystem& sys) : system_(&sys)
 
 ParticleRenderer::~ParticleRenderer()
 {
-
+	if(computeSemaphore_) vk::destroySemaphore(ps().app_.context.device(), computeSemaphore_, nullptr);
 }
 
 void ParticleRenderer::init(vpp::SwapChainRenderer& renderer)
@@ -204,7 +204,7 @@ ParticleRenderer::AdditionalSemaphores ParticleRenderer::submit(unsigned int id)
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &computeSemaphore_;
 
-	dev.submitManager().add(*ps().app_.context.graphicsComputeQueue(), submitInfo);
+	dev.submitManager().add(ps().app_.context.graphicsComputeQueue(), submitInfo);
 
 	return {{computeSemaphore_, vk::PipelineStageBits::allCommands}};
 	//return {};
@@ -245,13 +245,6 @@ void ParticleSystem::init()
 	buildComputeBuffer();
 
 	lastUpdate_ = Clock::now();
-
-	//XXX: test
-	particles_.clear();
-	particles_.reserve(count_);
-	vpp::read430(particlesBuffer_, particles_)->finish();
-
-	std::cout << "3rd position retrieved: " << particles_[2].position << "\n";
 }
 
 void ParticleSystem::initGraphicsPipeline()
@@ -374,7 +367,6 @@ void ParticleSystem::initParticles()
 		particle.velocity = nytl::Vec2f{0.f, 0.f};
 		particle.color = nytl::Vec2f(1., 1.);
 
-		if(i == 2) std::cout << "3rd position set: " << particle.position << "\n";
 		i++;
 	}
 }

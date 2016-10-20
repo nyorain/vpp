@@ -5,6 +5,7 @@
 #include <vpp/device.hpp>
 
 #include <stdexcept>
+#include <cstring>
 
 namespace vpp
 {
@@ -36,11 +37,9 @@ void swap(Context& a, Context& b) noexcept
 	swap(a.debugCallback_, b.debugCallback_);
 }
 
-void Context::initInstance(const CreateInfo& info)
+void Context::initInstance(vk::DebugReportFlagsEXT debugFlags, Range<const char*> reqExtensions,
+	Range<const char*> reqLayers, bool reverseLayers)
 {
-	std::vector<const char*> layers;
-	auto vec = vk::enumerateInstanceLayerProperties();
-
 	//appinfo
 	auto eName = "vpp";
 	auto aName = "unknown";
@@ -56,14 +55,48 @@ void Context::initInstance(const CreateInfo& info)
 	appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 11);
 
 	//iniinfo
-	std::vector<const char*> extensions = info.instanceExtensions;
+	std::vector<const char*> extensions;
+	auto enumeratedExtensions = vk::enumerateInstanceExtensionProperties(nullptr);
+	extensions.reserve(enumeratedExtensions.size() + 1);
+	for(auto& e : reqExtensions)
+	{
+		auto found = false;
+		for(auto& ee : enumeratedExtensions)
+		{
+			if(std::strcmp(ee.extensionName.data(), e) == 0)
+			{
+				extensions.push_back(e);
+				found = true;
+				break;
+			}
+		}
+
+		if(!found) std::cout << "vpp::Context: device extension " << e << " not available\n";
+	}
 	extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 
-	if(info.debugFlags != 0)
+	std::vector<const char*> layers;
+	auto enumeratedLayers = vk::enumerateInstanceLayerProperties();
+	layers.reserve(enumeratedLayers.size());
+
+	for(auto& l : reqLayers)
 	{
-		layers = validationLayerNames;
-		extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+		auto found = false;
+		for(auto& el : enumeratedLayers)
+		{
+			if((std::strcmp(el.layerName.data(), l) == 0) ^ reverseLayers)
+			{
+				layers.push_back(l);
+				found = true;
+				break;
+			}
+		}
+
+		if(!found && !reverseLayers)
+			std::cout << "vpp::Context: instance layer " << l << " not available\n";
 	}
+
+	if(debugFlags != 0) extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 
 	vk::InstanceCreateInfo iniinfo;
 	iniinfo.enabledLayerCount = layers.size();
@@ -73,14 +106,10 @@ void Context::initInstance(const CreateInfo& info)
 	iniinfo.pApplicationInfo = &appInfo;
 
 	instance_ = vk::createInstance(iniinfo);
-	if(info.debugFlags != 0)
-	{
-		auto flags = info.debugFlags;
-		debugCallback_.reset(new DebugCallback(vkInstance(), flags));
-	}
+	if(debugFlags != 0) debugCallback_ = std::make_unique<DebugCallback>(vkInstance(), debugFlags);
 }
 
-vk::PhysicalDevice Context::choosePhysicalDevice(const std::vector<vk::PhysicalDevice>& phdevs) const
+vk::PhysicalDevice Context::choosePhysicalDevice(Range<vk::PhysicalDevice> phdevs) const
 {
 	for(auto& phdev : phdevs)
 	{
@@ -94,25 +123,64 @@ vk::PhysicalDevice Context::choosePhysicalDevice(const std::vector<vk::PhysicalD
 	throw std::runtime_error("vpp::Context: no valid physical devices");
 }
 
-void Context::initDevice(const CreateInfo& info)
+void Context::initDevice(Range<const char*> reqExtensions, Range<const char*> reqLayers,
+	bool reverseLayers)
 {
-	//phyiscal device
 	auto phdevs = vk::enumeratePhysicalDevices(vkInstance());
 	auto phdev = choosePhysicalDevice(phdevs);
 
+	initDevice(phdev, reqExtensions, reqLayers, reverseLayers);
+}
+
+void Context::initDevice(vk::PhysicalDevice phdev, Range<const char*> reqExtensions,
+	Range<const char*> reqLayers, bool reverseLayers)
+{
 	//extensions & layers
 	//atm: activate all layes - make this configurable maybe?
 	//or at least query the layers and not use the hard coded names?
-	std::vector<const char*> extensions = info.deviceExtensions;
+	std::vector<const char*> extensions;
+	auto enumeratedExtensions = vk::enumerateDeviceExtensionProperties(phdev, nullptr);
+	extensions.reserve(enumeratedExtensions.size() + 1);
+	for(auto& e : reqExtensions)
+	{
+		auto found = false;
+		for(auto& ee : enumeratedExtensions)
+		{
+			if(std::strcmp(ee.extensionName.data(), e) == 0)
+			{
+				extensions.push_back(e);
+				found = true;
+				break;
+			}
+		}
+
+		if(!found) std::cout << "vpp::Context: device extension " << e << " not available\n";
+	}
 	extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
 	std::vector<const char*> layers;
-	if(info.debugFlags != 0) layers = validationLayerNames;
+	auto enumeratedLayers = vk::enumerateDeviceLayerProperties(phdev);
+	layers.reserve(enumeratedLayers.size() + 1);
+
+	for(auto& l : reqLayers)
+	{
+		auto found = false;
+		for(auto& el : enumeratedLayers)
+		{
+			if((std::strcmp(el.layerName.data(), l) == 0) ^ reverseLayers)
+			{
+				layers.push_back(l);
+				found = true;
+				break;
+			}
+		}
+
+		if(!found && !reverseLayers)
+			std::cout << "vpp::Context: device layer " << l << " not available\n";
+	}
 
 	//queues
 	auto queueProps = vk::getPhysicalDeviceQueueFamilyProperties(phdev);
-
-	//present queue
 	auto queues = surface().supportedQueueFamilies(phdev);
 
 	std::uint32_t presentQFam = -1;
@@ -139,10 +207,10 @@ void Context::initDevice(const CreateInfo& info)
 	}
 
 	if(presentQFam == std::uint32_t(-1))
-		throw std::runtime_error("vpp::Context::initDevice: unable to get present queue");
+		throw std::runtime_error("vpp::Context: unable to get present queue");
 
 	if(graphicsComputeQFam == std::uint32_t(-1))
-		throw std::runtime_error("vpp::Context::initDevice: unable to get gfx/comp queue");
+		throw std::runtime_error("vpp::Context: unable to get gfx/comp queue");
 
 	//create
 	vk::DeviceCreateInfo devinfo{};
@@ -176,9 +244,9 @@ void Context::initDevice(const CreateInfo& info)
 	graphicsComputeQueue_ = device().queue(graphicsComputeQFam, 0);
 }
 
-void Context::initSwapChain(const CreateInfo& info)
+void Context::initSwapChain(const vk::Extent2D& size, const SwapChainSettings& settings)
 {
-	swapChain_ = SwapChain(device(), surface(), {info.width, info.height});
+	swapChain_ = SwapChain(device(), surface(), size, settings);
 }
 
 const vk::Device& Context::vkDevice() const
