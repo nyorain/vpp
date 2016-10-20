@@ -269,7 +269,7 @@ vpp::WorkManager loadScene(const vpp::Device& dev, ModelData& modeldata)
 			}
 			else
 			{
-				auto imgdata = stbi_load(aistr.C_Str(), &width, &height, &comp, 4);
+				imgdata = stbi_load(aistr.C_Str(), &width, &height, &comp, 4);
 				if(!imgdata)
 				{
 					auto msg = std::string("Failed to load texture ") + aistr.C_Str();

@@ -3,10 +3,10 @@ set(vpp-sources
 	allocator.cpp
 	buffer.cpp
 	bufferOps.cpp
-    context.cpp
-    device.cpp
-    descriptor.cpp
-    procAddr.cpp
+	context.cpp
+	device.cpp
+	descriptor.cpp
+	procAddr.cpp
 	renderer.cpp
 	memory.cpp
 	allocator.cpp
@@ -21,8 +21,8 @@ set(vpp-sources
 	renderPass.cpp
 	commandBuffer.cpp
 	submit.cpp
-    surface.cpp
-    swapChain.cpp
+	surface.cpp
+	swapChain.cpp
 	transfer.cpp
 	work.cpp
 	queue.cpp
@@ -51,11 +51,11 @@ add_library(vpp SHARED ${vpp-sources})
 add_dependencies(vpp vkHeaders)
 
 #link to vulkan
-target_link_libraries(vpp ${VULKAN_LIBRARY})
-target_include_directories(vpp PUBLIC ${VULKAN_INCLUDE_DIR})
+target_link_libraries(vpp ${Vulkan_LIBRARY})
+target_include_directories(vpp PUBLIC ${Vulkan_INCLUDE_DIR})
 
 #install
 install(TARGETS vpp
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)

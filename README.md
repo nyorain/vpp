@@ -1,6 +1,7 @@
 # Vulkan++
 
-A vulkan abstraction library written in modern C++14 and licensed by the __MIT License__.
+A vulkan abstraction library written in modern C++14 and licensed by the __Boost License__
+(similiar to MIT License).
 It does not aim to be a full-sized graphics engine, but rather focuses on providing some useful
 features that make programming vulkan applications in C++ more convenient and less repetitive.
 
@@ -46,7 +47,7 @@ auto& swapChain = context->swapChain();
 auto& surface = constext->surface();
 
 //create a render pass matching your needs
-//In future vpp will probably offer some sane render pass presets 
+//In future vpp will probably offer some sane render pass presets
 vpp::RenderPass renderPass = ...;
 
 //To render somethin now, you could e.g. use the vpp::SwapChainRenderer which requires you to
@@ -153,7 +154,7 @@ This example shows how to fill or retrieve the data from buffers and images asyn
 ``````````````````cpp
 //Easily fill multiple data segments into buffers and retrieve the async work objects.
 
-//Fill a buffer with the 32 bit int and the data of a 
+//Fill a buffer with the 32 bit int and the data of a
 //vector (will extract it correctly) using std140 layout.
 std::uint32_t a = 420;
 std::vector<std::int32_t> b = {1, 4, 2, 5, 6, 3, 2, 4, 3};
