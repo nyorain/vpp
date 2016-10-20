@@ -153,22 +153,22 @@ This example shows how to fill or retrieve the data from buffers and images asyn
 ``````````````````cpp
 //Easily fill multiple data segments into buffers and retrieve the async work objects.
 
-//Fill buffer1 with the 32 bit int and the data of a 
+//Fill a buffer with the 32 bit int and the data of a 
 //vector (will extract it correctly) using std140 layout.
 std::uint32_t a = 420;
 std::vector<std::int32_t> b = {1, 4, 2, 5, 6, 3, 2, 4, 3};
-auto work1 = fill140(bufferA, a, b);
+auto work1 = fill140(buffer, a, b);
 
 
-//Fill buffer2 with the float[4] array, and two floats using std140 layout.
+//Fill a buffer with the float[4] array, and two floats using std140 layout.
 //The extra number (4) in the last data segment signals that it should have an
 //offset of 4 to the previous segment.
 float[4] c = {1.0, 7.7, 4.9, 2.9};
-auto work2 = fill140(bufferB, c, 34.f, 45.f, 4);
+auto work2 = fill140(buffer, c, 34.f, 45.f, 4);
 
 
-//In this case the buffer is just filles the buffer with a raw copy of the given type.
-SomeType data = ...;
+//In this case the buffer is just filled the buffer with a raw copy of the given type.
+MyPodStructData data;
 auto work3 = fill140(bufferC, 0.f, vpp::raw(data));
 
 
@@ -178,7 +178,7 @@ auto work3 = fill140(bufferC, 0.f, vpp::raw(data));
 float d;
 Vec2 e; //for custom types (e.g. when using it with glm) you can just specialize vpp::VulkanType
 std::vector<std::uint32_t> f(200);
-auto work4 = retrieve430(bufferD, d, e, f);
+auto work4 = retrieve430(buffer, d, e, f);
 
 
 //If we now want to make sure all the needed work is done, we can simply wait for it to finish.
