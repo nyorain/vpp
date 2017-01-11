@@ -1,5 +1,6 @@
 #include <vpp/backend/xcb.hpp>
 #include <vpp/procAddr.hpp>
+#include <vpp/utility/range.hpp>
 
 namespace vpp
 {
