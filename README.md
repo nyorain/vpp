@@ -216,10 +216,6 @@ __vpp does not have any external dependencies (excluding vulkan headers and load
 It does require a solid C++14 compiler though which means that it is (at the moment) not
 buildable with MSVC, but it works with newer clang versions and gcc 5/6.
 
-The main features that would be required in MSVC to make compiling vpp possible are NSDMIs
-for aggregates (uniform initialization of aggregates with default members) and extented constexpr
-support. Both features are part of the C++14 standard.
-
 At the moment, vpp does compile a small part of boost (boost::container::pmr) within its own
 library for more efficient host memory allocations, but since this feature will part of the
 C++17 standard, this will then no longer be needed (and note that you do not have to
