@@ -1,43 +1,42 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
 #include <vpp/device.hpp>
-#include <utility>
+#include <utility> // std::swap
 
-namespace vpp
-{
+namespace vpp {
 
-///The Resource class represents a vulkan resource associated to a vulkan device.
-///Almost all resources or resource references may be in an uninitialized state, since they
-///do not fully follow RAII to make themselves movable. The resources classes theirself
-///will NOT perform any checks whether they are initialized in their member function (the
-///destructor excluded), so calling member functions of uninitialized (default constructed)
-///resources is undefined behaviour (usually ends in a crash).
-///There are two implementations of the Resource class depending on whether the
-///VPP_ONE_DEVICE_OPTIMIZATION macro is defined. Since many applications will never have more than
-///one vpp::Device instance, it is enough to store a single Device pointer for all resources
-///instead of every resource keeping a device pointer.
-///Both implementations have the same functions and derived classes or users of the
-///Resource class shall not depend on any further (implementation defined) functionality.
-///\sa ResourceReference
-///\sa Device
+/// The Resource class represents a vulkan resource associated to a vulkan device.
+/// Almost all resources may be in an uninitialized state, since they are usually
+/// movable. For the Resource class uninitialized means that they have no associated device.
+/// The Resource class will not perform any checks whether it are initialized
+/// in its member function (the destructor excluded), so calling member functions of
+/// uninitialized (default constructed) resources may trigger undefined behaviour (crash).
+/// There are two implementations of the Resource class depending on whether the
+/// VPP_ONE_DEVICE_OPTIMIZATION macro is defined. Since many applications will never have more than
+/// one vpp::Device instance, it is enough to store a single Device pointer for all resources
+/// instead of every resource keeping a device pointer.
+/// Both implementations have the same functions and derived classes or users of the
+/// Resource class shall not depend on any further (implementation defined) functionality.
+/// \sa ResourceReference
+/// \sa Device
 #ifndef VPP_ONE_DEVICE_OPTIMIZATION
-class Resource
-{
+class Resource {
 public:
 	Resource(const Resource& other) noexcept = default;
-
-	Resource(Resource&& other) noexcept { swap(*this, other); }
-	Resource& operator=(Resource other) noexcept { swap(*this, other); return *this; }
-
 	~Resource() noexcept = default;
 
-	const Device& device() const noexcept { return *device_; }
+	Resource(Resource&& other) noexcept;
+	Resource& operator=(Resource&& other) noexcept;
 
-	const vk::Instance& vkInstance() const noexcept { return device().vkInstance(); }
-	const vk::Device& vkDevice() const noexcept { return device().vkDevice(); }
-	const vk::PhysicalDevice& vkPhysicalDevice() const noexcept
-		{ return device().vkPhysicalDevice(); }
+	const Device& device() const noexcept { return *device_; }
+	const vk::Instance& vkInstance() const noexcept;
+	const vk::Device& vkDevice() const noexcept;
+	const vk::PhysicalDevice& vkPhysicalDevice() const noexcept;
 
 	Resource& resourceBase() noexcept { return *this; }
 	const Resource& resourceBase() const noexcept { return *this; }
@@ -50,23 +49,20 @@ protected:
 	friend void swap(Resource& a, Resource& b) noexcept { std::swap(a.device_, b.device_); }
 
 private:
-	const Device* device_ {nullptr};
+	const Device* device_ {};
 };
 
-#else //VPP_ONE_DEVICE_OPTIMIZATION
+#else // VPP_ONE_DEVICE_OPTIMIZATION
 
-class Resource
-{
+class Resource {
 public:
 	Resource(const Resource& other) noexcept = default;
-	Resource& operator=(const Resource& other) noexcept = default;
+	~Resource() = default;
 
 	Resource(Resource&& other) noexcept = default;
 	Resource& operator=(Resource&& other) noexcept = default;
 
-	~Resource() = default;
-
-	const Device& device() const noexcept { return *deviceRef; }
+	const Device& device() const noexcept { return *deviceInstance_; }
 
 	const vk::Instance& vkInstance() const noexcept { return device().vkInstance(); }
 	const vk::Device& vkDevice() const noexcept { return device().vkDevice(); }
@@ -84,46 +80,41 @@ protected:
 	friend void swap(Resource& a, Resource& b) noexcept {}
 
 private:
-	static const Device* deviceRef;
+	static const Device* deviceInstance_;
 };
 
-#endif //VPP_ONE_DEVICE_OPTIMIZATION
+#endif // VPP_ONE_DEVICE_OPTIMIZATION
 
-///Can be used for non owned resources. Does not store any additional data.
-///Derives from the given type and simply calls its protected release function (which should
-///release the owned resource) before calling its destructor which then cannot destroy the
-///not owned resource.
-///If you want to enable your custom classes for this template simply implement a release memeber
-///function which is visible to NonOwned.
+/// Can be used for non owned resources. Does not store any additional data.
+/// Derives from the given type and simply calls its protected release function (which should
+/// release the owned resource) before calling its destructor which then cannot destroy the
+/// not owned resource.
+/// If you want to enable your custom classes for this template simply implement a release memeber
+/// function which is visible to NonOwned.
 template <typename T>
-class NonOwned : public T
-{
+class NonOwned : public T {
 public:
 	using T::T;
 	~NonOwned() { T::release(); }
 
-	// NonOwned(NonOwned&& other) noexcept(noexcept(T(std::declval<T>()))) = default;
-	// NonOwned& operator=(NonOwned&& other)
-	// 	noexcept(noexcept(std::declval<T> = std::declval<T>)) = default;
 	NonOwned(NonOwned&& other) = default;
 	NonOwned& operator=(NonOwned&& other) = default;
 };
 
-///Resource class that already holds another resource and does therefore not have to hold a second
-///vulkan device reference.
-///Classes inheriting from this template have to give theirselfs as template paramater (CRTP) and
-///implement a <resourceRef() const> member function which returns a (const) reference to a Resource
-///or another ResourceReference.
-///This class exists just as an optimization (1 word less memory needed) for Resource classes.
-///For an example look e.g. at the CommandBuffer class, which naturally holds a reference to the
-///CommandPool it is allocated from and therefore does not have to hold a additional reference to
-///its vulkan devcie, since this information can be retrieved from the CommandPool reference (done
-///by this template class).
-///\sa Resource
-///\sa Device
+/// Resource class that already holds another resource and does therefore not have to hold a second
+/// vulkan device reference.
+/// Classes inheriting from this template have to give theirselfs as template paramater (CRTP) and
+/// implement a <resourceRef() const> member function which returns a (const) reference to a Resource
+/// or another ResourceReference.
+/// This class exists just as an optimization (1 word less memory needed) for Resource classes.
+/// For an example look e.g. at the CommandBuffer class, which naturally holds a reference to the
+/// CommandPool it is allocated from and therefore does not have to hold a additional reference to
+/// its vulkan devcie, since this information can be retrieved from the CommandPool reference (done
+/// by this template class).
+/// \sa Resource
+/// \sa Device
 template <typename B>
-class ResourceReference
-{
+class ResourceReference {
 public:
 	const Device& device() const { return tSelf().resourceRef().device(); }
 
@@ -137,13 +128,12 @@ public:
 	const B& tSelf() const { return reinterpret_cast<const B&>(*this); }
 };
 
-///Utility template base class that makes RAII wrappers easier.
-///Note that move constructor and assignment operator can be defined using the swap
-///member function if there are no additional data members.
-///\tparam H The vulkan handle type.
+/// Utility template base class that makes RAII wrappers easier.
+/// Note that move constructor and assignment operator can be defined using the swap
+/// member function if there are no additional data members.
+/// \tparam H The vulkan handle type.
 template<typename H>
-class ResourceHandle : public Resource, public NonCopyable
-{
+class ResourceHandle : public Resource, public NonCopyable {
 public:
 	using Handle = H;
 
@@ -180,18 +170,17 @@ protected:
 	Handle handle_ {};
 };
 
-///ResourceHandle base for classes that already hold a Device reference in some way.
-///\tparam B The deriving class, needed for the ResourceReference base
-///\tparam H The vulkan handle type.
+/// ResourceHandle base for classes that already hold a Device reference in some way.
+/// \tparam B The deriving class, needed for the ResourceReference base
+/// \tparam H The vulkan handle type.
 template<typename B, typename H>
-class ResourceReferenceHandle : public ResourceReference<B>, public NonCopyable
-{
+class ResourceReferenceHandle : public ResourceReference<B>, public NonCopyable {
 public:
 	using Handle = H;
 
 public:
 	const Handle& vkHandle() const noexcept { return handle_; }
-	Handle& vkHandle() noexcept { return handle_; } //XXX: public for now. Why cant this be protected??
+	Handle& vkHandle() noexcept { return handle_; }
 
 	operator Handle() const noexcept { return vkHandle(); }
 
@@ -225,4 +214,4 @@ protected:
 	Handle handle_ {};
 };
 
-}
+} // namespace vpp
