@@ -1,16 +1,19 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
-#include <vpp/utility/allocation.hpp>
+#include <vpp/util/allocation.hpp>
 
 #include <memory>
 #include <map>
 #include <vector>
 #include <vector>
 
-namespace vpp
-{
+namespace vpp {
 
 ///Represents a mapped range of a vulkan DeviceMemory.
 ///There shall never be more than one MemoryMap object for on DeviceMemory object.

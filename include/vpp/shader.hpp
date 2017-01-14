@@ -2,7 +2,8 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
-#include <vpp/utility/stringParam.hpp>
+#include <vpp/util/stringParam.hpp>
+#include <vpp/util/span.hpp>
 
 #include <string>
 #include <vector>
@@ -13,15 +14,15 @@ namespace vpp
 ///Utility function that can be used to read binary shader files.
 ///Note that the code size must be a multiple of 4 (bytes) and therefore ranges with
 ///4 byte integers are used.
-vk::ShaderModule loadShaderModule(vk::Device dev, const StringParam& filename);
-vk::ShaderModule loadShaderModule(vk::Device dev, const Range<std::uint32_t>& code);
+vk::ShaderModule loadShaderModule(vk::Device dev, nytl::StringParam filename);
+vk::ShaderModule loadShaderModule(vk::Device dev, nytl::Span<const std::uint32_t> code);
 
 class ShaderModule : public ResourceHandle<vk::ShaderModule>
 {
 public:
 	ShaderModule() = default;
-	ShaderModule(const Device& dev, const StringParam& file);
-	ShaderModule(const Device& dev, const Range<std::uint32_t>& bytes);
+	ShaderModule(const Device& dev, nytl::StringParam file);
+	ShaderModule(const Device& dev, nytl::Span<const std::uint32_t> bytes);
 	~ShaderModule();
 
 	ShaderModule(ShaderModule&& lhs) noexcept { swap(lhs); }
@@ -42,8 +43,8 @@ public:
 public:
 	ShaderStage() = default;
 	ShaderStage(const Device& dev, vk::ShaderModule module, const CreateInfo& info);
-	ShaderStage(const Device& dev, const StringParam& name, const CreateInfo& info);
-	ShaderStage(const Device& dev, const Range<std::uint32_t>& code, const CreateInfo& info);
+	ShaderStage(const Device& dev, nytl::StringParam name, const CreateInfo& info);
+	ShaderStage(const Device& dev, nytl::Span<const std::uint32_t> code, const CreateInfo& info);
 	~ShaderStage();
 
 	ShaderStage(ShaderStage&& lhs) noexcept { swap(lhs); }
@@ -82,8 +83,8 @@ public:
 
 	///\{
 	///Changes or adds a new shader stage (depending on info::stage).
-	void stage(const StringParam& filename, const ShaderStage::CreateInfo& info);
-	void stage(const Range<std::uint32_t>& bytes, const ShaderStage::CreateInfo& info);
+	void stage(nytl::StringParam filename, const ShaderStage::CreateInfo& info);
+	void stage(nytl::Span<const std::uint32_t> bytes, const ShaderStage::CreateInfo& info);
 	void stage(vk::ShaderModule module, const ShaderStage::CreateInfo& info);
 	///\}
 

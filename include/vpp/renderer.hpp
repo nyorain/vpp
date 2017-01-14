@@ -1,3 +1,7 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
@@ -9,19 +13,17 @@
 #include <memory>
 #include <vector>
 
-namespace vpp
-{
+namespace vpp {
 
 ///Abstract Interface for building renderers.
 ///Will be passed to a SwapChainRenderer constructor to record the prebaked commandBuffers.
-class RendererBuilder
-{
+class RendererBuilder {
 public:
 	using AdditionalSemaphores = std::vector<std::pair<vk::Semaphore, vk::PipelineStageBits>>;
 
 public:
 	virtual ~RendererBuilder() = default;
-	
+
 	///This function is called to record the render commands into the given renderpass instance.
 	virtual void build(unsigned int id, const RenderPassInstance& ini) = 0;
 
@@ -54,12 +56,12 @@ public:
 	///	of the functions called every frame. Can be done better in some way?
 	/// Some SubmitManager functions as well. Then at least use some kind of pmr.
 
-	virtual AdditionalSemaphores submit(unsigned int id) { return {}; }
+	virtual AdditionalSemaphores submit(unsigned int) { return {}; }
 
 	///This function is called before every frame and allows the builder to execute/queue
 	///additional operations or to re-record the command buffer for the given id.
 	///It is called exactly before the command buffer for the given id is queued for submission.
-	virtual void frame(unsigned int id) {};
+	virtual void frame(unsigned int) {};
 };
 
 ///Capable of rendering on a SwapChain.
@@ -75,11 +77,9 @@ public:
 ///given the static attachments will have the ids 0 and 2.
 ///One must assure that the given attachments will create a framebuffer that is compatible
 ///for the given render pass, the class itself wont (and cannnot) perform any checking.
-class SwapChainRenderer : public ResourceReference<SwapChainRenderer>
-{
+class SwapChainRenderer : public ResourceReference<SwapChainRenderer> {
 public:
-	struct AttachmentInfo
-	{
+	struct AttachmentInfo {
 		//will be used to create static/dynamic attachments
 		ViewableImage::CreateInfo createInfo;
 
@@ -95,8 +95,7 @@ public:
 
 	///The CreateInfo struct holds all information that is needed for construction a
 	///SwapChainRenderer. It allows to define additional attachments of different types.
-	struct CreateInfo
-	{
+	struct CreateInfo {
 		vk::RenderPass renderPass; //the render pass to use for the rendering
 		unsigned int queueFamily; //the queue family for graphical operations
 		std::vector<AttachmentInfo> attachments; //additional attachments
@@ -114,8 +113,7 @@ public:
 	///beginning of a render pass one has to specify the framebuffer he wants to
 	///draw into and one has to create multiple framebuffers for the different
 	///swapChain color images.
-	struct RenderBuffer
-	{
+	struct RenderBuffer {
 		Framebuffer framebuffer;
 		CommandBuffer commandBuffer;
 	};
@@ -183,4 +181,4 @@ protected:
 	CreateInfo info_;
 };
 
-}
+} // namespace vpp

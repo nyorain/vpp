@@ -1,6 +1,10 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/shader.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/utility/file.hpp>
+#include <vpp/util/file.hpp>
 
 #include <string>
 #include <fstream>
@@ -11,7 +15,7 @@
 namespace vpp
 {
 
-vk::ShaderModule loadShaderModule(vk::Device dev, const StringParam& filename)
+vk::ShaderModule loadShaderModule(vk::Device dev, nytl::StringParam filename)
 {
 	auto code = readFile(filename, true);
 	if(code.size() % 4) throw std::runtime_error(filename.string() + " has an invalid size");
@@ -19,7 +23,7 @@ vk::ShaderModule loadShaderModule(vk::Device dev, const StringParam& filename)
 	return loadShaderModule(dev, {ptr, code.size() / 4});
 }
 
-vk::ShaderModule loadShaderModule(vk::Device dev, const Range<std::uint32_t>& code)
+vk::ShaderModule loadShaderModule(vk::Device dev, nytl::Span<const std::uint32_t> code)
 {
 	vk::ShaderModuleCreateInfo info;
 	info.codeSize = code.size() * 4;
@@ -29,18 +33,18 @@ vk::ShaderModule loadShaderModule(vk::Device dev, const Range<std::uint32_t>& co
 }
 
 //ShaderModule
-ShaderModule::ShaderModule(const Device& dev, const StringParam& filename) : ResourceHandle(dev)
+ShaderModule::ShaderModule(const Device& dev, nytl::StringParam filename) : ResourceHandle(dev)
 {
 	const static std::string errorMsg = "vpp::ShaderMoudle: failed to create from ";
 
-	vkHandle() = loadShaderModule(dev, filename);
+	handle_ = loadShaderModule(dev, filename);
 	if(!vkHandle()) throw std::runtime_error(errorMsg + filename.data());
 }
 
-ShaderModule::ShaderModule(const Device& dev, const Range<std::uint32_t>& code)
+ShaderModule::ShaderModule(const Device& dev, nytl::Span<const std::uint32_t> code)
 	: ResourceHandle(dev)
 {
-	vkHandle() = loadShaderModule(dev, code);
+	handle_ = loadShaderModule(dev, code);
 	if(!vkHandle()) throw std::runtime_error("vpp::ShaderModule: failed to create from given code");
 }
 
@@ -50,7 +54,7 @@ ShaderModule::~ShaderModule()
 }
 
 //ShaderStage
-ShaderStage::ShaderStage(const Device& dev, const StringParam& filename, const CreateInfo& info)
+ShaderStage::ShaderStage(const Device& dev, nytl::StringParam filename, const CreateInfo& info)
 	: Resource(dev), info_(info), owned_(true)
 {
 	const static std::string errorMsg = "vpp::ShaderMoudle: failed to create from ";
@@ -59,7 +63,7 @@ ShaderStage::ShaderStage(const Device& dev, const StringParam& filename, const C
 	if(!module_) throw std::runtime_error(errorMsg + filename.data());
 }
 
-ShaderStage::ShaderStage(const Device& dev, const Range<std::uint32_t>& code,
+ShaderStage::ShaderStage(const Device& dev, nytl::Span<const std::uint32_t> code,
 	const CreateInfo& info) : Resource(dev), info_(info), owned_(true)
 {
 	module_ = loadShaderModule(dev, code);
@@ -101,14 +105,14 @@ ShaderProgram::ShaderProgram(const Device& device) : Resource(device)
 {
 }
 
-void ShaderProgram::stage(const StringParam& filename, const ShaderStage::CreateInfo& createInfo)
+void ShaderProgram::stage(nytl::StringParam filename, const ShaderStage::CreateInfo& createInfo)
 {
 	auto s = stage(createInfo.stage);
 	if(s) *s = {device(), filename, createInfo};
 	else stages_.emplace_back(device(), filename, createInfo);
 }
 
-void ShaderProgram::stage(const Range<std::uint32_t>& bytes,
+void ShaderProgram::stage(nytl::Span<const std::uint32_t> bytes,
 	const ShaderStage::CreateInfo& createInfo)
 {
 	auto s = stage(createInfo.stage);

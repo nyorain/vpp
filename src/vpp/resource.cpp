@@ -2,11 +2,6 @@
 
 namespace vpp {
 
-const vk::Instance& Device::vkInstance() const noexcept { return device().vkInstance(); }
-const vk::Device& Device::vkDevice() const noexcept { return device().vkDevice(); }
-const vk::PhysicalDevice& Device::vkPhysicalDevice() const noexcept
-	{ return device().vkPhysicalDevice(); }
-
 #ifndef VPP_ONE_DEVICE_OPTIMIZATION
 
 Resource::Resource(Resource&& other) noexcept
@@ -18,12 +13,13 @@ Resource::Resource(Resource&& other) noexcept
 Resource& Resource::operator=(Resource&& other) noexcept
 {
 	device_ = other.device_;
-	other.deivce_ = {};
+	other.device_ = {};
+	return *this;
 }
 
 #else // VPP_ONE_DEVICE_OPTIMIZATION
 
-const Device* Resource::deviceInstance_;
+const Device* Resource::deviceInstance_ {};
 void Resource::init(const Device& dev)
 {
 	if(deviceInstance_ == &dev) return; // most likely

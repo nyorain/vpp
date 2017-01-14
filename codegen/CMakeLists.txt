@@ -17,9 +17,9 @@ set(outputs
 
 set(pres
 	"${output-dir}/flags.hpp"
-	"${output-dir}/range.hpp"
+	"${output-dir}/span.hpp"
 	"${output-dir}/handle.hpp"
-	"${output-dir}/call.hpp")
+	"${output-dir}/error.hpp")
 
 #command to copy the pre files to the vulkan codegen dir
 add_custom_command(
@@ -30,9 +30,9 @@ add_custom_command(
 		"${output-dir}"
 	DEPENDS
 		"${CMAKE_CURRENT_SOURCE_DIR}/pre/flags.hpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/pre/call.hpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/pre/error.hpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/pre/handle.hpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/pre/range.hpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/pre/span.hpp"
 	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 	COMMENT "Copying vulkan headers dependency files")
 
@@ -42,7 +42,9 @@ add_custom_command(
 	OUTPUT ${outputs}
 	COMMAND vkGenerator "${CMAKE_CURRENT_SOURCE_DIR}/vk.xml"
 	# COMMAND vkGenerator "${CMAKE_BINARY_DIR}/vk2.xml"
-	DEPENDS vkGenerator
+	DEPENDS
+		vkGenerator
+		"${CMAKE_CURRENT_SOURCE_DIR}/vk.xml"
 	WORKING_DIRECTORY "${output-dir}"
 	COMMENT "Generating vulkan hpp headers")
 

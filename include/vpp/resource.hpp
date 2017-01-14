@@ -5,7 +5,7 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/device.hpp>
+#include <vpp/device.hpp> // vpp::Device
 #include <utility> // std::swap
 
 namespace vpp {
@@ -22,6 +22,9 @@ namespace vpp {
 /// instead of every resource keeping a device pointer.
 /// Both implementations have the same functions and derived classes or users of the
 /// Resource class shall not depend on any further (implementation defined) functionality.
+/// The main reason resources hold a reference to their associated device is that it is
+/// needed for resource destruction. But since there only the vulkan device handle is needed,
+/// Resource always hold a const device reference.
 /// \sa ResourceReference
 /// \sa Device
 #ifndef VPP_ONE_DEVICE_OPTIMIZATION
@@ -34,9 +37,9 @@ public:
 	Resource& operator=(Resource&& other) noexcept;
 
 	const Device& device() const noexcept { return *device_; }
-	const vk::Instance& vkInstance() const noexcept;
-	const vk::Device& vkDevice() const noexcept;
-	const vk::PhysicalDevice& vkPhysicalDevice() const noexcept;
+	vk::Instance vkInstance() const noexcept { return device().vkInstance(); }
+	vk::Device vkDevice() const noexcept { return device().vkDevice(); }
+	vk::PhysicalDevice vkPhysicalDevice() const noexcept { return device().vkPhysicalDevice(); }
 
 	Resource& resourceBase() noexcept { return *this; }
 	const Resource& resourceBase() const noexcept { return *this; }
@@ -49,7 +52,7 @@ protected:
 	friend void swap(Resource& a, Resource& b) noexcept { std::swap(a.device_, b.device_); }
 
 private:
-	const Device* device_ {};
+	const Device* device_ {}; // should not be accessed directly by members. Use device()
 };
 
 #else // VPP_ONE_DEVICE_OPTIMIZATION
@@ -63,11 +66,9 @@ public:
 	Resource& operator=(Resource&& other) noexcept = default;
 
 	const Device& device() const noexcept { return *deviceInstance_; }
-
-	const vk::Instance& vkInstance() const noexcept { return device().vkInstance(); }
-	const vk::Device& vkDevice() const noexcept { return device().vkDevice(); }
-	const vk::PhysicalDevice& vkPhysicalDevice() const noexcept
-		{ return device().vkPhysicalDevice(); }
+	vk::Instance vkInstance() const noexcept { return device().vkInstance(); }
+	vk::Device vkDevice() const noexcept { return device().vkDevice(); }
+	vk::PhysicalDevice vkPhysicalDevice() const noexcept { return device().vkPhysicalDevice(); }
 
 	Resource& resourceBase() noexcept { return *this; }
 	const Resource& resourceBase() const noexcept { return *this; }
@@ -118,9 +119,9 @@ class ResourceReference {
 public:
 	const Device& device() const { return tSelf().resourceRef().device(); }
 
-	const vk::Instance& vkInstance() const { return device().vkInstance(); }
-	const vk::PhysicalDevice& vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
-	const vk::Device& vkDevice() const { return device().vkDevice(); }
+	vk::Instance vkInstance() const { return device().vkInstance(); }
+	vk::PhysicalDevice vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
+	vk::Device vkDevice() const { return device().vkDevice(); }
 
 	ResourceReference& resourceBase() noexcept { return *this; }
 	const ResourceReference& resourceBase() const noexcept { return *this; }
@@ -132,16 +133,13 @@ public:
 /// Note that move constructor and assignment operator can be defined using the swap
 /// member function if there are no additional data members.
 /// \tparam H The vulkan handle type.
-template<typename H>
+template<typename Handle>
 class ResourceHandle : public Resource, public NonCopyable {
 public:
-	using Handle = H;
-
-public:
 	const Handle& vkHandle() const noexcept { return handle_; }
-	Handle& vkHandle() noexcept { return handle_; } //XXX: public for now. Why cant this be protected??
-
 	operator Handle() const noexcept { return vkHandle(); }
+
+	void release() { handle_ = {}; }
 
 protected:
 	ResourceHandle() = default;
@@ -154,17 +152,14 @@ protected:
 	ResourceHandle& resourceBase() noexcept { return *this; }
 	const ResourceHandle& resourceBase() const noexcept { return *this; }
 
-	void swap(ResourceHandle<H>& other) noexcept
+	void swap(ResourceHandle<Handle>& other) noexcept
 	{
 		using std::swap;
 		swap(static_cast<Resource&>(*this), static_cast<Resource&>(other));
 		swap(handle_, other.handle_);
 	}
 
-	friend void swap(ResourceHandle<H>& a, ResourceHandle<H>& b) noexcept { return a.swap(b); }
-
-	template<typename> friend class NonOwned;
-	void release() { handle_ = {}; }
+	friend void swap(ResourceHandle& a, ResourceHandle& b) noexcept { return a.swap(b); }
 
 protected:
 	Handle handle_ {};
@@ -173,16 +168,12 @@ protected:
 /// ResourceHandle base for classes that already hold a Device reference in some way.
 /// \tparam B The deriving class, needed for the ResourceReference base
 /// \tparam H The vulkan handle type.
-template<typename B, typename H>
+template<typename B, typename Handle>
 class ResourceReferenceHandle : public ResourceReference<B>, public NonCopyable {
 public:
-	using Handle = H;
-
-public:
 	const Handle& vkHandle() const noexcept { return handle_; }
-	Handle& vkHandle() noexcept { return handle_; }
-
 	operator Handle() const noexcept { return vkHandle(); }
+	void release() { handle_ = {}; }
 
 protected:
 	ResourceReferenceHandle() = default;
@@ -195,20 +186,17 @@ protected:
 	ResourceReferenceHandle& resourceBase() noexcept { return *this; }
 	const ResourceReferenceHandle& resourceBase() const noexcept { return *this; }
 
-	void swap(ResourceReferenceHandle<B, H>& other) noexcept
+	void swap(ResourceReferenceHandle<B, Handle>& other) noexcept
 	{
 		using std::swap;
 		swap(static_cast<ResourceReference<B>&>(*this), static_cast<ResourceReference<B>&>(other));
 		swap(handle_, other.handle_);
 	}
 
-	friend void swap(ResourceReferenceHandle<B, H>& a, ResourceReferenceHandle<B, H>& b) noexcept
+	friend void swap(ResourceReferenceHandle& a, ResourceReferenceHandle& b) noexcept
 	{
 		return a.swap(b);
 	}
-
-	template<typename> friend class NonOwned;
-	void release() { handle_ = {}; }
 
 protected:
 	Handle handle_ {};

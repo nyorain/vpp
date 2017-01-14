@@ -1,17 +1,20 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
+#include <vpp/util/nonCopyable.hpp>
 
 #include <vector>
 
-namespace vpp
-{
+namespace vpp {
 
 ///Vulkan Renderpass. Can be created just from a vulkan device.
 ///Stores its description information.
-class RenderPass : public ResourceHandle<vk::RenderPass>
-{
+class RenderPass : public ResourceHandle<vk::RenderPass> {
 public:
 	RenderPass() = default;
 	RenderPass(const Device& dev, const vk::RenderPassCreateInfo& info);
@@ -36,8 +39,7 @@ protected:
 //XXX: class at the moment not useful, can later be used for addtional features/checks
 //XXX: if without additional stuff, at least make it a struct with public members.
 ///Vulkan RenderPass Instance, i.e. a commandbuffer recording session during a render pass.
-class RenderPassInstance : public NonCopyable
-{
+class RenderPassInstance : public nytl::NonCopyable {
 protected:
 	vk::RenderPass renderPass_ {};
 	vk::CommandBuffer commandBuffer_ {};

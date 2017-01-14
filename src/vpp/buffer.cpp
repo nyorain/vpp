@@ -1,16 +1,19 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/buffer.hpp>
 #include <vpp/vk.hpp>
 
 #include <utility>
 #include <cstring>
 
-namespace vpp
-{
+namespace vpp {
 
 Buffer::Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
 	vk::MemoryPropertyFlags mflags)
 {
-	vkHandle() = buffer;
+	handle_ = buffer;
 	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
 
 	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
@@ -20,7 +23,7 @@ Buffer::Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
 Buffer::Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
 	std::uint32_t memoryTypeBits)
 {
-	vkHandle() = buffer;
+	handle_ = buffer;
 	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
 
 	reqs.memoryTypeBits &= reqs.memoryTypeBits;
@@ -29,7 +32,7 @@ Buffer::Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
 
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags)
 {
-	vkHandle() = vk::createBuffer(dev, info);
+	handle_ = vk::createBuffer(dev, info);
 	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
 
 	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
@@ -38,7 +41,7 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPr
 
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, std::uint32_t memoryTypeBits)
 {
-	vkHandle() = vk::createBuffer(dev, info);
+	handle_ = vk::createBuffer(dev, info);
 	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
 
 	reqs.memoryTypeBits &= memoryTypeBits;

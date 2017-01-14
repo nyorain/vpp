@@ -5,7 +5,7 @@
 #include <vpp/pipeline.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/utility/debug.hpp>
+#include <vpp/util/debug.hpp>
 
 #include <utility>
 
@@ -28,7 +28,7 @@ vk::DeviceSize imageAddress(const vk::SubresourceLayout& layout, unsigned int te
 //Image
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags)
 {
-	vkHandle() = vk::createImage(dev.vkDevice(), info);
+	handle_ = vk::createImage(dev.vkDevice(), info);
 	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), vkHandle());
 
 	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
@@ -37,7 +37,7 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPrope
 
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info, std::uint32_t memoryTypeBits)
 {
-	vkHandle() = vk::createImage(dev.vkDevice(), info);
+	handle_ = vk::createImage(dev.vkDevice(), info);
 	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), vkHandle());
 
 	reqs.memoryTypeBits &= memoryTypeBits;
@@ -391,7 +391,7 @@ void ViewableImage::init(const vk::ImageViewCreateInfo& info)
 //sampler
 Sampler::Sampler(const Device& dev, const vk::SamplerCreateInfo& info) : ResourceHandle(dev)
 {
-	vkHandle() = vk::createSampler(dev, info);
+	handle_ = vk::createSampler(dev, info);
 }
 
 Sampler::~Sampler()

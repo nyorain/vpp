@@ -3,12 +3,8 @@
 #include <vpp/vk.hpp>
 #include <iostream>
 
-namespace vpp
-{
-
-//utility c free function callback
-namespace
-{
+namespace vpp {
+namespace {
 
 vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags, vk::DebugReportObjectTypeEXT objType,
 	std::uint64_t srcObject, std::size_t location, std::int32_t msgCode, const char* pLayerPrefix,
@@ -72,9 +68,9 @@ std::string to_string(vk::DebugReportObjectTypeEXT type)
 	}
 }
 
-}
+} // anonymous util namespace
 
-//DebugCallback
+// DebugCallback
 vk::DebugReportFlagsEXT DebugCallback::defaultFlags()
 {
 	//not used: debug, information

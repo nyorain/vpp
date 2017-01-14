@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vpp/utility/allocation.hpp>
-#include <vpp/utility/nonCopyable.hpp>
+#include <vpp/util/allocation.hpp>
+#include <vpp/util/nonCopyable.hpp>
 #include <vector>
 #include <cstdint>
 

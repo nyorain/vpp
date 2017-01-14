@@ -1,6 +1,6 @@
 #include <vpp/memory.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/utility/debug.hpp>
+#include <vpp/util/debug.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -188,7 +188,7 @@ DeviceMemory::DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info
 	type_ = info.memoryTypeIndex;
 	size_ = info.allocationSize;
 
-	vkHandle() = vk::allocateMemory(vkDevice(), info);
+	handle_ = vk::allocateMemory(vkDevice(), info);
 }
 DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, std::uint32_t typeIndex)
 	: ResourceHandle(dev)
@@ -200,7 +200,7 @@ DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, std::uint32_t 
 	info.allocationSize = size_;
 	info.memoryTypeIndex = type_;
 
-	vkHandle() = vk::allocateMemory(vkDevice(), info);
+	handle_ = vk::allocateMemory(vkDevice(), info);
 }
 DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryPropertyFlags flags)
 	: ResourceHandle(dev)
@@ -212,7 +212,7 @@ DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryProp
 	info.allocationSize = size_;
 	info.memoryTypeIndex = type_;
 
-	vkHandle() = vk::allocateMemory(vkDevice(), info);
+	handle_ = vk::allocateMemory(vkDevice(), info);
 }
 DeviceMemory::~DeviceMemory()
 {

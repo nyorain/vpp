@@ -40,7 +40,7 @@ vk::ComputePipelineCreateInfo ComputePipelineBuilder::parse()
 }
 
 std::vector<Pipeline> createComputePipelines(const Device& dev,
-	const Range<vk::ComputePipelineCreateInfo>& infos, vk::PipelineCache cache)
+	nytl::Span<const vk::ComputePipelineCreateInfo> infos, vk::PipelineCache cache)
 {
 	auto pipelines = vk::createComputePipelines(dev, cache, infos);
 	std::vector<Pipeline> ret;
@@ -50,7 +50,7 @@ std::vector<Pipeline> createComputePipelines(const Device& dev,
 }
 
 std::vector<Pipeline> createComputePipelines(
-	const Range<std::reference_wrapper<ComputePipelineBuilder>>& builder,
+	nytl::Span<const std::reference_wrapper<ComputePipelineBuilder>> builder,
 	vk::PipelineCache cache)
 {
 	if(builder.empty()) return {};

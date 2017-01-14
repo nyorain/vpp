@@ -1,6 +1,6 @@
 #include <vpp/backend/xlib.hpp>
 #include <vpp/procAddr.hpp>
-#include <vpp/utility/range.hpp>
+#include <vpp/util/span.hpp>
 
 namespace vpp
 {

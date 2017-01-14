@@ -1,11 +1,10 @@
 #pragma once
 
-#include <vpp/utility/range.hpp>
-#include <vpp/utility/stringParam.hpp>
-#include <vpp/utility/debug.hpp>
-#include <vpp/utility/file.hpp>
-#include <vpp/utility/memory_resource.hpp>
-#include <vpp/utility/allocation.hpp>
+#include <vpp/util/span.hpp>
+#include <vpp/util/stringParam.hpp>
+#include <vpp/util/debug.hpp>
+#include <vpp/util/file.hpp>
+#include <vpp/util/allocation.hpp>
 
 #include <vpp/allocator.hpp>
 #include <vpp/buffer.hpp>

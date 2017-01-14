@@ -1,15 +1,18 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/swapChain.hpp>
 #include <vpp/vk.hpp>
 #include <vpp/procAddr.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/surface.hpp>
 #include <vpp/image.hpp>
-#include <vpp/utility/debug.hpp>
+#include <vpp/util/debug.hpp>
 
-namespace vpp
-{
+namespace vpp {
 
-//SwapChainSettings
+// SwapChainSettings
 const SwapChainSettings& SwapChainSettings::instance()
 {
 	static SwapChainSettings ret;
@@ -17,8 +20,8 @@ const SwapChainSettings& SwapChainSettings::instance()
 }
 
 vk::SwapchainCreateInfoKHR SwapChainSettings::parse(const vk::SurfaceCapabilitiesKHR& caps,
-	const Range<vk::PresentModeKHR>& modes,
-	const Range<vk::SurfaceFormatKHR>& formats,
+	nytl::Span<const vk::PresentModeKHR> modes,
+	nytl::Span<const vk::SurfaceFormatKHR> formats,
 	const vk::Extent2D& size) const
 {
 	vk::SwapchainCreateInfoKHR ret;
@@ -104,10 +107,8 @@ vk::SwapchainCreateInfoKHR SwapChainSettings::parse(const vk::SurfaceCapabilitie
 	return ret;
 }
 
-//DefaultSwapChainSettings
-//utility
-namespace
-{
+// utility
+namespace {
 
 using EA = DefaultSwapChainSettings::ErrorAction;
 
@@ -122,12 +123,12 @@ void onError(EA action, const char* field)
 		throw std::runtime_error(errorMsg + field);
 }
 
-}
+} // anonymous util namespace
 
-//DefaultSwapChainSettings
+// DefaultSwapChainSettings
 vk::SwapchainCreateInfoKHR DefaultSwapChainSettings::parse(const vk::SurfaceCapabilitiesKHR& caps,
-	const Range<vk::PresentModeKHR>& modes,
-	const Range<vk::SurfaceFormatKHR>& formats,
+	nytl::Span<const vk::PresentModeKHR> modes,
+	nytl::Span<const vk::SurfaceFormatKHR> formats,
 	const vk::Extent2D& size) const
 {
 
@@ -368,7 +369,7 @@ void SwapChain::resize(const vk::Extent2D& size, const SwapChainSettings& settin
 	auto createInfo = settings.parse(surfCaps, presentModes, formats, size);
 	createInfo.surface = vkSurface();
 	createInfo.oldSwapchain = vkHandle();
-	VPP_CALL(pfCreateSwapchainKHR(device(), &createInfo, nullptr, &vkHandle()));
+	VPP_CALL(pfCreateSwapchainKHR(device(), &createInfo, nullptr, &handle_));
 
 	format_ = createInfo.imageFormat;
 	width_ = createInfo.imageExtent.width;

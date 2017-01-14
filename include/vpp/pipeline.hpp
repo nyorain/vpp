@@ -1,16 +1,19 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/shader.hpp>
-#include <vpp/utility/range.hpp>
-#include <vpp/utility/stringParam.hpp>
+#include <vpp/util/span.hpp>
+#include <vpp/util/stringParam.hpp>
 
 #include <vector>
 #include <functional>
 
-namespace vpp
-{
+namespace vpp {
 
 //TODO: rework. Does not offer all flexibility needed. stride and stuff atm not changeable
 //for graphics pipelines. Abolish those wrapper structs and replace them with initializer funcs.
@@ -36,8 +39,8 @@ public:
 	PipelineLayout() = default;
 	PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info);
 	PipelineLayout(const Device& dev,
-		const Range<std::reference_wrapper<DescriptorSetLayout>>& layouts,
-		const Range<vk::PushConstantRange>& ranges = {});
+		nytl::Span<const std::reference_wrapper<DescriptorSetLayout>> layouts,
+		nytl::Span<const vk::PushConstantRange> ranges = {});
 	~PipelineLayout();
 
 	PipelineLayout(PipelineLayout&& lhs) noexcept { swap(lhs); }
@@ -56,11 +59,11 @@ public:
 	PipelineCache(const Device& dev);
 
 	///Creates the pipeline cache with the given initial data.
-	PipelineCache(const Device& dev, const Range<std::uint8_t>& data);
+	PipelineCache(const Device& dev, nytl::Span<const std::uint8_t> data);
 
 	///Loads the pipeline cache data from a file.
 	///\exception std::runtime_error if opening the file fails
-	PipelineCache(const Device& dev, const StringParam& filename);
+	PipelineCache(const Device& dev, nytl::StringParam filename);
 	~PipelineCache();
 
 	PipelineCache(PipelineCache&& other) noexcept { swap(other); }
@@ -70,8 +73,8 @@ public:
 ///\{
 ///Saves a pipeline cache to the given filename.
 ///\exception std::runtime_error if opening/writing the file fails
-void save(vk::Device dev, vk::PipelineCache cache, const StringParam& filename);
-inline void save(const PipelineCache& cache, const StringParam& file)
+void save(vk::Device dev, vk::PipelineCache cache, nytl::StringParam filename);
+inline void save(const PipelineCache& cache, nytl::StringParam file)
 	{ save(cache.device(), cache, file); }
 ///\}
 
@@ -79,8 +82,7 @@ inline void save(const PipelineCache& cache, const StringParam& file)
 ///RAII Vulkan pipeline wrapper.
 ///A pipeline is basically a collection of draw/compute information that contains e.g.
 ///the vertex and descriptor layouts, used shaders and different state information.
-class Pipeline : public ResourceHandle<vk::Pipeline>
-{
+class Pipeline : public ResourceHandle<vk::Pipeline> {
 public:
 	Pipeline() = default;
 	Pipeline(const Device& dev, vk::Pipeline pipeline) : ResourceHandle(dev, pipeline) {}

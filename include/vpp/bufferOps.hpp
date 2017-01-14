@@ -1,10 +1,14 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
 #include <vpp/buffer.hpp>
 #include <vpp/work.hpp>
-#include <vpp/utility/range.hpp>
-#include <vpp/utility/allocation.hpp>
+#include <vpp/util/span.hpp>
+#include <vpp/util/allocation.hpp>
 #include <vpp/bits/apply.inl>
 
 ///\file Defines several utility operations for buffers such as updating or reading them.
@@ -171,7 +175,7 @@ public:
 	//XXX: better use owned data (a vector, data copy) here?
 	///Constructs the BufferReader with the given data range.
 	///Note that the range must stay valid until destruction.
-	BufferReader(const Device& dev, BufferLayout align, const Range<std::uint8_t>& data);
+	BufferReader(const Device& dev, BufferLayout align, nytl::Span<std::uint8_t> data);
 	~BufferReader() = default;
 
 	void operate(void* ptr, Size size);
@@ -189,7 +193,7 @@ public:
 	void alignTexel();
 
 protected:
-	Range<std::uint8_t> data_;
+	nytl::Span<std::uint8_t> data_;
 };
 
 ///Fills the buffer with the given data.

@@ -1,5 +1,5 @@
 #include <vpp/bufferOps.hpp>
-#include <vpp/utility/debug.hpp>
+#include <vpp/util/debug.hpp>
 #include <vpp/transferWork.hpp>
 #include <vpp/provider.hpp>
 #include <vpp/transfer.hpp>
@@ -225,8 +225,8 @@ void BufferSizer::alignTexel()
 }
 
 //BufferReader
-BufferReader::BufferReader(const Device& dev, BufferLayout align, const Range<std::uint8_t>& data)
-	: BufferOperator(align), Resource(dev), data_(data)
+BufferReader::BufferReader(const Device& dev, BufferLayout align,
+	nytl::Span<std::uint8_t> data) : BufferOperator(align), Resource(dev), data_(data)
 {
 }
 

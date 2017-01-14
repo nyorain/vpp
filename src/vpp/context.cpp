@@ -1,3 +1,7 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/context.hpp>
 #include <vpp/procAddr.hpp>
 #include <vpp/vk.hpp>
@@ -7,8 +11,7 @@
 #include <stdexcept>
 #include <cstring>
 
-namespace vpp
-{
+namespace vpp {
 
 Context::Context() = default;
 Context::~Context() = default;
@@ -37,8 +40,9 @@ void swap(Context& a, Context& b) noexcept
 	swap(a.debugCallback_, b.debugCallback_);
 }
 
-void Context::initInstance(vk::DebugReportFlagsEXT debugFlags, Range<const char*> reqExtensions,
-	Range<const char*> reqLayers, bool reverseLayers)
+void Context::initInstance(vk::DebugReportFlagsEXT debugFlags,
+	nytl::Span<const char* const> reqExtensions,
+	nytl::Span<const char* const> reqLayers, bool reverseLayers)
 {
 	//appinfo
 	auto eName = "vpp";
@@ -109,7 +113,7 @@ void Context::initInstance(vk::DebugReportFlagsEXT debugFlags, Range<const char*
 	if(debugFlags != 0) debugCallback_ = std::make_unique<DebugCallback>(vkInstance(), debugFlags);
 }
 
-vk::PhysicalDevice Context::choosePhysicalDevice(Range<vk::PhysicalDevice> phdevs) const
+vk::PhysicalDevice Context::choosePhysicalDevice(nytl::Span<const vk::PhysicalDevice> phdevs) const
 {
 	for(auto& phdev : phdevs)
 	{
@@ -123,8 +127,8 @@ vk::PhysicalDevice Context::choosePhysicalDevice(Range<vk::PhysicalDevice> phdev
 	throw std::runtime_error("vpp::Context: no valid physical devices");
 }
 
-void Context::initDevice(Range<const char*> reqExtensions, Range<const char*> reqLayers,
-	bool reverseLayers)
+void Context::initDevice(nytl::Span<const char* const> reqExtensions,
+	nytl::Span<const char* const> reqLayers, bool reverseLayers)
 {
 	auto phdevs = vk::enumeratePhysicalDevices(vkInstance());
 	auto phdev = choosePhysicalDevice(phdevs);
@@ -132,8 +136,8 @@ void Context::initDevice(Range<const char*> reqExtensions, Range<const char*> re
 	initDevice(phdev, reqExtensions, reqLayers, reverseLayers);
 }
 
-void Context::initDevice(vk::PhysicalDevice phdev, Range<const char*> reqExtensions,
-	Range<const char*> reqLayers, bool reverseLayers)
+void Context::initDevice(vk::PhysicalDevice phdev, nytl::Span<const char* const> reqExtensions,
+	nytl::Span<const char* const> reqLayers, bool reverseLayers)
 {
 	//extensions & layers
 	//atm: activate all layes - make this configurable maybe?
@@ -249,7 +253,7 @@ void Context::initSwapChain(const vk::Extent2D& size, const SwapChainSettings& s
 	swapChain_ = SwapChain(device(), surface(), size, settings);
 }
 
-const vk::Device& Context::vkDevice() const
+vk::Device Context::vkDevice() const
 {
 	return device().vkDevice();
 }

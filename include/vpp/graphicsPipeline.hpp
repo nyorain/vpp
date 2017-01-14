@@ -1,14 +1,17 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
 #include <vpp/pipeline.hpp>
-#include <vpp/utility/range.hpp>
+#include <vpp/util/span.hpp>
 #include <vpp/vulkan/structs.hpp>
 
 #include <vector>
 
-namespace vpp
-{
+namespace vpp {
 
 //TODO: something about derivates (e.g. when copying builder).
 //TODO: use shared pointer for shader modules somehow?
@@ -18,8 +21,7 @@ namespace vpp
 ///underlaying shader modules. So if a pipelineBuilder owns a shader module, its copies
 ///(which still reference those modules) shall not be used to create a pipeline after
 ///the original goes out of scope.
-class GraphicsPipelineBuilder
-{
+class GraphicsPipelineBuilder {
 public:
 	GraphicsPipelineBuilder() = default;
 	GraphicsPipelineBuilder(const Device& dev, vk::RenderPass rp, unsigned int xsubpass = 0);
@@ -42,8 +44,7 @@ public:
 	vk::PipelineCreateFlags flags {};
 	std::vector<vk::DynamicState> dynamicStates;
 
-	struct
-	{
+	struct {
 		std::vector<vk::PipelineColorBlendAttachmentState> blendAttachments;
 		std::vector<vk::Viewport> viewports;
 		std::vector<vk::Rect2D> scissors;
@@ -65,15 +66,13 @@ protected:
 	vk::PipelineColorBlendStateCreateInfo colorBlend_;
 };
 
-///\{
-///Create multiple vulkan graphic pipelines at once.
-///Might be more efficient than constructing them individually.
+/// Create multiple vulkan graphic pipelines at once.
+/// Might be more efficient than constructing them individually.
 std::vector<Pipeline> createGraphicsPipelines(const Device& dev,
-	const Range<vk::GraphicsPipelineCreateInfo>& infos, vk::PipelineCache cache = {});
+	nytl::Span<const vk::GraphicsPipelineCreateInfo>& infos, vk::PipelineCache cache = {});
 
 std::vector<Pipeline> createGraphicsPipelines(
-	const Range<std::reference_wrapper<GraphicsPipelineBuilder>>& builder,
+	nytl::Span<const std::reference_wrapper<GraphicsPipelineBuilder>>& builder,
 	vk::PipelineCache cache = {});
-///\}
 
-}
+} // namespace vpp

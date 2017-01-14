@@ -1,3 +1,7 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 ///TMP utility.
@@ -125,14 +129,14 @@ struct BufferApplier<VT, ShaderType::scalar>
 	{
 		op.align(align<void>(op.std140()));
 		op.operate(&obj, sizeof(obj));
-	};
+	}
 
 	template<typename O>
 	constexpr static void size(O& op)
 	{
 		op.align(align<void>(op.std140()));
 		op.operate(nullptr, 4 + VT::size64 * 4);
-	};
+	}
 
 	template<typename T>
 	static constexpr unsigned int align(bool std140)

@@ -5,7 +5,7 @@
 #include <vpp/descriptor.hpp>
 #include <vpp/graphicsPipeline.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/utility/file.hpp>
+#include <vpp/util/file.hpp>
 
 #include <cassert>
 #include <cstring>

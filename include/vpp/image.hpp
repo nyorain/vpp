@@ -108,9 +108,9 @@ class ViewableImage : public ResourceReference<ViewableImage>
 public:
 	struct CreateInfo
 	{
-		vk::ImageCreateInfo imgInfo;
-		vk::ImageViewCreateInfo viewInfo;
-		vk::MemoryPropertyFlags memoryFlags; //memory flags for image
+		vk::ImageCreateInfo imgInfo {};
+		vk::ImageViewCreateInfo viewInfo {};
+		vk::MemoryPropertyFlags memoryFlags {}; //memory flags for image
 	};
 
 	///\{
@@ -164,4 +164,4 @@ public:
 protected:
 };
 
-};
+} // namespace vpp

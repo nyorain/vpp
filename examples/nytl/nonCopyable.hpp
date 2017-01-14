@@ -1,63 +1,40 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2016 nyorain
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
-///\file
-///\brief Defines the helper base classes NonCopyable and NonMovable to derive from.
+/// \file Defines the helper base classes NonCopyable and NonMovable.
 
 #pragma once
 
-namespace nytl
-{
+#ifndef NYTL_INCLUDE_NON_COPYABLE
+#define NYTL_INCLUDE_NON_COPYABLE
 
-//\ingroup utility
-///Derive from this class to make it impossible to copy objects of the derived class.
-class NonCopyable
-{
-private:
-	NonCopyable(const NonCopyable&) = delete;
-	NonCopyable& operator =(const NonCopyable&) = delete;
-protected:
-	NonCopyable() noexcept = default;
-	NonCopyable(NonCopyable&) noexcept = default;
+namespace nytl {
 
-	NonCopyable(NonCopyable&&) noexcept = default;
-	NonCopyable& operator=(NonCopyable&&) noexcept = default;
-};
-
-//\ingroup utility
-///Derive from this class to make it impossible to copy or move objects of the derived class.
-class NonMovable
-{
-private:
-	NonMovable(const NonMovable&) = delete;
-	NonMovable& operator =(const NonMovable&) = delete;
-	NonMovable(NonMovable&&) = delete;
-	NonMovable& operator=(NonMovable&&) = delete;
+/// Derive from this class to make it impossible to copy objects of the derived class.
+/// \module utility
+class NonCopyable {
+	constexpr NonCopyable(const NonCopyable&) = delete;
+	constexpr NonCopyable& operator =(const NonCopyable&) = delete;
 
 protected:
-	NonMovable() noexcept = default;
-	NonMovable(NonMovable&) noexcept = default;
+	constexpr NonCopyable() noexcept = default;
+	constexpr NonCopyable(NonCopyable&&) noexcept = default;
+	constexpr NonCopyable& operator=(NonCopyable&&) noexcept = default;
 };
 
-}
+/// Derive from this class to make it impossible to copy or move objects of the derived class.
+/// \module utility
+class NonMovable {
+	constexpr NonMovable(const NonMovable&) = delete;
+	constexpr NonMovable& operator =(const NonMovable&) = delete;
+	constexpr NonMovable(NonMovable&&) = delete;
+	constexpr NonMovable& operator=(NonMovable&&) = delete;
+
+protected:
+	constexpr NonMovable() noexcept = default;
+};
+
+} // namespace nytl
+
+#endif // header guard

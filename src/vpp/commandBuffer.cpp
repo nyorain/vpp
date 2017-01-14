@@ -34,7 +34,7 @@ CommandPool::CommandPool(const Device& dev, std::uint32_t qfam, vk::CommandPoolC
 	info.flags = flags;
 	info.queueFamilyIndex = qfam;
 
-	vkHandle() = vk::createCommandPool(device(), info);
+	handle_ = vk::createCommandPool(device(), info);
 }
 CommandPool::~CommandPool()
 {

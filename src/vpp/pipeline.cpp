@@ -1,21 +1,24 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/pipeline.hpp>
 #include <vpp/descriptor.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/utility/file.hpp>
+#include <vpp/util/file.hpp>
 
-namespace vpp
-{
+namespace vpp {
 
-//pipelineLayout
+// PipelineLayout
 PipelineLayout::PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info)
 	: ResourceHandle(dev)
 {
-	vkHandle() = vk::createPipelineLayout(dev, info);
+	handle_ = vk::createPipelineLayout(dev, info);
 }
 
 PipelineLayout::PipelineLayout(const Device& dev,
-	const Range<std::reference_wrapper<DescriptorSetLayout>>& layouts,
-	const Range<vk::PushConstantRange>& ranges) : ResourceHandle(dev)
+	nytl::Span<const std::reference_wrapper<DescriptorSetLayout>> layouts,
+	nytl::Span<const vk::PushConstantRange> ranges) : ResourceHandle(dev)
 {
 	std::vector<vk::DescriptorSetLayout> vklayouts;
 	vklayouts.reserve(layouts.size());
@@ -28,7 +31,7 @@ PipelineLayout::PipelineLayout(const Device& dev,
 	info.pushConstantRangeCount = ranges.size();
 	info.pPushConstantRanges = ranges.data();
 
-	vkHandle() = vk::createPipelineLayout(dev, info);
+	handle_ = vk::createPipelineLayout(dev, info);
 }
 
 PipelineLayout::~PipelineLayout()
@@ -36,23 +39,23 @@ PipelineLayout::~PipelineLayout()
 	if(vkHandle()) vk::destroyPipelineLayout(device(), vkHandle());
 }
 
-//pipeline cache
+// PipelineCache
 PipelineCache::PipelineCache(const Device& dev) : ResourceHandle(dev)
 {
-	vkHandle() = vk::createPipelineCache(dev, {});
+	handle_ = vk::createPipelineCache(dev, {});
 }
 
-PipelineCache::PipelineCache(const Device& dev, const Range<std::uint8_t>& data)
+PipelineCache::PipelineCache(const Device& dev, nytl::Span<const std::uint8_t> data)
 	: ResourceHandle(dev)
 {
-	vkHandle() = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
+	handle_ = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
 }
 
-PipelineCache::PipelineCache(const Device& dev, const StringParam& filename)
+PipelineCache::PipelineCache(const Device& dev, nytl::StringParam filename)
 	: ResourceHandle(dev)
 {
 	auto data = readFile(filename);
-	vkHandle() = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
+	handle_ = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
 }
 
 PipelineCache::~PipelineCache()
@@ -60,16 +63,16 @@ PipelineCache::~PipelineCache()
 	if(vkHandle()) vk::destroyPipelineCache(device(), vkHandle());
 }
 
-void save(vk::Device dev, vk::PipelineCache cache, const StringParam& filename)
+void save(vk::Device dev, vk::PipelineCache cache, nytl::StringParam filename)
 {
 	auto data = vk::getPipelineCacheData(dev, cache);
 	writeFile(filename, data);
 }
 
-//Pipeline
+// Pipeline
 Pipeline::~Pipeline()
 {
 	if(vkHandle()) vk::destroyPipeline(device(), vkHandle());
 }
 
-}
+} // namespace vpp

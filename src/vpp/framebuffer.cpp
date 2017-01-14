@@ -1,11 +1,14 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/framebuffer.hpp>
 #include <vpp/memory.hpp>
 #include <vpp/renderPass.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/utility/range.hpp>
+#include <vpp/util/span.hpp>
 
-namespace vpp
-{
+namespace vpp {
 
 //Framebuffer
 Framebuffer::Framebuffer(const Device& dev, vk::RenderPass rp, const vk::Extent2D& size,
@@ -112,7 +115,7 @@ void Framebuffer::init(vk::RenderPass rp, const std::vector<vk::ImageViewCreateI
 	createInfo.height = height_;
 	createInfo.layers = 1; ///XXX: should be paramterized?
 
-	vkHandle() = vk::createFramebuffer(vkDevice(), createInfo);
+	handle_ = vk::createFramebuffer(vkDevice(), createInfo);
 }
 
 vk::Extent2D Framebuffer::size() const
@@ -144,7 +147,8 @@ Framebuffer::AttachmentsInfo Framebuffer::parseRenderPass(const RenderPass& rp, 
 				aspect |= vk::ImageAspectBits::depth | vk::ImageAspectBits::stencil;
 			}
 
-			for(auto& ref : makeRange(*sub.pInputAttachments, sub.inputAttachmentCount))
+			using SpanAR = nytl::Span<const vk::AttachmentReference>;
+			for(auto& ref : SpanAR(*sub.pInputAttachments, sub.inputAttachmentCount))
 			{
 				if(ref.attachment == i)
 				{
@@ -153,7 +157,7 @@ Framebuffer::AttachmentsInfo Framebuffer::parseRenderPass(const RenderPass& rp, 
 				}
 			}
 
-			for(auto& ref : makeRange(*sub.pColorAttachments, sub.colorAttachmentCount))
+			for(auto& ref : SpanAR(*sub.pColorAttachments, sub.colorAttachmentCount))
 			{
 				if(ref.attachment == i)
 				{
@@ -172,4 +176,4 @@ Framebuffer::AttachmentsInfo Framebuffer::parseRenderPass(const RenderPass& rp, 
 	return ret;
 }
 
-}
+} // namespace vpp

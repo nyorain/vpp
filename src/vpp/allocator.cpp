@@ -1,10 +1,13 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/allocator.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/utility/debug.hpp>
+#include <vpp/util/debug.hpp>
 #include <algorithm>
 
-namespace vpp
-{
+namespace vpp {
 
 //Entry
 MemoryEntry::MemoryEntry(DeviceMemory& memory, const Allocation& alloc)
@@ -278,7 +281,8 @@ void DeviceMemoryAllocator::allocate(unsigned int type)
 	}
 }
 
-void DeviceMemoryAllocator::allocate(unsigned int type, const Range<Requirement*>& requirements)
+void DeviceMemoryAllocator::allocate(unsigned int type,
+	nytl::Span<Requirement* const> requirements)
 {
 	auto gran = device().properties().limits.bufferImageGranularity;
 
@@ -339,7 +343,7 @@ void DeviceMemoryAllocator::allocate(unsigned int type, const Range<Requirement*
 }
 
 
-spm::map<unsigned int, std::pmr::vector<DeviceMemoryAllocator::Requirement*>>
+std::map<unsigned int, std::vector<DeviceMemoryAllocator::Requirement*>>
 DeviceMemoryAllocator::queryTypes()
 {
 	//XXX: probably one of the places where a custom host allocator would really speed things up
@@ -349,11 +353,11 @@ DeviceMemoryAllocator::queryTypes()
 	//its typebits, so that in the end there will be as few allocations as possible needed.
 
 	//vector to return, holds requirements that have a type
-	auto& allctr = device().hostMemoryResource();
-	spm::map<unsigned int, std::pmr::vector<Requirement*>> ret(&allctr);
+	// auto& allctr = device().hostMemoryResource();
+	std::map<unsigned int, std::vector<Requirement*>> ret;
 
 	//map holding the current count of the different types
-	spm::map<unsigned int, std::pmr::vector<Requirement*>> occurences(&allctr);
+	std::map<unsigned int, std::vector<Requirement*>> occurences;
 
 	//function to count the occurences of the different memory types and store them in
 	//the occurences map
@@ -366,10 +370,10 @@ DeviceMemoryAllocator::queryTypes()
 			{
 				if(supportsType(req, i))
 				{
-					std::pmr::vector<Requirement*> vec({&req}, {&allctr});
+					std::vector<Requirement*> vec({&req});
 					auto it = occurences.find(i);
 					if(it != occurences.cend()) it->second.push_back(&req);
-					else occurences.emplace(i, std::pmr::vector<Requirement*>{&req});
+					else occurences.emplace(i, std::vector<Requirement*>{&req});
 				}
 			}
 		}

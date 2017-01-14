@@ -1,29 +1,29 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/buffer.hpp>
-#include <vpp/utility/allocation.hpp>
+#include <vpp/util/allocation.hpp>
 
 #include <memory>
 #include <mutex>
 
-namespace vpp
-{
+namespace vpp {
 
-///Provides transfer buffers to easily fill large device local buffers and images.
-///Basically a pool of mappable vulkan buffers, which can be used for copying.
-///Can be used by multiple threads at the same time.
-class TransferManager : public Resource
-{
-protected:
+/// Provides transfer buffers to easily fill large device local buffers and images.
+/// Basically a pool of mappable vulkan buffers, which can be used for copying.
+/// Can be used by multiple threads at the same time.
+class TransferManager : public Resource {
+public:
 	class TransferBuffer;
 
-public:
-	///Represents a part of a transfer buffer which can be used for transerfering data to the gpu.
-	///The destructor does automatically release the used transfer buffer range.
-	class BufferRange : public ResourceReference<BufferRange>
-	{
+	/// Represents a part of a transfer buffer which can be used for transerfering data to the gpu.
+	/// The destructor does automatically release the used transfer buffer range.
+	class BufferRange : public ResourceReference<BufferRange> {
 	public:
 		BufferRange() = default;
 		BufferRange(TransferBuffer& buf, const Allocation& al) : buffer_(&buf), allocation_(al) {}
@@ -50,30 +50,29 @@ public:
 	TransferManager() = default;
 	TransferManager(const Device& dev);
 
-	///Returns an avaible upload buffer with the given size (allocates one if not already there).
+	/// Returns an avaible upload buffer with the given size (allocates one if not already there).
 	BufferRange buffer(std::size_t size);
 
-	///Returns the amount of vulkan buffers managed.
+	/// Returns the amount of vulkan buffers managed.
 	std::size_t bufferCount() const { return buffers_.size(); }
 
-	///Returns the total buffer size of all owned buffers.
+	/// Returns the total buffer size of all owned buffers.
 	std::size_t totalSize() const;
 
-	///Returns the amount of currently for transerfing used ranges.
+	/// Returns the amount of currently for transerfing used ranges.
 	std::size_t activeRanges() const;
 
-	///Additionally reserves the amount of transfer buffer capacity
+	/// Additionally reserves the amount of transfer buffer capacity
 	void reserve(std::size_t size);
 
-	///Releases all currently unused buffers.
+	/// Releases all currently unused buffers.
 	void shrink();
 
-	///Optimizes the memory allocation. Will recreate all unused buffers as one big buffer.
+	/// Optimizes the memory allocation. Will recreate all unused buffers as one big buffer.
 	void optimize();
 
-protected:
-	class TransferBuffer : ResourceReference<TransferBuffer>
-	{
+public:
+	class TransferBuffer : ResourceReference<TransferBuffer> {
 	public:
 		TransferBuffer(const Device& dev, std::size_t size, std::mutex& mtx);
 		~TransferBuffer();
@@ -93,21 +92,21 @@ protected:
 	};
 
 protected:
-	//transfer buffer pool
-	//must be a pointer for the BufferRange pointer member to stay valid.
+	// transfer buffer pool
+	// must be a pointer for the BufferRange pointer member to stay valid.
 	std::vector<std::unique_ptr<TransferBuffer>> buffers_;
 	mutable std::mutex mutex_;
 };
 
-///Convinient typedef for TransferManager::BufferRange
+/// Convinient typedef for TransferManager::BufferRange
 using TransferRange = TransferManager::BufferRange;
 
-///Returns a queue family that supports graphics, compute or transfer operations and can therefore
-///be used for copy operations.
-///Guarantees that there exists at least one queue for the given device with the returned queue
-///family.
-///Returns -1 if there is no such family, although there usually should be.
-///If queue if not nullptr, will store a pointer to a queue of the returned family into it.
+/// Returns a queue family that supports graphics, compute or transfer operations and can therefore
+/// be used for copy operations.
+/// Guarantees that there exists at least one queue for the given device with the returned queue
+/// family.
+/// Returns -1 if there is no such family, although there usually should be.
+/// If queue if not nullptr, will store a pointer to a queue of the returned family into it.
 int transferQueueFamily(const Device& dev, const Queue** queue = nullptr);
 
-}
+} // namespace vpp

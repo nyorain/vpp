@@ -1,3 +1,7 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/renderer.hpp>
 #include <vpp/swapChain.hpp>
 #include <vpp/surface.hpp>
@@ -238,8 +242,8 @@ void SwapChainRenderer::record(int id)
 std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, const Queue* gfx)
 {
 	//TODO
-	if(present == nullptr) present = device().queues()[0].get();
-	if(gfx == nullptr) gfx = device().queues()[0].get();
+	if(present == nullptr) present = device().queues()[0];
+	if(gfx == nullptr) gfx = device().queues()[0];
 
 	vk::SemaphoreCreateInfo semaphoreCI;
 	auto acquireComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
@@ -332,8 +336,8 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, cons
 
 void SwapChainRenderer::renderBlock(const Queue* gfx, const Queue* present)
 {
-	if(present == nullptr) present = device().queues()[0].get();
-	if(gfx == nullptr) gfx = device().queues()[0].get();
+	if(present == nullptr) present = device().queues()[0];
+	if(gfx == nullptr) gfx = device().queues()[0];
 
 	vk::SemaphoreCreateInfo semaphoreCI;
 	auto acquireComplete = vk::createSemaphore(vkDevice(), semaphoreCI);

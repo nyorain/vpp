@@ -1,3 +1,7 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
@@ -5,8 +9,7 @@
 #include <vpp/resource.hpp>
 #include <vpp/image.hpp>
 
-namespace vpp
-{
+namespace vpp {
 
 //NOTE: must be resource since it might be created without internal manages attachments
 
@@ -14,8 +17,7 @@ namespace vpp
 ///Can be initialized with two step initialization.
 ///Stores its own size and is able to create and manage its own attachments but does
 ///not store any further information such as render pass compatibilty.
-class Framebuffer : public ResourceHandle<vk::Framebuffer>
-{
+class Framebuffer : public ResourceHandle<vk::Framebuffer> {
 public:
 	using ExtAttachments = std::unordered_map<unsigned int, vk::ImageView>;
 	using AttachmentsInfo = std::vector<ViewableImage::CreateInfo>; //pair<imgCreate, viewCreate>
@@ -56,4 +58,4 @@ protected:
 	unsigned int height_ = 0;
 };
 
-}
+} // namespace vpp

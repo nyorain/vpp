@@ -1,7 +1,7 @@
 #include <example.hpp> //defnitions for initApp and mainLoop as well as the App declaration
 
 #include <vpp/provider.hpp>
-#include <vpp/utility/file.hpp>
+#include <vpp/util/file.hpp>
 #include <vpp/buffer.hpp>
 #include <vpp/bufferOps.hpp>
 #include <vpp/graphicsPipeline.hpp>
@@ -154,6 +154,7 @@ void ParticleRenderer::build(unsigned int id, const vpp::RenderPassInstance& ins
 		ps().graphicsPipeline_);
 	vk::cmdBindDescriptorSets(cmdBuffer, vk::PipelineBindPoint::graphics,
 		ps().graphicsLayout_, 0, {gd}, {});
+
 	vk::cmdBindVertexBuffers(cmdBuffer, 0, {buf}, offsets);
 	vk::cmdDraw(cmdBuffer, ps().count_, 1, 0, 0);
 }

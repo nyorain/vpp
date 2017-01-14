@@ -4,11 +4,6 @@ auto constexpr fwdHeader = 1 + R"SRC(
 
 #include <vulkan/vk_platform.h>
 
-namespace nytl
-{
-	template<typename T> class Range;
-}
-
 )SRC";
 
 
@@ -38,8 +33,8 @@ auto constexpr functionsHeader = 1 + R"SRC(
 #include "fwd.hpp"
 #include "enums.hpp"
 #include "structs.hpp"
-#include "call.hpp"
-#include "range.hpp"
+#include "error.hpp"
+#include "span.hpp"
 
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -49,7 +44,7 @@ auto constexpr functionsHeader = 1 + R"SRC(
 auto constexpr vecFuncTemplate = 1 + R"SRC(
 	std::vector<%t> ret;
 	%ct count = 0u;
-	if(!call::success(VPP_CALL(%f(%a)))) return ret;
+	if(!error::success(VPP_CALL(%f(%a)))) return ret;
 	ret.resize(count);
 	VPP_CALL(%f(%a));
 	return ret;

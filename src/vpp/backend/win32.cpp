@@ -1,5 +1,8 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/backend/win32.hpp>
-#include <vpp/utility/range.hpp>
 #include <vpp/procAddr.hpp>
 
 namespace vpp
@@ -40,4 +43,4 @@ Context createContext(HWND window, HINSTANCE module)
 	return createContext(window, {}, module);
 }
 
-}
+} // namespace vpp

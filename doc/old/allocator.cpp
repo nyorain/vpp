@@ -1,4 +1,4 @@
-#include <vpp/utility/allocator.hpp>
+#include <vpp/util/allocator.hpp>
 
 #include <memory>
 #include <algorithm>

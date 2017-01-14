@@ -26,11 +26,11 @@ public:
 		std::uint32_t memoryTypeBits);
 	Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
 		vk::MemoryPropertyFlags mflags = {});
-		
+
 	~Buffer();
 
 	Buffer(Buffer&& other) noexcept = default;
 	Buffer& operator=(Buffer&& other) noexcept = default;
 };
 
-};
+} // namespace vpp

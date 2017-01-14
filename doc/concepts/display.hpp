@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/utility/nonCopyable.hpp>
+#include <vpp/util/nonCopyable.hpp>
 
 #include <vector>
 

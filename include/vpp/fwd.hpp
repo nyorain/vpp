@@ -3,10 +3,7 @@
 #include <vpp/vulkan/fwd.hpp>
 #include <vpp/config.hpp>
 
-namespace vpp
-{
-
-using vk::Range;
+namespace vpp {
 
 class Resource;
 class WorkBase;
@@ -51,14 +48,3 @@ class WorkManager;
 class TransferManager;
 
 }
-
-//see utility/memory_resource.hpp
-//ugly hack to not pull all boost headers from device.hpp
-//will be removed with c++17.
-namespace boost { namespace container { namespace pmr {
-	class memory_resource;
-}}}
-
-namespace std { namespace pmr {
-	using memory_resource = boost::container::pmr::memory_resource;
-}}

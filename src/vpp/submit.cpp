@@ -23,7 +23,7 @@ Fence::Fence(const Device& dev) : Fence(dev, {})
 
 Fence::Fence(const Device& dev, const vk::FenceCreateInfo& info) : ResourceHandle(dev)
 {
-	vkHandle() = vk::createFence(device(), info);
+	handle_ = vk::createFence(device(), info);
 }
 
 Fence::~Fence()

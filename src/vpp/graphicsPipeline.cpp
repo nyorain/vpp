@@ -1,3 +1,7 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/graphicsPipeline.hpp>
 #include <vpp/shader.hpp>
 #include <vpp/image.hpp>
@@ -6,8 +10,7 @@
 #include <utility>
 #include <algorithm>
 
-namespace vpp
-{
+namespace vpp {
 
 GraphicsPipelineBuilder::GraphicsPipelineBuilder(const Device& dev, vk::RenderPass rp,
 	unsigned int xsubpass) : shader(dev), renderPass(rp), subpass(xsubpass)
@@ -170,7 +173,7 @@ vk::GraphicsPipelineCreateInfo GraphicsPipelineBuilder::parse()
 }
 
 std::vector<Pipeline> createGraphicsPipelines(const Device& dev,
-	const Range<vk::GraphicsPipelineCreateInfo>& infos, vk::PipelineCache cache)
+	nytl::Span<const vk::GraphicsPipelineCreateInfo> infos, vk::PipelineCache cache)
 {
 	auto pipelines = vk::createGraphicsPipelines(dev, cache, infos);
 	std::vector<Pipeline> ret;
@@ -180,7 +183,7 @@ std::vector<Pipeline> createGraphicsPipelines(const Device& dev,
 }
 
 std::vector<Pipeline> createGraphicsPipelines(
-	const Range<std::reference_wrapper<GraphicsPipelineBuilder>>& builder,
+	nytl::Span<const std::reference_wrapper<GraphicsPipelineBuilder>>& builder,
 	vk::PipelineCache cache)
 {
 	if(builder.empty()) return {};

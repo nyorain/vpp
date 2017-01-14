@@ -1,3 +1,15 @@
+Todo list vor vpp
+=================
+
+- C++17 update (if usable compiler):
+	- clean up the Resource::swap mess
+	- use a destroy function for resources that is called from ResourceHandle destrctor
+	- use "using" declarations in the derived resource classes to make the
+		protected ResourceHandle constructors visisble
+	- use std::memory_resource for more efficient host memory allocation
+		- Device should store a thread-specific memory resource
+		- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
+
 - better renderer resetting (all command pools at once, just resize the frameRenderers vector)
 - textures (overthing viewable image + sampler)
 - fully implement examples!

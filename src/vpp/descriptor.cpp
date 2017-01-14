@@ -1,8 +1,11 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/descriptor.hpp>
 #include <vpp/vk.hpp>
 
-namespace vpp
-{
+namespace vpp {
 
 //decriptorSetUpdate
 DescriptorSetUpdate::DescriptorSetUpdate(const DescriptorSet& set) : set_(&set)
@@ -26,7 +29,7 @@ void DescriptorSetUpdate::apply()
 	views_.clear();
 }
 
-void apply(const Range<std::reference_wrapper<DescriptorSetUpdate>>& updates)
+void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates)
 {
 	if(updates.empty()) return;
 
@@ -181,7 +184,7 @@ void DescriptorSetUpdate::copy(const vk::CopyDescriptorSet& copySet)
 
 //descriptorSetLayout
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
-	const Range<vk::DescriptorSetLayoutBinding>& bindings) : ResourceHandle(dev)
+	nytl::Span<const vk::DescriptorSetLayoutBinding> bindings) : ResourceHandle(dev)
 {
 	static constexpr auto defaultBinding = std::uint32_t(-1);
 
@@ -201,7 +204,7 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	descriptorLayout.bindingCount = vkbindings.size();
 	descriptorLayout.pBindings = vkbindings.data();
 
-	vkHandle() = vk::createDescriptorSetLayout(vkDevice(), descriptorLayout);
+	handle_ = vk::createDescriptorSetLayout(vkDevice(), descriptorLayout);
 }
 
 DescriptorSetLayout::~DescriptorSetLayout()
@@ -218,7 +221,7 @@ DescriptorSet::DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPo
 	allocInfo.descriptorSetCount = 1;
 	allocInfo.pSetLayouts = &layout.vkHandle();
 
-	vk::allocateDescriptorSets(vkDevice(), allocInfo, vkHandle());
+	vk::allocateDescriptorSets(vkDevice(), allocInfo, handle_);
 }
 
 DescriptorSet::~DescriptorSet()
@@ -230,7 +233,7 @@ DescriptorSet::~DescriptorSet()
 DescriptorPool::DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info)
 	: ResourceHandle(dev)
 {
-	vkHandle() = vk::createDescriptorPool(dev, info);
+	handle_ = vk::createDescriptorPool(dev, info);
 }
 DescriptorPool::~DescriptorPool()
 {
@@ -245,4 +248,4 @@ vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
 	return {binding, type, count, stages, samplers};
 }
 
-}
+} // namespace vpp
