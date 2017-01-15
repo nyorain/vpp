@@ -55,6 +55,6 @@ public:
 };
 
 ///\warning not threadsafe.
-vk::RenderPassCreateInfo& defaultRenderPassCreateInfo(vk::Format format);
+vk::RenderPassCreateInfo& defaultRenderPassCreateInfo(vk::Format colorFormat);
 
 }

@@ -1,42 +1,43 @@
-//This file is taken from nyorain/nytl nytl/nonCopyable
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #pragma once
 
-namespace nytl
-{
+#ifndef NYTL_INCLUDE_NON_COPYABLE
+#define NYTL_INCLUDE_NON_COPYABLE
 
-///Utility base for classes that cannot be copied but moved.
-class NonCopyable
-{
-private:
-	NonCopyable(const NonCopyable&) = delete;
-	NonCopyable& operator=(const NonCopyable&) = delete;
+namespace nytl {
 
-public:
-	NonCopyable() = default;
-	~NonCopyable() = default;
+/// Derive from this class to make it impossible to copy objects of the derived class.
+/// \module utility
+class NonCopyable {
+	constexpr NonCopyable(const NonCopyable&) = delete;
+	constexpr NonCopyable& operator =(const NonCopyable&) = delete;
 
-	NonCopyable(NonCopyable&& other) noexcept = default;
-	NonCopyable& operator=(NonCopyable&& other) noexcept = default;
+protected:
+	constexpr NonCopyable() noexcept = default;
+	constexpr NonCopyable(NonCopyable&&) noexcept = default;
+	constexpr NonCopyable& operator=(NonCopyable&&) noexcept = default;
 };
 
-///Utility base class that cannot copied nor moved.
-class NonMovable
-{
-private:
-	NonMovable(const NonMovable&) = delete;
-	NonMovable& operator =(const NonMovable&) = delete;
-	NonMovable(NonMovable&&) = delete;
-	NonMovable& operator=(NonMovable&&) = delete;
+/// Derive from this class to make it impossible to copy or move objects of the derived class.
+/// \module utility
+class NonMovable {
+	constexpr NonMovable(const NonMovable&) = delete;
+	constexpr NonMovable& operator =(const NonMovable&) = delete;
+	constexpr NonMovable(NonMovable&&) = delete;
+	constexpr NonMovable& operator=(NonMovable&&) = delete;
 
 protected:
 	constexpr NonMovable() noexcept = default;
-	~NonMovable() noexcept = default;
 };
 
-}
+} // namespace nytl
 
 namespace vpp {
-	using nytl::NonMovable;
 	using nytl::NonCopyable;
+	using nytl::NonMovable;
 }
+
+#endif // header guard
