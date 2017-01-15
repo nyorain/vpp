@@ -7,7 +7,7 @@ set(vpatch 0)
 
 include(CMakeDependentOption)
 
-option(BuildExamples "Build Examples" on)
+option(BuildExamples "Build Examples" off)
 option(Debug "Compile in debug mode" on)
 option(OneDevice "Enable the one device optimization. Not recommended" off)
 
