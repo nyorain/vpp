@@ -12,10 +12,8 @@
 
 #include <memory> // std::unique_ptr
 #include <vector> // std::vector
-#include <map> // std::map
+#include <unordered_map> // std::unordered_map
 #include <cstdlib> // std::size_t
-
-// TODO: use unordered_map for type requirements algorithm (?)
 
 namespace vpp {
 
@@ -71,6 +69,8 @@ public:
 	/// Makes sure that the given entry has associated memory, i.e. finishes its memory request
 	/// and removes it from the interal list of pending entries.
 	/// Will return false if the given entry cannot be found.
+	/// Prefer the allocate overload without parameters that allocates all pending
+	/// memory request since it might be more efficient overall.
 	bool allocate(const MemoryEntry& entry);
 
 	/// Returns all memories that this allocator manages.
@@ -112,7 +112,7 @@ protected:
 	void allocate(unsigned int type, nytl::Span<Requirement* const> requirements);
 	DeviceMemory* findMem(Requirement& req);
 	Requirements::iterator findReq(const MemoryEntry& entry);
-	std::map<unsigned int, std::vector<Requirement*>> queryTypes();
+	std::unordered_map<unsigned int, std::vector<Requirement*>> queryTypes();
 	unsigned int findBestType(std::uint32_t typeBits) const;
 
 protected:
@@ -150,7 +150,7 @@ public:
 	/// Will have no effect if the entry already has an associated memory allocation.
 	/// Results in undefined behvaiour if this MemoryEntry is in an invalid state, i.e.
 	/// if it has no associated DeviceMemoryAllocator.
-	void allocate() const { if(!allocated()) allocator_->allocate(*this); }
+	void allocate() const { if(!allocated()) allocator_->allocate(); }
 
 	DeviceMemory* memory() const { return allocated() ? memory_ : nullptr; };
 	DeviceMemoryAllocator* allocator() const { return allocated() ? nullptr : allocator_; };

@@ -84,13 +84,14 @@ WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,
 	// TODO: correct offset/extent handling (?)
 	if(image.mappable() && allowMap) {
 
-		//baiscally the size of the format in bytes. Can be computed from the given size/extent.
+		// baiscally the size of the format in bytes. Can be computed from the given size/extent.
 		auto sresLayout = vk::getImageSubresourceLayout(image.device(), image, subres);
 		auto map = image.memoryEntry().map();
 
-		//dataoffset
-		auto doffset = 0u;
-		for(unsigned int d = offset.z; d < offset.z + extent.depth; ++d) {
+		// make it work for 2d images that specify a depth of zero
+		auto depth = extent.depth ? extent.depth : 1;
+		auto doffset = 0u; // current data offset
+		for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
 			for(unsigned int h = offset.y; h < offset.y + extent.height; ++h) {
 				auto ioff = imageAddress(sresLayout, texSize, offset.x, h, d, subres.arrayLayer);
 				std::memcpy(map.ptr() + ioff, &data + doffset, texSize * extent.width);
@@ -384,9 +385,23 @@ Sampler::Sampler(const Device& dev, const vk::SamplerCreateInfo& info) : Resourc
 	handle_ = vk::createSampler(dev, info);
 }
 
+Sampler::Sampler(const Device& dev, vk::Sampler sampler) : ResourceHandle(dev, sampler)
+{
+}
+
 Sampler::~Sampler()
 {
 	if(vkHandle()) vk::destroySampler(device(), vkHandle());
+}
+
+// ImageView
+ImageView::ImageView(const Device& dev, const vk::ImageViewCreateInfo& info) : ResourceHandle(dev)
+{
+	handle_ = vk::createImageView(dev, info);
+}
+
+ImageView::ImageView(const Device& dev, vk::ImageView view) : ResourceHandle(dev, view)
+{
 }
 
 // Utility functions
