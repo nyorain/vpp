@@ -208,7 +208,7 @@ void BufferUpdate::alignTexel()
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
 
-//bufferSizeCalculator
+// BufferSizer
 void BufferSizer::alignUniform()
 {
 	align(device().properties().limits.minUniformBufferOffsetAlignment);
@@ -224,13 +224,13 @@ void BufferSizer::alignTexel()
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
 
-//BufferReader
+// BufferReader
 BufferReader::BufferReader(const Device& dev, BufferLayout align,
-	nytl::Span<std::uint8_t> data) : BufferOperator(align), Resource(dev), data_(data)
+	nytl::Span<uint8_t> data) : BufferOperator(align), Resource(dev), data_(data)
 {
 }
 
-void BufferReader::operate(void* ptr, Size size)
+void BufferReader::operate(void* ptr, std::size_t size)
 {
 	offset_ = std::max(offset_, nextOffset_);
 	std::memcpy(ptr, &data_[offset_], size);

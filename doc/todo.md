@@ -9,7 +9,9 @@ Todo list vor vpp
 	- use std::memory_resource for more efficient host memory allocation
 		- Device should store a thread-specific memory resource
 		- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
+	- threadlocal.hpp: use shared_mutex instead of shared_timed_mutex
 
+- clean up bufferOps.inl
 - better renderer resetting (all command pools at once, just resize the frameRenderers vector)
 - textures (overthing viewable image + sampler)
 - fully implement examples!

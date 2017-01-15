@@ -6,7 +6,7 @@
 #include <example.hpp>
 
 #include <nytl/vec.hpp>
-#include <nytl/stringParam.hpp>
+// #include <nytl/stringParam.hpp>
 #include <nytl/convert.hpp>
 #include <nytl/transform.hpp>
 #include <nytl/time.hpp>
@@ -640,7 +640,7 @@ void ModelRenderer::frame(unsigned int id)
 ModelRenderer::AdditionalSemaphores ModelRenderer::submit(unsigned int)
 {
 	auto& dev = data_.app.context.device();
-	auto* queue = dev.queues()[0].get();
+	auto* queue = dev.queues()[0];
 
 	vk::SubmitInfo submitInfo;
 	submitInfo.commandBufferCount = 1;

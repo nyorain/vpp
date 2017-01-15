@@ -90,6 +90,9 @@ public:
 
 	///Allcoated multiple CommandBuffers on a CommandPool that is accepted by the predicate.
 	CommandBuffer get(const std::function<bool(const CommandPool& pool)>& pred, unsigned int count);
+
+protected:
+	unsigned int tlsID_ {};
 };
 
 }

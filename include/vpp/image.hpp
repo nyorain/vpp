@@ -1,3 +1,7 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
@@ -6,34 +10,33 @@
 #include <vpp/work.hpp>
 #include <vpp/vulkan/structs.hpp>
 
-#include <memory>
+#include <memory> // std::unique_ptr
 
-namespace vpp
-{
+namespace vpp {
 
-///Returns the size in bytes of the given format.
-///E.g. vk::Format::r8g8b8a8* will return 4, since it has a size of 4 * 8 bits = 32 bits = 4 bytes.
-///For compressed formats this function will return the size of one block in bytes.
-///\sa blockSize
+/// Returns the size in bytes of the given format.
+/// E.g. vk::Format::r8g8b8a8* will return 4, since it has a size of 4 * 8 bits = 32 bits = 4 bytes.
+/// For compressed formats this function will return the size of one block in bytes.
+/// \sa blockSize
 unsigned int formatSize(vk::Format format);
 
-///Returns the size of one compressed block of a compressed vulkan format.
-///If the given format is not a compressed format, {1, 1} is returned.
-///For vk::Format::undefined, {0, 0} is returned
-///\sa formatSize
+/// Returns the size of one compressed block of a compressed vulkan format.
+/// If the given format is not a compressed format, {1, 1} is returned.
+/// For vk::Format::undefined, {0, 0} is returned
+/// \sa formatSize
 vk::Extent2D blockSize(vk::Format format);
 
-///Representing a vulkan image on a device and having its own memory allocation bound to it.
-///The Image class does not store further information like size, type, format or layout.
-///All of this must be handled by the application to guarantee the best performance.
-class Image : public MemoryResource<vk::Image>
-{
+/// Representing a vulkan image on a device and having its own memory allocation bound to it.
+/// The Image class does not store further information like size, type, format or layout.
+/// All of this must be handled by the application to guarantee the best performance.
+class Image : public MemoryResource<vk::Image> {
 public:
 	Image() = default;
-	Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags = {});
-	Image(const Device& dev, const vk::ImageCreateInfo& info, std::uint32_t memoryTypeBits);
-	Image(const Device& dev, vk::Image image, vk::ImageTiling, vk::MemoryPropertyFlags mflags = {});
-	Image(const Device& dev, vk::Image image, vk::ImageTiling, std::uint32_t memoryTypeBits);
+	Image(const Device&, const vk::ImageCreateInfo&, vk::MemoryPropertyFlags = {});
+	Image(const Device&, const vk::ImageCreateInfo&, unsigned int memoryTypeBits);
+	Image(const Device&, vk::Image, vk::ImageTiling, vk::MemoryPropertyFlags mflags = {});
+	Image(const Device&, vk::Image, vk::ImageTiling, unsigned int memoryTypeBits);
+	Image(vk::Image, MemoryEntry&&);
 	~Image();
 
 	Image(Image&& other) noexcept = default;

@@ -15,8 +15,6 @@ namespace vpp {
 /// Cannot be created or destroyed, must be received by the device class.
 class Queue : public nytl::NonCopyable {
 public:
-	~Queue() = default;
-
 	/// Return the queueFamily of this queue
 	unsigned int family() const { return family_; }
 
@@ -45,6 +43,7 @@ public:
 protected:
 	friend class Device;
 	Queue(vk::Queue queue, const vk::QueueFamilyProperties& props, unsigned int fam, unsigned int id);
+	~Queue() = default;
 
 protected:
 	vk::Queue queue_;

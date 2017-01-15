@@ -11,108 +11,121 @@
 #include <vpp/util/allocation.hpp>
 #include <vpp/bits/apply.inl>
 
-///\file Defines several utility operations for buffers such as updating or reading them.
+namespace vpp {
 
-namespace vpp
-{
-
-///Vulkan shader data types.
-///Defines all possible types that can be passed as buffer update paramter.
-///See bits/vulkanTypes.inl for more information.
-enum class ShaderType
-{
-	none, //used for things like e.g. containers
-	buffer, //used for buffer that shall be plain copied
-	scalar, //VulkanType has "size64" bool member
-	vec, //VulkanType has "dimension" "size64" members
-	mat, //VulkanType has "major" "minor" "transpose" "size64" members
-	structure, //VulkanType has "member" tuples with member pointers and a bool "align"
-	custom //Vulkan type holds "impl" type that will be called instead. See BufferApplier
+/// Vulkan shader data types.
+/// Defines all possible types that can be passed as buffer update paramter.
+/// See bits/vulkanTypes.inl for more information.
+enum class ShaderType {
+	none, // used for things like e.g. containers
+	buffer, // used for raw data buffers that shall be plain copied
+	scalar, // scalar like float or int, VulkanType has "size64" bool member
+	vec, // VulkanType has "dimension" "size64" members
+	mat, // VulkanType has "major" "minor" "transpose" "size64" members
+	structure, // VulkanType has "member" tuples with member pointers and a bool "align"
+	custom // Vulkan type holds "impl" type that will be called instead. See BufferApplier
 };
 
-///Specifies the different buffer alignment methods.
-///For the differences, read https://www.opengl.org/wiki/Interface_Block_(GLSL)#Memory_layout.
-///Uniform buffer are by default std140 while storage buffers are by default std430.
-///Both defaults can be explicitly changed in the shader files using the buffers.
-enum class BufferLayout
-{
+/// Specifies the different buffer alignment methods.
+/// For the differences, read https://www.opengl.org/wiki/Interface_Block_(GLSL)#Memory_layout.
+/// Uniform buffer are by default std140 while storage buffers are by default std430.
+/// Both defaults can be explicitly changed in the shader files using the buffers.
+enum class BufferLayout {
 	std140,
 	std430
 };
 
-///Base for classes that operator on a buffer such as BufferUpdate, BufferReader or BufferSizer.
-///Uses the CRTP.
+/// Base for classes that operator on a buffer such as BufferUpdate, BufferReader or BufferSizer.
+/// Moves linearly over the buffer and somehow operates on it and the data it gets.
+/// Uses the CRTP idiom.
 template<typename B>
-class BufferOperator
-{
-public:
-	using Size = std::size_t;
-
+class BufferOperator {
 public:
 	constexpr BufferOperator(BufferLayout align) : align_(align) {}
 	~BufferOperator() = default;
 
-	///Will operator on the given object. The type of the given object must have
-	///a specialization for the VulkanType template struct that carriers information about
-	///the corresponding shader variable type of the object to align it correctly.
-	///The given object can also be a container/array of such types.
-	///If one wants the operator to just use raw data it can use vpp::raw for
-	///an object which will wrap it into a temporary RawBuffer object that can also be operated
-	///on without any alignment or offsets.
-	template<typename T> void addSingle(T&& obj);
+	/// Will operator on the given object. The type of the given object must have
+	/// a specialization for the VulkanType template struct that carriers information about
+	/// the corresponding shader variable type of the object to align it correctly.
+	/// The given object can also be a container/array of such types.
+	/// If one wants the operator to just use raw data it can use vpp::raw for
+	/// an object which will wrap it into a temporary RawBuffer object that can also be operated
+	/// on without any alignment or offsets.
+	template<typename T>
+	void addSingle(T&& obj);
 
-	///Utility function that calls addSingle for all ob the given objects.
-	template<typename... T> void add(T&&... obj);
+	/// Utility function that calls addSingle for all ob the given objects.
+	template<typename... T>
+	void add(T&&... obj);
 
-	///Returns the current offset on the buffer.
-	constexpr Size offset() const { return offset_; }
+	/// Returns the current offset on the buffer.
+	constexpr std::size_t offset() const { return offset_; }
+
+	/// Sets the nextOffset value to which offset will be set before operating on the
+	/// next data. Will not be applied if there is no further data to operate on.
+	constexpr void nextOffset(std::size_t noffset) { nextOffset_ = noffset; }
+
+	/// Sets the align that offset should have before operating on the next data.
+	/// Will not be applied if there is no further data to operate on.
+	constexpr void nextOffsetAlign(std::size_t align) { nextOffset_ = vpp::align(offset_, align); }
 
 	constexpr BufferLayout alignType() const { return align_; }
 	constexpr bool std140() const { return align_ == BufferLayout::std140; }
-	constexpr bool std430() const { return align_ == BufferLayout::std430; }
-
-	constexpr void nextOffset(Size noffset) { nextOffset_ = noffset; }
-	constexpr void nextOffsetAlign(Size align) { nextOffset_ = vpp::align(offset_, align); }
+	constexpr bool std430()const { return align_ == BufferLayout::std430; }
 
 protected:
 	BufferLayout align_;
-	Size offset_ {};
-	Size nextOffset_ {}; //structs or arrays may have offset requirement for next member.
+	std::size_t offset_ {};
+	std::size_t nextOffset_ {}; // structs or arrays may have offset requirement for next member.
 };
 
-///This class can be used to update the contents of a buffer.
-///It will automatically align the data as specified but can also be used to just upload/write
-///raw data to the buffer. Can also be used to specify custom offsets or alignment for the data.
-class BufferUpdate : public BufferOperator<BufferUpdate>, public ResourceReference<BufferUpdate>
-{
+/// This class can be used to update/write the contents of a buffer.
+/// It will automatically align the data as specified but can also be used to just upload/write
+/// raw data to the buffer. Can also be used to specify custom offsets or alignment for the data.
+class BufferUpdate : public BufferOperator<BufferUpdate>, public ResourceReference<BufferUpdate> {
 public:
-	///The given align type will influence the applied alignments.
-	///\param direct Specifies if direct updates should be preferred. Will be ignored
-	///if the buffer is filled by mapping and in some cases, direct filling is not possible.
-	///\exception std::runtime_error if the device has no queue that supports graphics/compute or
-	///transfer operations and the buffer is not mappable.
-	///\sa BufferAlign
+	/// The given align type will influence the applied alignments.
+	/// \param direct Specifies if direct updates should be preferred. Will be ignored
+	/// if the buffer is filled by mapping and in some cases, direct filling is not possible.
+	/// \exception std::runtime_error if the device has no queue that supports graphics/compute or
+	/// transfer operations and the buffer is not mappable.
+	/// \sa BufferAlign
 	BufferUpdate(const Buffer& buffer, BufferLayout align, bool direct = false);
+
+	/// Calls apply and waits for the work to finish if apply was not called during
+	/// the lifetime of this object.
 	~BufferUpdate();
 
-	///Writes size bytes from ptr to the buffer.
+	/// Writes size bytes from ptr to the buffer.
+	/// Undefined behaviour if ptr does not point to at least size bytes.
 	void operate(const void* ptr, std::size_t size);
 
-	///Offsets the current position on the buffer by size bytes. If update is true, it will
-	///override the bytes with zero, otherwise they will not be changed.
+	/// Offsets the current position on the buffer by size bytes. If update is true, it will
+	/// override the bytes with zero, otherwise they will not be changed.
 	void offset(std::size_t size, bool update = true);
 
-	///Assure that the current position on the buffer meets the given alignment requirements.
-	void align(std::size_t align);
-
-	void alignUniform();
-	void alignStorage();
-	void alignTexel();
-
-	///Writes the stores data to the buffer.
+	/// Writes the stored data to the buffer.
+	/// Returns a Work implemention that can be used to execute or defer the update.
+	/// After this call, the BufferUpdate object should no longer be used in any way.
 	WorkPtr apply();
 
-	///Returns the internal offset, i.e. the position on the internal stored data.
+	/// Assures that the current position on the buffer meets the given alignment requirements.
+	/// If it does not, it will be changed to the next value fulfilling the requirement and
+	/// not changing the buffer content in this section.
+	void align(std::size_t align);
+
+	/// Aligns the offset for a uniform buffer.
+	void alignUniform();
+
+	/// Aligns the offset for a storage buffer.
+	void alignStorage();
+
+	/// Aligns the offset for a texel buffer.
+	void alignTexel();
+
+	/// Returns the internal offset, i.e. the position on the internal stored data.
+	/// This value is usually not from any interest, See BufferOperator::offset for
+	/// the current offset on the buffer data.
 	std::size_t internalOffset() const { return internalOffset_; }
 
 	const Buffer& buffer() const { return *buffer_; }
@@ -153,10 +166,10 @@ public:
 	using BufferOperator::add;
 	template<typename... T> constexpr void add();
 
-	constexpr void operate(const void*, Size size);
+	constexpr void operate(const void*, std::size_t size);
 
-	constexpr void offset(Size size) { offset_ += size; }
-	constexpr void align(Size align) { offset_ = vpp::align(offset_, align); }
+	constexpr void offset(std::size_t size) { offset_ += size; }
+	constexpr void align(std::size_t align) { offset_ = vpp::align(offset_, align); }
 
 	using BufferOperator::offset;
 	using BufferOperator::alignType;
@@ -175,13 +188,13 @@ public:
 	//XXX: better use owned data (a vector, data copy) here?
 	///Constructs the BufferReader with the given data range.
 	///Note that the range must stay valid until destruction.
-	BufferReader(const Device& dev, BufferLayout align, nytl::Span<std::uint8_t> data);
+	BufferReader(const Device& dev, BufferLayout align, nytl::Span<uint8_t> data);
 	~BufferReader() = default;
 
-	void operate(void* ptr, Size size);
+	void operate(void* ptr, std::size_t size);
 
-	void offset(Size size) { align(0); offset_ += size; }
-	void align(Size align) { offset_ = vpp::align(offset_, align); }
+	void offset(std::size_t size) { align(0); offset_ += size; }
+	void align(std::size_t align) { offset_ = vpp::align(offset_, align); }
 
 	using BufferOperator::offset;
 	using BufferOperator::alignType;

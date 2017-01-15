@@ -353,7 +353,7 @@ constexpr void BufferSizer::add()
 	(void)Expand{(detail::bufferSize<VulkanType<T>>(*this), 0)...};
 }
 
-constexpr void BufferSizer::operate(const void* ptr, Size size)
+constexpr void BufferSizer::operate(const void* ptr, std::size_t size)
 {
 	offset_ = std::max(nextOffset_, offset_) + size;
 }
@@ -362,8 +362,7 @@ template<typename... T> WorkPtr read(const Buffer& buf, BufferLayout align, T&..
 {
 	///WorkImpl that will store references to the given args and write the buffer data into
 	///it once it was retrieved
-	struct WorkImpl : public Work<void>
-	{
+	struct WorkImpl : public Work<void> {
 		WorkImpl(const Buffer& buf, BufferLayout align, T&... args)
 			: buffer_(buf), retrieveWork_(retrieve(buf)), align_(align), args_(args...) {}
 		~WorkImpl() { finish(); }

@@ -9,134 +9,110 @@
 #include <vpp/commandBuffer.hpp>
 #include <vpp/submit.hpp>
 #include <vpp/transfer.hpp>
-
 #include <cstdlib>
-#include <thread>
-#include <mutex>
-
-// TODO: common init queus function for all constructors
 
 namespace vpp {
 
-// struct Device::TLStorage
-// {
-// 	std::vector<CommandPool> commandPools;
-// 	// std::pmr::unsynchronized_pool_resource memoryResource;
-// 	DeviceMemoryAllocator deviceAllocator;
-// 	// VulkanAllocator vulkanAllocator;
-//
-// 	// TLStorage(const Device& dev) : deviceAllocator(dev), vulkanAllocator(memoryResource) {}
-// 	TLStorage(const Device& dev) : deviceAllocator(dev) {}
-// };
-
-//Device Impl
-//XXX: care for order in this structure since some of the vars depend on each other.
-//i.e. tlStorage (with deviceAllocator and memoryResource) should not be placed after
-//submitManager or transferManger or commandProvider.
 struct Device::Impl {
-	// std::map<std::thread::id, TLStorage> tlStorage;
-	// std::mutex storageMutex; //use a shared_mutex here with c++17.
-
-	CommandProvider commandProvider;
-	SubmitManager submitManager;
-	TransferManager transferManager;
+	DynamicThreadLocalStorage tls;
+	unsigned int tlsDeviceAllocatorID {};
 
 	vk::PhysicalDeviceProperties physicalDeviceProperties;
 	vk::PhysicalDeviceMemoryProperties memoryProperties;
 
 	std::vector<vk::QueueFamilyProperties> qFamilyProperties;
-	std::vector<std::unique_ptr<Queue>> queues;
+	std::vector<std::unique_ptr<Queue, Device::QueueDeleter>> queues;
 	std::vector<const Queue*> queuesVec;
 
-	Impl(const Device& dev) : commandProvider(dev), submitManager(dev), transferManager(dev) {}
 };
 
-//Device
+struct Device::Provider {
+	CommandProvider command;
+	SubmitManager submit;
+	TransferManager transfer;
+
+	Provider(const Device& dev) : command(dev), submit(dev), transfer(dev) {}
+};
+
+// NOTE: used so the Queue destructor can be made not public and Device a friend.
+// The Device class is the only one that creates/destroys/owns queues.
+struct Device::QueueDeleter {
+	void operator()(Queue* q) { delete q; }
+};
+
+// Device
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info)
 	: instance_(ini), physicalDevice_(phdev)
 {
-	auto qProps = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
 	device_ = vk::createDevice(vkPhysicalDevice(), info);
 
-	impl_.reset(new Impl(*this));
-	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());
-	impl_->memoryProperties = vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
-	impl_->qFamilyProperties = qProps;
+	// we can assume that info.pQueueCreateInfo contains for every
+	// family only one create info entry
+	std::vector<std::pair<vk::Queue, unsigned int>> queuePairs;
+	queuePairs.reserve(info.queueCreateInfoCount);
 
-	std::map<std::uint32_t, unsigned int> familyIds; //for counting (and passing) the correct ids
-
-	impl_->queues.resize(info.queueCreateInfoCount);
-	impl_->queuesVec.resize(info.queueCreateInfoCount);
-
-	for(std::size_t i(0); i < info.queueCreateInfoCount; ++i)
-	{
-		auto& queueInfo = info.pQueueCreateInfos[i];
-		auto idx = familyIds[queueInfo.queueFamilyIndex]++;
-		auto queue = vk::getDeviceQueue(vkDevice(), queueInfo.queueFamilyIndex, idx);
-
-		impl_->queues[i].reset(new Queue(queue, impl_->qFamilyProperties[queueInfo.queueFamilyIndex],
-			queueInfo.queueFamilyIndex, idx));
-		impl_->queuesVec[i] = impl_->queues[i].get();
+	for(auto q = 0u; q < info.queueCreateInfoCount; ++q) {
+		auto fam = info.pQueueCreateInfos[q].queueFamilyIndex;
+		for(auto i = 0u; i < info.pQueueCreateInfos[q].queueCount; ++i)
+			queuePairs.push_back({vk::getDeviceQueue(vkDevice(), fam, i), fam});
 	}
 
-	tlStorage(); // automatically provide storage for this thread. XXX: useful?
+	init(queuePairs);
 }
 
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 	nytl::Span<const std::pair<unsigned int, unsigned int>> queues)
 		: instance_(ini), physicalDevice_(phdev), device_(device)
 {
-	auto qProps = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
-
-	impl_.reset(new Impl(*this));
-	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());
-	impl_->memoryProperties = vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
-	impl_->qFamilyProperties = qProps;
-
-	impl_->queues.resize(queues.size());
-	impl_->queuesVec.resize(queues.size());
-
-	for(std::size_t i(0); i < queues.size(); ++i)
-	{
-		auto queue = vk::getDeviceQueue(vkDevice(), queues[i].first, queues[i].second);
-		impl_->queues[i].reset(new Queue(queue, impl_->qFamilyProperties[queues[i].first],
-			queues[i].first, queues[i].second));
-		impl_->queuesVec[i] = impl_->queues[i].get();
+	std::vector<std::pair<vk::Queue, unsigned int>> queuePairs;
+	queuePairs.reserve(queues.size());
+	for(auto& q : queues) {
+		auto queue = vk::getDeviceQueue(vkDevice(), q.first, q.second);
+		queuePairs.push_back({queue, q.first});
 	}
 
-	tlStorage(); //automatically provide storage for this thread. XXX: useful?
+	init(queuePairs);
 }
 
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 	nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
 		: instance_(ini), physicalDevice_(phdev), device_(device)
 {
-	auto qProps = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
-
-	impl_.reset(new Impl(*this));
-	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());
-	impl_->memoryProperties = vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
-	impl_->qFamilyProperties = qProps;
-
-	impl_->queues.resize(queues.size());
-	impl_->queuesVec.resize(queues.size());
-
-	std::map<unsigned int, unsigned int> queueIds;
-	for(std::size_t i(0); i < queues.size(); ++i)
-	{
-		auto id = queueIds[queues[i].second]++;
-		impl_->queues[i].reset(new Queue(queues[i].first,
-			impl_->qFamilyProperties[queues[i].second], id, queues[i].second));
-		impl_->queuesVec[i] = impl_->queues[i].get();
-	}
-
-	tlStorage(); //automatically provide storage for this thread. XXX: useful?
+	init(queues);
 }
 
 Device::~Device()
 {
+	provider_.reset();
 	impl_.reset();
+
 	if(vkDevice()) vk::destroyDevice(device_, nullptr);
+}
+
+void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
+{
+	// init impl and properties
+	impl_ = std::make_unique<Impl>();
+	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());
+	impl_->memoryProperties = vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
+	impl_->qFamilyProperties = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
+
+	// init queues
+	impl_->queues.resize(queues.size());
+	impl_->queuesVec.resize(queues.size());
+
+	std::map<unsigned int, unsigned int> queueIds;
+	for(std::size_t i(0); i < queues.size(); ++i) {
+		auto id = queueIds[queues[i].second]++;
+		const auto& props = impl_->qFamilyProperties[queues[i].second];
+
+		impl_->queues[i].reset(new Queue(queues[i].first, props, id, queues[i].second));
+		impl_->queuesVec[i] = impl_->queues[i].get();
+	}
+
+	// init thread local storage and providers
+	impl_->tlsDeviceAllocatorID = impl_->tls.add();
+	provider_ = std::make_unique<Provider>(*this);
 }
 
 void Device::release()
@@ -150,7 +126,7 @@ nytl::Span<const Queue*> Device::queues() const
 	return {impl_->queuesVec};
 }
 
-const Queue* Device::queue(std::uint32_t family) const
+const Queue* Device::queue(unsigned int family) const
 {
 	for(auto& queue : queues())
 		if(queue->family() == family) return queue;
@@ -158,7 +134,7 @@ const Queue* Device::queue(std::uint32_t family) const
 	return nullptr;
 }
 
-const Queue* Device::queue(std::uint32_t family, std::uint32_t id) const
+const Queue* Device::queue(unsigned int family, unsigned int id) const
 {
 	for(auto& queue : queues())
 		if(queue->family() == family && queue->id() == id) return queue;
@@ -184,12 +160,10 @@ const vk::PhysicalDeviceProperties& Device::properties() const
 	return impl_->physicalDeviceProperties;
 }
 
-int Device::memoryType(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits) const
+int Device::memoryType(vk::MemoryPropertyFlags mflags, unsigned int typeBits) const
 {
-	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount; ++i)
-	{
-		if(typeBits & (1 << i)) //ith bit set to 1?
-		{
+	for(auto i = 0u; i < memoryProperties().memoryTypeCount; ++i) {
+		if(typeBits & (1 << i)) {
 			if((memoryProperties().memoryTypes[i].propertyFlags & mflags) == mflags)
 				return i;
 		}
@@ -198,14 +172,12 @@ int Device::memoryType(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits) c
 	return -1;
 }
 
-std::uint32_t Device::memoryTypeBits(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits) const
+unsigned int Device::memoryTypeBits(vk::MemoryPropertyFlags mflags, unsigned int typeBits) const
 {
-	for(std::uint32_t i = 0; i < memoryProperties().memoryTypeCount; ++i)
-	{
-		if(typeBits & (1 << i)) //ith bit set to 1?
-		{
+	for(auto i = 0u; i < memoryProperties().memoryTypeCount; ++i) {
+		if(typeBits & (1 << i)) {
 			if((memoryProperties().memoryTypes[i].propertyFlags & mflags) != mflags)
-				typeBits &= ~(1 << i); //unset ith bit
+				typeBits &= ~(1 << i);
 		}
 	}
 
@@ -214,44 +186,35 @@ std::uint32_t Device::memoryTypeBits(vk::MemoryPropertyFlags mflags, std::uint32
 
 DeviceMemoryAllocator& Device::deviceAllocator() const
 {
-	// auto& storage = tlStorage();
-	// return storage.deviceAllocator;
+	auto ptr = impl_->tls.get(impl_->tlsDeviceAllocatorID); // DynamicStoragePtr*
+	if(!ptr->get()) {
+		auto storage = new ValueStorage<DeviceMemoryAllocator>();
+		storage->value = {*this};
+		ptr->reset(storage);
+		return storage->value;
+	}
+
+	return static_cast<ValueStorage<DeviceMemoryAllocator>*>(ptr->get())->value;
+}
+
+DynamicThreadLocalStorage& Device::threadLocalStorage() const
+{
+	return impl_->tls;
 }
 
 CommandProvider& Device::commandProvider() const
 {
-	return impl_->commandProvider;
+	return provider_->command;
 }
 
 SubmitManager& Device::submitManager() const
 {
-	return impl_->submitManager;
+	return provider_->submit;
 }
 
 TransferManager& Device::transferManager() const
 {
-	return impl_->transferManager;
+	return provider_->transfer;
 }
 
-// Device::TLStorage& Device::tlStorage() const
-// {
-// 	auto threadid = std::this_thread::get_id();
-// 	std::lock_guard<std::mutex>(impl_->storageMutex); //only lock shared mutex in c++17
-//
-// 	auto it = impl_->tlStorage.find(threadid);
-// 	if(it == impl_->tlStorage.end())
-// 	{
-// 		it = impl_->tlStorage.emplace(std::piecewise_construct,
-// 			std::forward_as_tuple(threadid), std::forward_as_tuple(*this)).first;
-// 	}
-//
-// 	return it->second;
-// }
-//
-// std::vector<CommandPool>& Device::tlCommandPools() const
-// {
-// 	auto& storage = tlStorage();
-// 	return storage.commandPools;
-// }
-
-}
+} // namespace vpp

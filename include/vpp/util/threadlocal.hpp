@@ -9,10 +9,25 @@
 #include <shared_mutex> // std::shared_mutex
 #include <utility> // std::pair
 #include <vector> // std::vector
-#include <any> // std::any
+#include <memory> // std::unique_ptr
 #include <algorithm> // std::find
 
 namespace vpp {
+
+/// Utility base class that can be used (wrapped in a unique_ptr) as template parameter for
+/// ThreadLocalStorage to make it possible to store any object in it without having
+/// to fulfill the reqruirements std::any has (e.g. CopyConstructible).
+/// Only has a virtual destructor.
+struct DynamicStorageBase {
+	virtual ~DynamicStorageBase() noexcept = default;
+};
+
+/// Derives From DynamicStorageBase and allows to store one value of the
+/// given type.
+template<typename T>
+struct ValueStorage : public DynamicStorageBase {
+	T value;
+};
 
 /// Implements a thread-dependent collection of 'T'.
 /// Simulates threadlocal storage since every thread will have its own value.
@@ -32,7 +47,7 @@ public:
 	/// added storage is removed.
 	/// Parameter can be a nullptr, in which case no object for the current thread will
 	/// be created.
-	unsigned int add(T** obj);
+	unsigned int add(T** obj = nullptr);
 
 	/// Returns the storage object with the given id for the calling thread.
 	/// If the given id is invalid (i.e. was never added or already removed), returns nullptr.
@@ -41,7 +56,8 @@ public:
 	/// this ThreadLocalStorage is destructed or the storage with the given id is removed.
 	/// \param id The storage segment id to retrieve. Must be returned from add and be
 	/// removed yet.
-	T* get(unsigned int id) const;
+	T* get(unsigned int id);
+	const T* get(unsigned int id) const;
 
 	/// Removes the storage object with the given id.
 	/// This will erase the storage object with the given id for all threads.
@@ -57,15 +73,17 @@ protected:
 	unsigned int highestID_ {};
 	std::vector<unsigned int> ids_;
 	std::unordered_map<std::thread::id, std::unordered_map<unsigned int, T>> objects_;
-	mutable std::shared_mutex mutex_;
+	mutable std::shared_timed_mutex mutex_;
 };
 
+using DynamicStoragePtr = std::unique_ptr<DynamicStorageBase>;
+using DynamicThreadLocalStorage = ThreadLocalStorage<DynamicStoragePtr>;
 
 // - implementation -
 template<typename T>
 unsigned int ThreadLocalStorage<T>::add(T** obj)
 {
-	std::lock_guard<std::shared_mutex> lock(mutex_);
+	std::lock_guard<std::shared_timed_mutex> lock(mutex_);
 	auto id = ++highestID_;
 	ids_.push_back(id);
 	if(obj) *obj = &objects_[std::this_thread::get_id()][id];
@@ -73,10 +91,25 @@ unsigned int ThreadLocalStorage<T>::add(T** obj)
 }
 
 template<typename T>
-T* ThreadLocalStorage<T>::get(unsigned int id) const
+T* ThreadLocalStorage<T>::get(unsigned int id)
 {
 	mutex_.lock_shared();
-	struct Guard { ~Guard() { mutex_.unlock_shared(); } } guard;
+	struct Guard {
+		ThreadLocalStorage<T>* self;
+		~Guard() { self->mutex_.unlock_shared(); }
+	} guard {this};
+	if(std::find(ids_.begin(), ids_.end(), id) == ids_.end()) return nullptr;
+	return &objects_[std::this_thread::get_id()][id];
+}
+
+template<typename T>
+const T* ThreadLocalStorage<T>::get(unsigned int id) const
+{
+	mutex_.lock_shared();
+	struct Guard {
+		ThreadLocalStorage<T>* self;
+		~Guard() { self->mutex_.unlock_shared(); }
+	} guard {this};
 	if(std::find(ids_.begin(), ids_.end(), id) == ids_.end()) return nullptr;
 	return &objects_[std::this_thread::get_id()][id];
 }
@@ -84,7 +117,7 @@ T* ThreadLocalStorage<T>::get(unsigned int id) const
 template<typename T>
 bool ThreadLocalStorage<T>::remove(unsigned int id)
 {
-	std::lock_guard<std::shared_mutex> lock(mutex_);
+	std::lock_guard<std::shared_timed_mutex> lock(mutex_);
 	auto it = std::find(ids_.begin(), ids_.end(), id);
 	if(it == ids_.end()) return false;
 	ids_.erase(it);

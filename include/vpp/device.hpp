@@ -10,8 +10,7 @@
 #include <vpp/util/threadlocal.hpp> // vpp::ThreadLocalStorage
 
 #include <memory> // std::unique_ptr
-#include <vector> // std::vector
-#include <any> // std::any
+#include <cstdint> // std::uint32_t
 
 namespace vpp {
 
@@ -39,17 +38,22 @@ public:
 	/// Creates the object from the given device and stores the given queues.
 	/// Note that this function call transfers ownership of the given vulkan device to the
 	/// created vpp::Device object i.e. it will be destroyed in the Device objects desctructor.
-	/// This function is especially useful with the NonOwned template to create a Device object
+	/// This function is e.g. useful with the NonOwned template to create a Device object
 	/// from an elsewhere created vulkan device.
 	/// \param queues A vector holding all queues that should be retrieved.
 	/// For every entry in the given vector, the first member of the pair represents the queue
 	/// family and the second member the queue id. Note that there is no way in vulkan to check
 	/// for created queues of a device so this information must be valid.
+	/// The device is guaranteed to only use the passed queues.
 	/// \sa NonOwned
 	Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 		nytl::Span<const std::pair<unsigned int, unsigned int>> queues);
 
-	/// Transfers ownership of the given vk::Device to this object.
+	/// Creates the object from the given device and stores the given queues.
+	/// Note that this function call transfers ownership of the given vulkan device to the
+	/// created vpp::Device object i.e. it will be destroyed in the Device objects desctructor.
+	/// This function is e.g. useful with the NonOwned template to create a Device object
+	/// from an elsewhere created vulkan device.
 	/// \param queues A span of queues this Device should manage. The second member of
 	/// the pair of each range value holds the queue family of the given queue.
 	/// Note that there is no possibility in vulkan to query device queues, so this
@@ -73,11 +77,11 @@ public:
 
 	/// Returns a queue for the given family or nullptr if there is none.
 	/// Searches all queues return from queues().
-	const Queue* queue(std::uint32_t family) const;
+	const Queue* queue(unsigned int family) const;
 
 	/// Returns the queue for the given family with the given id or nullptr if there is none.
 	/// Searches all queues return from queues().
-	const Queue* queue(std::uint32_t family, std::uint32_t id) const;
+	const Queue* queue(unsigned int family, unsigned int id) const;
 
 	/// Returns a queue that matches the given flags or nullptr if there is none.
 	/// Searches all queues return from queues().
@@ -93,7 +97,7 @@ public:
 
 	/// Returns the queue properties for the given queue family.
 	/// Guaranteed to be valid until this Device object is destroyed.
-	const vk::QueueFamilyProperties& queueFamilyProperties(std::uint32_t qFamily) const;
+	const vk::QueueFamilyProperties& queueFamilyProperties(unsigned int qFamily) const;
 
 	/// Returns the first memoryType that fulfills the given flags and for which the bit of its
 	/// id of typeBits set to 1. TypeBits is defaulted to a value with all bits set (~0u), so
@@ -103,15 +107,15 @@ public:
 	/// given flags).
 	/// Can be useful to query a memoryType to bind a resource on.
 	/// If no matching memory type is found, returns -1.
-	int memoryType(vk::MemoryPropertyFlags mflags, std::uint32_t typeBits = ~0u) const;
+	int memoryType(vk::MemoryPropertyFlags mflags, unsigned int typeBits = ~0u) const;
 
 	/// Returns a bitmask of memoryTypes that match the given parameters, i.e. all memory
 	/// types that fulfill the given flags and which bit is set to 1 in the passed typeBits.
 	/// If the return value has e.g. the 2nd bit set to 1 this means that memory type
 	/// 2 fulfills the given flags and was not sorted out by the passed typeBits.
 	/// \sa memoryType
-	std::uint32_t memoryTypeBits(vk::MemoryPropertyFlags mflags,
-		std::uint32_t typeBits = ~0u) const;
+	unsigned int memoryTypeBits(vk::MemoryPropertyFlags mflags,
+		unsigned int typeBits = ~0u) const;
 
 	/// Returns a CommandBufferProvider that can be used to easily allocate command buffers.
 	/// The returned CommandProvider will be specific for the calling thread.
@@ -132,22 +136,23 @@ public:
 
 	/// Returns the ThreadLocalStorage object that is used for all thread specific state.
 	/// Can be used to associate custom thread specific objects with this device.
-	ThreadLocalStorage<std::any>& threadLocalStorage() const;
+	/// \sa ThreadLocalStorage
+	DynamicThreadLocalStorage& threadLocalStorage() const;
 
 	vk::Instance vkInstance() const { return instance_; }
 	vk::PhysicalDevice vkPhysicalDevice() const { return physicalDevice_; }
 	vk::Device vkDevice() const { return device_; }
-	operator vk::Device() const { return vkDevice(); }
+	vk::Device vkHandle() const { return device_; }
+	operator vk::Device() const { return device_; }
 
 protected:
 	struct Impl;
-	struct TLStorage; // there are a couple of thread dependent variables stored
-	friend class CommandProvider; // must acces threadLocalPools
+	struct Provider;
+	struct QueueDeleter;
 
 protected:
-	// std::vector<CommandPool>& tlCommandPools() const;
-	// TLStorage& tlStorage() const;
 	void release();
+	void init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues);
 
 protected:
 	vk::Instance instance_ {};
@@ -156,7 +161,8 @@ protected:
 
 	/// Device uses the pimpl idion since it holds internally many (partly thread-speciic) object
 	/// that would pull a lot of huge headers or simply more an implementation detail.
-	std::unique_ptr<Impl> impl_ {};
+	std::unique_ptr<Impl> impl_;
+	std::unique_ptr<Provider> provider_;
 };
 
 }

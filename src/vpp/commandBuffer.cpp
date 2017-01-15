@@ -89,16 +89,19 @@ void CommandPool::reset(vk::CommandPoolResetFlags flags) const
 //CommandProvider
 CommandProvider::CommandProvider(const Device& dev) : Resource(dev)
 {
+	tlsID_ = dev.threadLocalStorage().add();
 }
 
 CommandBuffer CommandProvider::get(std::uint32_t family,
 	 vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
 {
-	auto& pools = device().tlCommandPools();
-	for(auto& pool : pools)
-	{
-		if(pool.queueFamily() == family && pool.flags() == flags)
-		{
+	auto ptr = device().threadLocalStorage().get(tlsID_);
+	if(!ptr->get())
+		ptr->reset(new ValueStorage<std::vector<CommandPool>>());
+
+	auto& pools = static_cast<ValueStorage<std::vector<CommandPool>>*>(ptr->get())->value;
+	for(auto& pool : pools) {
+		if(pool.queueFamily() == family && pool.flags() == flags) {
 			return pool.allocate(lvl);
 		}
 	}
@@ -111,11 +114,13 @@ CommandBuffer CommandProvider::get(std::uint32_t family,
 std::vector<CommandBuffer> CommandProvider::get(std::uint32_t family, unsigned int count,
 	vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
 {
-	auto& pools = device().tlCommandPools();
-	for(auto& pool : pools)
-	{
-		if(pool.queueFamily() == family && pool.flags() == flags)
-		{
+	auto ptr = device().threadLocalStorage().get(tlsID_);
+	if(!ptr->get())
+		ptr->reset(new ValueStorage<std::vector<CommandPool>>());
+
+	auto& pools = static_cast<ValueStorage<std::vector<CommandPool>>*>(ptr->get())->value;
+	for(auto& pool : pools) {
+		if(pool.queueFamily() == family && pool.flags() == flags) {
 			return pool.allocate(count, lvl);
 		}
 	}

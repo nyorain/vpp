@@ -1,3 +1,7 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/image.hpp>
 #include <vpp/provider.hpp>
 #include <vpp/transfer.hpp>
@@ -7,15 +11,12 @@
 #include <vpp/vk.hpp>
 #include <vpp/util/debug.hpp>
 
-#include <utility>
+#include <utility> // std::move
 
-namespace vpp
-{
+namespace vpp {
+namespace {
 
-//utility
-namespace
-{
-
+/// Returns the memory address for an image for the given parameters.
 vk::DeviceSize imageAddress(const vk::SubresourceLayout& layout, unsigned int texelSize,
 	unsigned int x, unsigned int y, unsigned int z, unsigned int layer)
 {
@@ -23,9 +24,9 @@ vk::DeviceSize imageAddress(const vk::SubresourceLayout& layout, unsigned int te
 		x * texelSize + layout.offset;
 }
 
-}
+} // anonymous util namespace
 
-//Image
+// Image
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags)
 {
 	handle_ = vk::createImage(dev.vkDevice(), info);
@@ -35,7 +36,7 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPrope
 	dev.deviceAllocator().request(vkHandle(), reqs, info.tiling, memoryEntry_);
 }
 
-Image::Image(const Device& dev, const vk::ImageCreateInfo& info, std::uint32_t memoryTypeBits)
+Image::Image(const Device& dev, const vk::ImageCreateInfo& info, unsigned int memoryTypeBits)
 {
 	handle_ = vk::createImage(dev.vkDevice(), info);
 	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), vkHandle());
@@ -45,19 +46,27 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, std::uint32_t m
 }
 
 Image::Image(const Device& dev, vk::Image image, vk::ImageTiling tiling,
-	vk::MemoryPropertyFlags mflags) : MemoryResource(image)
+	vk::MemoryPropertyFlags mflags)
 {
+	handle_ = image;
 	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), vkHandle());
 	reqs.memoryTypeBits = device().memoryTypeBits(mflags, reqs.memoryTypeBits);
 	dev.deviceAllocator().request(vkHandle(), reqs, tiling, memoryEntry_);
 }
 
 Image::Image(const Device& dev, vk::Image image, vk::ImageTiling tiling,
-	std::uint32_t memoryTypeBits)
+	unsigned int memoryTypeBits)
 {
+	handle_ = image;
 	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), vkHandle());
 	reqs.memoryTypeBits &= memoryTypeBits;
 	dev.deviceAllocator().request(vkHandle(), reqs, tiling, memoryEntry_);
+}
+
+Image::Image(vk::Image image, MemoryEntry&& entry)
+{
+	handle_ = image;
+	memoryEntry_ = std::move(entry);
 }
 
 Image::~Image()
@@ -65,27 +74,24 @@ Image::~Image()
 	if(vkHandle()) vk::destroyImage(device(), vkHandle());
 }
 
-WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
+WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,
 	vk::ImageLayout layout, const vk::Extent3D& extent, const vk::ImageSubresource& subres,
 	const vk::Offset3D& offset, bool allowMap)
 {
 	image.assureMemory();
 	const auto texSize = formatSize(format);
 
-	//TODO: correct offset/extent handling
-	if(image.mappable() && allowMap)
-	{
+	// TODO: correct offset/extent handling (?)
+	if(image.mappable() && allowMap) {
+
 		//baiscally the size of the format in bytes. Can be computed from the given size/extent.
 		auto sresLayout = vk::getImageSubresourceLayout(image.device(), image, subres);
 		auto map = image.memoryEntry().map();
 
 		//dataoffset
 		auto doffset = 0u;
-		for(unsigned int d = offset.z; d < offset.z + extent.depth; ++d)
-		{
-			for(unsigned int h = offset.y; h < offset.y + extent.height; ++h)
-			{
-				//image offset
+		for(unsigned int d = offset.z; d < offset.z + extent.depth; ++d) {
+			for(unsigned int h = offset.y; h < offset.y + extent.height; ++h) {
 				auto ioff = imageAddress(sresLayout, texSize, offset.x, h, d, subres.arrayLayer);
 				std::memcpy(map.ptr() + ioff, &data + doffset, texSize * extent.width);
 				doffset += extent.width * texSize;
@@ -94,9 +100,7 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 
 		if(!map.coherent()) map.flush();
 		return std::make_unique<FinishedWork<void>>();
-	}
-	else
-	{
+	} else {
 		const auto byteSize = texSize * extent.width * extent.height * extent.depth;
 		const Queue* queue;
 		auto qFam = transferQueueFamily(image.device(), &queue);
@@ -112,8 +116,7 @@ WorkPtr fill(const Image& image, const std::uint8_t& data, vk::Format format,
 		vk::beginCommandBuffer(cmdBuffer, {});
 
 		//change layout if needed
-		if(layout != vk::ImageLayout::transferDstOptimal && layout != vk::ImageLayout::general)
-		{
+		if(layout != vk::ImageLayout::transferDstOptimal && layout != vk::ImageLayout::general) {
 			changeLayoutCommand(cmdBuffer, image, layout, vk::ImageLayout::transferDstOptimal,
 				subres.aspectMask);
 			layout = vk::ImageLayout::transferDstOptimal;
@@ -130,18 +133,15 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 	const vk::Extent3D& extent, const vk::ImageSubresource& subres, const vk::Offset3D& offset,
 	bool allowMap)
 {
-	VPP_DEBUG_CHECK(vpp::retrieve(image),
-	{
-		if(!image.memoryEntry().allocated())
-		{
+	VPP_DEBUG_CHECK(vpp::retrieve(image), {
+		if(!image.memoryEntry().allocated()) {
 			VPP_DEBUG_OUTPUT("Image has no memory. Undefined will be data retrived. "
 				"Calling assureMemory() and returning the undefined data");
 			image.assureMemory();
 		}
 	});
 
-	if(image.mappable() && allowMap)
-	{
+	if(image.mappable() && allowMap) {
 		std::vector<std::uint8_t> data(image.size());
 		auto map = image.memoryMap();
 
@@ -151,11 +151,8 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 
 		//dataOffset
 		auto doffset = 0u;
-		for(unsigned int d = offset.z; d < offset.z + extent.depth; ++d)
-		{
-			for(unsigned int h = offset.y; h < offset.y + extent.height; ++h)
-			{
-				//image offset
+		for(unsigned int d = offset.z; d < offset.z + extent.depth; ++d) {
+			for(unsigned int h = offset.y; h < offset.y + extent.height; ++h) {
 				auto ioffset = imageAddress(subresLayout, texelSize, 0, h, d, subres.arrayLayer);
 				std::memcpy(data.data() + doffset, map.ptr() + ioffset, extent.width);
 				doffset += extent.width;
@@ -163,9 +160,7 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 		}
 
 		return std::make_unique<StoredDataWork>(std::move(data));
-	}
-	else
-	{
+	} else {
 		const Queue* queue;
 		auto qFam = transferQueueFamily(image.device(), &queue);
 		auto cmdBuffer = image.device().commandProvider().get(qFam);
@@ -174,8 +169,7 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 		vk::beginCommandBuffer(cmdBuffer, {});
 
 		//change layout if needed
-		if(layout != vk::ImageLayout::transferSrcOptimal && layout != vk::ImageLayout::general)
-		{
+		if(layout != vk::ImageLayout::transferSrcOptimal && layout != vk::ImageLayout::general) {
 			changeLayoutCommand(cmdBuffer, image, layout, vk::ImageLayout::transferSrcOptimal,
 				subres.aspectMask);
 			layout = vk::ImageLayout::transferSrcOptimal;
@@ -204,52 +198,47 @@ void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::Image img, vk::ImageLa
 	barrier.image = img;
 	barrier.subresourceRange = {aspect, 0, 1, 0, 1};
 
-	switch(ol)
-	{
-	case vk::ImageLayout::undefined:
-		barrier.srcAccessMask = {}; break;
-	case vk::ImageLayout::preinitialized:
-		barrier.srcAccessMask = vk::AccessBits::hostWrite; break;
-	case vk::ImageLayout::colorAttachmentOptimal:
-		barrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite; break;
-	case vk::ImageLayout::depthStencilAttachmentOptimal:
-		barrier.srcAccessMask = vk::AccessBits::depthStencilAttachmentWrite; break;
-	case vk::ImageLayout::transferSrcOptimal:
-		barrier.srcAccessMask = vk::AccessBits::transferRead; break;
-	case vk::ImageLayout::transferDstOptimal:
-		barrier.srcAccessMask = vk::AccessBits::transferWrite; break;
-	case vk::ImageLayout::shaderReadOnlyOptimal:
-		barrier.srcAccessMask = vk::AccessBits::shaderRead; break;
-	default: break;
+	switch(ol) {
+		case vk::ImageLayout::undefined:
+			barrier.srcAccessMask = {}; break;
+		case vk::ImageLayout::preinitialized:
+			barrier.srcAccessMask = vk::AccessBits::hostWrite; break;
+		case vk::ImageLayout::colorAttachmentOptimal:
+			barrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite; break;
+		case vk::ImageLayout::depthStencilAttachmentOptimal:
+			barrier.srcAccessMask = vk::AccessBits::depthStencilAttachmentWrite; break;
+		case vk::ImageLayout::transferSrcOptimal:
+			barrier.srcAccessMask = vk::AccessBits::transferRead; break;
+		case vk::ImageLayout::transferDstOptimal:
+			barrier.srcAccessMask = vk::AccessBits::transferWrite; break;
+		case vk::ImageLayout::shaderReadOnlyOptimal:
+			barrier.srcAccessMask = vk::AccessBits::shaderRead; break;
+		default:
+			break;
 	}
 
-	switch(nl)
-	{
-	case vk::ImageLayout::transferDstOptimal:
-		barrier.dstAccessMask = vk::AccessBits::transferWrite; break;
-		break;
-
-	case vk::ImageLayout::transferSrcOptimal:
-		barrier.srcAccessMask |= vk::AccessBits::transferRead;
-		barrier.dstAccessMask = vk::AccessBits::transferRead;
-		break;
-
-	case vk::ImageLayout::colorAttachmentOptimal:
-		barrier.srcAccessMask = vk::AccessBits::transferRead;
-		barrier.dstAccessMask = vk::AccessBits::colorAttachmentWrite;
-		break;
-
-	case vk::ImageLayout::depthStencilAttachmentOptimal:
-		barrier.dstAccessMask |= vk::AccessBits::depthStencilAttachmentWrite;
-		break;
-
-	case vk::ImageLayout::shaderReadOnlyOptimal:
-		if(!barrier.srcAccessMask)
-			barrier.srcAccessMask = vk::AccessBits::hostWrite | vk::AccessBits::transferWrite;
-		barrier.dstAccessMask = vk::AccessBits::shaderRead;
-		break;
-
-	default: break;
+	switch(nl) {
+		case vk::ImageLayout::transferDstOptimal:
+			barrier.dstAccessMask = vk::AccessBits::transferWrite; break;
+			break;
+		case vk::ImageLayout::transferSrcOptimal:
+			barrier.srcAccessMask |= vk::AccessBits::transferRead;
+			barrier.dstAccessMask = vk::AccessBits::transferRead;
+			break;
+		case vk::ImageLayout::colorAttachmentOptimal:
+			barrier.srcAccessMask = vk::AccessBits::transferRead;
+			barrier.dstAccessMask = vk::AccessBits::colorAttachmentWrite;
+			break;
+		case vk::ImageLayout::depthStencilAttachmentOptimal:
+			barrier.dstAccessMask |= vk::AccessBits::depthStencilAttachmentWrite;
+			break;
+		case vk::ImageLayout::shaderReadOnlyOptimal:
+			if(!barrier.srcAccessMask)
+				barrier.srcAccessMask = vk::AccessBits::hostWrite | vk::AccessBits::transferWrite;
+			barrier.dstAccessMask = vk::AccessBits::shaderRead;
+			break;
+		default:
+			break;
 	}
 
 	const auto stage = vk::PipelineStageBits::topOfPipe;
@@ -270,7 +259,8 @@ WorkPtr changeLayout(const Device& dev, vk::Image img, vk::ImageLayout ol, vk::I
 	return std::make_unique<CommandWork<void>>(std::move(cmdBuffer), *queue);
 }
 
-//static infos
+// static infos
+// TODO: better defaults!
 ViewableImage::CreateInfo ViewableImage::defaultColor2D()
 {
 	return {
@@ -388,7 +378,7 @@ void ViewableImage::init(const vk::ImageViewCreateInfo& info)
 	imageView_ = vk::createImageView(vkDevice(), cpy);
 }
 
-//sampler
+// Sampler
 Sampler::Sampler(const Device& dev, const vk::SamplerCreateInfo& info) : ResourceHandle(dev)
 {
 	handle_ = vk::createSampler(dev, info);
@@ -399,13 +389,12 @@ Sampler::~Sampler()
 	if(vkHandle()) vk::destroySampler(device(), vkHandle());
 }
 
-//utility. format size in bits
+// Utility functions
 unsigned int formatSizeBits(vk::Format format)
 {
 	using namespace vk;
 
-	switch(format)
-	{
+	switch(format) {
 		case Format::undefined: return 0;
 		case Format::r4g4UnormPack8: return 8;
 		case Format::r4g4b4a4UnormPack16: return 16;
@@ -601,11 +590,9 @@ unsigned int formatSize(vk::Format format)
 	return formatSizeBits(format) / 8;
 }
 
-vk::Extent2D blockSize(vk::Format format)
-{
+vk::Extent2D blockSize(vk::Format format) {
 	using vk::Format;
-	switch(format)
-	{
+	switch(format) {
 	case Format::bc1RgbUnormBlock: return vk::Extent2D{4, 4};
 		case Format::bc1RgbSrgbBlock: return {4, 4};
 		case Format::bc1RgbaUnormBlock: return {4, 4};
@@ -665,4 +652,4 @@ vk::Extent2D blockSize(vk::Format format)
 	}
 }
 
-}
+} // namespace vpp

@@ -2,8 +2,20 @@
 
 #include <vpp/vulkan/fwd.hpp>
 #include <vpp/config.hpp>
+#include <cstdint>
 
 namespace vpp {
+
+// treat them as built-in
+using std::uint8_t;
+using std::uint16_t;
+using std::uint32_t;
+using std::uint64_t;
+
+using std::int8_t;
+using std::int16_t;
+using std::int32_t;
+using std::int64_t;
 
 class Resource;
 class WorkBase;

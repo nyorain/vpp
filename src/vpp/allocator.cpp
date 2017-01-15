@@ -61,7 +61,9 @@ void swap(MemoryEntry& a, MemoryEntry& b) noexcept
 
 MemoryMapView MemoryEntry::map() const
 {
-	return memory()->map(allocation());
+	auto mem = memory();
+	if(!mem) throw std::logic_error("vpp::MemoryEntry::map: entry not bound to memory");
+	return mem->map(allocation());
 }
 
 //Allocator
