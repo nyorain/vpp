@@ -21,7 +21,7 @@ public:
 
 	///Checks if this memory resource was initialized yet and if not it will be initialized.
 	///Will be implicitly called on member functions that require it.
-	void assureMemory() const { if(!memoryEntry().allocated()) memoryEntry().allocate(); }
+	void assureMemory() const { memoryEntry().allocate(); }
 
 	///Creates a memory map for this memory resource (if there is none) and returns a view to it.
 	///\exception std::logic_error If the resource was allocated on device local memory.

@@ -9,7 +9,7 @@
 
 namespace vpp {
 
-//Entry
+// MemoryEntry
 MemoryEntry::MemoryEntry(DeviceMemory& memory, const Allocation& alloc)
 	: memory_(&memory), allocation_(alloc)
 {
@@ -100,8 +100,11 @@ void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept
 void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
 	vk::BufferUsageFlags usage, MemoryEntry& entry)
 {
-	if(!reqs.size)
-		throw std::logic_error("vpp::DeviceMemAllocator::request: allocation size of 0 not allowed");
+	VPP_DEBUG_CHECK(vpp::DeviceMemoryAllocator::request(buffer), {
+		if(!requestor) VPP_DEBUG_OUTPUT("buffer is nullHandle");
+		if(!reqs.size) VPP_DEBUG_OUTPUT("allocation size 0");
+		if(!reqs.memoryTypeBits) VPP_DEBUG_OUTPUT("no memory type bits");
+	});
 
 	entry = {};
 	entry.allocator_ = this;
@@ -133,8 +136,11 @@ void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequir
 void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequirements& reqs,
 	vk::ImageTiling tiling, MemoryEntry& entry)
 {
-	if(reqs.size == 0)
-		throw std::logic_error("vpp::DeviceMemAllocator::request: allocation size of 0 not allowed");
+	VPP_DEBUG_CHECK(vpp::DeviceMemoryAllocator::request(image), {
+		if(!requestor) VPP_DEBUG_OUTPUT("image is nullHandle");
+		if(!reqs.size) VPP_DEBUG_OUTPUT("allocation size 0");
+		if(!reqs.memoryTypeBits) VPP_DEBUG_OUTPUT("no memory type bits");
+	});
 
 	entry = {};
 	entry.allocator_ = this;
@@ -207,7 +213,7 @@ DeviceMemoryAllocator::findReq(const MemoryEntry& entry)
 		[&](const auto& r) { return r.entry == &entry; });
 }
 
-// TODO: all 4 allocate functions can be improved.
+// TODO: all allocate functions can be improved.
 void DeviceMemoryAllocator::allocate()
 {
 	// try to find space for them
@@ -258,25 +264,27 @@ void DeviceMemoryAllocator::allocate(unsigned int type)
 	std::vector<Requirement*> reqs;
 
 	for(auto& req : requirements_)
-		if(supportsType(req, type)) reqs.push_back(&req);
+		if(supportsType(req, type))
+			reqs.push_back(&req);
 
 	allocate(type, reqs);
 
 	// remove reqs that were allocated
-	auto contained = [&](Requirement* req){
-		for(auto& r : reqs) if(r == req) return true; return false;
-	};
-
-	auto newEnd = std::remove_if(requirements_.begin(), requirements_.end(), contained);
-	requirements_.erase(newEnd, requirements_.end();
+	// auto contained = [&](Requirement& req){
+	// 	for(auto& r : reqs) if(r == &req) return true;
+	// 	return false;
+	// };
+	//
+	// auto newEnd = std::remove_if(requirements_.begin(), requirements_.end(), contained);
+	// requirements_.erase(newEnd, requirements_.end());
 
 	// TODO: remove
-	// for(auto& req : reqs) {
-	// 	for(auto it = requirements_.begin(); it != requirements_.end();) {
-	// 		if(req == &(*it)) it = requirements_.erase(it);
-	// 		else ++it;
-	// 	}
-	// }
+	for(auto& req : reqs) {
+		for(auto it = requirements_.begin(); it != requirements_.end();) {
+			if(req == &(*it)) it = requirements_.erase(it);
+			else ++it;
+		}
+	}
 }
 
 void DeviceMemoryAllocator::allocate(unsigned int type,

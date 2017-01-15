@@ -9,16 +9,6 @@
 namespace vpp {
 
 Buffer::Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
-	vk::MemoryPropertyFlags mflags)
-{
-	handle_ = buffer;
-	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
-
-	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
-	dev.deviceAllocator().request(vkHandle(), reqs, usage, memoryEntry_);
-}
-
-Buffer::Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
 	unsigned int memoryTypeBits)
 {
 	handle_ = buffer;
@@ -26,15 +16,6 @@ Buffer::Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
 
 	reqs.memoryTypeBits &= memoryTypeBits;
 	dev.deviceAllocator().request(vkHandle(), reqs, usage, memoryEntry_);
-}
-
-Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, vk::MemoryPropertyFlags mflags)
-{
-	handle_ = vk::createBuffer(dev, info);
-	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
-
-	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
-	dev.deviceAllocator().request(vkHandle(), reqs, info.usage, memoryEntry_);
 }
 
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, unsigned int memoryTypeBits)

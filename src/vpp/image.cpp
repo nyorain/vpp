@@ -3,15 +3,17 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/image.hpp>
-#include <vpp/provider.hpp>
-#include <vpp/transfer.hpp>
-#include <vpp/transferWork.hpp>
-#include <vpp/pipeline.hpp>
-#include <vpp/queue.hpp>
+#include <vpp/provider.hpp> // vpp::CommandBufferProvider
+#include <vpp/transfer.hpp> // vpp::TransferManager
+#include <vpp/transferWork.hpp> // vpp::transferWork
+#include <vpp/queue.hpp> // vpp::Queue
+#include <vpp/util/debug.hpp> // VPP_DEBUG_CHECK
 #include <vpp/vk.hpp>
-#include <vpp/util/debug.hpp>
 
-#include <utility> // std::move
+#include <utility> // std::move, std::swap
+#include <cstring> // std::memcpy
+#include <memory> // std::make_unique
+#include <vector> // std::vector
 
 namespace vpp {
 namespace {
@@ -27,15 +29,6 @@ vk::DeviceSize imageAddress(const vk::SubresourceLayout& layout, unsigned int te
 } // anonymous util namespace
 
 // Image
-Image::Image(const Device& dev, const vk::ImageCreateInfo& info, vk::MemoryPropertyFlags mflags)
-{
-	handle_ = vk::createImage(dev.vkDevice(), info);
-	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), vkHandle());
-
-	reqs.memoryTypeBits = dev.memoryTypeBits(mflags, reqs.memoryTypeBits);
-	dev.deviceAllocator().request(vkHandle(), reqs, info.tiling, memoryEntry_);
-}
-
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info, unsigned int memoryTypeBits)
 {
 	handle_ = vk::createImage(dev.vkDevice(), info);
@@ -43,15 +36,6 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info, unsigned int me
 
 	reqs.memoryTypeBits &= memoryTypeBits;
 	dev.deviceAllocator().request(vkHandle(), reqs, info.tiling, memoryEntry_);
-}
-
-Image::Image(const Device& dev, vk::Image image, vk::ImageTiling tiling,
-	vk::MemoryPropertyFlags mflags)
-{
-	handle_ = image;
-	auto reqs = vk::getImageMemoryRequirements(dev.vkDevice(), vkHandle());
-	reqs.memoryTypeBits = device().memoryTypeBits(mflags, reqs.memoryTypeBits);
-	dev.deviceAllocator().request(vkHandle(), reqs, tiling, memoryEntry_);
 }
 
 Image::Image(const Device& dev, vk::Image image, vk::ImageTiling tiling,
@@ -81,7 +65,6 @@ WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,
 	image.assureMemory();
 	const auto texSize = formatSize(format);
 
-	// TODO: correct offset/extent handling (?)
 	if(image.mappable() && allowMap) {
 
 		// baiscally the size of the format in bytes. Can be computed from the given size/extent.
@@ -116,10 +99,10 @@ WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,
 
 		vk::beginCommandBuffer(cmdBuffer, {});
 
-		//change layout if needed
+		// change layout if needed
 		if(layout != vk::ImageLayout::transferDstOptimal && layout != vk::ImageLayout::general) {
 			changeLayoutCommand(cmdBuffer, image, layout, vk::ImageLayout::transferDstOptimal,
-				subres.aspectMask);
+				{subres.aspectMask, subres.mipLevel, 1, subres.arrayLayer, 1});
 			layout = vk::ImageLayout::transferDstOptimal;
 		}
 
@@ -136,9 +119,8 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 {
 	VPP_DEBUG_CHECK(vpp::retrieve(image), {
 		if(!image.memoryEntry().allocated()) {
-			VPP_DEBUG_OUTPUT("Image has no memory. Undefined will be data retrived. "
-				"Calling assureMemory() and returning the undefined data");
-			image.assureMemory();
+			VPP_DEBUG_OUTPUT("Image has no memory. Returning a nullptr as work");
+			return nullptr;
 		}
 	});
 
@@ -150,9 +132,9 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 		const auto texelSize = formatSize(format);
 		auto subresLayout = vk::getImageSubresourceLayout(image.device(), image, subres);
 
-		//dataOffset
-		auto doffset = 0u;
-		for(unsigned int d = offset.z; d < offset.z + extent.depth; ++d) {
+		auto depth = extent.depth ? extent.depth : 1;
+		auto doffset = 0u; // dataOffset
+		for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
 			for(unsigned int h = offset.y; h < offset.y + extent.height; ++h) {
 				auto ioffset = imageAddress(subresLayout, texelSize, 0, h, d, subres.arrayLayer);
 				std::memcpy(data.data() + doffset, map.ptr() + ioffset, extent.width);
@@ -172,7 +154,7 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 		//change layout if needed
 		if(layout != vk::ImageLayout::transferSrcOptimal && layout != vk::ImageLayout::general) {
 			changeLayoutCommand(cmdBuffer, image, layout, vk::ImageLayout::transferSrcOptimal,
-				subres.aspectMask);
+				{subres.aspectMask, subres.mipLevel, 1, subres.arrayLayer, 1});
 			layout = vk::ImageLayout::transferSrcOptimal;
 		}
 
@@ -191,13 +173,13 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 
 //free utility functions
 void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::Image img, vk::ImageLayout ol,
-	vk::ImageLayout nl, vk::ImageAspectFlags aspect)
+	vk::ImageLayout nl, const vk::ImageSubresourceRange& range)
 {
 	vk::ImageMemoryBarrier barrier;
 	barrier.oldLayout = ol;
 	barrier.newLayout = nl;
 	barrier.image = img;
-	barrier.subresourceRange = {aspect, 0, 1, 0, 1};
+	barrier.subresourceRange = range;
 
 	switch(ol) {
 		case vk::ImageLayout::undefined:
@@ -247,14 +229,14 @@ void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::Image img, vk::ImageLa
 }
 
 WorkPtr changeLayout(const Device& dev, vk::Image img, vk::ImageLayout ol, vk::ImageLayout nl,
-	vk::ImageAspectFlags aspect)
+	const vk::ImageSubresourceRange& range)
 {
 	const Queue* queue;
 	auto qFam = transferQueueFamily(dev, &queue);
 
 	auto cmdBuffer = dev.commandProvider().get(qFam);
 	vk::beginCommandBuffer(cmdBuffer, {});
-	changeLayoutCommand(cmdBuffer, img, ol, nl, aspect);
+	changeLayoutCommand(cmdBuffer, img, ol, nl, range);
 	vk::endCommandBuffer(cmdBuffer);
 
 	return std::make_unique<CommandWork<void>>(std::move(cmdBuffer), *queue);
@@ -301,8 +283,7 @@ ViewableImage::CreateInfo ViewableImage::defaultDepth2D()
 			1, 1,
 			vk::SampleCountBits::e1,
 			vk::ImageTiling::optimal,
-			vk::ImageUsageBits::depthStencilAttachment | vk::ImageUsageBits::sampled |
-				vk::ImageUsageBits::transferSrc,
+			vk::ImageUsageBits::depthStencilAttachment,
 			vk::SharingMode::exclusive,
 			0, nullptr, vk::ImageLayout::undefined
 		},
@@ -317,37 +298,40 @@ ViewableImage::CreateInfo ViewableImage::defaultDepth2D()
 			}
 		}
 	};
+}
 
-	// return {
-	// 	{
-	// 		{},
-	// 		vk::ImageType::e2d,
-	// 		vk::Format::d16UnormS8Uint,
-	// 		{},
-	// 		1, 1,
-	// 		vk::SampleCountBits::e1,
-	// 		vk::ImageTiling::optimal,
-	// 		vk::ImageUsageBits::depthStencilAttachment | vk::ImageUsageBits::sampled,
-	// 		vk::SharingMode::exclusive,
-	// 		0, nullptr, vk::ImageLayout::undefined
-	// 	},
-	// 	{
-	// 		{}, {},
-	// 		vk::ImageViewType::e2d,
-	// 		vk::Format::d16UnormS8Uint,
-	// 		{},
-	// 		{
-	// 			vk::ImageAspectBits::depth | vk::ImageAspectBits::stencil,
-	// 			0, 1, 0, 1
-	// 		}
-	// 	}
-	// };
+ViewableImage::CreateInfo ViewableImage::defaultDepthStencil2D()
+{
+	return {
+		{
+			{},
+			vk::ImageType::e2d,
+			vk::Format::d16UnormS8Uint,
+			{},
+			1, 1,
+			vk::SampleCountBits::e1,
+			vk::ImageTiling::optimal,
+			vk::ImageUsageBits::depthStencilAttachment,
+			vk::SharingMode::exclusive,
+			0, nullptr, vk::ImageLayout::undefined
+		},
+		{
+			{}, {},
+			vk::ImageViewType::e2d,
+			vk::Format::d16UnormS8Uint,
+			{},
+			{
+				vk::ImageAspectBits::depth | vk::ImageAspectBits::stencil,
+				0, 1, 0, 1
+			}
+		}
+	};
 }
 
 //attachment
 ViewableImage::ViewableImage(const Device& dev, const CreateInfo& info)
 {
-	create(dev, info.imgInfo, info.memoryFlags);
+	create(dev, info.imgInfo, info.memoryTypeBits);
 	init(info.viewInfo);
 }
 
@@ -365,9 +349,9 @@ void ViewableImage::swap(ViewableImage& lhs) noexcept
 }
 
 void ViewableImage::create(const Device& dev, const vk::ImageCreateInfo& info,
-	vk::MemoryPropertyFlags flags)
+	unsigned int memoryTypeBits)
 {
-	image_ = Image(dev, info, flags);
+	image_ = Image(dev, info, memoryTypeBits);
 }
 
 void ViewableImage::init(const vk::ImageViewCreateInfo& info)
@@ -375,6 +359,7 @@ void ViewableImage::init(const vk::ImageViewCreateInfo& info)
 	auto cpy = info;
 
 	image_.assureMemory();
+	std::cout << "allocated: " << image_.memoryEntry().allocated() << "\n";
 	cpy.image = vkImage();
 	imageView_ = vk::createImageView(vkDevice(), cpy);
 }
@@ -402,6 +387,11 @@ ImageView::ImageView(const Device& dev, const vk::ImageViewCreateInfo& info) : R
 
 ImageView::ImageView(const Device& dev, vk::ImageView view) : ResourceHandle(dev, view)
 {
+}
+
+ImageView::~ImageView()
+{
+	if(vkHandle()) vk::destroyImageView(device(), vkHandle());
 }
 
 // Utility functions

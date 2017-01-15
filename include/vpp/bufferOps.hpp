@@ -17,7 +17,7 @@ namespace vpp {
 /// Defines all possible types that can be passed as buffer update paramter.
 /// See bits/vulkanTypes.inl for more information.
 enum class ShaderType {
-	none, // used for things like e.g. containers
+	none, // used for objects like containers
 	buffer, // used for raw data buffers that shall be plain copied
 	scalar, // scalar like float or int, VulkanType has "size64" bool member
 	vec, // VulkanType has "dimension" "size64" members
@@ -52,11 +52,11 @@ public:
 	/// an object which will wrap it into a temporary RawBuffer object that can also be operated
 	/// on without any alignment or offsets.
 	template<typename T>
-	void addSingle(T&& obj);
+	void addSingle(const T& obj);
 
 	/// Utility function that calls addSingle for all ob the given objects.
 	template<typename... T>
-	void add(T&&... obj);
+	void add(const T&... obj);
 
 	/// Returns the current offset on the buffer.
 	constexpr std::size_t offset() const { return offset_; }
@@ -153,11 +153,10 @@ protected:
 	bool direct_ = false;
 };
 
-///Can be used to calculate the size that would be needed to fit certain objects with certain
-///alignments on a buffer.
-///Alternative name: BufferSizeCalculator
-class BufferSizer : public BufferOperator<BufferSizer>, public Resource
-{
+/// Can be used to calculate the size that would be needed to fit certain objects with certain
+/// alignments on a buffer.
+/// Alternative name: BufferSizeCalculator
+class BufferSizer : public BufferOperator<BufferSizer>, public Resource {
 public:
 	constexpr BufferSizer(BufferLayout layout) : BufferOperator(layout) {}
 	BufferSizer(const Device& dev, BufferLayout align) : BufferOperator(align), Resource(dev) {}
@@ -181,14 +180,14 @@ public:
 	void alignTexel();
 };
 
-///Class that can be used to read raw data into objects using the coorect alignment.
-class BufferReader : public BufferOperator<BufferReader>, public Resource
-{
+/// Class that can be used to read raw data into objects using the coorect alignment.
+/// It is constructed with raw data and then can be used to read them into
+/// the passed objects using the BufferOperator api.
+class BufferReader : public BufferOperator<BufferReader>, public Resource {
 public:
-	//XXX: better use owned data (a vector, data copy) here?
-	///Constructs the BufferReader with the given data range.
-	///Note that the range must stay valid until destruction.
-	BufferReader(const Device& dev, BufferLayout align, nytl::Span<uint8_t> data);
+	/// Constructs the BuffeReader to read from the given data.
+	/// \param data The raw data usually retrieved from the buffer to read.
+	BufferReader(const Device& dev, BufferLayout align, nytl::Span<const uint8_t> data);
 	~BufferReader() = default;
 
 	void operate(void* ptr, std::size_t size);
@@ -206,30 +205,30 @@ public:
 	void alignTexel();
 
 protected:
-	nytl::Span<std::uint8_t> data_;
+	nytl::Span<const uint8_t> data_;
 };
 
-///Fills the buffer with the given data.
-///Does this either by memory mapping the buffer or by copying it via command buffer.
-///Expects that buffer was created fillable, so either the buffer is memory mappable or
-///it is allowed to copy data into it and the device was created with a matching queue.
-///Note that this operation may be asnyc, therefore a work unique ptr is returned.
-///If multiple (device local) buffers are to fill it brings usually huge performace gains
-///to first call fill() on them all and then make sure that the needed work finishes.
-///\param buf The Buffer to fill.
-///\param align Specifies the align of the data to update (either std140 or std430).
-///\param args The arguments to fill the buffer with. Notice that this function is just a
-///utility wrapper around the BufferUpdate class (which may be used for more detailed updates)
-///and therefore expects all given arguments to have a specialization for the VulkanType
-///template which is used to specify their matching shader type.
-///If raw (un- or custom-aligned) data should be written into the buffer, the vpp::raw() function
-///can be used.
-///The given arguments must only be valid until this function finishes, i.e. they can go out
-///of scope before the returned work is finished.
-///\sa BufferUpdate
-///\sa ShaderType
-///\sa fill140
-///\sa fill430
+/// Fills the buffer with the given data.
+/// Does this either by memory mapping the buffer or by copying it via command buffer.
+/// Expects that buffer was created fillable, so either the buffer is memory mappable or
+/// it is allowed to copy data into it and the device was created with a matching queue.
+/// Note that this operation may be asnyc, therefore a work unique ptr is returned.
+/// If multiple (device local) buffers are to fill it brings usually huge performace gains
+/// to first call fill() on them all and then make sure that the needed work finishes.
+/// \param buf The Buffer to fill.
+/// \param align Specifies the align of the data to update (either std140 or std430).
+/// \param args The arguments to fill the buffer with. Notice that this function is just a
+/// utility wrapper around the BufferUpdate class (which may be used for more detailed updates)
+/// and therefore expects all given arguments to have a specialization for the VulkanType
+/// template which is used to specify their matching shader type.
+/// If raw (un- or custom-aligned) data should be written into the buffer, the vpp::raw() function
+/// can be used.
+/// The given arguments must only be valid until this function finishes, i.e. they can go out
+/// of scope before the returned work is finished.
+/// \sa BufferUpdate
+/// \sa ShaderType
+/// \sa fill140
+/// \sa fill430
 template<typename... T>
 WorkPtr fill(const Buffer& buf, BufferLayout align, const T&... args)
 {
@@ -238,52 +237,56 @@ WorkPtr fill(const Buffer& buf, BufferLayout align, const T&... args)
 	return update.apply();
 }
 
-///Utilty shortcut for filling the buffer with data using the std140 layout.
-///\sa fill
-///\sa BufferUpdate
+/// Just copies the given raw data into the given buffer.
+/// The buffer is expected to have at least the size of the given data.
+/// \sa fill
+WorkPtr write(const Buffer& buf, nytl::Span<const uint8_t> data);
+
+/// Utilty shortcut for filling the buffer with data using the std140 layout.
+/// \sa fill
+/// \sa BufferUpdate
 template<typename... T> WorkPtr fill140(const Buffer& buf, const T&... args)
 	{ return fill(buf, BufferLayout::std140, args...); }
 
-///Utilty shortcut for filling the buffer with data using the std430 layout.
-///\sa fill
-///\sa BufferUpdate
+/// Utilty shortcut for filling the buffer with data using the std430 layout.
+/// \sa fill
+/// \sa BufferUpdate
 template<typename... T> WorkPtr fill430(const Buffer& buf, const T&... args)
 	{ return fill(buf, BufferLayout::std430, args...); }
 
-///Retrives the data stored in the buffer.
-///\param size The size of the range to retrive. If size is vk::wholeSize (default) the range
-///from offset until the end of the buffer will be retrieved.
-///\return A Work ptr that is able to retrive an array of std::uint8_t values storing the data.
+/// Retrives the data stored in the buffer.
+/// \param size The size of the range to retrive. If size is vk::wholeSize (default) the range
+/// from offset until the end of the buffer will be retrieved.
+/// \return A Work ptr that is able to retrive an array of std::uint8_t values storing the data.
 DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset = 0,
 	vk::DeviceSize size = vk::wholeSize);
 
-///Reads the data stored in the given buffer aligned into the given objects.
-///Note that the given objects MUST remain valid until the work finishes.
-///You can basically pass all argument types that you can pass to the fill command.
-///Internally just uses a combination of a retrieve work operation and the reads the
-///retrieved data into the given arguments using the BufferReader class.
-///\sa BufferReader
+/// Reads the data stored in the given buffer aligned into the given objects.
+/// Note that the given objects MUST remain valid until the work finishes.
+/// You can basically pass all argument types that you can pass to the fill command.
+/// Internally just uses a combination of a retrieve work operation and the reads the
+/// retrieved data into the given arguments using the BufferReader class.
+/// \sa BufferReader
 template<typename... T>
 WorkPtr read(const Buffer& buf, BufferLayout align, T&... args);
 
-///Reads the given buffer into the given objects using the std140 layout.
-///\sa read
-///\sa BufferReader
+/// Reads the given buffer into the given objects using the std140 layout.
+/// \sa read
+/// \sa BufferReader
 template<typename... T> WorkPtr read140(const Buffer& buf, T&... args)
 	{ return read(buf, BufferLayout::std140, args...); }
 
-///Reads the given buffer into the given objects using the std430 layout.
-///\sa read
-///\sa BufferReader
+/// Reads the given buffer into the given objects using the std430 layout.
+/// \sa read
+/// \sa BufferReader
 template<typename... T> WorkPtr read430(const Buffer& buf, T&... args)
 	{ return read(buf, BufferLayout::std430, args...); }
-
 
 //TODO: constexpr where possible. One does not have to really pass the objects in most cases
 //(except raw buffers and containers.)
 
-///Calculates the size a vulkan buffer must have to be able to store all the given objects.
-///\sa BufferSizer
+/// Calculates the size a vulkan buffer must have to be able to store all the given objects.
+/// \sa BufferSizer
 template<typename... T>
 std::size_t neededBufferSize(BufferLayout align, const T&... args)
 {
@@ -292,6 +295,11 @@ std::size_t neededBufferSize(BufferLayout align, const T&... args)
 	return sizer.offset();
 }
 
+/// Calculates the size a vulkan buffer must have to thold objects of the given types.
+/// Can be computed at compile time. Note that this does not work for types which
+/// does not have a constant size and alignment such as ShaderType::buffer or
+/// ShaerType::custom with a non-constexpr size implementation.
+/// \sa BufferSizer
 template<typename... T>
 constexpr std::size_t neededBufferSize(BufferLayout align)
 {
@@ -300,55 +308,57 @@ constexpr std::size_t neededBufferSize(BufferLayout align)
 	return sizer.offset();
 }
 
-///Calcualtes the size a vulkan buffer must have to be able to store all the given objects using
-///the std140 layout.
-///\sa neededBufferSize
-///\sa BufferSizer
+/// Calcualtes the size a vulkan buffer must have to be able to store all the given objects using
+/// the std140 layout.
+/// \sa neededBufferSize
+/// \sa BufferSizer
 template<typename... T> std::size_t neededBufferSize140(const T&... args)
 	{ return neededBufferSize(BufferLayout::std140, args...); }
 
 template<typename... T> constexpr std::size_t neededBufferSize140()
 	{ return neededBufferSize<T...>(BufferLayout::std140); }
 
-///Calcualtes the size a vulkan buffer must have to be able to store all the given objects using
-///the std430 layout.
-///\sa neededBufferSize
-///\sa BufferSizer
+/// Calcualtes the size a vulkan buffer must have to be able to store all the given objects using
+/// the std430 layout.
+/// \sa neededBufferSize
+/// \sa BufferSizer
 template<typename... T> std::size_t neededBufferSize430(const T&... args)
 	{ return neededBufferSize(BufferLayout::std430, args...); }
 
 template<typename... T> constexpr std::size_t neededBufferSize430()
 	{ return neededBufferSize<T...>(BufferLayout::std430); }
 
-///Implementation of buffer operations and vukan types
+/// Implementation of buffer operations and vukan types
 #include <vpp/bits/vulkanTypes.inl>
 #include <vpp/bits/bufferOps.inl>
 
 /*
+// simple example for the size/fill/read api:
+// does not use the features for which the more comlex OO-api is needed such as
+// custom alignments and offsets.
 
-//simple example for the size/fill/read api:
-//does not use the features for which the more comlex OO-api is needed such as
-//custom alignments and offsets.
-
-//query the size needed for a buffer in layout std140 with the given objects.
-//note that for all of these calls you have to specialize the VulkanType template correectly
-//for the given types (except the rawBuffer if gotten from vpp::raw and the container).
+// query the size needed for a buffer in layout std140 with the given objects.
+// note that for all of these calls you have to specialize the VulkanType template correectly
+// for the given types (except the rawBuffer if gotten from vpp::raw and the container).
 auto size = vpp::neededBufferSize140(dev, myvec2, myvec3, mymat3, myvector, myrawdata);
 auto buffer = createBuffer(dev, size);
+
+// alternatively, the size for constant size objects can be computed at compile time
+constexpr auto size2 = vpp::neededBufferSize140<Vec2, Vec3, Mat3, Vec4, Vec4>();
+auto buffer2 = createBuffer(dev, size2);
 
 //fill the data with the buffer
 //Usually one would one finish this work in place but batch it together with other work
 //can be done using a vpp::WorkManager.
 vpp::fill140(dev, myvec2, myvec3, mymat3, myvector, myrawdata)->finish();
 
-//some operations/shader access here that changes the data of the buffer
+// some operations/shader access here that changes the data of the buffer
 
-//read the data back in
-//the first call retrieves the data the second one parses it/reads it into the given variables.
-//Usually one would not finish the work in place to retrieve the data.
+// read the data back in
+// the first call retrieves the data the second one parses it/reads it into the given variables.
+// Usually one would not finish the work in place to retrieve the data.
 auto data = vpp::retrieve(buffer)->data();
 vpp::read140(dev, data, myvec2, myvec3, mymat3, myvector, myrawdata);
-
 */
 
 }

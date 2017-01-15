@@ -150,7 +150,7 @@ public:
 	/// Will have no effect if the entry already has an associated memory allocation.
 	/// Results in undefined behvaiour if this MemoryEntry is in an invalid state, i.e.
 	/// if it has no associated DeviceMemoryAllocator.
-	void allocate() const { if(!allocated()) allocator_->allocate(); }
+	void allocate() const { if(!allocated()) allocator_->allocate(*this); }
 
 	DeviceMemory* memory() const { return allocated() ? memory_ : nullptr; };
 	DeviceMemoryAllocator* allocator() const { return allocated() ? nullptr : allocator_; };

@@ -22,8 +22,9 @@ else()
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED on)
+# set(CMAKE_CXX_STANDARD 17)
+# set(CMAKE_CXX_STANDARD_REQUIRED on)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED on)
@@ -33,13 +34,13 @@ if(MSVC)
   if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
     string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   else()
-	  list(APPEND CMAKE_CXX_FLAGS "/W4")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
   endif()
 elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-	list(APPEND CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic -Wno-long-long")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wextra -Wpedantic")
 endif()
 
-#to disable ninja byproduct warning
+# to disable ninja byproduct warning
 cmake_policy(SET CMP0058 NEW)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

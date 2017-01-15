@@ -6,9 +6,7 @@
 
 ///TMP utility.
 using Expand = int[];
-
-namespace detail
-{
+namespace detail {
 
 ///Function for matrix and vector size mapping.
 template<unsigned int S>
@@ -194,11 +192,11 @@ struct BufferApplier<VT, ShaderType::buffer>
 	template<typename O, typename T,
 		typename = decltype(std::declval<T>().size()),
 		typename = decltype(std::declval<T>().data())>
-	static void call(O& op, T&& obj) { op.operate(&obj.data(), obj.size()); }
+	static void call(O& op, T&& obj) { op.operate(obj.data(), obj.size()); }
 
 	//align
 	template<typename T>
-	static constexpr unsigned int align(bool) { return 0; }
+	static constexpr unsigned int align(bool) { return 0u; }
 };
 
 ///Specialization for matrix types.
@@ -335,14 +333,14 @@ struct HasSizeFunction
 } //namespace detail
 
 template<typename B> template<typename T>
-void BufferOperator<B>::addSingle(T&& obj)
+void BufferOperator<B>::addSingle(const T& obj)
 {
 	auto& bself = *static_cast<B*>(this);
 	detail::bufferApply(bself, obj);
 }
 
 template<typename B> template<typename... T>
-void BufferOperator<B>::add(T&&... objs)
+void BufferOperator<B>::add(const T&... objs)
 {
 	(void)Expand{(addSingle(objs), 0)...};
 }
@@ -353,7 +351,7 @@ constexpr void BufferSizer::add()
 	(void)Expand{(detail::bufferSize<VulkanType<T>>(*this), 0)...};
 }
 
-constexpr void BufferSizer::operate(const void* ptr, std::size_t size)
+constexpr void BufferSizer::operate(const void*, std::size_t size)
 {
 	offset_ = std::max(nextOffset_, offset_) + size;
 }
@@ -380,7 +378,7 @@ template<typename... T> WorkPtr read(const Buffer& buf, BufferLayout align, T&..
 			if(!retrieveWork_) return;
 
 			retrieveWork_->finish();
-			BufferReader reader(buffer_.device(), align_, {&retrieveWork_->data(), buffer_.size()});
+			BufferReader reader(buffer_.device(), align_, retrieveWork_->data());
 			nytl::apply([&](auto&... args){ reader.add(args...); }, args_); //std::apply c++17
 			retrieveWork_.reset();
 		}

@@ -22,8 +22,7 @@ struct Device::Impl {
 
 	std::vector<vk::QueueFamilyProperties> qFamilyProperties;
 	std::vector<std::unique_ptr<Queue, Device::QueueDeleter>> queues;
-	std::vector<const Queue*> queuesVec;
-
+	std::vector<const Queue*> queuesVec; // cache vector for queues() function
 };
 
 struct Device::Provider {
@@ -44,6 +43,7 @@ struct Device::QueueDeleter {
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info)
 	: instance_(ini), physicalDevice_(phdev)
 {
+	// (void) vk::getPhysicalDeviceQueueFamilyProperties(phdev);
 	device_ = vk::createDevice(vkPhysicalDevice(), info);
 
 	// we can assume that info.pQueueCreateInfo contains for every

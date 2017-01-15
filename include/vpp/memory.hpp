@@ -15,12 +15,11 @@
 
 namespace vpp {
 
-///Represents a mapped range of a vulkan DeviceMemory.
-///There shall never be more than one MemoryMap object for on DeviceMemory object.
-///The MemoryMap class is usually never used directly, but rather accessed through a
-///MemoryMapView.
-class MemoryMap : public ResourceReference<MemoryMap>
-{
+/// Represents a mapped range of a vulkan DeviceMemory.
+/// There shall never be more than one MemoryMap object for on DeviceMemory object.
+/// The MemoryMap class is usually never used directly, but rather accessed through a
+/// MemoryMapView.
+class MemoryMap : public ResourceReference<MemoryMap> {
 public:
 	MemoryMap()  = default;
 	MemoryMap(const DeviceMemory& memory, const Allocation& alloc);
@@ -29,16 +28,17 @@ public:
 	MemoryMap(MemoryMap&& lhs) noexcept { swap(lhs); }
 	MemoryMap& operator=(MemoryMap lhs) noexcept { swap(lhs); return *this; }
 
-	///Might remaps the mapped range to assure it also includes the given allocation.
+	/// Assures that the range given by allocation is included in the map.
+	/// Might remap the mapped range.
 	void remap(const Allocation& allocation);
 
-	///Makes sure the mapped data is visibile on the device.
-	///If memory is coherent, this function will have no effect.
+	/// Makes sure the mapped data is visibile on the device.
+	/// If memory is coherent, this function will have no effect.
 	void flush() const;
 
-	///Reloads the device memory into mapped memory, i.e. makes sure writes by the device
-	///are made visible.
-	///If the memory is coherent, this function will have no effect.
+	/// Reloads the device memory into mapped memory, i.e. makes sure writes by the device
+	/// are made visible.
+	/// If the memory is coherent, this function will have no effect.
 	void reload() const;
 
 	const vk::DeviceMemory& vkMemory() const;
@@ -69,10 +69,9 @@ protected:
 };
 
 
-///A view into a mapped memory range.
-///Makes it possible to write/read from multiple allocations on a mapped memory.
-class MemoryMapView : public ResourceReference<MemoryMapView>
-{
+/// A view into a mapped memory range.
+/// Makes it possible to write/read from multiple allocations on a mapped memory.
+class MemoryMapView : public ResourceReference<MemoryMapView> {
 public:
 	MemoryMapView() = default;
 	MemoryMapView(MemoryMap& map, const Allocation& range);
@@ -81,14 +80,14 @@ public:
 	MemoryMapView(MemoryMapView&& lhs) noexcept { swap(lhs); }
 	MemoryMapView& operator=(MemoryMapView lhs) noexcept { swap(lhs); return *this; }
 
-	///Makes sure the mapped data is visibile on the device.
-	///Not needed when memory is coherent, look at vkFlushMappedMemoryRanges.
-	///Can be checked with coherent().
+	/// Makes sure the mapped data is visibile on the device.
+	/// Not needed when memory is coherent, look at vkFlushMappedMemoryRanges.
+	/// Can be checked with coherent().
 	void flush() const;
 
-	///Reloads the device memory into mapped memory, i.e. makes sure writes by the device
-	///are made visible. Not needed when memory is coherent, look at vkInvalidateMappedMemoryRanges.
-	///Can be checked with coherent().
+	/// Reloads the device memory into mapped memory, i.e. makes sure writes by the device
+	/// are made visible. Not needed when memory is coherent, look at vkInvalidateMappedMemoryRanges.
+	/// Can be checked with coherent().
 	void reload() const;
 
 	MemoryMap& memoryMap() const { return *memoryMap_; }

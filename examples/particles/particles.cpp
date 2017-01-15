@@ -339,18 +339,18 @@ void ParticleSystem::initDescriptors()
 void ParticleSystem::initDescriptorBuffers()
 {
 	//graphics
-	vk::BufferCreateInfo gfxInfo;
-	gfxInfo.size = sizeof(nytl::Mat4f) * 2; //viewMatrix, perspectiveMatrix
-	gfxInfo.usage = vk::BufferUsageBits::uniformBuffer;
+	vk::BufferCreateInfo gfxi;
+	gfxi.size = sizeof(nytl::Mat4f) * 2; //viewMatrix, perspectiveMatrix
+	gfxi.usage = vk::BufferUsageBits::uniformBuffer;
 
-	graphicsUBO_ = {device(), gfxInfo, vk::MemoryPropertyBits::hostVisible};
+	graphicsUBO_ = {device(), gfxi, device().memoryTypeBits(vk::MemoryPropertyBits::hostVisible)};
 
 	//compute
-	vk::BufferCreateInfo compInfo;
-	compInfo.size = sizeof(float) * 5; //mouse pos(vec2f), speed, deltaTime, attract
-	compInfo.usage = vk::BufferUsageBits::uniformBuffer;
+	vk::BufferCreateInfo compi;
+	compi.size = sizeof(float) * 5; //mouse pos(vec2f), speed, deltaTime, attract
+	compi.usage = vk::BufferUsageBits::uniformBuffer;
 
-	computeUBO_ = {device(), compInfo, vk::MemoryPropertyBits::hostVisible};
+	computeUBO_ = {device(), compi, device().memoryTypeBits(vk::MemoryPropertyBits::hostVisible)};
 }
 
 void ParticleSystem::initParticles()

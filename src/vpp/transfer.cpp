@@ -18,14 +18,14 @@ TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t s
 	info.size = size;
 	info.usage = vk::BufferUsageBits::transferDst | vk::BufferUsageBits::transferSrc;
 
-	buffer_ = Buffer(dev, info, vk::MemoryPropertyBits::hostVisible);
+	auto bits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
+	buffer_ = Buffer(dev, info, bits);
 	buffer_.assureMemory();
 }
 
 TransferManager::TransferBuffer::~TransferBuffer()
 {
-	VPP_DEBUG_CHECK(vpp::~TransferBuffer,
-	{
+	VPP_DEBUG_CHECK(vpp::~TransferBuffer, {
 		auto rc = ranges_.size();
 		if(rc > 0) VPP_DEBUG_OUTPUT(rc, " allocations left");
 	})
@@ -36,10 +36,8 @@ Allocation TransferManager::TransferBuffer::use(std::size_t size)
 	static const Allocation start = {0, 0};
 	auto old = start;
 
-	for(auto it = ranges_.begin(); it != ranges_.end(); ++it)
-	{
-		if(it->offset - old.end() > size)
-		{
+	for(auto it = ranges_.begin(); it != ranges_.end(); ++it) {
+		if(it->offset - old.end() > size) {
 			Allocation range = {old.end(), size};
 
 			//inserts the tested range before the higher range, if there is any
@@ -56,10 +54,8 @@ Allocation TransferManager::TransferBuffer::use(std::size_t size)
 bool TransferManager::TransferBuffer::release(const Allocation& alloc)
 {
 	std::lock_guard<std::mutex> guard(mutex_);
-	for(auto it = ranges_.begin(); it < ranges_.end(); ++it)
-	{
-		if(it->offset == alloc.offset && it->size == alloc.size)
-		{
+	for(auto it = ranges_.begin(); it < ranges_.end(); ++it) {
+		if(it->offset == alloc.offset && it->size == alloc.size) {
 			ranges_.erase(it);
 			return true;
 		}
@@ -68,7 +64,7 @@ bool TransferManager::TransferBuffer::release(const Allocation& alloc)
 	return false;
 }
 
-//BufferRange
+// BufferRange
 TransferManager::BufferRange::~BufferRange()
 {
 	if(buffer_) buffer_->release(allocation());
@@ -93,7 +89,7 @@ void swap(TransferRange& a, TransferRange& b) noexcept
 	swap(a.allocation_, b.allocation_);
 }
 
-//TransferManager
+// TransferManager
 TransferManager::TransferManager(const Device& dev) : Resource(dev)
 {
 }
@@ -107,7 +103,7 @@ TransferRange TransferManager::buffer(std::size_t size)
 		if(alloc.size > 0) return BufferRange(*buffp, alloc);
 	}
 
-	//Allocate new buffer
+	// allocate a new buffer
 	buffers_.emplace_back(new TransferBuffer(device(), size, mutex_));
 	return BufferRange(*buffers_.back(), buffers_.back()->use(size));
 }
@@ -137,8 +133,7 @@ void TransferManager::reserve(std::size_t size)
 void TransferManager::shrink()
 {
 	std::lock_guard<std::mutex> guard(mutex_);
-	for(auto it = buffers_.begin(); it < buffers_.end();)
-	{
+	for(auto it = buffers_.begin(); it < buffers_.end();) {
 		if((*it)->rangesCount() == 0) it = buffers_.erase(it);
 		else ++it;
 	}
@@ -148,15 +143,11 @@ void TransferManager::optimize()
 {
 	std::lock_guard<std::mutex> guard(mutex_);
 	std::size_t size = 0;
-	for(auto it = buffers_.begin(); it < buffers_.end();)
-	{
-		if((*it)->rangesCount() == 0)
-		{
+	for(auto it = buffers_.begin(); it < buffers_.end();) {
+		if((*it)->rangesCount() == 0) {
 			size += (*it)->buffer().memoryEntry().size();
 			it = buffers_.erase(it);
-		}
-		else
-		{
+		} else {
 			++it;
 		}
 	}
@@ -164,11 +155,13 @@ void TransferManager::optimize()
 	reserve(size);
 }
 
-//utility
+/// Returns the id of a transfer queue family for the given device.
+/// Returns -1 if no such queue and family were found.
+/// \param queue Sets the queue to a transfer queue of the returned family.
 int transferQueueFamily(const Device& dev, const Queue** queue)
 {
-	//we do not only query a valid queue family but a valid queue and then chose its queue
-	//family to assure that the device has a queue for the queried queue family
+	// we do not only query a valid queue family but a valid queue and then chose its queue
+	// family to assure that the device has a queue for the queried queue family
 	auto* q = dev.queue(vk::QueueBits::transfer);
 	if(!q) q = dev.queue(vk::QueueBits::graphics);
 	if(!q) q = dev.queue(vk::QueueBits::compute);
@@ -178,4 +171,4 @@ int transferQueueFamily(const Device& dev, const Queue** queue)
 	return q->family();
 }
 
-}
+} // namespace vpp

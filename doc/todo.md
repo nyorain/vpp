@@ -12,6 +12,8 @@ Todo list vor vpp
 	- threadlocal.hpp: use shared_mutex instead of shared_timed_mutex
 
 - clean up bufferOps.inl
+- work implementation destructor finish!
+- remove (deprecated) device layers everywhere
 - better renderer resetting (all command pools at once, just resize the frameRenderers vector)
 - textures (overthing viewable image + sampler)
 - fully implement examples!

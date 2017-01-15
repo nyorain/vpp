@@ -90,7 +90,8 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 			imgInfo.extent.height = std::max(size.height, info.maxHeight);
 			imgInfo.extent.depth = 1;
 			staticAttachments_.emplace_back();
-			staticAttachments_.back().create(device(), imgInfo, attachInfo.createInfo.memoryFlags);
+			staticAttachments_.back().create(device(), imgInfo,
+				attachInfo.createInfo.memoryTypeBits);
 		}
 
 		++i;

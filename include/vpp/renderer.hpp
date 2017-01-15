@@ -32,6 +32,7 @@ public:
 
 	///This function will be called once by the SwapChainRenderer, after it was constructed
 	///and before it will use any other builder functions.
+	///Can be used to initialize any Renderer-dependent variables.
 	virtual void init(SwapChainRenderer&) {};
 
 	///Will be called to record additional command buffer commands before rendering.

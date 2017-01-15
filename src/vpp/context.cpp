@@ -184,8 +184,8 @@ void Context::initDevice(vk::PhysicalDevice phdev, nytl::Span<const char* const>
 	}
 
 	//queues
-	auto queueProps = vk::getPhysicalDeviceQueueFamilyProperties(phdev);
 	auto queues = surface().supportedQueueFamilies(phdev);
+	auto queueProps = vk::getPhysicalDeviceQueueFamilyProperties(phdev);
 
 	std::uint32_t presentQFam = -1;
 	std::uint32_t graphicsComputeQFam = -1;
@@ -242,6 +242,7 @@ void Context::initDevice(vk::PhysicalDevice phdev, nytl::Span<const char* const>
 	devinfo.enabledExtensionCount = extensions.size();
 	devinfo.ppEnabledExtensionNames = extensions.data();
 
+	// vk::getPhysicalDeviceQueueFamilyProperties(phdev);
 	device_.reset(new Device(vkInstance(), phdev, devinfo));
 
 	presentQueue_ = device().queue(presentQFam, 0);

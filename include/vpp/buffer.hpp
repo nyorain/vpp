@@ -5,12 +5,7 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/memoryResource.hpp>
-
-#include <memory>
-#include <type_traits>
-#include <cstring>
-#include <cmath>
+#include <vpp/memoryResource.hpp> // vpp::MemoryResource
 
 namespace vpp {
 
@@ -22,10 +17,8 @@ namespace vpp {
 class Buffer : public MemoryResource<vk::Buffer> {
 public:
 	Buffer() = default;
-	Buffer(const Device&, const vk::BufferCreateInfo&, vk::MemoryPropertyFlags = {});
-	Buffer(const Device&, const vk::BufferCreateInfo&, unsigned int memoryTypesBits);
-	Buffer(const Device&, vk::Buffer, vk::BufferUsageFlags, unsigned int memoryTypeBits);
-	Buffer(const Device&, vk::Buffer, vk::BufferUsageFlags, vk::MemoryPropertyFlags = {});
+	Buffer(const Device&, const vk::BufferCreateInfo&, unsigned int memoryTypesBits = ~0u);
+	Buffer(const Device&, vk::Buffer, vk::BufferUsageFlags, unsigned int memoryTypeBits = ~0u);
 	Buffer(vk::Buffer buffer, MemoryEntry&& entry);
 	~Buffer();
 

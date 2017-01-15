@@ -1,3 +1,7 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/bufferOps.hpp>
 #include <vpp/util/debug.hpp>
 #include <vpp/transferWork.hpp>
@@ -6,30 +10,27 @@
 #include <vpp/queue.hpp>
 #include <vpp/vk.hpp>
 
-namespace vpp
-{
+#include <cstring> // std::memset
+#include <utility> // std::move
+#include <memory> // std::make_unique
+
+namespace vpp {
 
 DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize size)
 {
-	VPP_DEBUG_CHECK(vpp::retrive(buffer),
-	{
-		if(!buf.memoryEntry().allocated())
-		{
-			VPP_DEBUG_OUTPUT("Buffer has no memory. Undefined will be data retrived. "
-				"Calling assureMemory() and returning the undefined data");
-			buf.assureMemory();
+	VPP_DEBUG_CHECK(vpp::retrive(buffer), {
+		if(!buf.memoryEntry().allocated()) {
+			VPP_DEBUG_OUTPUT("Buffer has no memory. Returning nullptr work");
+			return nullptr;
 		}
 	});
 
 	if(size == vk::wholeSize) size = buf.memoryEntry().size() - offset;
 
 	//retrieve by mapping
-	if(buf.mappable())
-	{
+	if(buf.mappable()) {
 		return std::make_unique<MappableDownloadWork>(buf.memoryMap());
-	}
-	else
-	{
+	} else {
 		//use transfer buffer
 		const Queue* queue;
 		auto qFam = transferQueueFamily(buf.device(), &queue);
@@ -47,31 +48,34 @@ DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize si
 	}
 }
 
+WorkPtr write(const Buffer& buf, nytl::Span<const uint8_t> data)
+{
+	BufferUpdate update(buf, BufferLayout::std140); // the layout does not matter in this case
+	update.addSingle(data);
+	return update.apply();
+}
+
 //BufferFill
 BufferUpdate::BufferUpdate(const Buffer& buffer, BufferLayout align, bool direct)
 	: BufferOperator(align), buffer_(&buffer)
 {
 	buffer.assureMemory();
-	if(buffer.mappable())
-	{
+	if(buffer.mappable()) {
 		map_ = buffer.memoryMap();
 		work_ = std::make_unique<FinishedWork<void>>();
-	}
-	else
-	{
+	} else {
 		const Queue* queue;
 		auto qFam = transferQueueFamily(device(), &queue);
+		if(qFam == -1) throw std::logic_error("vpp::BufferUpdate: device has no valid queue");
+
 		auto cmdBuffer = device().commandProvider().get(qFam);
 		copies_.push_back({0, 0, 0});
 
-		if(direct)
-		{
+		if(direct) {
 			data_.resize(buffer.size());
 			direct_ = true;
 			work_ = std::make_unique<CommandWork<void>>(std::move(cmdBuffer), *queue);
-		}
-		else
-		{
+		} else {
 			auto uploadBuffer = device().transferManager().buffer(buffer.size());
 			map_ = uploadBuffer.buffer().memoryMap();
 			work_ = std::make_unique<UploadWork>(std::move(cmdBuffer), *queue,
@@ -160,21 +164,18 @@ WorkPtr BufferUpdate::apply()
 {
 	if(!direct_ && !map_.coherent()) map_.flush();
 
-	auto uploadWork = dynamic_cast<UploadWork*>(work_.get()); //transfer
-	auto commandWork = dynamic_cast<CommandWork<void>*>(work_.get()); //direct
-	if(uploadWork)
-	{
-		auto& cmdBuf = uploadWork->cmdBuffer_;
-		auto& transferRange = uploadWork->transferRange_;
+	auto uploadWork = dynamic_cast<UploadWork*>(work_.get()); // transfer
+	auto commandWork = dynamic_cast<CommandWork<void>*>(work_.get()); // direct
+	if(uploadWork) {
+		auto& cmdBuf = uploadWork->commandBuffer();
+		auto& transferRange = uploadWork->transferRange();
 
 		vk::beginCommandBuffer(cmdBuf, {});
 		for(auto& update : copies_)
 			vk::cmdCopyBuffer(cmdBuf, transferRange.buffer(), buffer(), {update});
 		vk::endCommandBuffer(cmdBuf);
-	}
-	else if(commandWork)
-	{
-		auto& cmdBuf = commandWork->cmdBuffer_;
+	} else if(commandWork) {
+		auto& cmdBuf = commandWork->commandBuffer();
 
 		vk::beginCommandBuffer(cmdBuf, {});
 		for(auto& upd : copies_)
@@ -226,7 +227,7 @@ void BufferSizer::alignTexel()
 
 // BufferReader
 BufferReader::BufferReader(const Device& dev, BufferLayout align,
-	nytl::Span<uint8_t> data) : BufferOperator(align), Resource(dev), data_(data)
+	nytl::Span<const uint8_t> data) : BufferOperator(align), Resource(dev), data_(data)
 {
 }
 
@@ -252,4 +253,4 @@ void BufferReader::alignTexel()
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
 
-}
+} // namespace vpp
