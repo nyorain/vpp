@@ -11,6 +11,8 @@ Todo list vor vpp
 		- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
 	- threadlocal.hpp: use shared_mutex instead of shared_timed_mutex
 
+- SwapChainREnderer::init: call record?
+	- if REndererImpl should call it in init, document it!
 - clean up bufferOps.inl
 - work implementation destructor finish!
 - remove (deprecated) device layers everywhere
@@ -23,6 +25,7 @@ Todo list vor vpp
 - improve classes to use allocators and provider
 - backend agnostic createContext function
 - display class for vkDisplayKHR extension
+- SwapChain -> Swapchain
 - queue management
 	- easier querying/creation/using for commands
 - some smaller improvements

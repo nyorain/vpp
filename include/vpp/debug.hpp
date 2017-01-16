@@ -8,6 +8,11 @@
 
 namespace vpp {
 
+/// Returns the names of all common useful instance validation layers.
+/// Note that (although they are usually available since distributed with the
+/// vulkan sdk) they might not be available on all platforms.
+const std::vector<const char*>& defaultLayerNames();
+
 // flags
 // vk::DebugReportFlagBitsEXT::ErrorEXT
 // vk::DebugReportFlagBitsEXT::WarningEXT
@@ -30,11 +35,6 @@ public:
 	};
 
 public:
-	/// Returns the common names of all useful instance validation layers.
-	static const std::vector<const char*>& defaultInstanceLayerNames();
-
-	/// Returns the common names of all useful device validation layers.
-	static const std::vector<const char*>& defaultDeviceLayerNames();
 
 	/// Returns the default debug report flags, which are all except debug and information.
 	static vk::DebugReportFlagsEXT defaultFlags();
