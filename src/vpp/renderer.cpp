@@ -25,20 +25,20 @@ SwapChainRenderer::SwapChainRenderer(const SwapChain& sc, const CreateInfo& inf,
 SwapChainRenderer::~SwapChainRenderer()
 {
 	///TODO: part of command buffer destruction rework
-	std::vector<vk::CommandBuffer> cmdBuffers;
-	cmdBuffers.reserve(renderBuffers_.size());
-
-	for(auto& renderer : renderBuffers_)
-	{
-		auto vkbuf = renderer.commandBuffer.vkHandle();
-		if(vkbuf) cmdBuffers.push_back(vkbuf);
-	}
-
-	if(!cmdBuffers.empty())
-	{
-		auto vkpool = renderBuffers_[0].commandBuffer.commandPool().vkHandle();
-		vk::freeCommandBuffers(vkDevice(), vkpool, cmdBuffers);
-	}
+	// std::vector<vk::CommandBuffer> cmdBuffers;
+	// cmdBuffers.reserve(renderBuffers_.size());
+	//
+	// for(auto& renderer : renderBuffers_)
+	// {
+	// 	auto vkbuf = renderer.commandBuffer.vkHandle();
+	// 	if(vkbuf) cmdBuffers.push_back(vkbuf);
+	// }
+	//
+	// if(!cmdBuffers.empty())
+	// {
+	// 	auto vkpool = renderBuffers_[0].commandBuffer.commandPool().vkHandle();
+	// 	vk::freeCommandBuffers(vkDevice(), vkpool, cmdBuffers);
+	// }
 }
 
 void SwapChainRenderer::swap(SwapChainRenderer& lhs) noexcept

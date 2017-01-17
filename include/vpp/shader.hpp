@@ -1,109 +1,90 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/resource.hpp>
-#include <vpp/util/stringParam.hpp>
-#include <vpp/util/span.hpp>
-
-#include <string>
+#include <vpp/resource.hpp> // vpp::ResourceHandle
+#include <vpp/util/stringParam.hpp> // nytl::StringParam
+#include <vpp/util/span.hpp> // nytl::Span
 #include <vector>
 
-namespace vpp
-{
+namespace vpp {
 
-///Utility function that can be used to read binary shader files.
-///Note that the code size must be a multiple of 4 (bytes) and therefore ranges with
-///4 byte integers are used.
-vk::ShaderModule loadShaderModule(vk::Device dev, nytl::StringParam filename);
-vk::ShaderModule loadShaderModule(vk::Device dev, nytl::Span<const std::uint32_t> code);
-
-class ShaderModule : public ResourceHandle<vk::ShaderModule>
-{
+/// RAII wrapper around a vulkan ShaderModule.
+/// Can be created from a file holding the spirv binary or directly from the spirv code.
+class ShaderModule : public ResourceHandle<vk::ShaderModule> {
 public:
 	ShaderModule() = default;
+
+	/// \throws std::runtime_error if the given file cannot be read or has
+	/// an invalid size.
 	ShaderModule(const Device& dev, nytl::StringParam file);
-	ShaderModule(const Device& dev, nytl::Span<const std::uint32_t> bytes);
+	ShaderModule(const Device& dev, nytl::Span<const uint32_t> bytes);
 	~ShaderModule();
 
 	ShaderModule(ShaderModule&& lhs) noexcept { swap(lhs); }
 	ShaderModule& operator=(ShaderModule&& lhs) noexcept { swap(lhs); return *this; }
 };
 
-///Vulkan Shader Stage wrapper around owned or non-owned shader modules.
-class ShaderStage : public Resource
-{
+/// ShaderProgram with multiple stages for graphic pipelines.
+/// Can be used to group multiple shader modules together to full programs.
+/// Does not own the references shader modules, therefore they have to remain valid
+/// at least until the ShaderProgram is destruced.
+/// Note that this class is not a Resource class since it only logically groups
+/// shader stages togehter and not manages them in any way.
+class ShaderProgram {
 public:
-	struct CreateInfo
-	{
+	/// Describes a single shader stage of a program.
+	/// Lighter version of vk::PipelineShaderStageCreateInfo with sane defaults.
+	/// Module and stage must always be set.
+	struct StageInfo {
+		vk::ShaderModule module;
 		vk::ShaderStageBits stage;
 		const vk::SpecializationInfo* specialization = nullptr;
 		const char* entry = u8"main";
+		vk::PipelineShaderStageCreateFlags flags = {};
 	};
 
 public:
-	ShaderStage() = default;
-	ShaderStage(const Device& dev, vk::ShaderModule module, const CreateInfo& info);
-	ShaderStage(const Device& dev, nytl::StringParam name, const CreateInfo& info);
-	ShaderStage(const Device& dev, nytl::Span<const std::uint32_t> code, const CreateInfo& info);
-	~ShaderStage();
-
-	ShaderStage(ShaderStage&& lhs) noexcept { swap(lhs); }
-	ShaderStage& operator=(ShaderStage lhs) noexcept { swap(lhs); return *this; }
-
-	vk::PipelineShaderStageCreateInfo vkStageInfo() const;
-	vk::ShaderModule vkShaderModule() const { return module_; }
-	const CreateInfo& info() const { return info_; }
-	bool owned() const { return owned_; }
-
-	operator vk::PipelineShaderStageCreateInfo() const;
-	void swap(ShaderStage& lhs) noexcept;
-
-protected:
-	vk::ShaderModule module_ {};
-	CreateInfo info_;
-	bool owned_ = false; //whether it should be destructed or was external retrieved
-};
-
-///ShaderProgram with multiple stages for graphic pipelines.
-class ShaderProgram : public Resource
-{
-public:
-	ShaderProgram() = default;
-	ShaderProgram(const Device& device);
+	ShaderProgram(nytl::Span<const StageInfo> stages = {});
 	~ShaderProgram() = default;
 
-	ShaderProgram(ShaderProgram&& lhs) noexcept = default;
-	ShaderProgram& operator=(ShaderProgram&& lhs) noexcept = default;
+	ShaderProgram(ShaderProgram& lhs) noexcept = default;
+	ShaderProgram& operator=(ShaderProgram& lhs) noexcept = default;
 
-	///\{
-	///Returns the given shader stage if there is any, nullptr otherwise.
-	ShaderStage* stage(vk::ShaderStageBits stage);
-	const ShaderStage* stage(vk::ShaderStageBits stage) const;
-	///\}
+	/// Returns the given shader stage if there is any, nullptr otherwise.
+	/// If not null, the returned pointer is guaranteed to be valid until the object
+	/// is destructed or a new shader stage is added.
+	vk::PipelineShaderStageCreateInfo* stage(vk::ShaderStageBits stage);
+	const vk::PipelineShaderStageCreateInfo* stage(vk::ShaderStageBits stage) const;
 
-	///\{
-	///Changes or adds a new shader stage (depending on info::stage).
-	void stage(nytl::StringParam filename, const ShaderStage::CreateInfo& info);
-	void stage(nytl::Span<const std::uint32_t> bytes, const ShaderStage::CreateInfo& info);
-	void stage(vk::ShaderModule module, const ShaderStage::CreateInfo& info);
-	///\}
+	/// Changes or adds a new shader stage.
+	/// The passed shader modules must be valid until the ShaderProgram is destructed.
+	/// Note that this might invalidate returned stages as well as previously used
+	/// vkStageInfos data poitners.
+	void stage(vk::ShaderModule, vk::ShaderStageBits stage);
+	void stage(const vk::PipelineShaderStageCreateInfo&);
+	void stage(const StageInfo&);
 
-	std::vector<vk::PipelineShaderStageCreateInfo> vkStageInfos() const;
-	const std::vector<ShaderStage>& stages() const { return stages_; }
+	/// Returns a vector with the stage infos that can be used for pipeline creation.
+	const std::vector<vk::PipelineShaderStageCreateInfo>& vkStageInfos() const { return stages_; }
 
 protected:
-	std::vector<ShaderStage> stages_;
+	std::vector<vk::PipelineShaderStageCreateInfo> stages_;
 };
 
-///\{
-///Duplicates a given ShaderProgram/ShaderStage. Note that this is implemented as extra
-///function instead of a copy operator since it does not perform a deep copy. The new
-///instance will still reference the same vk::ShaderModules as the old original one,
-///so it must be assured that they remain when the new objects is used.
-///It was chosen to implement a copy function for both of these types, since they
-///are able to hold non-owned objects.
-ShaderProgram copy(const ShaderProgram& other);
-ShaderStage copy(const ShaderStage& other);
-///\}
+/// Can be used to create a shader module from a spirv binary file.
+/// Note that the code size must be a multiple of 4 bytes.
+/// Throws std::runtime_error if the file cannot be read or has an invalid size.
+/// Note that the returned object is a plain handle and must be manually destroyed.
+/// If possible, prefer to use the wrapper class ShaderModule.
+vk::ShaderModule loadShaderModule(vk::Device dev, nytl::StringParam filename);
 
-}
+/// Can be used to create a shader module form the raw spirv code.
+/// Note that the returned object is a plain handle and must be manually destroyed.
+/// If possible, prefer to use the wrapper class ShaderModule.
+vk::ShaderModule loadShaderModule(vk::Device dev, nytl::Span<const uint32_t> code);
+
+} // namespace vpp

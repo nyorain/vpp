@@ -359,7 +359,6 @@ void ViewableImage::init(const vk::ImageViewCreateInfo& info)
 	auto cpy = info;
 
 	image_.assureMemory();
-	std::cout << "allocated: " << image_.memoryEntry().allocated() << "\n";
 	cpy.image = vkImage();
 	imageView_ = vk::createImageView(vkDevice(), cpy);
 }

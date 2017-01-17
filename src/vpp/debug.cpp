@@ -1,19 +1,29 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/debug.hpp>
 #include <vpp/procAddr.hpp>
 #include <vpp/vk.hpp>
-#include <iostream>
+
+#include <iostream> // std::cerr
+#include <sstream> // std::stringstream
 
 namespace vpp {
 namespace {
 
-vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags, vk::DebugReportObjectTypeEXT objType,
-	std::uint64_t srcObject, std::size_t location, std::int32_t msgCode, const char* pLayerPrefix,
-	const char* pMsg, void* pUserData)
+vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags,
+	vk::DebugReportObjectTypeEXT objType,
+	uint64_t srcObject,
+	size_t location,
+	int32_t msgCode,
+	const char* pLayerPrefix,
+	const char* pMsg,
+	void* pUserData)
 {
-	if(!pUserData)
-	{
-		std::cout << "vpp: debug callback called without user data\n";
-		return false;
+	if(!pUserData) {
+		std::cerr << "vpp::debug: DebugCallback called without user data\n";
+		return true;
 	}
 
 	auto callback = static_cast<DebugCallback*>(pUserData);
@@ -23,18 +33,22 @@ vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags, vk::DebugReport
 std::string to_string(vk::DebugReportFlagsEXT flags)
 {
 	std::string ret = "";
-	if(flags & vk::DebugReportBitsEXT::information) ret += "information | ";
-	if(flags & vk::DebugReportBitsEXT::warning) ret += "warning | ";
-	if(flags & vk::DebugReportBitsEXT::performanceWarning) ret += "performanceWarning | ";
-	if(flags & vk::DebugReportBitsEXT::error) ret += "error | ";
-	if(flags & vk::DebugReportBitsEXT::debug) ret += "debug | ";
-	return "{" + ret.substr(0, ret.size() > 0 ? ret.size() - 3 : 0) + "}";
+	unsigned int count = 0u;
+	if(flags & vk::DebugReportBitsEXT::information) ret += "information, ", ++count;
+	if(flags & vk::DebugReportBitsEXT::warning) ret += "warning, ", ++count;
+	if(flags & vk::DebugReportBitsEXT::performanceWarning) ret += "performanceWarning, ", ++count;
+	if(flags & vk::DebugReportBitsEXT::error) ret += "error, ", ++count;
+	if(flags & vk::DebugReportBitsEXT::debug) ret += "debug, ", ++count;
+
+	if(ret.empty()) ret = "<unknown>";
+	else if(ret.size() > 3) ret = ret.substr(0, ret.size() - 2);
+	if(count > 1) ret = "{" + ret + "}";
+	return ret;
 }
 
 std::string to_string(vk::DebugReportObjectTypeEXT type)
 {
-	switch(type)
-	{
+	switch(type) {
 		case vk::DebugReportObjectTypeEXT::unknown: return "unknown";
 		case vk::DebugReportObjectTypeEXT::instance: return "instance";
 		case vk::DebugReportObjectTypeEXT::physicalDevice: return "physicalDevice";
@@ -64,51 +78,41 @@ std::string to_string(vk::DebugReportObjectTypeEXT type)
 		case vk::DebugReportObjectTypeEXT::surfaceKHR: return "surfaceKHR";
 		case vk::DebugReportObjectTypeEXT::swapchainKHR: return "swapchainKHR";
 		case vk::DebugReportObjectTypeEXT::debugReport: return "debugReport";
-		default: return "-";
+		case vk::DebugReportObjectTypeEXT::displayKHR: return "displayKHR";
+		case vk::DebugReportObjectTypeEXT::displayModeKHR: return "displayModeKHR";
+		case vk::DebugReportObjectTypeEXT::objectTableNVX: return "objectTableNVX";
+		case vk::DebugReportObjectTypeEXT::indirectCommandsLayoutNVX :
+			return "indirectCommandsLayoutNVX";
+		default: return "<unknown>";
 	}
 }
 
 } // anonymous util namespace
 
-// DebugCallback
-vk::DebugReportFlagsEXT DebugCallback::defaultFlags()
-{
-	//not used: debug, information
-	return vk::DebugReportBitsEXT::warning | vk::DebugReportBitsEXT::error |
-		vk::DebugReportBitsEXT::performanceWarning;
-}
-
-const std::vector<const char*>& DebugCallback::defaultInstanceLayerNames()
+const std::vector<const char*>& defaultLayerNames()
 {
 	static const std::vector<const char*> ret {
-		// "VK_LAYER_LUNARG_api_dump",
 		"VK_LAYER_LUNARG_core_validation",
 		"VK_LAYER_LUNARG_image",
 		"VK_LAYER_LUNARG_object_tracker",
 		"VK_LAYER_LUNARG_parameter_validation",
-		// "VK_LAYER_LUNARG_screenshot",
 		"VK_LAYER_LUNARG_swapchain",
 		"VK_LAYER_GOOGLE_threading",
 		"VK_LAYER_GOOGLE_unique_objects",
-		// "VK_LAYER_LUNARG_vktrace",
-		// "VK_LAYER_RENDERDOC_Capture",
-		// "VK_LAYER_VALVE_steam_overlay",
 		"VK_LAYER_LUNARG_standard_validation",
 	};
 
 	return ret;
 }
 
-const std::vector<const char*>& DebugCallback::defaultDeviceLayerNames()
+// DebugCallback
+vk::DebugReportFlagsEXT DebugCallback::defaultFlags()
 {
-	static const std::vector<const char*> ret {
-		"VK_LAYER_LUNARG_standard_validation",
-	};
-
-	return ret;
+	return vk::DebugReportBitsEXT::warning |
+		vk::DebugReportBitsEXT::error |
+		vk::DebugReportBitsEXT::performanceWarning;
 }
 
-//
 DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags)
 	: instance_(instance)
 {
@@ -119,20 +123,26 @@ DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flag
 
 DebugCallback::~DebugCallback()
 {
-	if(vkCallback() && vkInstance())
+	if(vkCallback())
 		VPP_PROC(vkInstance(), DestroyDebugReportCallbackEXT)(vkInstance(), vkCallback(), nullptr);
 }
 
-bool DebugCallback::call(const CallbackInfo& info)
+bool DebugCallback::call(const CallbackInfo& info) const noexcept
 {
-	std::cerr	<< to_string(info.flags) << ": " << info.message << "\n\t"
-				<< "objType: " << to_string(info.objectType) << "\n\t"
-				<< "srcObject: " << info.srcObject << "\n\t"
-				<< "location: " << info.location << "\n\t"
-				<< "code: " << info.messageCode << "\n\t"
-				<< "layer: " << info.layer << std::endl;
+	// we use a stringstream here because the callback might be called from multiple threads
+	// and debug messages should not interfer with each other
 
-	return false;
+	std::stringstream message;
+	message << "vpp::DebugCallback: " << to_string(info.flags) << " callback: \n\t"
+		<< info.message << "\n\t"
+		<< "objType: " << to_string(info.objectType) << "\n\t"
+		<< "srcObject: " << info.srcObject << "\n\t"
+		<< "location: " << info.location << "\n\t"
+		<< "code: " << info.messageCode << "\n\t"
+		<< "layer: " << info.layer << "\n";
+
+	std::cerr << message.str();
+	return info.flags == vk::DebugReportBitsEXT::error;
 }
 
-}
+} // namespace vpp

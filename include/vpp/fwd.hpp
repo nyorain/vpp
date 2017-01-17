@@ -1,8 +1,14 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/vulkan/fwd.hpp>
 #include <vpp/config.hpp>
-#include <cstdint>
+
+#include <cstdint> // std::uint8_t
+#include <cstddef> // std::size_t
 
 namespace vpp {
 
@@ -16,6 +22,8 @@ using std::int8_t;
 using std::int16_t;
 using std::int32_t;
 using std::int64_t;
+
+using std::size_t;
 
 class Resource;
 class WorkBase;
@@ -58,5 +66,9 @@ class HostMemoryProvider;
 class SubmitManager;
 class WorkManager;
 class TransferManager;
+
+template<typename T>
+class ThreadStorage;
+class DynamicStorageBase;
 
 }

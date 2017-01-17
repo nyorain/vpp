@@ -1,3 +1,7 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
@@ -13,34 +17,32 @@ namespace vpp {
 /// vulkan sdk) they might not be available on all platforms.
 const std::vector<const char*>& defaultLayerNames();
 
-// flags
-// vk::DebugReportFlagBitsEXT::ErrorEXT
-// vk::DebugReportFlagBitsEXT::WarningEXT
-// vk::DebugReportFlagBitsEXT::InformationEXT
-// vk::DebugReportFlagBitsEXT::DebugEXT
-// vk::DebugReportFlagBitsEXT::PerformanceWarningEXT
-
-/// Vulkan DebugCallback.
+/// Vulkan DebugCallback base class.
+/// By default this will just dump the received information for the given flags
+/// to the standard output. Custom implementations can device from this class
+/// and override the call member to handle debug callbacks in a custom way.
+/// Note that making the debug callback virtual is reasonable regarding performance
+/// since no DebugCallback should be created when using a release build.
 /// NonMovable since it registers a pointer to itself as callback user data.
 class DebugCallback : public nytl::NonMovable {
 public:
 	struct CallbackInfo {
 		vk::DebugReportFlagsEXT flags;
 		vk::DebugReportObjectTypeEXT objectType;
-		std::uint64_t srcObject;
-		std::size_t location;
-		std::int32_t messageCode;
+		uint64_t srcObject;
+		size_t location;
+		int32_t messageCode;
 		const char* layer;
 		const char* message;
 	};
-
 public:
-
-	/// Returns the default debug report flags, which are all except debug and information.
+	/// Returns error | warning | performanceWarning.
+	/// Used as default debug report flags.
+	/// Additional options would be information, debug or
 	static vk::DebugReportFlagsEXT defaultFlags();
 
 public:
-	DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags);
+	DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags = defaultFlags());
 	~DebugCallback();
 
 	vk::Instance vkInstance() const { return instance_; }
@@ -48,8 +50,16 @@ public:
 
 	/// This function is called from within the debug callback.
 	/// It is expected to handle (e.g. simply output) the debug information in some way.
-	/// Custom debug callbacks can derive from this function.
-	virtual bool call(const CallbackInfo& info);
+	/// Custom debug callbacks can override this function.
+	/// Note that this function is not allowed to throw any exceptions since it
+	/// is a callback from potential non C++ code.
+	/// If this function returns false, the vulkan api call that triggered it
+	/// will return a valiation failed error code.
+	/// Note that this function might be called from multiple threads and therefore
+	/// must be threadsafe (reason why it is marked const).
+	/// The default implementation always returns true when the error flag is error and
+	/// false otherwise.
+	virtual bool call(const CallbackInfo& info) const noexcept;
 
 protected:
 	vk::Instance instance_ {};

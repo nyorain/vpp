@@ -142,7 +142,7 @@ void ParticleRenderer::init(vpp::SwapChainRenderer& renderer)
 	ps().particles_.clear();
 }
 
-void ParticleRenderer::build(unsigned int id, const vpp::RenderPassInstance& instance)
+void ParticleRenderer::build(unsigned int, const vpp::RenderPassInstance& instance)
 {
 	auto cmdBuffer = instance.vkCommandBuffer();
 	VkDeviceSize offsets[1] = { 0 };
@@ -194,7 +194,7 @@ void ParticleRenderer::beforeRender(vk::CommandBuffer cmdBuffer)
 		vk::PipelineStageBits::bottomOfPipe, {}, {}, {bufferBarrier}, {});
 }
 
-ParticleRenderer::AdditionalSemaphores ParticleRenderer::submit(unsigned int id)
+ParticleRenderer::AdditionalSemaphores ParticleRenderer::submit(unsigned int)
 {
 	auto& dev = ps().app_.context.device();
 
@@ -323,7 +323,7 @@ void ParticleSystem::initDescriptors()
 		vpp::descriptorBinding(vk::DescriptorType::uniformBuffer, vk::ShaderStageBits::vertex, 0)
 	};
 
-	graphicsDescriptorSetLayout_ = {device(), gfxBindings};
+	graphicsDescriptorSetLayout_ = vpp::DescriptorSetLayout(device(), gfxBindings);
 	graphicsDescriptorSet_ = {graphicsDescriptorSetLayout_, descriptorPool_};
 
 	//computeSet

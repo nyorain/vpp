@@ -36,7 +36,7 @@ struct ValueStorage : public DynamicStorageBase {
 /// should be really fast as long as no entries are added or removed.
 /// \requires Type 'T' shall be default constructible and movable.
 template<typename T>
-class ThreadLocalStorage {
+class ThreadStorage {
 public:
 	/// Adds a new storage object.
 	/// Returns the id of the added segment over which it can be accessed in all
@@ -77,11 +77,11 @@ protected:
 };
 
 using DynamicStoragePtr = std::unique_ptr<DynamicStorageBase>;
-using DynamicThreadLocalStorage = ThreadLocalStorage<DynamicStoragePtr>;
+using DynamicThreadStorage = ThreadStorage<DynamicStoragePtr>;
 
 // - implementation -
 template<typename T>
-unsigned int ThreadLocalStorage<T>::add(T** obj)
+unsigned int ThreadStorage<T>::add(T** obj)
 {
 	std::lock_guard<std::shared_timed_mutex> lock(mutex_);
 	auto id = ++highestID_;
@@ -91,11 +91,11 @@ unsigned int ThreadLocalStorage<T>::add(T** obj)
 }
 
 template<typename T>
-T* ThreadLocalStorage<T>::get(unsigned int id)
+T* ThreadStorage<T>::get(unsigned int id)
 {
 	mutex_.lock_shared();
 	struct Guard {
-		ThreadLocalStorage<T>* self;
+		ThreadStorage<T>* self;
 		~Guard() { self->mutex_.unlock_shared(); }
 	} guard {this};
 	if(std::find(ids_.begin(), ids_.end(), id) == ids_.end()) return nullptr;
@@ -103,11 +103,11 @@ T* ThreadLocalStorage<T>::get(unsigned int id)
 }
 
 template<typename T>
-const T* ThreadLocalStorage<T>::get(unsigned int id) const
+const T* ThreadStorage<T>::get(unsigned int id) const
 {
 	mutex_.lock_shared();
 	struct Guard {
-		ThreadLocalStorage<T>* self;
+		ThreadStorage<T>* self;
 		~Guard() { self->mutex_.unlock_shared(); }
 	} guard {this};
 	if(std::find(ids_.begin(), ids_.end(), id) == ids_.end()) return nullptr;
@@ -115,7 +115,7 @@ const T* ThreadLocalStorage<T>::get(unsigned int id) const
 }
 
 template<typename T>
-bool ThreadLocalStorage<T>::remove(unsigned int id)
+bool ThreadStorage<T>::remove(unsigned int id)
 {
 	std::lock_guard<std::shared_timed_mutex> lock(mutex_);
 	auto it = std::find(ids_.begin(), ids_.end(), id);

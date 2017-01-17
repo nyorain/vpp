@@ -6,34 +6,28 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
+#include <vpp/util/nonCopyable.hpp>
 #include <vpp/vulkan/enums.hpp>
-
-#include <memory>
-#include <map>
-#include <vector>
-
-// TODO: Document somewhere the synchorinzation requirements of these classes.
-// e.g. CommandPools must be destroyed in the same thread as they were constructed.
-// directly from the vulkan spec.
-
+#include <vector> // std::vector
 
 namespace vpp {
 
 /// RAII vulkan CommandPool wrapper.
-class CommandPool : public ResourceHandle<vk::CommandPool> {
+/// CommanPools belong to the thread in which they were created. Theyself as well as
+/// CommandBuffer they allocated must only be used in this thread.
+/// The CommandPool object must be destroyed in the thread that created it.
+/// See the vulkan spec about command pool synchronization for more information.
+/// Cannot be moved since the allocated CommandBuffers reference their
+/// CommandPool.
+class CommandPool : public ResourceHandle<vk::CommandPool>, public nytl::NonMovable {
 public:
 	CommandPool() = default;
-	CommandPool(const Device& dev, std::uint32_t qfam, vk::CommandPoolCreateFlags flags = {});
+	CommandPool(const Device& dev, uint32_t qfam, vk::CommandPoolCreateFlags flags = {});
 	~CommandPool();
-
-	CommandPool(CommandPool&& lhs) noexcept { swap(lhs); }
-	CommandPool& operator=(CommandPool lhs) noexcept { swap(lhs); return *this; }
 
 	CommandBuffer allocate(vk::CommandBufferLevel lvl = vk::CommandBufferLevel::primary);
 	std::vector<CommandBuffer> allocate(std::size_t count,
 		vk::CommandBufferLevel lvl = vk::CommandBufferLevel::primary);
-
-	void reset(vk::CommandPoolResetFlags flags) const;
 
 	const std::uint32_t& queueFamily() const { return qFamily_; }
 	const vk::CommandPoolCreateFlags& flags() const { return flags_; }
@@ -46,6 +40,8 @@ protected:
 };
 
 /// RAII vulkan CommandBuffer wrapper.
+/// Note that the CommandBuffer must not be in use by any device when it is destructed.
+/// Keeps a reference to the CommandPool it was allocated from.
 class CommandBuffer : public ResourceReferenceHandle<CommandBuffer, vk::CommandBuffer> {
 public:
 	CommandBuffer() = default;
@@ -65,7 +61,12 @@ protected:
 };
 
 /// Able to efficiently provide commandBuffer of all types for all threads by holding an internal
-/// pool of commandPools.
+/// pool of commandPools. Will use the thread specific storage mechanism of the
+/// associated device.
+/// Thought as a general command pool providing mechanism mainly useful for
+/// initialization and general usage e.g. by vpp or other libraries where not every resource
+/// can manage its own CommandPool. On hot paths one should still use fixed custom
+/// CommandPools.
 class CommandProvider : public Resource {
 public:
 	CommandProvider(const Device& dev);

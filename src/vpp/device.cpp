@@ -9,12 +9,13 @@
 #include <vpp/commandBuffer.hpp>
 #include <vpp/submit.hpp>
 #include <vpp/transfer.hpp>
+#include <vpp/util/threadStorage.hpp>
 #include <cstdlib>
 
 namespace vpp {
 
 struct Device::Impl {
-	DynamicThreadLocalStorage tls;
+	DynamicThreadStorage tls;
 	unsigned int tlsDeviceAllocatorID {};
 
 	vk::PhysicalDeviceProperties physicalDeviceProperties;
@@ -197,7 +198,7 @@ DeviceMemoryAllocator& Device::deviceAllocator() const
 	return static_cast<ValueStorage<DeviceMemoryAllocator>*>(ptr->get())->value;
 }
 
-DynamicThreadLocalStorage& Device::threadLocalStorage() const
+DynamicThreadStorage& Device::threadStorage() const
 {
 	return impl_->tls;
 }

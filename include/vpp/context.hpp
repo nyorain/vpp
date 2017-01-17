@@ -20,8 +20,8 @@
 namespace vpp {
 namespace {
 #ifdef VPP_DEBUG
-	const auto& contextDefaultInstanceLayers = DebugCallback::defaultInstanceLayerNames();
- 	const auto& contextDefaultDeviceLayers = DebugCallback::defaultDeviceLayerNames();
+	const auto& contextDefaultInstanceLayers = defaultLayerNames();
+ 	const std::vector<const char*> contextDefaultDeviceLayers = {};
  	const vk::DebugReportFlagsEXT contextDefaultDebugFlags = DebugCallback::defaultFlags();
 #else
  	const std::vector<const char*> contextDefaultInstanceLayers = {};

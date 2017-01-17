@@ -7,12 +7,15 @@
 #include <vpp/fwd.hpp>
 #include <vpp/util/nonCopyable.hpp> // nytl::NonMovable
 #include <vpp/util/span.hpp> // nytl::Span
-#include <vpp/util/threadlocal.hpp> // vpp::ThreadLocalStorage
 
 #include <memory> // std::unique_ptr
 #include <cstdint> // std::uint32_t
 
 namespace vpp {
+
+// Taken from vpp/util/threadStorage.hpp
+using DynamicStoragePtr = std::unique_ptr<DynamicStorageBase>;
+using DynamicThreadStorage = ThreadStorage<DynamicStoragePtr>;
 
 //TODO: creation abstraction to easier create queues (just pass reqs, needed queues will be queryed)
 
@@ -28,12 +31,26 @@ namespace vpp {
 /// Notice that Device is one of the few classes that are NOT movable since it is referenced by
 /// all resources.
 /// Creating multiple Device objects for the same vk::Device will reult in undefined behaviour.
-class Device : public NonMovable {
+class Device : public nytl::NonMovable {
 public:
 	/// Creates a new vulkan device from the given device create info.
-	/// If anything goes wrong while creatin the vulkan device this function
-	/// will throw a std::excpetion.
-	Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info);
+	/// Might (as all vpp classes) throw a vk::VulkanError from the underlaying api calls.
+	Device(vk::Instance, vk::PhysicalDevice, const vk::DeviceCreateInfo&);
+
+	/// Creates a new vulkan physical device.
+	/// If no physical device is given, will try to choose the best from the available ones.
+	/// Might (as all vpp classes) throw a vk::VulkanError from the underlaying api calls.
+	/// Will throw std::runtime_error if valid physical device can be found.
+	Device(vk::Instance, vk::PhysicalDevice = {});
+
+	/// Creates a new vulkan device that can be used to present on the given surface.
+	/// Will try to automatically select the best physical device. The present queue
+	/// parameter will be set to the queue that can be used to present on the given
+	/// surface. Will automatically also create one graphics and compute queue
+	/// which can be retrieved using the queue() functions.
+	/// Might (as all vpp classes) throw a vk::VulkanError from the underlaying api calls.
+	/// Will throw std::runtime_error if valid physical device can be found.
+	Device(vk::Instance, vk::SurfaceKHR surface, Queue*& present);
 
 	/// Creates the object from the given device and stores the given queues.
 	/// Note that this function call transfers ownership of the given vulkan device to the
@@ -59,12 +76,14 @@ public:
 	/// Note that there is no possibility in vulkan to query device queues, so this
 	/// class will only be able to operate on the given queues.
 	/// Passing invalid queues or queue families results in undefined behaviour.
+	/// \sa NonOwned
 	Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 		nytl::Span<const std::pair<vk::Queue, unsigned int>> queues);
 
 	/// Destructs the owned vk::Device.
 	/// This should only be called if there are no other resources left that were created
 	/// from this device.
+	/// Will also destruct all thread specific resources that were created for this device.
 	~Device();
 
 	/// Returns all available queues for the created device.
@@ -134,10 +153,10 @@ public:
 	/// \sa DeviceMemoryAllocator
 	DeviceMemoryAllocator& deviceAllocator() const;
 
-	/// Returns the ThreadLocalStorage object that is used for all thread specific state.
+	/// Returns the ThreadStorage object that is used for all thread specific state.
 	/// Can be used to associate custom thread specific objects with this device.
-	/// \sa ThreadLocalStorage
-	DynamicThreadLocalStorage& threadLocalStorage() const;
+	/// \sa ThreadStorage
+	DynamicThreadStorage& threadStorage() const;
 
 	vk::Instance vkInstance() const { return instance_; }
 	vk::PhysicalDevice vkPhysicalDevice() const { return physicalDevice_; }
@@ -165,4 +184,4 @@ protected:
 	std::unique_ptr<Provider> provider_;
 };
 
-}
+} // namespace vpp

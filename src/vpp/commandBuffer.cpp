@@ -1,33 +1,16 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/commandBuffer.hpp>
 #include <vpp/vk.hpp>
+#include <vpp/util/threadStorage.hpp>
+#include <deque>
 
-namespace vpp
-{
+namespace vpp {
 
-//CommandBuffer
-CommandBuffer::CommandBuffer(vk::CommandBuffer buffer, const CommandPool& pool)
-	: ResourceReferenceHandle(buffer), commandPool_(&pool)
-{
-}
-
-CommandBuffer::~CommandBuffer()
-{
-	if(vkHandle())
-	{
-		//TODO. cannot always be done
-		//vk::freeCommandBuffers(vkDevice(), commandPool().vkCommandPool(), {commandBuffer_});
-	}
-}
-
-void CommandBuffer::swap(CommandBuffer& lhs) noexcept
-{
-	using std::swap;
-	swap(resourceBase(), lhs.resourceBase());
-	swap(commandPool_, lhs.commandPool_);
-}
-
-//CommandPool
-CommandPool::CommandPool(const Device& dev, std::uint32_t qfam, vk::CommandPoolCreateFlags flags)
+// CommandPool
+CommandPool::CommandPool(const Device& dev, uint32_t qfam, vk::CommandPoolCreateFlags flags)
 	: ResourceHandle(dev)
 {
 	vk::CommandPoolCreateInfo info;
@@ -49,7 +32,7 @@ void CommandPool::swap(CommandPool& lhs) noexcept
 	swap(qFamily_, lhs.qFamily_);
 }
 
-std::vector<CommandBuffer> CommandPool::allocate(std::size_t count, vk::CommandBufferLevel lvl)
+std::vector<CommandBuffer> CommandPool::allocate(size_t count, vk::CommandBufferLevel lvl)
 {
 	vk::CommandBufferAllocateInfo info;
 	info.commandPool = vkHandle();
@@ -81,25 +64,40 @@ CommandBuffer CommandPool::allocate(vk::CommandBufferLevel lvl)
 	return {buffer, *this};
 }
 
-void CommandPool::reset(vk::CommandPoolResetFlags flags) const
+// CommandBuffer
+CommandBuffer::CommandBuffer(vk::CommandBuffer buffer, const CommandPool& pool)
+	: ResourceReferenceHandle(buffer), commandPool_(&pool)
 {
-	vk::resetCommandPool(device(), vkHandle(), flags);
 }
 
-//CommandProvider
+CommandBuffer::~CommandBuffer()
+{
+	if(vkHandle())
+		vk::freeCommandBuffers(vkDevice(), commandPool(), {vkHandle()});
+}
+
+void CommandBuffer::swap(CommandBuffer& lhs) noexcept
+{
+	using std::swap;
+	swap(resourceBase(), lhs.resourceBase());
+	swap(commandPool_, lhs.commandPool_);
+}
+
+// CommandProvider
 CommandProvider::CommandProvider(const Device& dev) : Resource(dev)
 {
-	tlsID_ = dev.threadLocalStorage().add();
+	tlsID_ = dev.threadStorage().add();
 }
 
-CommandBuffer CommandProvider::get(std::uint32_t family,
+CommandBuffer CommandProvider::get(uint32_t family,
 	 vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
 {
-	auto ptr = device().threadLocalStorage().get(tlsID_);
+	using Storage = ValueStorage<std::deque<CommandPool>>;
+	auto ptr = device().threadStorage().get(tlsID_);
 	if(!ptr->get())
-		ptr->reset(new ValueStorage<std::vector<CommandPool>>());
+		ptr->reset(new Storage());
 
-	auto& pools = static_cast<ValueStorage<std::vector<CommandPool>>*>(ptr->get())->value;
+	auto& pools = static_cast<Storage*>(ptr->get())->value;
 	for(auto& pool : pools) {
 		if(pool.queueFamily() == family && pool.flags() == flags) {
 			return pool.allocate(lvl);
@@ -110,15 +108,15 @@ CommandBuffer CommandProvider::get(std::uint32_t family,
 	 return pools.back().allocate(lvl);
 }
 
-
-std::vector<CommandBuffer> CommandProvider::get(std::uint32_t family, unsigned int count,
+std::vector<CommandBuffer> CommandProvider::get(uint32_t family, unsigned int count,
 	vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
 {
-	auto ptr = device().threadLocalStorage().get(tlsID_);
+	using Storage = ValueStorage<std::deque<CommandPool>>;
+	auto ptr = device().threadStorage().get(tlsID_);
 	if(!ptr->get())
-		ptr->reset(new ValueStorage<std::vector<CommandPool>>());
+		ptr->reset(new Storage());
 
-	auto& pools = static_cast<ValueStorage<std::vector<CommandPool>>*>(ptr->get())->value;
+	auto& pools = static_cast<Storage*>(ptr->get())->value;
 	for(auto& pool : pools) {
 		if(pool.queueFamily() == family && pool.flags() == flags) {
 			return pool.allocate(count, lvl);
@@ -129,4 +127,4 @@ std::vector<CommandBuffer> CommandProvider::get(std::uint32_t family, unsigned i
 	 return pools.back().allocate(count, lvl);
 }
 
-}
+} // namespace vpp

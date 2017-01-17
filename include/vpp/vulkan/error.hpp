@@ -96,7 +96,7 @@ inline vk::Result checkResultThrow(vk::Result result, const char* function, cons
 	auto msg = name(result);
 	auto ecode = static_cast<std::int64_t>(result);
 	const std::string err = "Vulkan Error Code " + std::to_string(ecode) + ": " + msg +
-		"\t\nin function " + function + ", calling " + called;
+		"\n\tin function " + function + ",\n\tcalling " + called;
 
 	std::cerr << "vk::call::checkResultThrow will throw " << err << std::endl;
 	throw VulkanError(result, err);
@@ -110,7 +110,7 @@ inline vk::Result checkResultWarn(vk::Result result, const char* function, const
 	auto msg = name(result);
 	auto ecode = static_cast<std::int64_t>(result);
 	const std::string err = "Vulkan Error Code " + std::to_string(ecode) + ": " + msg +
-		"\n\tin function " + function + ", calling " + called;
+		"\n\tin function " + function + ",\n\tcalling " + called;
 
 	std::cerr << "vk::call::checkResultWarn: " << err << std::endl;
 	return result;

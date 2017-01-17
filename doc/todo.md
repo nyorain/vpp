@@ -11,10 +11,11 @@ Todo list vor vpp
 		- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
 	- threadlocal.hpp: use shared_mutex instead of shared_timed_mutex
 
+- debug checks: make sure to never throw in destructor!
 - SwapChainREnderer::init: call record?
 	- if REndererImpl should call it in init, document it!
 - clean up bufferOps.inl
-- work implementation destructor finish!
+- work implementation destructor should call finish (not all do)!
 - remove (deprecated) device layers everywhere
 - better renderer resetting (all command pools at once, just resize the frameRenderers vector)
 - textures (overthing viewable image + sampler)
@@ -31,6 +32,9 @@ Todo list vor vpp
 - some smaller improvements
 	- mapMemory: check valid usage (esp. alignment and stuff)
 	- pmr for performance critical (every-frame) functions.
+- shader stage construction in place?
+	- make it easier to create shader modules that are only once used directly inside
+		a ShaderProgram. Is there any way that keeps a reasonable interface?
 
 - think about include of nytl headers. Should really the namespace be replaced? header guards?
 	projects using nytl outside of vpp should be able to do so (and use it for vpp calls).

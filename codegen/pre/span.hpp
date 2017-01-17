@@ -151,7 +151,7 @@ struct SpanStorage {
 	constexpr SpanStorage(T& ref, std::size_t size = N) : SpanStorage(&ref, size) {}
 	constexpr SpanStorage(T (&arr)[N]) : SpanStorage(arr, N) {}
 
-	T* data_;
+	T* data_ {};
 	constexpr static auto size_ = N;
 };
 
@@ -166,8 +166,25 @@ struct SpanStorage<T, 0> {
 	constexpr SpanStorage(T& ref, std::size_t size = 1) : SpanStorage(&ref, size) {}
 	template<std::size_t S> constexpr SpanStorage(T (&arr)[S]) : SpanStorage(arr, S) {}
 
-	T* data_;
-	std::size_t size_;
+	T* data_ {};
+	std::size_t size_ {};
+};
+
+// SpanStorage specialization for runtime size with const parameter.
+// Allows constrsuction from initializer list.
+template<typename T>
+struct SpanStorage<const T, 0> {
+	constexpr SpanStorage() noexcept = default;
+	constexpr SpanStorage(const T* pointer, std::size_t size = 1) : data_(pointer), size_(size)
+	{
+		if(!pointer && size != 0) throw std::logic_error("nytl::Span:: invalid data");
+	}
+	constexpr SpanStorage(const T& ref, std::size_t size = 1) : SpanStorage(&ref, size) {}
+	template<std::size_t S> constexpr SpanStorage(T (&arr)[S]) : SpanStorage(arr, S) {}
+	constexpr SpanStorage(const std::initializer_list<T>& l) : SpanStorage(l.begin(), l.size()) {}
+
+	const T* data_ {};
+	std::size_t size_ {};
 };
 
 namespace detail {

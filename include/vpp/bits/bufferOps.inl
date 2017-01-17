@@ -165,7 +165,7 @@ struct BufferApplier<VT, ShaderType::vec>
 
 	//align
 	template<typename T>
-	static constexpr unsigned int align(bool std140)
+	static constexpr unsigned int align(bool)
 	{
 		return detail::vecAlign<VT::dimension>() * (4 + VT::size64 * 4);
 	}
