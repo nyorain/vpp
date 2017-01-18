@@ -11,11 +11,6 @@ option(BuildExamples "Build Examples" off)
 option(Debug "Compile in debug mode" on)
 option(OneDevice "Enable the one device optimization. Not recommended" off)
 
-# DebugThrow option can only be set if debug is enabled
-cmake_dependent_option(DebugThrow
-	"Throw debug exceptions instead of printing warnings" on
-	"Debug" off)
-
 if(Debug)
 	set(CMAKE_BUILD_TYPE Debug)
 else()
@@ -57,7 +52,6 @@ add_subdirectory(src/vpp)
 
 #config file
 set(VPP_DEBUG ${Debug})
-set(VPP_DEBUG_THROW ${DebugThrow})
 set(VPP_ONE_DEVICE_OPTIMIZATION ${OneDevice})
 
 configure_file(

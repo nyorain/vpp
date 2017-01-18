@@ -26,26 +26,11 @@
  #define VPP_NDEBUG
 #endif
 
-// If this macro and VPP_DEBUG are defined, an exception will be thrown if some additional check
-// fails, otherwise a warning will be outputted to cerr and maybe instantly returned (if the
-// error would lead to some invalid state).
-#if !defined(VPP_DEBUG_THROW) && !defined(VPP_DEBUG_NOTHROW)
- #cmakedefine VPP_DEBUG_THROW
-#endif
-
-// Opposite of VPP_DEBUG_THROW
-#if !defined(VPP_DEBUG_THROW) && !defined(VPP_NDEBUG_NOTHROW)
- #define VPP_DEBUG_NOTHROW
-#endif
-
 // These macros control if vulkan api calls should be error-checked and if so what should be done
 // when an error occurs.
-#if !defined(VPP_CALL_THROW) && !defined(VPP_CALL_WARN) && !defined(VPP_CALL_NOCHECK)
+#if !defined(VPP_CALL_THROW) && !defined(VPP_CALL_NOCHECK)
  #ifdef VPP_DEBUG
-  #define VPP_CALL_WARN
-  #ifdef VPP_DEBUG_THROW
-   #define VPP_CALL_THROW
-  #endif
+  #define VPP_CALL_THROW
  #else
   #define VPP_CALL_NOCHECK
  #endif

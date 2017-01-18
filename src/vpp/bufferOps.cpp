@@ -18,16 +18,13 @@ namespace vpp {
 
 DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize size)
 {
-	VPP_DEBUG_CHECK(vpp::retrive(buffer), {
-		if(!buf.memoryEntry().allocated()) {
-			VPP_DEBUG_OUTPUT("Buffer has no memory. Returning nullptr work");
-			return nullptr;
-		}
+	VPP_DEBUG_CHECK("vpp::retrive(buffer)", {
+		if(!buf.memoryEntry().allocated()) VPP_CHECK_THROW("buffer has no memory");
 	});
 
 	if(size == vk::wholeSize) size = buf.memoryEntry().size() - offset;
 
-	//retrieve by mapping
+	// retrieve by mapping if possible
 	if(buf.mappable()) {
 		return std::make_unique<MappableDownloadWork>(buf.memoryMap());
 	} else {
@@ -55,28 +52,26 @@ WorkPtr write(const Buffer& buf, nytl::Span<const uint8_t> data)
 	return update.apply();
 }
 
-//BufferFill
-BufferUpdate::BufferUpdate(const Buffer& buffer, BufferLayout align, bool direct)
-	: BufferOperator(align), buffer_(&buffer)
+// BufferUpdate
+BufferUpdate::BufferUpdate(const Buffer& buf, BufferLayout align, bool direct)
+	: BufferOperator(align), buffer_(&buf), direct_(direct)
 {
-	buffer.assureMemory();
-	if(buffer.mappable()) {
-		map_ = buffer.memoryMap();
+	buf.assureMemory();
+	if(buf.mappable() && !direct) {
+		map_ = buf.memoryMap();
 		work_ = std::make_unique<FinishedWork<void>>();
 	} else {
 		const Queue* queue;
 		auto qFam = transferQueueFamily(device(), &queue);
 		if(qFam == -1) throw std::logic_error("vpp::BufferUpdate: device has no valid queue");
-
 		auto cmdBuffer = device().commandProvider().get(qFam);
 		copies_.push_back({0, 0, 0});
 
 		if(direct) {
-			data_.resize(buffer.size());
-			direct_ = true;
+			data_.resize(buf.memorySize());
 			work_ = std::make_unique<CommandWork<void>>(std::move(cmdBuffer), *queue);
 		} else {
-			auto uploadBuffer = device().transferManager().buffer(buffer.size());
+			auto uploadBuffer = device().transferManager().buffer(buf.memorySize());
 			map_ = uploadBuffer.buffer().memoryMap();
 			work_ = std::make_unique<UploadWork>(std::move(cmdBuffer), *queue,
 				std::move(uploadBuffer));
@@ -86,26 +81,27 @@ BufferUpdate::BufferUpdate(const Buffer& buffer, BufferLayout align, bool direct
 
 BufferUpdate::~BufferUpdate()
 {
-	if(work_) apply()->finish();
+	try {
+		if(work_) apply()->finish();
+	} catch(const std::exception& error) {
+		std::cerr << "vpp::~BufferUpdate: apply()->finish: " << error.what() << "\n";
+	}
 }
 
-void BufferUpdate::offset(std::size_t size, bool update)
+void BufferUpdate::offset(size_t size, bool update)
 {
+	if(size == 0) return;
+
 	offset_ += size;
-	if(update)
-	{
+	if(update) {
 		std::memset(&data(), 0, size);
 		internalOffset_ += size;
-	}
-	else if(!buffer().mappable())
-	{
-		if(!copies_.back().size)
-		{
+		if(!buffer().mappable()) copies_.back().size += size;
+	} else if(!buffer().mappable()) {
+		if(!copies_.back().size) {
 			copies_.back().srcOffset = internalOffset_;
 			copies_.back().dstOffset = offset_;
-		}
-		else
-		{
+		} else {
 			copies_.push_back({internalOffset_, offset_, 0});
 		}
 	}
@@ -113,24 +109,19 @@ void BufferUpdate::offset(std::size_t size, bool update)
 	checkCopies();
 }
 
-void BufferUpdate::align(std::size_t align)
+void BufferUpdate::align(size_t align, bool update)
 {
-	if(!align) return;
-	auto old = offset_;
-	offset_ = std::ceil(offset_ / double(align)) * align;
-	internalOffset_ += offset_ - old;
-
-	if(!buffer().mappable() && !copies_.back().size)
-	{
-		copies_.back().srcOffset += offset_ - old;
-		copies_.back().dstOffset += offset_ - old;
-	}
-
-	checkCopies();
+	if(align == 0 || !(offset_ % align)) return;
+	auto delta = (std::ceil(offset_ / double(align)) * align) - offset_;
+	offset(delta, update);
 }
 
 void BufferUpdate::operate(const void* ptr, std::size_t size)
 {
+	VPP_DEBUG_CHECK("vpp::BufferUpdate::operate", {
+		if(!ptr) VPP_CHECK_THROW("invalid data ptr");
+	});
+
 	std::memcpy(&data(), ptr, size);
 	offset_ = std::max(offset_, nextOffset_) + size;
 	internalOffset_ += size;
@@ -140,13 +131,11 @@ void BufferUpdate::operate(const void* ptr, std::size_t size)
 
 void BufferUpdate::checkCopies()
 {
-	VPP_DEBUG_CHECK(vpp::BufferUpdate::checkCopies,
-	{
-		if(offset_ > buffer().size()) VPP_DEBUG_OUTPUT("Buffer write overflow.");
+	VPP_DEBUG_CHECK("vpp::BufferUpdate::checkCopies", {
+		if(offset_ > buffer().memorySize()) VPP_CHECK_THROW("Buffer write overflow");
 	});
 
-	while(direct_ && copies_.back().size > 65536)
-	{
+	while(direct_ && copies_.back().size > 65536) {
 		auto delta = copies_.back().size - 65536;
 		copies_.back().size = 65536;
 		copies_.push_back({internalOffset_ - delta, offset_ - delta, delta});
@@ -164,26 +153,25 @@ WorkPtr BufferUpdate::apply()
 {
 	if(!direct_ && !map_.coherent()) map_.flush();
 
-	auto uploadWork = dynamic_cast<UploadWork*>(work_.get()); // transfer
-	auto commandWork = dynamic_cast<CommandWork<void>*>(work_.get()); // direct
-	if(uploadWork) {
+	if(direct_) {
+		auto commandWork = static_cast<CommandWork<void>*>(work_.get());
+		auto& cmdBuf = commandWork->commandBuffer();
+
+		vk::beginCommandBuffer(cmdBuf, {});
+		for(auto& upd : copies_) {
+			auto* data = static_cast<void*>(&data_[upd.srcOffset]);
+			vk::cmdUpdateBuffer(cmdBuf, buffer(), upd.dstOffset, upd.size, data);
+		}
+
+		vk::endCommandBuffer(cmdBuf);
+	} else if(!buffer().mappable()) {
+		auto uploadWork = static_cast<UploadWork*>(work_.get());
 		auto& cmdBuf = uploadWork->commandBuffer();
 		auto& transferRange = uploadWork->transferRange();
 
 		vk::beginCommandBuffer(cmdBuf, {});
 		for(auto& update : copies_)
 			vk::cmdCopyBuffer(cmdBuf, transferRange.buffer(), buffer(), {update});
-		vk::endCommandBuffer(cmdBuf);
-	} else if(commandWork) {
-		auto& cmdBuf = commandWork->commandBuffer();
-
-		vk::beginCommandBuffer(cmdBuf, {});
-		for(auto& upd : copies_)
-		{
-			auto* data = static_cast<void*>(&data_[upd.srcOffset]);
-			vk::cmdUpdateBuffer(cmdBuf, buffer(), upd.dstOffset, upd.size, data);
-		}
-
 		vk::endCommandBuffer(cmdBuf);
 	}
 
@@ -194,33 +182,33 @@ WorkPtr BufferUpdate::apply()
 	return std::move(work_);
 }
 
-void BufferUpdate::alignUniform()
+void BufferUpdate::alignUniform() noexcept
 {
 	align(device().properties().limits.minUniformBufferOffsetAlignment);
 }
 
-void BufferUpdate::alignStorage()
+void BufferUpdate::alignStorage() noexcept
 {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
 
-void BufferUpdate::alignTexel()
+void BufferUpdate::alignTexel() noexcept
 {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
 
 // BufferSizer
-void BufferSizer::alignUniform()
+void BufferSizer::alignUniform() noexcept
 {
 	align(device().properties().limits.minUniformBufferOffsetAlignment);
 }
 
-void BufferSizer::alignStorage()
+void BufferSizer::alignStorage() noexcept
 {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
 
-void BufferSizer::alignTexel()
+void BufferSizer::alignTexel() noexcept
 {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
@@ -234,21 +222,25 @@ BufferReader::BufferReader(const Device& dev, BufferLayout align,
 void BufferReader::operate(void* ptr, std::size_t size)
 {
 	offset_ = std::max(offset_, nextOffset_);
+	VPP_DEBUG_CHECK("vpp::BufferReader::operate", {
+		if(offset_ > data_.size()) VPP_CHECK_THROW("buffer read overflow");
+	});
+
 	std::memcpy(ptr, &data_[offset_], size);
 	offset_ += size;
 }
 
-void BufferReader::alignUniform()
+void BufferReader::alignUniform() noexcept
 {
 	align(device().properties().limits.minUniformBufferOffsetAlignment);
 }
 
-void BufferReader::alignStorage()
+void BufferReader::alignStorage() noexcept
 {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
 
-void BufferReader::alignTexel()
+void BufferReader::alignTexel() noexcept
 {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }

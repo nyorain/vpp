@@ -24,13 +24,10 @@ namespace vpp {
 class GraphicsPipelineBuilder {
 public:
 	GraphicsPipelineBuilder() = default;
-	GraphicsPipelineBuilder(const Device& dev, vk::RenderPass rp, unsigned int xsubpass = 0);
+	GraphicsPipelineBuilder(vk::RenderPass rp, unsigned int xsubpass = 0);
 	~GraphicsPipelineBuilder() = default;
 
-	GraphicsPipelineBuilder(const GraphicsPipelineBuilder& other);
-	GraphicsPipelineBuilder& operator=(const GraphicsPipelineBuilder& other);
-
-	Pipeline build(vk::PipelineCache cache = {});
+	Pipeline build(const Device& dev, vk::PipelineCache cache = {});
 	vk::GraphicsPipelineCreateInfo parse();
 
 public:
@@ -68,11 +65,11 @@ protected:
 
 /// Create multiple vulkan graphic pipelines at once.
 /// Might be more efficient than constructing them individually.
-std::vector<Pipeline> createGraphicsPipelines(const Device& dev,
-	nytl::Span<const vk::GraphicsPipelineCreateInfo>& infos, vk::PipelineCache cache = {});
-
-std::vector<Pipeline> createGraphicsPipelines(
-	nytl::Span<const std::reference_wrapper<GraphicsPipelineBuilder>>& builder,
-	vk::PipelineCache cache = {});
+// std::vector<Pipeline> createGraphicsPipelines(const Device& dev,
+// 	nytl::Span<const vk::GraphicsPipelineCreateInfo>& infos, vk::PipelineCache cache = {});
+//
+// std::vector<Pipeline> createGraphicsPipelines(
+// 	nytl::Span<const std::reference_wrapper<GraphicsPipelineBuilder>>& builder,
+// 	vk::PipelineCache cache = {});
 
 } // namespace vpp

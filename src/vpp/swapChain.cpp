@@ -70,9 +70,8 @@ vk::SwapchainCreateInfoKHR SwapChainSettings::parse(const vk::SurfaceCapabilitie
 	if(caps.currentExtent.width == 0xFFFFFFFF && caps.currentExtent.height == 0xFFFFFFFF)
 	{
 		ret.imageExtent = size;
-		VPP_DEBUG_CHECK(vpp::SwapChainSettings,
-		{
-			if(!size.width || !size.height) VPP_DEBUG_OUTPUT("Invalid size will be set.");
+		VPP_DEBUG_CHECK("vpp::SwapChainSettings", {
+			if(!size.width || !size.height) VPP_CHECK_THROW("Invalid size will be set");
 		});
 	}
 	else
@@ -203,9 +202,8 @@ vk::SwapchainCreateInfoKHR DefaultSwapChainSettings::parse(const vk::SurfaceCapa
 	if(caps.currentExtent.width == 0xFFFFFFFF && caps.currentExtent.height == 0xFFFFFFFF)
 	{
 		ret.imageExtent = size;
-		VPP_DEBUG_CHECK(vpp::SwapChainSettings,
-		{
-			if(!size.width || !size.height) VPP_DEBUG_OUTPUT("Invalid size will be set.");
+		VPP_DEBUG_CHECK("vpp::SwapChainSettings", {
+			if(!size.width || !size.height) VPP_CHECK_THROW("Invalid size will be set.");
 		});
 	}
 	else

@@ -1,3 +1,7 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/memory.hpp>
 #include <vpp/vk.hpp>
 #include <vpp/util/debug.hpp>
@@ -5,15 +9,16 @@
 #include <iostream>
 #include <algorithm>
 
-namespace vpp
-{
+namespace vpp {
 
 //MemoryMap
 MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
 	: memory_(&memory), allocation_(alloc)
 {
-	if(!(memory.properties() & vk::MemoryPropertyBits::hostVisible))
-		throw std::logic_error("vpp::MemoryMap: trying to map unmappable memory");
+	VPP_DEBUG_CHECK("vpp::MemoryMap", {
+		if(!(memory.properties() & vk::MemoryPropertyBits::hostVisible))
+			VPP_CHECK_THROW("trying to map unmappable memory");
+	})
 
 	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
 }
@@ -62,11 +67,9 @@ const vk::DeviceMemory& MemoryMap::vkMemory() const
 
 void MemoryMap::flush() const
 {
-	VPP_DEBUG_CHECK(vpp::MemoryMap::flush,
-	{
-		if(coherent())
-		{
-			VPP_DEBUG_OUTPUT("Called on coherent memory. Not needed.");
+	VPP_DEBUG_CHECK("vpp::MemoryMap::flush", {
+		if(coherent()) {
+			VPP_CHECK_WARN("Called on coherent memory. Not needed.");
 			return;
 		}
 	})
@@ -77,11 +80,9 @@ void MemoryMap::flush() const
 
 void MemoryMap::reload() const
 {
-	VPP_DEBUG_CHECK(vpp::MemoryMap::invalidateRanges,
-	{
-		if(coherent())
-		{
-			VPP_DEBUG_OUTPUT("Called on coherent memory. Not needed.");
+	VPP_DEBUG_CHECK("vpp::MemoryMap::reload", {
+		if(coherent()) {
+			VPP_CHECK_WARN("Called on coherent memory. Not needed.");
 			return;
 		}
 	})
@@ -116,7 +117,7 @@ void MemoryMap::unref()
 	else views_--;
 }
 
-//MemoryMapView
+// MemoryMapView
 MemoryMapView::MemoryMapView(MemoryMap& map, const Allocation& allocation)
 	: memoryMap_(&map), allocation_(allocation)
 {
@@ -143,11 +144,9 @@ vk::MappedMemoryRange MemoryMapView::mappedMemoryRange() const
 
 void MemoryMapView::flush() const
 {
-	VPP_DEBUG_CHECK(vpp::MemoryMapView::flush,
-	{
-		if(coherent())
-		{
-			VPP_DEBUG_OUTPUT("Called on coherent memory. Not needed.");
+	VPP_DEBUG_CHECK("vpp::MemoryMapView::flush", {
+		if(coherent()) {
+			VPP_CHECK_WARN("Called on coherent memory. Not needed.");
 			return;
 		}
 	})
@@ -158,11 +157,9 @@ void MemoryMapView::flush() const
 
 void MemoryMapView::reload() const
 {
-	VPP_DEBUG_CHECK(vpp::MemoryMapView::reload,
-	{
-		if(coherent())
-		{
-			VPP_DEBUG_OUTPUT("Called on coherent memory. Not needed.");
+	VPP_DEBUG_CHECK("vpp::MemoryMapView::reload", {
+		if(coherent()) {
+			VPP_CHECK_WARN("Called on coherent memory. Not needed.");
 			return;
 		}
 	})
@@ -181,7 +178,7 @@ bool MemoryMapView::coherent() const
 	return memory().properties() & vk::MemoryPropertyBits::hostCoherent;
 }
 
-//Memory
+// DeviceMemory
 DeviceMemory::DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info)
 	: ResourceHandle(dev)
 {
@@ -216,18 +213,15 @@ DeviceMemory::DeviceMemory(const Device& dev, std::uint32_t size, vk::MemoryProp
 }
 DeviceMemory::~DeviceMemory()
 {
-	VPP_DEBUG_CHECK(vpp::DeviceMemory::~DeviceMemory,
-	{
-		if(!allocations_.empty())
-		{
+	VPP_DEBUG_CHECK("vpp::DeviceMemory::~DeviceMemory", {
+		if(!allocations_.empty()) {
 			std::string msg = std::to_string(allocations_.size()) + " allocations left:";
-			for(auto& a : allocations_)
-			{
+			for(auto& a : allocations_) {
 				msg += "\n\t" + std::to_string(a.allocation.offset);
 				msg += " " + std::to_string(a.allocation.size);
 			}
 
-			VPP_DEBUG_OUTPUT(msg);
+			VPP_CHECK_WARN(msg);
 		}
 	})
 
@@ -244,32 +238,26 @@ Allocation DeviceMemory::alloc(std::size_t size, std::size_t alignment, Allocati
 
 Allocation DeviceMemory::allocSpecified(std::size_t offset, std::size_t size, AllocationType type)
 {
-	VPP_DEBUG_CHECK(vpp::DeviceMemory::allocSpecified,
-	{
-		if(size == 0)
-		{
-			VPP_DEBUG_OUTPUT("size is not allowed to be 0");
-			return {};
-		}
-
-		for(auto& alloc : allocations_)
-		{
+	VPP_DEBUG_CHECK("vpp::DeviceMemory::allocSpecified", {
+		if(size == 0) VPP_CHECK_THROW("size is not allowed to be 0");
+		for(auto& alloc : allocations_) {
 			const auto& a = alloc.allocation;
 			const auto& overlapping = (a.offset < offset) != (a.offset + a.size <= offset);
 			const auto& inside = (a.offset >= offset) && (a.offset < offset + size);
-			if(overlapping || inside)
-			{
-				VPP_DEBUG_OUTPUT("invalid params ", offset, ' ', size, ' ', a.offset, ' ', a.size);
-				return {};
+			if(overlapping || inside) {
+				VPP_CHECK_THROW("invalid params ", offset, ' ', size, ' ', a.offset, ' ', a.size);
+				break;
 			}
 		}
 
-		if(type == AllocationType::none) VPP_DEBUG_OUTPUT("type is none. Could later cause aliasing");
+		if(type == AllocationType::none)
+			VPP_CHECK_THROW("type is none. Could later cause aliasing");
 	})
 
 	AllocationEntry allocation = {{offset, size}, type};
 	auto it = std::lower_bound(allocations_.begin(), allocations_.end(), allocation,
 		[](auto& a, auto& b){ return a.allocation.offset < b.allocation.offset; });
+
 	allocations_.insert(it, allocation);
 	return allocations_.back().allocation;
 }
@@ -294,22 +282,10 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 	//a taken in account (smaller = better) since the new sizes on both sides should be as small as
 	//possible. true?
 
-	//some additional checks/warning
-	VPP_DEBUG_CHECK(vpp::DeviceMemory::allocatable,
-	{
-		if(type == AllocationType::none) VPP_DEBUG_OUTPUT("type is none. Can cause aliasing");
-
-		if(alignment % 2)
-		{
-			VPP_DEBUG_OUTPUT("alignment param ", alignment, "not a power of 2");
-			return {};
-		}
-
-		if(size == 0)
-		{
-			VPP_DEBUG_OUTPUT("size is not allowed to be 0");
-			return {};
-		}
+	VPP_DEBUG_CHECK("vpp::DeviceMemory::allocatable", {
+		if(alignment % 2) VPP_CHECK_THROW("alignment param ", alignment, "not a power of 2");
+		if(size == 0) VPP_CHECK_THROW("size is not allowed to be 0");
+		if(type == AllocationType::none) VPP_CHECK_THROW("type is none. Can cause aliasing");
 	})
 
 	static constexpr AllocationEntry start = {{0, 0}, AllocationType::none};
@@ -372,16 +348,14 @@ Allocation DeviceMemory::allocatable(std::size_t size, std::size_t alignment,
 
 bool DeviceMemory::free(const Allocation& alloc)
 {
-	for(auto it = allocations_.cbegin(); it != allocations_.cend(); ++it)
-	{
-		if(it->allocation.offset == alloc.offset && it->allocation.size == alloc.size)
-		{
+	for(auto it = allocations_.cbegin(); it != allocations_.cend(); ++it) {
+		if(it->allocation.offset == alloc.offset && it->allocation.size == alloc.size) {
 			allocations_.erase(it);
 			return true;
 		}
 	}
 
-	VPP_DEBUG_OUTPUT_NOCHECK("vpp::DeviceMemory::free: could not find the given allocation");
+	VPP_DEBUG_WARN("vpp::DeviceMemory::free: could not find the given allocation");
 	return false;
 }
 

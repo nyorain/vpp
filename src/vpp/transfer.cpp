@@ -25,9 +25,9 @@ TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t s
 
 TransferManager::TransferBuffer::~TransferBuffer()
 {
-	VPP_DEBUG_CHECK(vpp::~TransferBuffer, {
+	VPP_DEBUG_CHECK("vpp::~TransferBuffer", {
 		auto rc = ranges_.size();
-		if(rc > 0) VPP_DEBUG_OUTPUT(rc, " allocations left");
+		if(rc > 0) VPP_CHECK_WARN(rc, " allocations left");
 	})
 }
 

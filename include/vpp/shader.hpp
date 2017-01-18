@@ -8,7 +8,7 @@
 #include <vpp/resource.hpp> // vpp::ResourceHandle
 #include <vpp/util/stringParam.hpp> // nytl::StringParam
 #include <vpp/util/span.hpp> // nytl::Span
-#include <vector>
+#include <vector> // std::vector
 
 namespace vpp {
 

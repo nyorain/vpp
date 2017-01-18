@@ -2,12 +2,15 @@
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
+/*
+
 #pragma once
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/shader.hpp>
 #include <vpp/pipeline.hpp>
+#include <vpp/vulkan/structs.hpp>
 #include <vpp/util/span.hpp>
 
 #include <vector>
@@ -30,17 +33,16 @@ class ComputePipelineBuilder {
 public:
 	ComputePipelineBuilder() = default;
 
-	ComputePipelineBuilder(const ComputePipelineBuilder& other);
-	ComputePipelineBuilder& operator=(const ComputePipelineBuilder& other);
-
-	Pipeline build(vk::PipelineCache cache = {});
+	Pipeline build(const Device& dev, vk::PipelineCache cache = {});
 	vk::ComputePipelineCreateInfo parse();
 
 public:
-	ShaderStage shaderStage;
+	vk::PipelineShaderStageCreateInfo shaderStage;
 	vk::PipelineLayout layout {};
 	vk::PipelineCreateFlags flags {};
 	vk::Pipeline baseHandle {};
 };
 
 } // namespace vpp
+
+*/

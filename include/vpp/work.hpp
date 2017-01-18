@@ -10,6 +10,8 @@
 #include <vpp/util/span.hpp>
 
 #include <memory> // std::unique_ptr
+#include <stdexcept> // std::exception
+#include <iostream> // std::cerr
 
 namespace vpp {
 
@@ -101,6 +103,7 @@ class CommandWork : public Work<R> {
 public:
 	CommandWork() = default;
 	CommandWork(CommandBuffer&& buffer, vk::Queue queue);
+	~CommandWork();
 
 	virtual void submit() override;
 	virtual void finish() override;

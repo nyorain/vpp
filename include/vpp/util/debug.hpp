@@ -5,31 +5,58 @@
 #pragma once
 
 #include <sstream> // std::stringstream
-#include <stdexcept>
-#include <iostream>
+#include <stdexcept> // std::runtime_error
+#include <iostream> // std:;cerr
 
 namespace vpp {
 
 template<typename... Args>
-void outputDebugMsg(Args... args)
+void throwRuntime(Args... args)
 {
 	std::stringstream stream;
 	(stream << ... << args);
-	std::cerr << stream.str() << '\n';
+	throw std::runtime_error(stream.str());
+}
 
-	#ifdef VPP_DEBUG_THROW
-		throw std::runtime_error(stream.str());
-	#endif //throw
+template<typename... Args>
+void warn(Args... args)
+{
+	std::stringstream stream;
+	(stream << ... << args);
+	std::cerr << "vpp::warn: " << stream.str() << '\n';
 }
 
 } // namespace vpp
 
+/// Macros for additional debug build checks.
+/// Can be used like this:
+/// ```cpp
+/// void foo()
+/// {
+/// 	VPP_DEBUG_CHECK("foo", {
+///			VPP_CHECK_THROW("critical error!");
+///			VPP_CHECK_WARN("just a warning");
+/// 	});
+///
+/// 	VPP_DEBUG_THROW("foo: this is thrown in debug mode");
+/// 	VPP_DEBUG_WARN("foo: this is printed in debug mode");
+/// }
+/// ```
+/// The first parameter of VPP_DEBUG_CHECK should be a name for the current function.
+/// Prefer to use the debug and debug check throw versions over the warn versions since
+/// these macros only have an effect in debug mode anyways.
+/// The warn macros must be used in destructor or noexcept functions.
+/// Using macros allows to achieve zero overhead for release builds.
 #ifdef VPP_DEBUG
-	#define VPP_DEBUG_CHECK(name, code) { auto vpp_local_debug_check_name_ = #name ": "; code }
-	#define VPP_DEBUG_OUTPUT(...) outputDebugMsg(vpp_local_debug_check_name_, __VA_ARGS__)
-	#define VPP_DEBUG_OUTPUT_NOCHECK(...) outputDebugMsg(__VA_ARGS__)
+	#define VPP_DEBUG_CHECK(name, code) { auto vpp_local_debug_check_name_ = name; code }
+	#define VPP_CHECK_THROW(...) vpp::throwRuntime(vpp_local_debug_check_name_, ": ", __VA_ARGS__)
+	#define VPP_CHECK_WARN(...) vpp::warn(vpp_local_debug_check_name_, ": ", __VA_ARGS__)
+	#define VPP_DEBUG_THROW(...) vpp::throwRuntime(__VA_ARGS__)
+	#define VPP_DEBUG_WARN(...) vpp::warn(__VA_ARGS__)
 #else
 	#define VPP_DEBUG_CHECK(...)
-	#define VPP_DEBUG_OUTPUT(...)
-	#define VPP_DEBUG_OUTPUT_NOCHECK(...)
+	#define VPP_CHECK_THROW(...)
+	#define VPP_CHECK_WARN(...)
+	#define VPP_DEBUG_THROW(...)
+	#define VPP_DEBUG_WARN(...)
 #endif

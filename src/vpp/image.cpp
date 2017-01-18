@@ -117,15 +117,12 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 	const vk::Extent3D& extent, const vk::ImageSubresource& subres, const vk::Offset3D& offset,
 	bool allowMap)
 {
-	VPP_DEBUG_CHECK(vpp::retrieve(image), {
-		if(!image.memoryEntry().allocated()) {
-			VPP_DEBUG_OUTPUT("Image has no memory. Returning a nullptr as work");
-			return nullptr;
-		}
-	});
+	VPP_DEBUG_CHECK("vpp::retrieve(image)", {
+		if(!image.memoryEntry().allocated()) VPP_CHECK_THROW("Image has no memory");
+	})
 
 	if(image.mappable() && allowMap) {
-		std::vector<std::uint8_t> data(image.size());
+		std::vector<std::uint8_t> data(image.memorySize());
 		auto map = image.memoryMap();
 
 		//baiscally the size of the format in bytes. Can be computed from the given size/extent.
@@ -147,7 +144,7 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format form
 		const Queue* queue;
 		auto qFam = transferQueueFamily(image.device(), &queue);
 		auto cmdBuffer = image.device().commandProvider().get(qFam);
-		auto downloadBuffer = image.device().transferManager().buffer(image.size());
+		auto downloadBuffer = image.device().transferManager().buffer(image.memorySize());
 
 		vk::beginCommandBuffer(cmdBuffer, {});
 

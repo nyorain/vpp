@@ -7,6 +7,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/util/span.hpp>
+#include <vector>
 
 namespace vpp {
 namespace fwd {

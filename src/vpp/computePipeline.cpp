@@ -1,33 +1,21 @@
+/*
+
 #include <vpp/computePipeline.hpp>
 #include <vpp/vk.hpp>
 
 #include <utility>
 
-namespace vpp
-{
+namespace vpp {
 
-ComputePipelineBuilder::ComputePipelineBuilder(const ComputePipelineBuilder& other)
-	: shaderStage(copy(other.shaderStage)), layout(other.layout), flags(other.flags)
-{
-}
-
-ComputePipelineBuilder& ComputePipelineBuilder::operator=(const ComputePipelineBuilder& other)
-{
-	shaderStage = copy(other.shaderStage);
-	layout = other.layout;
-	flags = other.flags;
-	return *this;
-}
-
-Pipeline ComputePipelineBuilder::build(vk::PipelineCache cache)
+Pipeline ComputePipelineBuilder::build(const Device& dev, vk::PipelineCache cache)
 {
 	vk::Pipeline pipeline;
 	vk::ComputePipelineCreateInfo ret;
 	ret.flags = flags;
-	ret.stage = shaderStage.vkStageInfo();
+	ret.stage = shaderStage;
 	ret.layout = layout;
-	vk::createComputePipelines(shaderStage.device(), cache, 1, ret, nullptr, pipeline);
-	return {shaderStage.device(), pipeline};
+	vk::createComputePipelines(dev, cache, 1, ret, nullptr, pipeline);
+	return {dev, pipeline};
 }
 
 vk::ComputePipelineCreateInfo ComputePipelineBuilder::parse()
@@ -63,3 +51,5 @@ std::vector<Pipeline> createComputePipelines(
 }
 
 }
+
+*/

@@ -264,13 +264,16 @@ void ParticleSystem::initGraphicsPipeline()
 	vpp::PipelineCache cache(device());
 	if(vpp::fileExists("gfxCache")) cache = {device(), "gfxCache"};
 
-	vpp::GraphicsPipelineBuilder builder(device(), app_.renderPass);
+	vpp::GraphicsPipelineBuilder builder(app_.renderPass);
 	builder.vertexBufferLayouts = {vertexBufferLayout_};
 	builder.dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
 	builder.layout = graphicsLayout_;
 
-	builder.shader.stage("particles.vert.spv", {vk::ShaderStageBits::vertex});
-	builder.shader.stage("particles.frag.spv", {vk::ShaderStageBits::fragment});
+	vpp::ShaderModule vertexModule(device(), "particles.vert.spv");
+	vpp::ShaderModule fragmentModule(device(), "particles.frag.spv");
+
+	builder.shader.stage(vertexModule, vk::ShaderStageBits::vertex);
+	builder.shader.stage(fragmentModule, vk::ShaderStageBits::fragment);
 
 	builder.states.blendAttachments[0].blendEnable = true;
 	builder.states.blendAttachments[0].colorBlendOp = vk::BlendOp::add;
@@ -283,7 +286,7 @@ void ParticleSystem::initGraphicsPipeline()
 	builder.states.rasterization.cullMode = vk::CullModeBits::none;
 	builder.states.inputAssembly.topology = vk::PrimitiveTopology::pointList;
 
-	graphicsPipeline_ = builder.build(cache);
+	graphicsPipeline_ = builder.build(device(), cache);
 	vpp::save(cache, "gfxCache");
 }
 void ParticleSystem::initComputePipeline()
@@ -293,11 +296,15 @@ void ParticleSystem::initComputePipeline()
 	vpp::PipelineCache cache(device());
 	if(vpp::fileExists("compCache")) cache = {device(), "compCache"};
 
-	vpp::ComputePipelineBuilder builder;
-	builder.shaderStage = {device(), "particles.comp.spv", {vk::ShaderStageBits::compute}};
-	builder.layout = computeLayout_;
+	vpp::ShaderModule comp(device(), "particles.comp.spv");
 
-	computePipeline_ = builder.build(cache);
+	vk::ComputePipelineCreateInfo info;
+	info.layout = computeLayout_;
+	info.stage.module = comp;
+	info.stage.pName = "main";
+	info.stage.stage = vk::ShaderStageBits::compute;
+
+	computePipeline_ = {device(), vk::createComputePipelines(device(), cache, {info}).front()};
 	vpp::save(cache, "compCache");
 }
 

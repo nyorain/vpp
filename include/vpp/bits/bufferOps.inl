@@ -4,124 +4,108 @@
 
 #pragma once
 
-///TMP utility.
-using Expand = int[];
 namespace detail {
 
-///Function for matrix and vector size mapping.
-template<unsigned int S>
-constexpr unsigned int vecAlign()
-{
-	static_assert(S > 0 && S < 5, "Invalid matrix or vector size");
-	return (S == 3) ? 4 : S;
-}
-
-///Rounds up the given align to a multiple of 16 if the layout is std140
+/// Rounds up the given align to a multiple of 16 if the layout is std140
+/// Otherwise just returns the given align value.
 constexpr unsigned int roundAlign(unsigned int align, bool std140)
 {
 	return std140 ? std::ceil(align / 16.f) * 16.f : align;
 }
 
-
-///Utility to get the member type of a pointer to member object (Used with decltype).
+/// Utility to get the member type of a pointer to member object (Used with decltype).
 template<typename T> struct TypeDummy { using type = T; };
 template<typename T, typename M> constexpr TypeDummy<M> memPtr(M T::*);
 
-///Utility template class that can be used to write an object of type T to a buffer update.
-///Implementations of this class for different ShaderTypes must implement the following
-///member functions:
-/// - template<typename T, typename O> static void call(O& op, T& obj);
-/// - template<typename T> static unsigned int align(bool std140); constexpr
-/// - template<typename O> static void size(O& op); [optional; if possible] constexpr
-///The first function is used by BufferUpdate/BufferReader to read/write the actual data
-///while the second function is used by BufferSizer to determine the size that would be needed
-///to fit the given data on the buffer.
+/// Utility template class that can be used to write an object of type T to a buffer update.
+/// Implementations of this class for different ShaderTypes must implement the following
+/// member functions:
+///  - template<typename T, typename O> static void call(O& op, T& obj);
+///  - template<typename T> static unsigned int align(bool std140); constexpr
+///  - template<typename O> static void size(O& op); [optional; if possible] constexpr
+/// The first function is used by BufferUpdate/BufferReader to read/write the actual data
+/// while the second function is used by BufferSizer to determine the size that would be needed
+/// to fit the given data on the buffer.
 template<typename VT, ShaderType V = VT::type>
 struct BufferApplier;
 
-///Checks that the given BufferApplier specialization has the size function available.
+/// Checks that the given BufferApplier specialization has the size function available.
 template<typename T>
 struct HasSizeFunction;
 
-///Utility function using the different BufferApplier specializations.
-///Prefer to use this function instead of directly calling the BufferApplier Structure.
+/// Utility function using the different BufferApplier specializations.
+/// Prefer to use this function instead of directly calling the BufferApplier Structure.
 template<typename O, typename T, typename VT = VulkanType<T>>
 void bufferApply(O& op, T&& obj) { BufferApplier<VT>::call(op, obj); }
 
-///Utillity function to using the different BufferApplier::size implementations.
+/// Utillity function to using the different BufferApplier::size implementations.
 template<typename VT, typename O>
 constexpr void bufferSize(O& op)
 {
-	static_assert(HasSizeFunction<BufferApplier<VT>>::value,
-		"You can call this version of BufferSizer::add only with static sized types. "
-		"Try to use the neededSize function with actual objects instead. "
-		"Read its documentation for more information. ");
+	static_assert(HasSizeFunction<BufferApplier<VT>>::value, "Type is not static sized");
 	BufferApplier<VT>::size(op);
 }
 
-///Utility function to use the different BufferApplier::align implementations.
+/// Utility function to use the different BufferApplier::align implementations.
 template<typename VT, typename T = void> constexpr
 unsigned int bufferAlign(bool std140) { return BufferApplier<VT>::template align<T>(std140); }
 
-///Utility template class used to write the members of a structure to a buffer update.
-///\tparam VT VulkanType of the structure
+/// Utility template class used to write the members of a structure to a buffer update.
+/// \tparam VT VulkanType of the structure
 template<typename VT, typename Seq = std::make_index_sequence<
 	std::tuple_size<decltype(VT::members)>::value>> struct MembersOp;
 
 template<typename VT, std::size_t... I>
-struct MembersOp<VT, std::index_sequence<I...>>
-{
+struct MembersOp<VT, std::index_sequence<I...>> {
 	static constexpr decltype(VT::members) members = VT::members;
 
-	//call
 	template<typename O, typename T>
 	static void call(O& op, T&& obj)
 	{
 		auto sa = VT::align ? align(op.std140()) : 0u;
 		if(sa) op.align(sa);
-		(void)Expand{(bufferApply(op, obj.*(std::get<I>(members))), 0) ...};
+		(bufferApply(op, obj.*(std::get<I>(members))), ...);
 		if(sa) op.align(sa);
 	}
 
-	//waiting for constexpr lambdas...
-	//applySize - utility for size
+	// applySize - utility for size
 	template<typename MP, typename O> constexpr static void applySize(const MP& memptr, O& op)
 		{ bufferSize<VulkanType<typename decltype(memPtr(memptr))::type>>(op); }
 
-	//applyAlign - utility for align
+	// applyAlign - utility for align
 	template<typename MP> constexpr static unsigned int applyAlign(const MP& memptr, bool std140)
 	{
 		using V = typename decltype(memPtr(memptr))::type;
 		return bufferAlign<VulkanType<V>, V>(std140);
 	}
 
-	//size
+	// size
 	template<typename O>
 	constexpr static void size(O& op)
 	{
 		auto sa = VT::align ? align(op.std140()) : 0u;
 		if(sa) op.align(sa);
-		(void)Expand{(applySize(std::get<I>(members), op), 0) ...};
+		(applySize(std::get<I>(members), op), ...);
 		if(sa) op.nextOffsetAlign(sa);
 	}
 
-	//align
+	// align
 	constexpr static unsigned int align(bool std140)
 	{
 		auto sa = 0u;
-		(void)Expand{(sa = std::max(sa, applyAlign(std::get<I>(members), std140)), 0)...};
+		for(auto elem : {(applyAlign(std::get<I>(members), std140), ...)})
+			sa = std::max(sa, elem);
 		return roundAlign(sa, std140);
 	}
 };
 
-//otherwise we get an undefined reference
+/// Definitions to avoid undefined reference
 template<typename VT, std::size_t... I> constexpr
 decltype(VT::members) MembersOp<VT, std::index_sequence<I...>>::members;
 
-///Default specialization for scalar
+/// BufferApplier specialization for scalar types
 template<typename VT>
-struct BufferApplier<VT, ShaderType::scalar>
-{
+struct BufferApplier<VT, ShaderType::scalar> {
 	template<typename T, typename O>
 	static void call(O& op, T&& obj)
 	{
@@ -139,15 +123,13 @@ struct BufferApplier<VT, ShaderType::scalar>
 	template<typename T>
 	static constexpr unsigned int align(bool std140)
 	{
-		return 4 + VT::size64 * 4;
+		return VT::size64 ? 8 : 4;
 	}
 };
 
-///Default specialization for vec
+/// BufferApplier specialization for vec
 template<typename VT>
-struct BufferApplier<VT, ShaderType::vec>
-{
-	//call
+struct BufferApplier<VT, ShaderType::vec> {
 	template<typename T, typename O>
 	static void call(O& op, T&& obj)
 	{
@@ -155,7 +137,6 @@ struct BufferApplier<VT, ShaderType::vec>
 		op.operate(&obj, sizeof(obj));
 	}
 
-	//size
 	template<typename O>
 	constexpr static void size(O& op)
 	{
@@ -163,18 +144,18 @@ struct BufferApplier<VT, ShaderType::vec>
 		op.operate(nullptr, VT::dimension * (4 + VT::size64 * 4));
 	}
 
-	//align
 	template<typename T>
 	static constexpr unsigned int align(bool)
 	{
-		return detail::vecAlign<VT::dimension>() * (4 + VT::size64 * 4);
+		auto ret = ((VT::dimension) == 3 ? 4 : VT::dimension) * 4;
+		if(VT::size64) ret *= 2;
+		return ret;
 	}
 };
 
-///Specialization for custom shader types.
+/// BufferApplier Specialization for custom shader types.
 template<typename VT>
-struct BufferApplier<VT, ShaderType::custom>
-{
+struct BufferApplier<VT, ShaderType::custom> {
 	using Impl = typename VT::impl;
 
 	template<typename O, typename T> static void call(O& op, T&& obj) { Impl::call(op, obj); }
@@ -183,27 +164,21 @@ struct BufferApplier<VT, ShaderType::custom>
 		{ return Impl::template align<T>(std140); }
 };
 
-///Specialization for raw buffers.
-///Does not implementation BufferApplier::size since it depends on the given object.
+/// Specialization for raw buffers.
+/// Does not implement BufferApplier::size since it depends on the given object.
 template<typename VT>
-struct BufferApplier<VT, ShaderType::buffer>
-{
-	//call
+struct BufferApplier<VT, ShaderType::buffer> {
 	template<typename O, typename T,
 		typename = decltype(std::declval<T>().size()),
 		typename = decltype(std::declval<T>().data())>
 	static void call(O& op, T&& obj) { op.operate(obj.data(), obj.size()); }
 
-	//align
-	template<typename T>
-	static constexpr unsigned int align(bool) { return 0u; }
+	template<typename T> static constexpr unsigned int align(bool) { return 0u; }
 };
 
-///Specialization for matrix types.
+/// BufferApplier Specialization for matrix types.
 template<typename VT>
-struct BufferApplier<VT, ShaderType::mat>
-{
-	//utility shortcuts
+struct BufferApplier<VT, ShaderType::mat> {
 	static constexpr auto major = VT::major;
 	static constexpr auto minor = VT::minor;
 	static constexpr auto transpose = VT::transpose;
@@ -211,7 +186,6 @@ struct BufferApplier<VT, ShaderType::mat>
 
 	static_assert(major > 1 && minor > 1 && major < 5 && minor < 5, "Invalid matrix dimensions!");
 
-	//call
 	template<typename O, typename T>
 	static void call(O& op, T&& obj)
 	{
@@ -222,21 +196,16 @@ struct BufferApplier<VT, ShaderType::mat>
 		auto sa = roundAlign(minor * csize, op.std140());
 		op.align(sa);
 
-		//raw write sometimes possible
-		if(minor != 3 && sizeof(obj) == major * minor * csize && !transpose)
-		{
+		// raw write sometimes possible
+		if(minor != 3 && sizeof(obj) == major * minor * csize && !transpose) {
 			op.operate(&obj, sizeof(obj));
-		}
-		else if(!transpose)
-		{
+		} else if(!transpose) {
 			for(auto mj = 0u; mj < major; ++mj)
 			{
 				op.align(sa);
 				for(auto mn = 0u; mn < minor; ++mn) op.operate(&obj[mj][mn], csize);
 			}
-		}
-		else
-		{
+		} else {
 			for(auto mn = 0u; mn < minor; ++mn)
 			{
 				op.align(sa);
@@ -244,11 +213,10 @@ struct BufferApplier<VT, ShaderType::mat>
 			}
 		}
 
-		//the member following is rounded up to the base alignment
+		// the member following is rounded up to the base alignment
 		op.nextOffsetAlign(sa);
 	}
 
-	//size
 	template<typename O>
 	static constexpr void size(O& op)
 	{
@@ -265,10 +233,9 @@ struct BufferApplier<VT, ShaderType::mat>
 	}
 };
 
-///Specialization for structures.
+/// BufferApplier specialization for structures.
 template<typename VT>
-struct BufferApplier<VT, ShaderType::structure>
-{
+struct BufferApplier<VT, ShaderType::structure> {
 	template<typename O, typename T>
 	static void call(O& op, T&& obj)
 	{
@@ -288,10 +255,9 @@ struct BufferApplier<VT, ShaderType::structure>
 	}
 };
 
-///Containers specialization.
+/// BufferApplier container specialization.
 template<typename VT>
-struct BufferApplier<VT, ShaderType::none>
-{
+struct BufferApplier<VT, ShaderType::none> {
 
 	template<
 		typename O, typename T,
@@ -303,8 +269,7 @@ struct BufferApplier<VT, ShaderType::none>
 		auto sa = roundAlign(bufferAlign<VulkanType<B>, B>(op.std140()), op.std140());
 		op.align(sa);
 
-		for(auto& a : obj)
-		{
+		for(auto& a : obj) {
 			if(op.std140()) op.align(sa);
 			bufferApply(op, a);
 		}
@@ -321,13 +286,14 @@ struct BufferApplier<VT, ShaderType::none>
 };
 
 template<typename T>
-struct HasSizeFunction
-{
-	template <typename C> static char
-		test(decltype(std::declval<C>().size(std::declval<BufferSizer&>()))*);
-    template <typename C> static long test(...);
+struct HasSizeFunction {
+	template <typename C>
+	static char test(decltype(std::declval<C>().size(std::declval<BufferSizer&>()))*);
 
-    enum { value = sizeof(test<T>(0)) == sizeof(char) };
+    template <typename C>
+	static long test(...);
+
+    static constexpr auto value = (sizeof(test<T>(0)) == sizeof(char));
 };
 
 } //namespace detail
@@ -342,13 +308,13 @@ void BufferOperator<B>::addSingle(const T& obj)
 template<typename B> template<typename... T>
 void BufferOperator<B>::add(const T&... objs)
 {
-	(void)Expand{(addSingle(objs), 0)...};
+	(addSingle(objs), ...);
 }
 
 template<typename... T>
 constexpr void BufferSizer::add()
 {
-	(void)Expand{(detail::bufferSize<VulkanType<T>>(*this), 0)...};
+	(detail::bufferSize<VulkanType<T>>(*this), ...);
 }
 
 constexpr void BufferSizer::operate(const void*, std::size_t size)

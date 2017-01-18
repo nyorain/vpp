@@ -59,19 +59,19 @@ public:
 	void add(const T&... obj);
 
 	/// Returns the current offset on the buffer.
-	constexpr std::size_t offset() const { return offset_; }
+	constexpr std::size_t offset() const noexcept { return offset_; }
 
 	/// Sets the nextOffset value to which offset will be set before operating on the
 	/// next data. Will not be applied if there is no further data to operate on.
-	constexpr void nextOffset(std::size_t noffset) { nextOffset_ = noffset; }
+	constexpr void nextOffset(size_t noffset) noexcept { nextOffset_ = noffset; }
 
 	/// Sets the align that offset should have before operating on the next data.
 	/// Will not be applied if there is no further data to operate on.
-	constexpr void nextOffsetAlign(std::size_t align) { nextOffset_ = vpp::align(offset_, align); }
+	constexpr void nextOffsetAlign(size_t algn) noexcept { nextOffset_ = align(offset_, algn); }
 
-	constexpr BufferLayout alignType() const { return align_; }
-	constexpr bool std140() const { return align_ == BufferLayout::std140; }
-	constexpr bool std430()const { return align_ == BufferLayout::std430; }
+	constexpr BufferLayout alignType() const noexcept { return align_; }
+	constexpr bool std140() const noexcept { return align_ == BufferLayout::std140; }
+	constexpr bool std430()const noexcept { return align_ == BufferLayout::std430; }
 
 protected:
 	BufferLayout align_;
@@ -85,50 +85,43 @@ protected:
 class BufferUpdate : public BufferOperator<BufferUpdate>, public ResourceReference<BufferUpdate> {
 public:
 	/// The given align type will influence the applied alignments.
-	/// \param direct Specifies if direct updates should be preferred. Will be ignored
-	/// if the buffer is filled by mapping and in some cases, direct filling is not possible.
+	/// \param direct Specifies if direct updates should be preferred.
+	/// Using direct update usually only makes sense for small updates.
 	/// \exception std::runtime_error if the device has no queue that supports graphics/compute or
 	/// transfer operations and the buffer is not mappable.
 	/// \sa BufferAlign
-	BufferUpdate(const Buffer& buffer, BufferLayout align, bool direct = false);
+	BufferUpdate(const Buffer&, BufferLayout, bool direct = false);
 
 	/// Calls apply and waits for the work to finish if apply was not called during
 	/// the lifetime of this object.
 	~BufferUpdate();
-
-	/// Writes size bytes from ptr to the buffer.
-	/// Undefined behaviour if ptr does not point to at least size bytes.
-	void operate(const void* ptr, std::size_t size);
-
-	/// Offsets the current position on the buffer by size bytes. If update is true, it will
-	/// override the bytes with zero, otherwise they will not be changed.
-	void offset(std::size_t size, bool update = true);
 
 	/// Writes the stored data to the buffer.
 	/// Returns a Work implemention that can be used to execute or defer the update.
 	/// After this call, the BufferUpdate object should no longer be used in any way.
 	WorkPtr apply();
 
+	/// Writes size bytes from ptr to the buffer.
+	/// Undefined behaviour if ptr does not point to at least size bytes.
+	void operate(const void* ptr, size_t size);
+
+	/// Offsets the current position on the buffer by size bytes. If update is true, it will
+	/// override the bytes with zero, otherwise they will not be changed.
+	void offset(size_t size, bool update = true);
+
 	/// Assures that the current position on the buffer meets the given alignment requirements.
-	/// If it does not, it will be changed to the next value fulfilling the requirement and
-	/// not changing the buffer content in this section.
-	void align(std::size_t align);
+	/// If it does not, it will be changed to the next value fulfilling the requirement.
+	void align(size_t align, bool update = true);
 
-	/// Aligns the offset for a uniform buffer.
-	void alignUniform();
-
-	/// Aligns the offset for a storage buffer.
-	void alignStorage();
-
-	/// Aligns the offset for a texel buffer.
-	void alignTexel();
+	void alignUniform() noexcept;
+	void alignStorage() noexcept;
+	void alignTexel() noexcept;
 
 	/// Returns the internal offset, i.e. the position on the internal stored data.
 	/// This value is usually not from any interest, See BufferOperator::offset for
 	/// the current offset on the buffer data.
-	std::size_t internalOffset() const { return internalOffset_; }
-
-	const Buffer& buffer() const { return *buffer_; }
+	std::size_t internalOffset() const noexcept { return internalOffset_; }
+	const Buffer& buffer() const noexcept { return *buffer_; }
 
 	using BufferOperator::offset;
 	using BufferOperator::alignType;
@@ -139,18 +132,18 @@ public:
 
 protected:
 	void checkCopies();
-	std::uint8_t& data();
+	uint8_t& data();
 
 protected:
 	const Buffer* buffer_ {};
 	WorkPtr work_ {};
 
-	MemoryMapView map_ {}; //for mapping (buffer/transfer)
-	std::vector<std::uint8_t> data_; //for direct copying
-	std::vector<vk::BufferCopy> copies_; //for transfer (direct/transfer)
-	std::size_t internalOffset_ {};
+	MemoryMapView map_ {}; // for mapping (buffer/transfer)
+	std::vector<uint8_t> data_; // for direct copying
+	std::vector<vk::BufferCopy> copies_; // for copy (direct/transfer)
+	size_t internalOffset_ {}; // offset for internal data
 
-	bool direct_ = false;
+	bool direct_;
 };
 
 /// Can be used to calculate the size that would be needed to fit certain objects with certain
@@ -175,9 +168,9 @@ public:
 	using BufferOperator::std140;
 	using BufferOperator::std430;
 
-	void alignUniform();
-	void alignStorage();
-	void alignTexel();
+	void alignUniform() noexcept;
+	void alignStorage() noexcept;
+	void alignTexel() noexcept;
 };
 
 /// Class that can be used to read raw data into objects using the coorect alignment.
@@ -193,16 +186,16 @@ public:
 	void operate(void* ptr, std::size_t size);
 
 	void offset(std::size_t size) { align(0); offset_ += size; }
-	void align(std::size_t align) { offset_ = vpp::align(offset_, align); }
+	void align(size_t algn) { offset_ = vpp::align(offset_, algn); }
 
 	using BufferOperator::offset;
 	using BufferOperator::alignType;
 	using BufferOperator::std140;
 	using BufferOperator::std430;
 
-	void alignUniform();
-	void alignStorage();
-	void alignTexel();
+	void alignUniform() noexcept;
+	void alignStorage() noexcept;
+	void alignTexel() noexcept;
 
 protected:
 	nytl::Span<const uint8_t> data_;
@@ -281,9 +274,6 @@ template<typename... T> WorkPtr read140(const Buffer& buf, T&... args)
 /// \sa BufferReader
 template<typename... T> WorkPtr read430(const Buffer& buf, T&... args)
 	{ return read(buf, BufferLayout::std430, args...); }
-
-//TODO: constexpr where possible. One does not have to really pass the objects in most cases
-//(except raw buffers and containers.)
 
 /// Calculates the size a vulkan buffer must have to be able to store all the given objects.
 /// \sa BufferSizer

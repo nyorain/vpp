@@ -63,7 +63,7 @@ void ShaderProgram::stage(vk::ShaderModule module, vk::ShaderStageBits stage)
 		}
 	}
 
-	stages_.push_back({{}, stage, module});
+	stages_.push_back({{}, stage, module, u8"main"});
 }
 
 void ShaderProgram::stage(const vk::PipelineShaderStageCreateInfo& info)

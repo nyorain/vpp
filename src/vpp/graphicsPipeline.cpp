@@ -12,8 +12,8 @@
 
 namespace vpp {
 
-GraphicsPipelineBuilder::GraphicsPipelineBuilder(const Device& dev, vk::RenderPass rp,
-	unsigned int xsubpass) : shader(dev), renderPass(rp), subpass(xsubpass)
+GraphicsPipelineBuilder::GraphicsPipelineBuilder(vk::RenderPass rp,
+	unsigned int xsubpass) : renderPass(rp), subpass(xsubpass)
 {
 	dynamicStates = {vk::DynamicState::viewport, vk::DynamicState::scissor};
 
@@ -56,36 +56,12 @@ GraphicsPipelineBuilder::GraphicsPipelineBuilder(const Device& dev, vk::RenderPa
 	states.multisample.rasterizationSamples = vk::SampleCountBits::e1;
 }
 
-GraphicsPipelineBuilder::GraphicsPipelineBuilder(const GraphicsPipelineBuilder& other)
-	: shader(copy(other.shader)), renderPass(other.renderPass), subpass(other.subpass),
-		layout(other.layout), vertexBufferLayouts(other.vertexBufferLayouts), flags(other.flags),
-		dynamicStates(other.dynamicStates), states(other.states), viewport_(other.viewport_),
-		colorBlend_(other.colorBlend_)
-{
-}
-
-GraphicsPipelineBuilder& GraphicsPipelineBuilder::operator=(const GraphicsPipelineBuilder& other)
-{
-	renderPass = other.renderPass;
-	subpass = other.subpass;
-	layout = other.layout;
-	vertexBufferLayouts = other.vertexBufferLayouts;
-	flags = other.flags;
-	dynamicStates = other.dynamicStates;
-	states = other.states;
-	shader = copy(other.shader);
-	colorBlend_ = other.colorBlend_;
-	viewport_ = other.viewport_;
-
-	return *this;
-}
-
-Pipeline GraphicsPipelineBuilder::build(vk::PipelineCache cache)
+Pipeline GraphicsPipelineBuilder::build(const Device& dev, vk::PipelineCache cache)
 {
 	auto info = parse();
 	vk::Pipeline pipeline;
-	vk::createGraphicsPipelines(shader.device(), cache, 1, info, nullptr, pipeline);
-	return Pipeline(shader.device(), pipeline);
+	vk::createGraphicsPipelines(dev, cache, 1, info, nullptr, pipeline);
+	return Pipeline(dev, pipeline);
 }
 
 vk::GraphicsPipelineCreateInfo GraphicsPipelineBuilder::parse()
@@ -172,27 +148,27 @@ vk::GraphicsPipelineCreateInfo GraphicsPipelineBuilder::parse()
 	return ret;
 }
 
-std::vector<Pipeline> createGraphicsPipelines(const Device& dev,
-	nytl::Span<const vk::GraphicsPipelineCreateInfo> infos, vk::PipelineCache cache)
-{
-	auto pipelines = vk::createGraphicsPipelines(dev, cache, infos);
-	std::vector<Pipeline> ret;
-	ret.reserve(pipelines.size());
-	for(auto& p : pipelines) ret.emplace_back(dev, p);
-	return ret;
-}
-
-std::vector<Pipeline> createGraphicsPipelines(
-	nytl::Span<const std::reference_wrapper<GraphicsPipelineBuilder>>& builder,
-	vk::PipelineCache cache)
-{
-	if(builder.empty()) return {};
-
-	std::vector<vk::GraphicsPipelineCreateInfo> infos;
-	infos.reserve(builder.size());
-	for(auto& b : builder) infos.push_back(b.get().parse());
-
-	return createGraphicsPipelines(builder.front().get().shader.device(), infos, cache);
-}
+// std::vector<Pipeline> createGraphicsPipelines(const Device& dev,
+// 	nytl::Span<const vk::GraphicsPipelineCreateInfo> infos, vk::PipelineCache cache)
+// {
+// 	auto pipelines = vk::createGraphicsPipelines(dev, cache, infos);
+// 	std::vector<Pipeline> ret;
+// 	ret.reserve(pipelines.size());
+// 	for(auto& p : pipelines) ret.emplace_back(dev, p);
+// 	return ret;
+// }
+//
+// std::vector<Pipeline> createGraphicsPipelines(
+// 	nytl::Span<const std::reference_wrapper<GraphicsPipelineBuilder>>& builder,
+// 	vk::PipelineCache cache)
+// {
+// 	if(builder.empty()) return {};
+//
+// 	std::vector<vk::GraphicsPipelineCreateInfo> infos;
+// 	infos.reserve(builder.size());
+// 	for(auto& b : builder) infos.push_back(b.get().parse());
+//
+// 	return createGraphicsPipelines(builder.front().get().shader.device(), infos, cache);
+// }
 
 }

@@ -13,7 +13,6 @@
 #include <memory> // std::unique_ptr
 #include <vector> // std::vector
 #include <unordered_map> // std::unordered_map
-#include <cstdlib> // std::size_t
 
 namespace vpp {
 
@@ -25,7 +24,7 @@ namespace vpp {
 /// The api is nontheless exposed publicly.
 class DeviceMemoryAllocator : public Resource {
 public:
-	DeviceMemoryAllocator() = default;
+	DeviceMemoryAllocator() noexcept = default;
 	DeviceMemoryAllocator(const Device& dev);
 	~DeviceMemoryAllocator();
 
@@ -53,14 +52,16 @@ public:
 		MemoryEntry& entry);
 
 	/// Removes the pending memory request for the given entry.
-	/// Returns false if the given entry could not be found.
-	bool removeRequest(const MemoryEntry& entry);
+	/// Will have no effect if the old entry is not found other than outputting
+	/// a warning if in debug mode.
+	void removeRequest(const MemoryEntry& entry) noexcept;
 
 	/// This function will be called when a stored entry is moved.
-	/// Will return false if the given old entry could not be found and could
-	/// therefore not be replaced by the new one.
+	/// Will remove the old entry and associate the new one with its request.
 	/// More efficient than removing the old entry and creating a new one.
-	bool moveEntry(const MemoryEntry& oldOne, MemoryEntry& newOne);
+	/// Will have no effect if the old entry is not found other than outputting
+	/// a warning if in debug mode.
+	void moveEntry(const MemoryEntry& oldOne, MemoryEntry& newOne) noexcept;
 
 	/// Allocates and associated device memory for all pending requests.
 	/// This will finish all pending memory requests.
@@ -68,10 +69,11 @@ public:
 
 	/// Makes sure that the given entry has associated memory, i.e. finishes its memory request
 	/// and removes it from the interal list of pending entries.
-	/// Will return false if the given entry cannot be found.
 	/// Prefer the allocate overload without parameters that allocates all pending
 	/// memory request since it might be more efficient overall.
-	bool allocate(const MemoryEntry& entry);
+	/// Will have no effect if the old entry is not found other than outputting
+	/// a warning if in debug mode.
+	void allocate(const MemoryEntry& entry);
 
 	/// Returns all memories that this allocator manages.
 	std::vector<DeviceMemory*> memories() const;
@@ -96,16 +98,19 @@ protected:
 		vk::DeviceSize alignment {};
 		std::uint32_t memoryTypes {};
 		MemoryEntry* entry {};
-		union { vk::Buffer buffer; vk::Image image; };
+		union {
+			vk::Buffer buffer;
+			vk::Image image;
+		};
 	};
 
 	using Requirements = std::vector<Requirement>;
 
 protected:
 	// utility global functions
-	static AllocationType toAllocType(RequirementType reqType);
-	static bool supportsType(const Requirement& req, unsigned int type);
-	static bool supportsType(std::uint32_t bits, unsigned int type);
+	static AllocationType toAllocType(RequirementType reqType) noexcept;
+	static bool supportsType(const Requirement& req, unsigned int type) noexcept;
+	static bool supportsType(uint32_t bits, unsigned int type) noexcept;
 
 	// utility allocation functions
 	void allocate(unsigned int type);
@@ -113,7 +118,7 @@ protected:
 	DeviceMemory* findMem(Requirement& req);
 	Requirements::iterator findReq(const MemoryEntry& entry);
 	std::unordered_map<unsigned int, std::vector<Requirement*>> queryTypes();
-	unsigned int findBestType(std::uint32_t typeBits) const;
+	unsigned int findBestType(uint32_t typeBits) const;
 
 protected:
 	Requirements requirements_; // list of pending requests
@@ -138,13 +143,13 @@ public:
 	MemoryEntry& operator=(MemoryEntry other) noexcept;
 
 	/// Will try to map the Memory and return a view to the location where this entry is placed.
-	/// Throws a std::logic_error if the associated DeviceMemory is not mappable or the
-	/// MemoryEntry has no associated memory.
+	/// In debug, throws std::logic_error if it is not bound to memory or the memory
+	/// cannot be mapped.
 	MemoryMapView map() const;
 
 	/// Returns whether this entry has an associated memory allocation, i.e. if it is currently
 	/// in a bound state.
-	bool allocated() const { return (allocation_.size > 0); }
+	bool allocated() const noexcept { return (allocation_.size > 0); }
 
 	/// Assures that there is memory allocated and associated with this entry.
 	/// Will have no effect if the entry already has an associated memory allocation.
@@ -152,13 +157,13 @@ public:
 	/// if it has no associated DeviceMemoryAllocator.
 	void allocate() const { if(!allocated()) allocator_->allocate(*this); }
 
-	DeviceMemory* memory() const { return allocated() ? memory_ : nullptr; };
-	DeviceMemoryAllocator* allocator() const { return allocated() ? nullptr : allocator_; };
-	std::size_t offset() const { return allocation_.offset; };
-	std::size_t size() const { return allocation_.size; }
-	const Allocation& allocation() const { return allocation_; }
+	DeviceMemory* memory() const noexcept { return allocated() ? memory_ : nullptr; }
+	DeviceMemoryAllocator* allocator() const noexcept { return allocated() ? nullptr : allocator_; }
+	size_t offset() const noexcept { return allocation_.offset; }
+	size_t size() const noexcept { return allocation_.size; }
+	const Allocation& allocation() const noexcept { return allocation_; }
 
-	Resource& resourceRef() const { if(allocated()) return *memory_; else return *allocator_; }
+	Resource& resourceRef() const noexcept { if(allocated()) return *memory_; return *allocator_; }
 	friend void swap(MemoryEntry& a, MemoryEntry& b) noexcept;
 
 protected:

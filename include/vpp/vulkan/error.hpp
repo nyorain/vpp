@@ -9,7 +9,6 @@
 #include <string>
 #include <stdexcept>
 #include <iostream>
-#include <sstream>
 #include <system_error>
 
 namespace vk {
@@ -70,113 +69,75 @@ public:
 
 namespace error {
 
-template<typename... Args>
-void outputDebugMsg(Args... args)
+/// Returns whether the error code inidicates success.
+inline bool success(vk::Result result)
 {
-	std::stringstream stream;
-	int e1[] = {(stream << args, 0)...};
-	std::cerr << stream.str() << '\n';
-
-	#ifdef VPP_DEBUG_THROW
-	 throw std::runtime_error(stream.str());
-	#endif //throw
+	return static_cast<std::int64_t>(result) >= 0;
 }
 
-inline bool success(Result result)
-{
-	return (static_cast<std::int64_t>(result) >= 0);
-}
-
-//throw
+/// Will check if the given result indicated failure and if so throw a VulkanError
+/// containing information about the error code.
 inline vk::Result checkResultThrow(vk::Result result, const char* function, const char* called)
 {
-	if(success(result)) return result;
-
+	auto ecode = static_cast<std::int64_t>(result);
+	if(ecode >= 0) return result;
 
 	auto msg = name(result);
-	auto ecode = static_cast<std::int64_t>(result);
 	const std::string err = "Vulkan Error Code " + std::to_string(ecode) + ": " + msg +
-		"\n\tin function " + function + ",\n\tcalling " + called;
-
-	std::cerr << "vk::call::checkResultThrow will throw " << err << std::endl;
+		"\n\tin function: " + function + "\n\tcalling: " + called;
 	throw VulkanError(result, err);
 }
 
-//warn
-inline vk::Result checkResultWarn(vk::Result result, const char* function, const char* called)
-{
-	if(success(result)) return result;
-
-	auto msg = name(result);
-	auto ecode = static_cast<std::int64_t>(result);
-	const std::string err = "Vulkan Error Code " + std::to_string(ecode) + ": " + msg +
-		"\n\tin function " + function + ",\n\tcalling " + called;
-
-	std::cerr << "vk::call::checkResultWarn: " << err << std::endl;
-	return result;
-}
-
-} //namespace call
+} //namespace error
 } //namespace vk
 
 /// Specialize error code/condition type traits for the vulkan result codes.
 /// This makes it possible to use them directly as error codes.
 namespace std {
-    template<>
-    struct is_error_code_enum<vk::Result>
-      : public true_type {};
 
-    template<>
-    struct is_error_condition_enum<vk::Result>
-      : public true_type {};
+template<>
+struct is_error_code_enum<vk::Result>
+	: public true_type {};
+
+template<>
+struct is_error_condition_enum<vk::Result>
+	: public true_type {};
+
 } // namespace std
 
-// macro for querying the current function name on all platforms
+// Macro for querying a descriptive current function name.
 #if defined(__GNUC__) || defined(__clang__)
- #define VPP_FUNC_NAME __PRETTY_FUNCTION__
+	#define VPP_FUNC_NAME __PRETTY_FUNCTION__
 #elif defined(_MSC_VER)
- #define VPP_FUNC_NAME __FUNCTION__
+	#define VPP_FUNC_NAME __FUNCTION__
 #else
- #define VPP_FUNC_NAME __func__
+	#define VPP_FUNC_NAME __func__
 #endif
 
-// call warn and throw macros
-#define VPP_CALL_W(x) ::vk::error::checkResultWarn(static_cast<vk::Result>(x), VPP_FUNC_NAME, #x)
-#define VPP_CALL_T(x) ::vk::error::checkResultThrow(static_cast<vk::Result>(x), VPP_FUNC_NAME, #x)
-
-// default selection
-// if neither VPP_DEBUG or VPP_NDEBUG is defined, define it depending on NDEBUG
+// - Default selection -
+// If neither VPP_DEBUG or VPP_NDEBUG is defined, define it depending on NDEBUG
 #if !defined(VPP_DEBUG) && !defined(VPP_NDEBUG)
- #ifndef NDEBUG
-  #define VPP_DEBUG
- #endif
+	#ifndef NDEBUG
+		#define VPP_DEBUG
+	#else
+		#define VPP_NDEBUG
+	#endif
 #endif
 
-// if debug is defined but neither debugThrow or debugNothrow default it to defined
-#if defined(VPP_DEBUG) && !defined(VPP_DEBUG_THROW) && !defined(VPP_DEBUG_NOTHROW)
- #define VPP_DEBUG_THROW
+// If no call operation is defined, it is chosen depending on VPP_DEBUG.
+#if !defined(VPP_CALL_THROW) && !defined(VPP_CALL_NOCHECK)
+	#ifdef VPP_DEBUG
+		#define VPP_CALL_THROW
+	#else
+		#define VPP_CALL_NOCHECK
+	#endif
 #endif
 
-// if no call operation is defined, chose it depending on debug and debugThrow
-#if !defined(VPP_CALL_THROW) && !defined(VPP_CALL_WARN) && !defined(VPP_CALL_NOCHECK)
- #ifdef VPP_DEBUG
-  #define VPP_CALL_WARN
-  #ifdef VPP_DEBUG_THROW
-   #define VPP_CALL_THROW
-  #endif
- #else
-  #define VPP_CALL_NOCHECK
- #endif
-#endif
-
-// default call macro based on given option macros (throw/warn/nocheck)
-#ifdef VPP_CALL_THROW
- #define VPP_CALL(x) VPP_CALL_T(x)
-#elif defined(VPP_CALL_WARN)
- #define VPP_CALL(x) VPP_CALL_W(x)
-#elif defined(VPP_CALL_NOCHECK)
- #define VPP_CALL(x) static_cast<vk::Result>(x)
-#else
- // This error shoud not happen! Please report to the vpp maintainers
- #error Configuration error
+// Macro that can be wrapped around plain valkan api calls to throw if they return
+// a failure result. When VPP_CALL_THROW is not defined (which is by default the case
+// for non debug builds) no check will be performed at all.
+#if defined(VPP_CALL_THROW) && !defined(VPP_CALL)
+	#define VPP_CALL(x) ::vk::error::checkResultThrow(static_cast<vk::Result>(x), VPP_FUNC_NAME, #x)
+#elif !defined(VPP_CALL)
+	#define VPP_CALL(x) static_cast<vk::Result>(x)
 #endif
