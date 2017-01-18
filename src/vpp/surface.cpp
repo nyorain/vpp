@@ -58,8 +58,7 @@ std::vector<std::uint32_t> Surface::supportedQueueFamilies(vk::PhysicalDevice ph
 	vk::getPhysicalDeviceQueueFamilyProperties(phdev, count, nullptr);
 
 	std::vector<std::uint32_t> ret;
-	for(std::size_t i(0); i < count; ++i)
-	{
+	for(std::size_t i(0); i < count; ++i) {
 		if(queueFamilySupported(phdev, i))
 			ret.push_back(i);
 	}

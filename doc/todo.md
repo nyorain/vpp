@@ -11,10 +11,12 @@ Todo list vor vpp
 		- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
 	- threadlocal.hpp: use shared_mutex instead of shared_timed_mutex
 
+- move example code snippets out of code!
 - debug checks: make sure to never throw in destructor!
 - SwapChainREnderer::init: call record?
 	- if REndererImpl should call it in init, document it!
-- clean up bufferOps.inl
+- (further) clean up bufferOps.inl
+- better best physical device querying (vpp/physicalDevice.cpp)
 - work implementation destructor should call finish (not all do)!
 - remove (deprecated) device layers everywhere
 - better renderer resetting (all command pools at once, just resize the frameRenderers vector)

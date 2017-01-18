@@ -47,6 +47,9 @@ void warn(Args... args)
 /// these macros only have an effect in debug mode anyways.
 /// The warn macros must be used in destructor or noexcept functions.
 /// Using macros allows to achieve zero overhead for release builds.
+/// Note that debug-depenent behaviour should only be used to checks and not alter
+/// other behaviour of a function or class. If a check fails, the function should e.g.
+/// not return early (except throwing an error).
 #ifdef VPP_DEBUG
 	#define VPP_DEBUG_CHECK(name, code) { auto vpp_local_debug_check_name_ = name; code }
 	#define VPP_CHECK_THROW(...) vpp::throwRuntime(vpp_local_debug_check_name_, ": ", __VA_ARGS__)

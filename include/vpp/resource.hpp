@@ -28,6 +28,7 @@ namespace vpp {
 /// \sa ResourceReference
 /// \sa Device
 #ifndef VPP_ONE_DEVICE_OPTIMIZATION
+
 class Resource {
 public:
 	Resource(const Resource& other) noexcept = default;
@@ -117,16 +118,16 @@ public:
 template <typename B>
 class ResourceReference {
 public:
-	const Device& device() const { return tSelf().resourceRef().device(); }
+	const Device& device() const noexcept { return tSelf().resourceRef().device(); }
 
-	vk::Instance vkInstance() const { return device().vkInstance(); }
-	vk::PhysicalDevice vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
-	vk::Device vkDevice() const { return device().vkDevice(); }
+	vk::Instance vkInstance() const noexcept { return device().vkInstance(); }
+	vk::PhysicalDevice vkPhysicalDevice() const noexcept { return device().vkPhysicalDevice(); }
+	vk::Device vkDevice() const noexcept { return device().vkDevice(); }
 
 	ResourceReference& resourceBase() noexcept { return *this; }
 	const ResourceReference& resourceBase() const noexcept { return *this; }
 
-	const B& tSelf() const { return reinterpret_cast<const B&>(*this); }
+	const B& tSelf() const noexcept { return reinterpret_cast<const B&>(*this); }
 };
 
 /// Utility template base class that makes RAII wrappers easier.

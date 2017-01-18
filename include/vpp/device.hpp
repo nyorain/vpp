@@ -17,8 +17,6 @@ namespace vpp {
 using DynamicStoragePtr = std::unique_ptr<DynamicStorageBase>;
 using DynamicThreadStorage = ThreadStorage<DynamicStoragePtr>;
 
-//TODO: creation abstraction to easier create queues (just pass reqs, needed queues will be queryed)
-
 /// Represents a Vulkan Device.
 /// The centreal objects that all resources are created from.
 /// Holds important device-related resources such as queried properties and queues, as

@@ -20,6 +20,7 @@
 #include <vpp/image.hpp>
 #include <vpp/init.hpp>
 #include <vpp/memory.hpp>
+#include <vpp/memoryMap.hpp>
 #include <vpp/memoryResource.hpp>
 #include <vpp/pipeline.hpp>
 #include <vpp/procAddr.hpp>

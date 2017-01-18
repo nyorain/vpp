@@ -25,11 +25,7 @@ public:
 	/// Creates a memory map for this memory resource (if there is none) and returns a view to it.
 	/// Will automatically assure that there is memory bound for this resource.
 	/// In debug mode, throws std::logic_error if the memory it is bound to cannot be mapped.
-	MemoryMapView memoryMap() const
-	{
-		assureMemory();
-		return memoryEntry().map();
-	}
+	MemoryMapView memoryMap() const;
 
 	/// Returns whether the resource was allocated on hostVisible (mappable) memory.
 	/// If the there was not yet memory allocated for this resource, false is returned.
@@ -45,12 +41,7 @@ public:
 	std::size_t memorySize() const { return memoryEntry().size(); }
 	const MemoryEntry& resourceRef() const { return memoryEntry(); }
 
-	void swap(MemoryResource& lhs) noexcept
-	{
-		using std::swap;
-		swap(this->resourceBase(), lhs.resourceBase());
-		swap(memoryEntry_, lhs.memoryEntry_);
-	}
+	void swap(MemoryResource& lhs) noexcept;
 
 protected:
 	using ResourceReferenceHandle<MemoryResource<H>, H>::ResourceReferenceHandle;
@@ -58,7 +49,7 @@ protected:
 	MemoryResource(MemoryResource&& lhs) noexcept { swap(lhs); }
 	MemoryResource& operator=(MemoryResource lhs) noexcept { swap(lhs); return *this; }
 
-	// for default move operators
+	// needed for default move operators
 	friend class Buffer;
 	friend class Image;
 
@@ -66,4 +57,20 @@ protected:
 	MemoryEntry memoryEntry_;
 };
 
+// - implementation -
+template<typename R>
+MemoryMapView MemoryResource<R>::memoryMap() const
+{
+	assureMemory();
+	return memoryEntry().map();
 }
+
+template<typename R>
+void MemoryResource<R>::swap(MemoryResource& lhs) noexcept
+{
+	using std::swap;
+	swap(this->resourceBase(), lhs.resourceBase());
+	swap(memoryEntry_, lhs.memoryEntry_);
+}
+
+} // namespace vpp

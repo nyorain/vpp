@@ -7,6 +7,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/buffer.hpp>
 #include <vpp/work.hpp>
+#include <vpp/memoryMap.hpp>
 #include <vpp/util/span.hpp>
 #include <vpp/util/allocation.hpp>
 #include <vpp/bits/apply.inl>
@@ -75,8 +76,8 @@ public:
 
 protected:
 	BufferLayout align_;
-	std::size_t offset_ {};
-	std::size_t nextOffset_ {}; // structs or arrays may have offset requirement for next member.
+	size_t offset_ {};
+	size_t nextOffset_ {}; // structs or arrays may have offset requirement for next member.
 };
 
 /// This class can be used to update/write the contents of a buffer.

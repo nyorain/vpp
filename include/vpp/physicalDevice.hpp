@@ -22,18 +22,20 @@ vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice>);
 /// Usually tries to select the best/most powerful physical device.
 /// Returns a null handle if the given span is empty or no physical device supports
 /// rendering on the surface.
-vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice>, vk::SurfaceKHR);
+/// The given surface and physical devices must have been retrieved from the
+/// given instance which is needed for querying the surface function pointers.
+vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice>, vk::Instance, vk::SurfaceKHR);
 
 /// Specifies in which way a queue family should be selected.
 /// When 'none' is used, the first valid queue family is returned.
 /// When 'highestCount' is used, the valid queue familiy with the highest queue count is returned.
-/// When 'miminalGranularity' is used, the valid queue family with the smallest minimal image
+/// When 'mimImageGranularity' is used, the valid queue family with the smallest minimal image
 /// transfer granularity is returned. Note that this treats the granularity (0,0,0) as
 /// the worst, i.e. the greatest.
 enum class OptimizeQueueFamily {
 	none,
 	highestCount,
-	minimalGranularity
+	minImageGranularity
 };
 
 /// Returns a queue family on the given physical device that fulfills the given queue bits.
@@ -46,8 +48,9 @@ int findQueueFamily(vk::PhysicalDevice, vk::QueueFlags, OptimizeQueueFamily opti
 /// The additional queue bits and optimize parameters can be used to optimize the returned
 /// queue if multiple are available, or try to find a queue family that additionally
 /// has the given bits set.
+/// The physical device and instance must have been
 /// If there is no such queue family returns -1.
-int findQueueFamily(vk::PhysicalDevice, vk::SurfaceKHR, vk::QueueFlags = {},
+int findQueueFamily(vk::PhysicalDevice, vk::Instance, vk::SurfaceKHR, vk::QueueFlags = {},
 	OptimizeQueueFamily optimize = {});
 
 } // namespace vpp

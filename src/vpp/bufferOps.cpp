@@ -151,6 +151,11 @@ std::uint8_t& BufferUpdate::data()
 
 WorkPtr BufferUpdate::apply()
 {
+	VPP_DEBUG_CHECK("vpp::BufferUpdate::apply", {
+		if(!work_) VPP_CHECK_THROW("work is null, was already called");
+		if(offset_ == 0) VPP_CHECK_WARN("offset is 0, no update data");
+	})
+
 	if(!direct_ && !map_.coherent()) map_.flush();
 
 	if(direct_) {

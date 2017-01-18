@@ -26,17 +26,17 @@ public:
 	~CommandPool();
 
 	CommandBuffer allocate(vk::CommandBufferLevel lvl = vk::CommandBufferLevel::primary);
-	std::vector<CommandBuffer> allocate(std::size_t count,
-		vk::CommandBufferLevel lvl = vk::CommandBufferLevel::primary);
+	std::vector<CommandBuffer> allocate(size_t count,
+		vk::CommandBufferLevel = vk::CommandBufferLevel::primary);
 
-	const std::uint32_t& queueFamily() const { return qFamily_; }
-	const vk::CommandPoolCreateFlags& flags() const { return flags_; }
+	uint32_t queueFamily() const { return qFamily_; }
+	vk::CommandPoolCreateFlags flags() const { return flags_; }
 
 	void swap(CommandPool& lhs) noexcept;
 
 protected:
 	vk::CommandPoolCreateFlags flags_ {};
-	std::uint32_t qFamily_ {};
+	uint32_t qFamily_ {};
 };
 
 /// RAII vulkan CommandBuffer wrapper.
@@ -73,14 +73,14 @@ public:
 	~CommandProvider() = default;
 
 	/// Allocates a commandBuffer for the calling thread that matches the given requirements.
-	CommandBuffer get(std::uint32_t qfamily, vk::CommandPoolCreateFlags flags = {},
-		vk::CommandBufferLevel lvl = vk::CommandBufferLevel::primary);
+	CommandBuffer get(uint32_t qfamily, vk::CommandPoolCreateFlags = {},
+		vk::CommandBufferLevel = vk::CommandBufferLevel::primary);
 
 	/// Allocates multiple commandBuffers for the calling thread with the given requirements.
 	/// Might be more efficient than multiple calls to get.
-	std::vector<CommandBuffer> get(std::uint32_t qfamily, unsigned int count,
-		vk::CommandPoolCreateFlags flags = {},
-		vk::CommandBufferLevel lvl = vk::CommandBufferLevel::primary);
+	std::vector<CommandBuffer> get(uint32_t qfamily, unsigned int count,
+		vk::CommandPoolCreateFlags = {},
+		vk::CommandBufferLevel = vk::CommandBufferLevel::primary);
 
 	/// Allocates a CommandBuffer from the first CommandPool of the already existent
 	/// commandBuffer for which the given predicate returns true.
