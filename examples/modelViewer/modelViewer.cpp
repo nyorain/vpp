@@ -82,7 +82,7 @@ public:
 	ModelRenderer(ModelData& data) : data_(data) {}
 
 	void build(unsigned int, const vpp::RenderPassInstance& ini) override;
-	void init(vpp::SwapChainRenderer& renderer) override;
+	void init(vpp::SwapchainRenderer& renderer) override;
 	void frame(unsigned int id) override;
 	AdditionalSemaphores submit(unsigned int) override;
 	std::vector<vk::ClearValue> clearValues(unsigned int) override;
@@ -577,7 +577,7 @@ void initModelData(const vpp::Device& dev, ModelData& data)
 
 }
 
-void ModelRenderer::init(vpp::SwapChainRenderer& renderer)
+void ModelRenderer::init(vpp::SwapchainRenderer& renderer)
 {
 	static bool i = false;
 	if(!i)

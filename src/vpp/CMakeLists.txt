@@ -9,7 +9,7 @@ set(vpp-sources
 	procAddr.cpp
 	renderer.cpp
 	memory.cpp
-	allocator.cpp
+	memoryMap.cpp
 	shader.cpp
 	framebuffer.cpp
 	image.cpp

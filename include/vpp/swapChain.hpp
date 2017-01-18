@@ -16,25 +16,25 @@
 
 namespace vpp {
 
-/// SwapChainSettings is a virtual base class that can be used to implement a settings
-/// chose mechanism for SwapChain creation. An extra virtual class is needed instead of a
+/// SwapchainSettings is a virtual base class that can be used to implement a settings
+/// chose mechanism for Swapchain creation. An extra virtual class is needed instead of a
 /// struct because there a various settings and their availibility must be queried.
 /// The default implementation just choses the values which are considered best from the
 /// available ones.
-class SwapChainSettings {
+class SwapchainSettings {
 public:
 	/// Returns a static instance of the default implementatoin.
 	/// Since the default implementation is stateless the returned object can
 	/// also safely be used from multiple threads.
-	static const SwapChainSettings& instance();
+	static const SwapchainSettings& instance();
 
 public:
-	/// This function will be called by the SwapChain this object was passed to.
-	/// The returned SwapChainCreateInfo will be used to create the vulkan swapchain.
+	/// This function will be called by the Swapchain this object was passed to.
+	/// The returned SwapchainCreateInfo will be used to create the vulkan swapchain.
 	/// \param caps The queried capabilities for the surface the swapChain will be created for.
 	/// \param modes The queried available present modes.
 	/// \param formats The queried available formats.
-	/// \param size The preferred size passed as parameter to the SwapChain.
+	/// \param size The preferred size passed as parameter to the Swapchain.
 	/// On most platforms the size is chosen by the surface (from the native surface),
 	/// and this paramter can be ignored.
 	virtual vk::SwapchainCreateInfoKHR parse(const vk::SurfaceCapabilitiesKHR& caps,
@@ -43,12 +43,12 @@ public:
 		const vk::Extent2D& size) const;
 };
 
-/// A SwapChainSettings implementation that allows to chose some preferred values for
+/// A SwapchainSettings implementation that allows to chose some preferred values for
 /// multiple fields. It can also be specified what should be done if one of those values is
 /// not available.
-/// After SwapChain creation the members will be set to the values that were chosen in the end
-/// for the SwapChain.
-class DefaultSwapChainSettings final : public SwapChainSettings {
+/// After Swapchain creation the members will be set to the values that were chosen in the end
+/// for the Swapchain.
+class DefaultSwapchainSettings final : public SwapchainSettings {
 public:
 	/// What should be done if a preferred setting is not available.
 	enum class ErrorAction {
@@ -75,7 +75,7 @@ public:
 
 /// TODO: synchronization for acquire and present commands. Handle acquire:out_of_date
 /// Represents Vulkan swap chain and associated images/frameBuffers.
-class SwapChain : public ResourceHandle<vk::SwapchainKHR> {
+class Swapchain : public ResourceHandle<vk::SwapchainKHR> {
 public:
 	struct RenderBuffer {
 		vk::Image image;
@@ -88,23 +88,23 @@ public:
 	};
 
 public:
-	SwapChain() = default;
+	Swapchain() = default;
 
 	/// Constructs the swap chain for a given vulkan surface.
 	/// Note that the given size is only used if the backend does not provide
 	/// a surface size (e.g. wayland backend). Usually the swapChain will have the same size
 	/// as the underlaying native surface, then the size parameter is ignored.
-	SwapChain(const Device& device, vk::SurfaceKHR surface,
-		const vk::Extent2D& size = {}, const SwapChainSettings& = {});
+	Swapchain(const Device& device, vk::SurfaceKHR surface,
+		const vk::Extent2D& size = {}, const SwapchainSettings& = {});
 
 	/// Transfers ownership of the given swapChain handle to the created object.
-	SwapChain(const Device& dev, vk::SwapchainKHR swapChain, vk::SurfaceKHR surface,
+	Swapchain(const Device& dev, vk::SwapchainKHR swapChain, vk::SurfaceKHR surface,
 		const vk::Extent2D& size, vk::Format format);
 
-	~SwapChain();
+	~Swapchain();
 
-	SwapChain(SwapChain&& lhs) noexcept { swap(lhs); }
-	SwapChain& operator=(SwapChain&& lhs) noexcept { swap(lhs); return *this; }
+	Swapchain(Swapchain&& lhs) noexcept { swap(lhs); }
+	Swapchain& operator=(Swapchain&& lhs) noexcept { swap(lhs); return *this; }
 
 	/// Resizes the swapchain to the given size. Should be called if the native window of the
 	/// underlaying surface handle changes it size to make sure the swapchain fills the
@@ -113,7 +113,7 @@ public:
 	/// Note that the size paramter is only used when the backend does not provide a fixed
 	/// surface size. Otherwise the swapchain will simply be resized to the current surface
 	/// size and the given size paramter is ignored.
-	void resize(const vk::Extent2D& size = {}, const SwapChainSettings& = {});
+	void resize(const vk::Extent2D& size = {}, const SwapchainSettings& = {});
 
 	/// Acquires the next swapchain image (i.e. the next render buffer).
 	/// \param sem Semaphore to be signaled when acquiring is complete or nullHandle.
@@ -138,7 +138,7 @@ public:
 	vk::Extent2D size() const;
 	const std::vector<RenderBuffer>& renderBuffers() const { return buffers_; }
 
-	void swap(SwapChain& lhs) noexcept;
+	void swap(Swapchain& lhs) noexcept;
 
 protected:
 	void destroyBuffers();

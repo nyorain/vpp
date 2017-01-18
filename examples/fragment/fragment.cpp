@@ -50,7 +50,7 @@ public:
 	FragmentRenderer(FragmentData& data);
 	~FragmentRenderer() = default;
 
-	virtual void init(vpp::SwapChainRenderer&) override;
+	virtual void init(vpp::SwapchainRenderer&) override;
 	virtual void build(unsigned int, const vpp::RenderPassInstance& instance) override;
 	virtual std::vector<vk::ClearValue> clearValues(unsigned int) override;
 
@@ -191,7 +191,7 @@ std::vector<vk::ClearValue> FragmentRenderer::clearValues(unsigned int)
 	return ret;
 }
 
-void FragmentRenderer::init(vpp::SwapChainRenderer& renderer)
+void FragmentRenderer::init(vpp::SwapchainRenderer& renderer)
 {
 	data().init();
 	renderer.record();

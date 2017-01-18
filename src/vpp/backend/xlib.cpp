@@ -28,7 +28,7 @@ Context createContext(Display& dpy, Window window, Context::CreateInfo info)
 	ret.initSurface(std::move(vsurface));
 
 	ret.initDevice(info.deviceExtensions, info.deviceLayers, info.reverseDeviceLayers);
-	ret.initSwapChain({info.width, info.height}, info.swapChainSettings);
+	ret.initSwapchain({info.width, info.height}, info.swapChainSettings);
 
 	return ret;
 }

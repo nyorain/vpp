@@ -28,7 +28,7 @@ Context createContext(xcb_connection_t& con, xcb_window_t window, Context::Creat
 	ret.initSurface(std::move(vsurface));
 
 	ret.initDevice(info.deviceExtensions, info.deviceLayers, info.reverseDeviceLayers);
-	ret.initSwapChain({info.width, info.height}, info.swapChainSettings);
+	ret.initSwapchain({info.width, info.height}, info.swapChainSettings);
 
 	return ret;
 }

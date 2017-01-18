@@ -104,7 +104,7 @@ public:
 	ParticleRenderer(ParticleSystem& sys);
 	~ParticleRenderer();
 
-	void init(vpp::SwapChainRenderer& renderer) override;
+	void init(vpp::SwapchainRenderer& renderer) override;
 	void build(unsigned int, const vpp::RenderPassInstance&) override;
 	std::vector<vk::ClearValue> clearValues(unsigned int) override;
 	void beforeRender(vk::CommandBuffer cmdBuffer) override;
@@ -134,7 +134,7 @@ ParticleRenderer::~ParticleRenderer()
 	if(computeSemaphore_) vk::destroySemaphore(ps().app_.context.device(), computeSemaphore_, nullptr);
 }
 
-void ParticleRenderer::init(vpp::SwapChainRenderer& renderer)
+void ParticleRenderer::init(vpp::SwapchainRenderer& renderer)
 {
 	if(!ps().initialized_)ps().init();
 	ps().initialized_ = true;

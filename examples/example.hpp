@@ -48,8 +48,8 @@ struct App
 
 	vpp::Context context;
 	vpp::RenderPass renderPass {};
-	vpp::SwapChainRenderer renderer;
-	vpp::SwapChainRenderer::CreateInfo rendererInfo {};
+	vpp::SwapchainRenderer renderer;
+	vpp::SwapchainRenderer::CreateInfo rendererInfo {};
 
 	std::function<std::unique_ptr<vpp::RendererBuilder>()> func;
 	bool initialized = false;
@@ -333,7 +333,7 @@ void initApp(App& app, const std::function<std::unique_ptr<vpp::RendererBuilder>
 	app.rendererInfo.attachments = {{vpp::ViewableImage::defaultDepth2D()}};
 	app.context.device().transferManager().shrink();
 
-	// app.renderer = vpp::SwapChainRenderer(app.context.swapChain(), app.rendererInfo, func());
+	// app.renderer = vpp::SwapchainRenderer(app.context.swapChain(), app.rendererInfo, func());
 	app.renderer.create(app.context.swapChain(), app.rendererInfo);
 	app.renderer.init(func());
 

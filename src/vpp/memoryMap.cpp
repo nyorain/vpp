@@ -96,7 +96,6 @@ void MemoryMap::unmap()
 {
 	VPP_DEBUG_CHECK("vpp::MemoryMap::ummap", {
 		if(views_ > 0) VPP_CHECK_THROW("there are still views for this map");
-		if(!valid()) VPP_CHECK_WARN("already unmapped");
 	})
 
 	if(memory_ && vkMemory() && ptr() && size())

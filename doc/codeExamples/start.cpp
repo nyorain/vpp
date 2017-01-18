@@ -20,7 +20,7 @@ auto& surface = constext->surface();
 //create a render pass matching your needs
 auto renderPass = createRenderPass();
 
-//To render somethin now, you could e.g. use the vpp::SwapChainRenderer which requires you to
+//To render somethin now, you could e.g. use the vpp::SwapchainRenderer which requires you to
 //build your render command buffers, but manages all the rest for you.
 class MyRendererBuilder : public vpp::RendererBuilder
 {
@@ -45,10 +45,10 @@ class MyRendererBuilder : public vpp::RendererBuilder
 	}
 } builderObject;
 
-//The SwapChain renderer can be easily constructed and used with the builder implemention from above.
+//The Swapchain renderer can be easily constructed and used with the builder implemention from above.
 //We simply pass him the swapChain to render on, the builder implementation, the created render pass
 //and the vulkan present queue the context automatically creates.
-vpp::SwapChainRenderer renderer(swapChain, builderObject, {renderPass, context->presentQueue()});
+vpp::SwapchainRenderer renderer(swapChain, builderObject, {renderPass, context->presentQueue()});
 
 //Main loop.
 while(handleBackendEvents()) renderer.renderBlock();

@@ -249,9 +249,9 @@ void Context::initDevice(vk::PhysicalDevice phdev, nytl::Span<const char* const>
 	graphicsComputeQueue_ = device().queue(graphicsComputeQFam, 0);
 }
 
-void Context::initSwapChain(const vk::Extent2D& size, const SwapChainSettings& settings)
+void Context::initSwapchain(const vk::Extent2D& size, const SwapchainSettings& settings)
 {
-	swapChain_ = SwapChain(device(), surface(), size, settings);
+	swapChain_ = Swapchain(device(), surface(), size, settings);
 }
 
 vk::Device Context::vkDevice() const

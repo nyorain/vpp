@@ -10,7 +10,10 @@
 #include <vpp/submit.hpp>
 #include <vpp/transfer.hpp>
 #include <vpp/util/threadStorage.hpp>
-#include <cstdlib>
+
+#include <map> // std::map
+#include <vector> // std::map
+#include <utility> // std::pair
 
 namespace vpp {
 

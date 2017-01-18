@@ -30,7 +30,7 @@ namespace {
 #endif
 }
 
-/// A Vulkan Context. Can be used to easily create Device, SwapChain and set everything
+/// A Vulkan Context. Can be used to easily create Device, Swapchain and set everything
 /// up for basic use.
 /// The Context will automatically request a present queue for its surface as well as a graphics
 /// and compute queue (if possible just one queue for all needs).
@@ -67,8 +67,8 @@ public:
 		/// will be enabled.
 		bool reverseDeviceLayers {};
 
-		/// A SwapChainSettings implementation to tweak swapchain creation.
-		const SwapChainSettings& swapChainSettings = SwapChainSettings::instance();
+		/// A SwapchainSettings implementation to tweak swapchain creation.
+		const SwapchainSettings& swapChainSettings = SwapchainSettings::instance();
 	};
 
 public:
@@ -86,7 +86,7 @@ public:
 	const Surface& surface() const { return surface_; }
 
 	const Device& device() const { return *device_; }
-	const SwapChain& swapChain() const { return swapChain_; }
+	const Swapchain& swapChain() const { return swapChain_; }
 
 	/// The queue that can be used for graphics and compute operations.
 	const Queue& graphicsComputeQueue() const { return *graphicsComputeQueue_; }
@@ -95,13 +95,13 @@ public:
 	/// Might be the same as graphicsComputeQueue().
 	const Queue& presentQueue() const { return *presentQueue_; }
 
-	SwapChain& swapChain() { return swapChain_; }
+	Swapchain& swapChain() { return swapChain_; }
 	Device& device() { return *device_; }
 
 	vk::Instance vkInstance() const { return instance_; }
 	vk::SurfaceKHR vkSurface() const { return surface_.vkSurface(); }
 	vk::Device vkDevice() const;
-	vk::SwapchainKHR vkSwapChain() const { return swapChain().vkHandle(); }
+	vk::SwapchainKHR vkSwapchain() const { return swapChain().vkHandle(); }
 
 	/// Following functions can be used to init the context step by step.
 	/// Note that these functions should not be called if the associated initialization has
@@ -113,7 +113,7 @@ public:
 	void initDevice(nytl::Span<const char* const> ext, nytl::Span<const char* const> layers,
 		bool reverseLayers);
 	void initSurface(Surface&& surface) { surface_ = std::move(surface); }
-	void initSwapChain(const vk::Extent2D& size, const SwapChainSettings& settings);
+	void initSwapchain(const vk::Extent2D& size, const SwapchainSettings& settings);
 	vk::PhysicalDevice choosePhysicalDevice(nytl::Span<const vk::PhysicalDevice> devices) const;
 
 	friend void swap(Context& a, Context& b) noexcept;
@@ -124,7 +124,7 @@ protected:
 	Surface surface_;
 
 	std::unique_ptr<Device> device_; //nonMovable
-	SwapChain swapChain_;
+	Swapchain swapChain_;
 
 	const Queue* presentQueue_ = nullptr;
 	const Queue* graphicsComputeQueue_ = nullptr;

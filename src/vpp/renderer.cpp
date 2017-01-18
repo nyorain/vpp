@@ -15,14 +15,14 @@
 namespace vpp
 {
 
-//SwapChainRenderer
-SwapChainRenderer::SwapChainRenderer(const SwapChain& sc, const CreateInfo& inf, RenderImpl bld)
+//SwapchainRenderer
+SwapchainRenderer::SwapchainRenderer(const Swapchain& sc, const CreateInfo& inf, RenderImpl bld)
 {
 	create(sc, inf);
 	init(std::move(bld));
 }
 
-SwapChainRenderer::~SwapChainRenderer()
+SwapchainRenderer::~SwapchainRenderer()
 {
 	///TODO: part of command buffer destruction rework
 	// std::vector<vk::CommandBuffer> cmdBuffers;
@@ -41,7 +41,7 @@ SwapChainRenderer::~SwapChainRenderer()
 	// }
 }
 
-void SwapChainRenderer::swap(SwapChainRenderer& lhs) noexcept
+void SwapchainRenderer::swap(SwapchainRenderer& lhs) noexcept
 {
 	using std::swap;
 
@@ -53,10 +53,10 @@ void SwapChainRenderer::swap(SwapChainRenderer& lhs) noexcept
 	swap(info_, lhs.info_);
 }
 
-void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& info)
+void SwapchainRenderer::create(const Swapchain& swapChain, const CreateInfo& info)
 {
 	if(!info.renderPass)
-		throw std::runtime_error("vpp::SwapChainRenderer: invalid renderPass");
+		throw std::runtime_error("vpp::SwapchainRenderer: invalid renderPass");
 
 	swapChain_ = &swapChain;
 	info_ = info;
@@ -114,7 +114,7 @@ void SwapChainRenderer::create(const SwapChain& swapChain, const CreateInfo& inf
 	}
 }
 
-void SwapChainRenderer::init(RenderImpl builder)
+void SwapchainRenderer::init(RenderImpl builder)
 {
 	Framebuffer::ExtAttachments attachmentMap;
 	std::vector<vk::ImageViewCreateInfo> viewInfos;
@@ -163,7 +163,7 @@ void SwapChainRenderer::init(RenderImpl builder)
 	renderImpl_->init(*this);
 }
 
-void SwapChainRenderer::record(int id)
+void SwapchainRenderer::record(int id)
 {
 	if(id == -1)
 	{
@@ -240,7 +240,7 @@ void SwapChainRenderer::record(int id)
 	vk::endCommandBuffer(vkbuf);
 }
 
-std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, const Queue* gfx)
+std::unique_ptr<Work<void>> SwapchainRenderer::render(const Queue* present, const Queue* gfx)
 {
 	//TODO
 	if(present == nullptr) present = device().queues()[0];
@@ -322,7 +322,7 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, cons
 		virtual void submit() override
 		{
 #ifndef NDEBUG
-			std::cerr << "vpp::SwapChainRenderer::WorkImpl::submit, was already submitted\n";
+			std::cerr << "vpp::SwapchainRenderer::WorkImpl::submit, was already submitted\n";
 #endif
 		}
 		virtual void wait() override
@@ -335,7 +335,7 @@ std::unique_ptr<Work<void>> SwapChainRenderer::render(const Queue* present, cons
 	return std::make_unique<WorkImpl>(acquireComplete, renderComplete, std::move(execState));
 }
 
-void SwapChainRenderer::renderBlock(const Queue* gfx, const Queue* present)
+void SwapchainRenderer::renderBlock(const Queue* gfx, const Queue* present)
 {
 	if(present == nullptr) present = device().queues()[0];
 	if(gfx == nullptr) gfx = device().queues()[0];

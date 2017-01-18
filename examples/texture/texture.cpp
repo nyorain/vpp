@@ -155,7 +155,7 @@ public:
 
 	TextureData& data() { return data_; }
 
-	void init(vpp::SwapChainRenderer& renderer) override
+	void init(vpp::SwapchainRenderer& renderer) override
 	{
 		data_.init();
 		renderer.record();

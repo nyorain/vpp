@@ -12,14 +12,14 @@
 
 namespace vpp {
 
-// SwapChainSettings
-const SwapChainSettings& SwapChainSettings::instance()
+// SwapchainSettings
+const SwapchainSettings& SwapchainSettings::instance()
 {
-	static SwapChainSettings ret;
+	static SwapchainSettings ret;
 	return ret;
 }
 
-vk::SwapchainCreateInfoKHR SwapChainSettings::parse(const vk::SurfaceCapabilitiesKHR& caps,
+vk::SwapchainCreateInfoKHR SwapchainSettings::parse(const vk::SurfaceCapabilitiesKHR& caps,
 	nytl::Span<const vk::PresentModeKHR> modes,
 	nytl::Span<const vk::SurfaceFormatKHR> formats,
 	const vk::Extent2D& size) const
@@ -70,7 +70,7 @@ vk::SwapchainCreateInfoKHR SwapChainSettings::parse(const vk::SurfaceCapabilitie
 	if(caps.currentExtent.width == 0xFFFFFFFF && caps.currentExtent.height == 0xFFFFFFFF)
 	{
 		ret.imageExtent = size;
-		VPP_DEBUG_CHECK("vpp::SwapChainSettings", {
+		VPP_DEBUG_CHECK("vpp::SwapchainSettings", {
 			if(!size.width || !size.height) VPP_CHECK_THROW("Invalid size will be set");
 		});
 	}
@@ -109,11 +109,11 @@ vk::SwapchainCreateInfoKHR SwapChainSettings::parse(const vk::SurfaceCapabilitie
 // utility
 namespace {
 
-using EA = DefaultSwapChainSettings::ErrorAction;
+using EA = DefaultSwapchainSettings::ErrorAction;
 
 void onError(EA action, const char* field)
 {
-	const std::string errorMsg = "vpp::DefaultSwapChainSettings: using different ";
+	const std::string errorMsg = "vpp::DefaultSwapchainSettings: using different ";
 
 	if(action == EA::output)
 		std::cerr << errorMsg << field << "\n";
@@ -124,8 +124,8 @@ void onError(EA action, const char* field)
 
 } // anonymous util namespace
 
-// DefaultSwapChainSettings
-vk::SwapchainCreateInfoKHR DefaultSwapChainSettings::parse(const vk::SurfaceCapabilitiesKHR& caps,
+// DefaultSwapchainSettings
+vk::SwapchainCreateInfoKHR DefaultSwapchainSettings::parse(const vk::SurfaceCapabilitiesKHR& caps,
 	nytl::Span<const vk::PresentModeKHR> modes,
 	nytl::Span<const vk::SurfaceFormatKHR> formats,
 	const vk::Extent2D& size) const
@@ -202,7 +202,7 @@ vk::SwapchainCreateInfoKHR DefaultSwapChainSettings::parse(const vk::SurfaceCapa
 	if(caps.currentExtent.width == 0xFFFFFFFF && caps.currentExtent.height == 0xFFFFFFFF)
 	{
 		ret.imageExtent = size;
-		VPP_DEBUG_CHECK("vpp::SwapChainSettings", {
+		VPP_DEBUG_CHECK("vpp::SwapchainSettings", {
 			if(!size.width || !size.height) VPP_CHECK_THROW("Invalid size will be set.");
 		});
 	}
@@ -247,21 +247,21 @@ vk::SwapchainCreateInfoKHR DefaultSwapChainSettings::parse(const vk::SurfaceCapa
 
 
 
-//SwapChain
-SwapChain::SwapChain(const Device& dev, vk::SurfaceKHR surface, const vk::Extent2D& size,
-	const SwapChainSettings& settings) : ResourceHandle(dev), surface_(surface)
+//Swapchain
+Swapchain::Swapchain(const Device& dev, vk::SurfaceKHR surface, const vk::Extent2D& size,
+	const SwapchainSettings& settings) : ResourceHandle(dev), surface_(surface)
 {
 	resize(size, settings);
 }
 
-SwapChain::SwapChain(const Device& dev, vk::SwapchainKHR swapChain, vk::SurfaceKHR surface,
+Swapchain::Swapchain(const Device& dev, vk::SwapchainKHR swapChain, vk::SurfaceKHR surface,
 	const vk::Extent2D& size, vk::Format format) : ResourceHandle(dev, swapChain),
 		surface_(surface), width_(size.width), height_(size.height), format_(format)
 {
 	createBuffers();
 }
 
-SwapChain::~SwapChain()
+Swapchain::~Swapchain()
 {
 	destroyBuffers();
 	if(!vkHandle()) return;
@@ -270,7 +270,7 @@ SwapChain::~SwapChain()
 	pfDestroySwapchainKHR(device(), vkHandle(), nullptr);
 }
 
-void SwapChain::swap(SwapChain& lhs) noexcept
+void Swapchain::swap(Swapchain& lhs) noexcept
 {
 	using std::swap;
 	swap(resourceBase(), lhs.resourceBase());
@@ -281,7 +281,7 @@ void SwapChain::swap(SwapChain& lhs) noexcept
 	swap(format_, lhs.format_);
 }
 
-void SwapChain::createBuffers()
+void Swapchain::createBuffers()
 {
 	VPP_LOAD_PROC(vkDevice(), GetSwapchainImagesKHR);
 
@@ -320,13 +320,13 @@ void SwapChain::createBuffers()
 	}
 }
 
-void SwapChain::destroyBuffers()
+void Swapchain::destroyBuffers()
 {
 	for(auto& buf : buffers_) vk::destroyImageView(vkDevice(), buf.imageView, nullptr);
 	buffers_.clear();
 }
 
-void SwapChain::resize(const vk::Extent2D& size, const SwapChainSettings& settings)
+void Swapchain::resize(const vk::Extent2D& size, const SwapchainSettings& settings)
 {
 	VPP_LOAD_PROC(vkDevice(), CreateSwapchainKHR);
 	VPP_LOAD_PROC(vkDevice(), DestroySwapchainKHR);
@@ -344,7 +344,7 @@ void SwapChain::resize(const vk::Extent2D& size, const SwapChainSettings& settin
 	//formats
 	uint32_t cnt;
 	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(), vkSurface(), &cnt, nullptr));
-	if(!cnt) throw std::runtime_error("vpp::SwapChain::queryFormats: invalid surface formats");
+	if(!cnt) throw std::runtime_error("vpp::Swapchain::queryFormats: invalid surface formats");
 
 	std::vector<vk::SurfaceFormatKHR> formats(cnt);
 	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(), vkSurface(), &cnt,
@@ -353,7 +353,7 @@ void SwapChain::resize(const vk::Extent2D& size, const SwapChainSettings& settin
 	//present modes
 	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(), vkSurface(), &cnt,
 		nullptr));
-	if(!cnt) throw std::runtime_error("vpp::SwapChain::queryFormats: Surface has no valid modes");
+	if(!cnt) throw std::runtime_error("vpp::Swapchain::queryFormats: Surface has no valid modes");
 
 	std::vector<vk::PresentModeKHR> presentModes(cnt);
 	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(), vkSurface(), &cnt,
@@ -382,7 +382,7 @@ void SwapChain::resize(const vk::Extent2D& size, const SwapChainSettings& settin
 	createBuffers();
 }
 
-vk::Result SwapChain::acquire(unsigned int& id, vk::Semaphore sem, vk::Fence fence) const
+vk::Result Swapchain::acquire(unsigned int& id, vk::Semaphore sem, vk::Fence fence) const
 {
 	//TODO: out of date, sync, timeout...
 	VPP_LOAD_PROC(vkDevice(), AcquireNextImageKHR);
@@ -394,7 +394,7 @@ vk::Result SwapChain::acquire(unsigned int& id, vk::Semaphore sem, vk::Fence fen
 	return ret;
 }
 
-vk::Result SwapChain::present(const Queue& queue, std::uint32_t currentBuffer,
+vk::Result Swapchain::present(const Queue& queue, std::uint32_t currentBuffer,
 	vk::Semaphore wait) const
 {
 	VPP_LOAD_PROC(vkDevice(), QueuePresentKHR);
@@ -416,7 +416,7 @@ vk::Result SwapChain::present(const Queue& queue, std::uint32_t currentBuffer,
 	return ret;
 }
 
-vk::Extent2D SwapChain::size() const
+vk::Extent2D Swapchain::size() const
 {
 	return {width_, height_};
 }

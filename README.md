@@ -50,7 +50,7 @@ auto& surface = constext->surface();
 //In future vpp will probably offer some sane render pass presets
 vpp::RenderPass renderPass = ...;
 
-//To render somethin now, you could e.g. use the vpp::SwapChainRenderer which requires you to
+//To render somethin now, you could e.g. use the vpp::SwapchainRenderer which requires you to
 //build your render command buffers, but manages all the rest for you.
 class MyRendererBuilder : public vpp::RendererBuilder
 {
@@ -75,15 +75,15 @@ class MyRendererBuilder : public vpp::RendererBuilder
 	}
 } builderObject;
 
-//The SwapChain renderer can be easily constructed and used with the builder implemention from above.
+//The Swapchain renderer can be easily constructed and used with the builder implemention from above.
 //We simply pass him the swapChain to render on, the builder implementation, the created render pass
 //and the vulkan present queue the context automatically creates.
-vpp::SwapChainRenderer renderer(swapChain, builderObject, {renderPass, context->presentQueue()});
+vpp::SwapchainRenderer renderer(swapChain, builderObject, {renderPass, context->presentQueue()});
 
 //This function will render one frame and present it.
 //Usually before rendering there would be some kind of (backend-specific) event handling,
 //which would cause the application to quit (break the loop) if the window is closed, and a resize
-//of the swapchain (which would result in the need to recreate the SwapChainRenderer) if the
+//of the swapchain (which would result in the need to recreate the SwapchainRenderer) if the
 //window is resized. Here, we just render and block until the device finishes its work.
 while(true) renderer.renderBlock();
 ```````````````````````
@@ -208,7 +208,7 @@ vulkan device which may bring huge performance gains since this is considered a 
 All the examples here are using the highest level of abstraction of vpp (vpp is
 NOT an engine, so there will be no abstraction like Mesh, Material or Camera), but the api
 can also be accessed on a lower level of abstraction using e.g. DeviceMemory,
-SubmitManager, Device or SwapChain.
+SubmitManager, Device or Swapchain.
 
 
 ## Building

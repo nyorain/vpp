@@ -16,7 +16,7 @@
 namespace vpp {
 
 ///Abstract Interface for building renderers.
-///Will be passed to a SwapChainRenderer constructor to record the prebaked commandBuffers.
+///Will be passed to a SwapchainRenderer constructor to record the prebaked commandBuffers.
 class RendererBuilder {
 public:
 	using AdditionalSemaphores = std::vector<std::pair<vk::Semaphore, vk::PipelineStageBits>>;
@@ -30,10 +30,10 @@ public:
 	///Should return the clearValues for the given render buffer id.
 	virtual std::vector<vk::ClearValue> clearValues(unsigned int id) = 0;
 
-	///This function will be called once by the SwapChainRenderer, after it was constructed
+	///This function will be called once by the SwapchainRenderer, after it was constructed
 	///and before it will use any other builder functions.
 	///Can be used to initialize any Renderer-dependent variables.
-	virtual void init(SwapChainRenderer&) {};
+	virtual void init(SwapchainRenderer&) {};
 
 	///Will be called to record additional command buffer commands before rendering.
 	virtual void beforeRender(vk::CommandBuffer) {};
@@ -65,7 +65,7 @@ public:
 	virtual void frame(unsigned int) {};
 };
 
-///Capable of rendering on a SwapChain.
+///Capable of rendering on a Swapchain.
 ///CreateInfo::swapChainAttachment defines the id of the attachment the swap chain
 ///color image should be used for.
 ///Additional attachments can either be chosen to be static, dynamic or external.
@@ -78,7 +78,7 @@ public:
 ///given the static attachments will have the ids 0 and 2.
 ///One must assure that the given attachments will create a framebuffer that is compatible
 ///for the given render pass, the class itself wont (and cannnot) perform any checking.
-class SwapChainRenderer : public ResourceReference<SwapChainRenderer> {
+class SwapchainRenderer : public ResourceReference<SwapchainRenderer> {
 public:
 	struct AttachmentInfo {
 		//will be used to create static/dynamic attachments
@@ -95,7 +95,7 @@ public:
 	};
 
 	///The CreateInfo struct holds all information that is needed for construction a
-	///SwapChainRenderer. It allows to define additional attachments of different types.
+	///SwapchainRenderer. It allows to define additional attachments of different types.
 	struct CreateInfo {
 		vk::RenderPass renderPass; //the render pass to use for the rendering
 		unsigned int queueFamily; //the queue family for graphical operations
@@ -126,15 +126,15 @@ public:
 	using RenderImpl = std::unique_ptr<RendererBuilder>;
 
 public:
-	SwapChainRenderer() = default;
-	SwapChainRenderer(const SwapChain& swapChain, const CreateInfo& info, RenderImpl builder);
-	~SwapChainRenderer();
+	SwapchainRenderer() = default;
+	SwapchainRenderer(const Swapchain& swapChain, const CreateInfo& info, RenderImpl builder);
+	~SwapchainRenderer();
 
-	SwapChainRenderer(SwapChainRenderer&& lhs) noexcept { swap(lhs); }
-	SwapChainRenderer& operator=(SwapChainRenderer lhs) noexcept { swap(lhs); return *this; }
+	SwapchainRenderer(SwapchainRenderer&& lhs) noexcept { swap(lhs); }
+	SwapchainRenderer& operator=(SwapchainRenderer lhs) noexcept { swap(lhs); return *this; }
 
 	///Creates all static attachments and all framebuffers.
-	void create(const SwapChain& swapChain, const CreateInfo& info);
+	void create(const Swapchain& swapChain, const CreateInfo& info);
 
 	///Initialized all attachments and creates the vulkan framebuffers.
 	void init(RenderImpl builder);
@@ -162,7 +162,7 @@ public:
 	///\param id The id of the render buffer to (re)record. If it is -1, all buffers will be recorded.
 	void record(int id = -1);
 
-	const SwapChain& swapChain() const { return *swapChain_; }
+	const Swapchain& swapChain() const { return *swapChain_; }
 	const std::vector<RenderBuffer>& renderBuffers() const { return renderBuffers_; }
 	const std::vector<ViewableImage>& staticAttachments() const { return staticAttachments_; }
 
@@ -171,11 +171,11 @@ public:
 	unsigned int swapChainAttachment() const { return info_.swapChainAttachment; }
 	const std::vector<AttachmentInfo>& attachmentInfos() const { return info_.attachments; }
 
-	const SwapChain& resourceRef() const { return *swapChain_; }
-	void swap(SwapChainRenderer& lhs) noexcept;
+	const Swapchain& resourceRef() const { return *swapChain_; }
+	void swap(SwapchainRenderer& lhs) noexcept;
 
 protected:
-	const SwapChain* swapChain_ = nullptr;
+	const Swapchain* swapChain_ = nullptr;
 	RenderImpl renderImpl_ = nullptr;
 	std::vector<RenderBuffer> renderBuffers_;
 	std::vector<ViewableImage> staticAttachments_;

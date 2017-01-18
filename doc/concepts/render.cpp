@@ -24,4 +24,4 @@ public:
 	virtual void afterRender(Renderer& renderer, unsigned int id, const CommandBuffer& buffer) = 0;
 };
 
-SwapChainRenderer renderer(swapChain, {renderPass, {ViewableImage::defaultDepth2D}}, std::move(builder));
+SwapchainRenderer renderer(swapChain, {renderPass, {ViewableImage::defaultDepth2D}}, std::move(builder));

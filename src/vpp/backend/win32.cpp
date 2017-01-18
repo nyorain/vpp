@@ -33,7 +33,7 @@ Context createContext(HWND window, Context::CreateInfo info, HINSTANCE module)
 	ret.initSurface(std::move(vsurface));
 
 	ret.initDevice(info.deviceExtensions, info.deviceLayers, info.reverseDeviceLayers);
-	ret.initSwapChain({info.width, info.height}, info.swapChainSettings);
+	ret.initSwapchain({info.width, info.height}, info.swapChainSettings);
 
 	return ret;
 }

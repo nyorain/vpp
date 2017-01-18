@@ -13,7 +13,8 @@ Todo list vor vpp
 
 - move example code snippets out of code!
 - debug checks: make sure to never throw in destructor!
-- SwapChainREnderer::init: call record?
+- pipeline rework
+- SwapchainRenderer::init: call record?
 	- if REndererImpl should call it in init, document it!
 - (further) clean up bufferOps.inl
 - better best physical device querying (vpp/physicalDevice.cpp)
@@ -22,13 +23,14 @@ Todo list vor vpp
 - better renderer resetting (all command pools at once, just resize the frameRenderers vector)
 - textures (overthing viewable image + sampler)
 - fully implement examples!
+	- > see code snippets todo
 - general initializer
 	- something about descriptors and descriptor pools
 	- think about buffer/image providers (better not)
 - improve classes to use allocators and provider
 - backend agnostic createContext function
+	- remove them at all?
 - display class for vkDisplayKHR extension
-- SwapChain -> Swapchain
 - queue management
 	- easier querying/creation/using for commands
 - some smaller improvements
