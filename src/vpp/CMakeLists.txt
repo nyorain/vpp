@@ -23,7 +23,7 @@ set(vpp-sources
 	commandBuffer.cpp
 	submit.cpp
 	surface.cpp
-	swapChain.cpp
+	swapchain.cpp
 	transfer.cpp
 	work.cpp
 	queue.cpp

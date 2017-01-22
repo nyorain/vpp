@@ -12,8 +12,8 @@
 
 namespace vpp {
 
-///Vulkan Renderpass. Can be created just from a vulkan device.
-///Stores its description information.
+/// RAII Vulkan Renderpass wrapper.
+/// Stores its description information.
 class RenderPass : public ResourceHandle<vk::RenderPass> {
 public:
 	RenderPass() = default;
@@ -36,9 +36,9 @@ protected:
 	std::vector<vk::AttachmentReference> references_;
 };
 
-//XXX: class at the moment not useful, can later be used for addtional features/checks
-//XXX: if without additional stuff, at least make it a struct with public members.
-///Vulkan RenderPass Instance, i.e. a commandbuffer recording session during a render pass.
+// XXX: class at the moment not useful, can later be used for addtional features/checks
+// XXX: if without additional stuff, at least make it a struct with public members.
+/// Vulkan RenderPass Instance, i.e. a commandbuffer recording session during a render pass.
 class RenderPassInstance : public nytl::NonCopyable {
 protected:
 	vk::RenderPass renderPass_ {};
@@ -54,7 +54,4 @@ public:
 	const vk::Framebuffer& vkFramebuffer() const { return framebuffer_; }
 };
 
-///\warning not threadsafe.
-vk::RenderPassCreateInfo& defaultRenderPassCreateInfo(vk::Format colorFormat);
-
-}
+} // namespace vpp

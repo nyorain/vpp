@@ -12,6 +12,7 @@ Todo list vor vpp
 	- threadlocal.hpp: use shared_mutex instead of shared_timed_mutex
 
 - move example code snippets out of code!
+- queue constness? (maybe make it related to any operations on the queue?)
 - debug checks: make sure to never throw in destructor!
 - pipeline rework
 - SwapchainRenderer::init: call record?
