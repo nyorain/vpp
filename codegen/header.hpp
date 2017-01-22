@@ -22,6 +22,8 @@ auto constexpr structsHeader = 1 + R"SRC(
 #include <array>
 #include <vulkan/vulkan.h>
 
+static_assert(VK_HEADER_VERSION == %v, "Vulkan and vpp header incompatibility");
+
 )SRC";
 
 auto constexpr enumsHeader = 1 + R"SRC(
@@ -38,6 +40,8 @@ auto constexpr functionsHeader = 1 + R"SRC(
 
 #include <vector>
 #include <vulkan/vulkan.h>
+
+static_assert(VK_HEADER_VERSION == %v, "Vulkan and vpp header incompatibility");
 
 )SRC";
 

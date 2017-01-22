@@ -13,6 +13,8 @@
 #include <array>
 #include <vulkan/vulkan.h>
 
+static_assert(VK_HEADER_VERSION ==  38, "Vulkan and vpp header incompatibility");
+
 namespace vk {
 
 struct ApplicationInfo {
@@ -39,11 +41,11 @@ struct InstanceCreateInfo {
 	InstanceCreateFlags flags {};
 	const ApplicationInfo* pApplicationInfo {};
 	uint32_t enabledLayerCount {};
-	const char** ppEnabledLayerNames {};
+	const char* const* ppEnabledLayerNames {};
 	uint32_t enabledExtensionCount {};
-	const char** ppEnabledExtensionNames {};
+	const char* const* ppEnabledExtensionNames {};
 
-	InstanceCreateInfo(InstanceCreateFlags xflags = {}, const ApplicationInfo* xpApplicationInfo = {}, uint32_t xenabledLayerCount = {}, const char** xppEnabledLayerNames = {}, uint32_t xenabledExtensionCount = {}, const char** xppEnabledExtensionNames = {}) : flags(xflags), pApplicationInfo(xpApplicationInfo), enabledLayerCount(xenabledLayerCount), ppEnabledLayerNames(xppEnabledLayerNames), enabledExtensionCount(xenabledExtensionCount), ppEnabledExtensionNames(xppEnabledExtensionNames) {}
+	InstanceCreateInfo(InstanceCreateFlags xflags = {}, const ApplicationInfo* xpApplicationInfo = {}, uint32_t xenabledLayerCount = {}, const char* const* xppEnabledLayerNames = {}, uint32_t xenabledExtensionCount = {}, const char* const* xppEnabledExtensionNames = {}) : flags(xflags), pApplicationInfo(xpApplicationInfo), enabledLayerCount(xenabledLayerCount), ppEnabledLayerNames(xppEnabledLayerNames), enabledExtensionCount(xenabledExtensionCount), ppEnabledExtensionNames(xppEnabledExtensionNames) {}
 
 	const VkInstanceCreateInfo& vkHandle() const { return reinterpret_cast<const VkInstanceCreateInfo&>(*this); }
 	VkInstanceCreateInfo& vkHandle() { return reinterpret_cast<VkInstanceCreateInfo&>(*this); }
@@ -388,12 +390,12 @@ struct DeviceCreateInfo {
 	uint32_t queueCreateInfoCount {};
 	const DeviceQueueCreateInfo* pQueueCreateInfos {};
 	uint32_t enabledLayerCount {};
-	const char** ppEnabledLayerNames {};
+	const char* const* ppEnabledLayerNames {};
 	uint32_t enabledExtensionCount {};
-	const char** ppEnabledExtensionNames {};
+	const char* const* ppEnabledExtensionNames {};
 	const PhysicalDeviceFeatures* pEnabledFeatures {};
 
-	DeviceCreateInfo(DeviceCreateFlags xflags = {}, uint32_t xqueueCreateInfoCount = {}, const DeviceQueueCreateInfo* xpQueueCreateInfos = {}, uint32_t xenabledLayerCount = {}, const char** xppEnabledLayerNames = {}, uint32_t xenabledExtensionCount = {}, const char** xppEnabledExtensionNames = {}, const PhysicalDeviceFeatures* xpEnabledFeatures = {}) : flags(xflags), queueCreateInfoCount(xqueueCreateInfoCount), pQueueCreateInfos(xpQueueCreateInfos), enabledLayerCount(xenabledLayerCount), ppEnabledLayerNames(xppEnabledLayerNames), enabledExtensionCount(xenabledExtensionCount), ppEnabledExtensionNames(xppEnabledExtensionNames), pEnabledFeatures(xpEnabledFeatures) {}
+	DeviceCreateInfo(DeviceCreateFlags xflags = {}, uint32_t xqueueCreateInfoCount = {}, const DeviceQueueCreateInfo* xpQueueCreateInfos = {}, uint32_t xenabledLayerCount = {}, const char* const* xppEnabledLayerNames = {}, uint32_t xenabledExtensionCount = {}, const char* const* xppEnabledExtensionNames = {}, const PhysicalDeviceFeatures* xpEnabledFeatures = {}) : flags(xflags), queueCreateInfoCount(xqueueCreateInfoCount), pQueueCreateInfos(xpQueueCreateInfos), enabledLayerCount(xenabledLayerCount), ppEnabledLayerNames(xppEnabledLayerNames), enabledExtensionCount(xenabledExtensionCount), ppEnabledExtensionNames(xppEnabledExtensionNames), pEnabledFeatures(xpEnabledFeatures) {}
 
 	const VkDeviceCreateInfo& vkHandle() const { return reinterpret_cast<const VkDeviceCreateInfo&>(*this); }
 	VkDeviceCreateInfo& vkHandle() { return reinterpret_cast<VkDeviceCreateInfo&>(*this); }

@@ -39,7 +39,9 @@ public:
 	/// If no physical device is given, will try to choose the best from the available ones.
 	/// Might (as all vpp classes) throw a vk::VulkanError from the underlaying api calls.
 	/// Will throw std::runtime_error if valid physical device can be found.
-	Device(vk::Instance, vk::PhysicalDevice = {});
+	/// \param extensions The extensions to be enabled.
+	Device(vk::Instance, vk::PhysicalDevice = {},
+		nytl::Span<const char* const> extensions = {});
 
 	/// Creates a new vulkan device that can be used to present on the given surface.
 	/// Will try to automatically select the best physical device. The present queue
@@ -48,7 +50,10 @@ public:
 	/// which can be retrieved using the queue() functions.
 	/// Might (as all vpp classes) throw a vk::VulkanError from the underlaying api calls.
 	/// Will throw std::runtime_error if valid physical device can be found.
-	Device(vk::Instance, vk::SurfaceKHR surface, Queue*& present);
+	/// \param extensions The extensions to be enabled. If this is empty, will automatically
+	/// activate the swapchain extension.
+	Device(vk::Instance, vk::SurfaceKHR, const Queue*& present,
+		nytl::Span<const char* const> extensions = {});
 
 	/// Creates the object from the given device and stores the given queues.
 	/// Note that this function call transfers ownership of the given vulkan device to the

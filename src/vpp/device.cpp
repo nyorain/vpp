@@ -9,6 +9,7 @@
 #include <vpp/commandBuffer.hpp>
 #include <vpp/submit.hpp>
 #include <vpp/transfer.hpp>
+#include <vpp/physicalDevice.hpp>
 #include <vpp/util/threadStorage.hpp>
 
 #include <map> // std::map
@@ -37,7 +38,7 @@ struct Device::Provider {
 	Provider(const Device& dev) : command(dev), submit(dev), transfer(dev) {}
 };
 
-// NOTE: used so the Queue destructor can be made not public and Device a friend.
+// used so the Queue destructor can be made not public and Device a friend.
 // The Device class is the only one that creates/destroys/owns queues.
 struct Device::QueueDeleter {
 	void operator()(Queue* q) { delete q; }
@@ -85,8 +86,116 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 	init(queues);
 }
 
+Device::Device(vk::Instance ini, vk::PhysicalDevice phdev,
+	nytl::Span<const char* const> extensions) : instance_(ini), physicalDevice_(phdev)
+{
+	// query gfx compute queue
+	int gfxCompQueueFam = findQueueFamily(phdev, vk::QueueBits::compute | vk::QueueBits::graphics);
+	if(gfxCompQueueFam == -1)
+		throw std::runtime_error("vpp::Context: unable to find gfx/comp queue family");
+
+	// init device and queue create info
+	float priorities[1] = {0.0};
+
+	vk::DeviceCreateInfo devInfo;
+	vk::DeviceQueueCreateInfo queueInfo({}, gfxCompQueueFam, 1, priorities);
+
+	devInfo.enabledExtensionCount = extensions.size();
+	devInfo.ppEnabledExtensionNames = extensions.data();
+	devInfo.pQueueCreateInfos = &queueInfo;
+	devInfo.queueCreateInfoCount = 1;
+
+	// create the device
+	device_ = vk::createDevice(vkPhysicalDevice(), devInfo);
+	if(!device_)
+		throw std::runtime_error("vpp::Device: device creation failed");
+
+	// retrieve the queues and init the device
+	init({{vk::getDeviceQueue(vkDevice(), gfxCompQueueFam, 0), gfxCompQueueFam}});
+}
+
+Device::Device(vk::Instance ini, vk::SurfaceKHR surface, const Queue*& present,
+	nytl::Span<const char* const> extensions) : instance_(ini)
+{
+	// find a physical device
+	auto phdevs = vk::enumeratePhysicalDevices(vkInstance());
+	auto phdev = choose(phdevs, vkInstance(), surface);
+	if(!phdev)
+		throw std::runtime_error("vpp::Device: could not find a valid physical device");
+
+	physicalDevice_ = phdev;
+
+	// find present, graphics and compute queue
+	// if there is a queue family for all 3, create only one queue for the family
+	// otherwise just find a compute/gfx queue family
+	int presentQueueFam = -1;
+	int gfxCompQueueFam = -1;
+
+	auto gfxCompFlags = vk::QueueBits::graphics | vk::QueueBits::compute;
+	auto allRound = findQueueFamily(phdev, vkInstance(), surface, gfxCompFlags);
+
+	if(allRound != -1) {
+		presentQueueFam = allRound;
+		gfxCompQueueFam = allRound;
+	} else {
+		presentQueueFam = findQueueFamily(phdev, vkInstance(), surface);
+		gfxCompQueueFam = findQueueFamily(phdev, gfxCompFlags);
+	}
+
+	if(presentQueueFam == -1 || gfxCompQueueFam == -1)
+		throw std::runtime_error("vpp::Device: could not find matching queue families");
+
+	// setup device create info
+	vk::DeviceCreateInfo devInfo;
+	devInfo.queueCreateInfoCount = 1;
+
+	// setup queue create infos
+	vk::DeviceQueueCreateInfo queueInfos[2];
+	float priorities[1] = {0.0};
+
+	queueInfos[0].queueFamilyIndex = presentQueueFam;
+	queueInfos[0].queueCount = 1;
+	queueInfos[0].pQueuePriorities = priorities;
+
+	if(gfxCompQueueFam != presentQueueFam) {
+		devInfo.queueCreateInfoCount = 2;
+		queueInfos[1].queueFamilyIndex = gfxCompQueueFam;
+		queueInfos[1].queueCount = 1;
+		queueInfos[1].pQueuePriorities = priorities;
+	}
+
+	devInfo.enabledExtensionCount = extensions.size();
+	devInfo.ppEnabledExtensionNames = extensions.data();
+
+	devInfo.pQueueCreateInfos = queueInfos;
+
+	device_ = vk::createDevice(vkPhysicalDevice(), devInfo);
+	if(!device_)
+		throw std::runtime_error("vpp::Device: device creation failed");
+
+	// retrieve the queues and init the device
+	std::vector<std::pair<vk::Queue, unsigned int>> queuePairs;
+	auto presentQueue = vk::getDeviceQueue(vkDevice(), presentQueueFam, 0);
+
+	queuePairs.emplace_back(presentQueue, presentQueueFam);
+	if(devInfo.queueCreateInfoCount == 2) {
+		auto gfxCompQueue = vk::getDeviceQueue(vkDevice(), presentQueueFam, 0);
+		queuePairs.emplace_back(gfxCompQueue, presentQueueFam);
+	}
+
+	init(queuePairs);
+
+	// set the present queue output parameter
+	present = queue(presentQueueFam);
+}
+
 Device::~Device()
 {
+	// XXX: it is important to first reset the stored objects that
+	// depend on the vulkan device to be valid before actually destroying the
+	// vulkan device.
+	// When adding additional members that depend on the vulkan device, make
+	// sure to destroy them here before calling vk::destroyDevice
 	provider_.reset();
 	impl_.reset();
 

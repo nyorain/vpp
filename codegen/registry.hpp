@@ -13,8 +13,9 @@
 
 #include "pugixml/pugixml.hpp"
 
-class Entry
-{
+/// Base class for all registry entries.
+/// Stores the associated xml node.
+class Entry {
 public:
 	pugi::xml_node node;
 
@@ -23,17 +24,19 @@ public:
 	Entry(const pugi::xml_node& xnode) : node(const_cast<pugi::xml_node&>(xnode)) {}
 };
 
-class Type : public Entry
-{
+/// Base class for all type defines.
+/// Only used for types directly specified in the registry, for additional
+/// qualifications, see QualifiedType.
+class Type : public Entry {
 public:
-	enum class Category
-	{
+	/// The category of the type entry.
+	/// Objects can be casted depending on this value.
+	enum class Category {
 		none,
 		structure,
 		enumeration,
 		handle,
 		bitmask,
-		include,
 		external,
 		basetype,
 		define,
@@ -41,8 +44,8 @@ public:
 	};
 
 public:
-	Category category = Category::none;
-	std::string name {};
+	Category category = Category::none; // the category
+	std::string name {}; // the type name
 
 public:
 	Type() = default;
@@ -50,12 +53,12 @@ public:
 		: Entry(node), category(cat), name(xname) {}
 };
 
-class Enum : public Type
-{
+/// Enumeration type.
+/// Stores all enumeration values.
+class Enum : public Type {
 public:
 	std::vector<std::pair<std::string, std::int64_t>> values;
-	int unusedStart = 0;
-	bool bitmask;
+	bool bitmask {}; /// Whether the enum is a bitmask type.
 
 public:
 	Enum() = default;
@@ -63,8 +66,9 @@ public:
 		: Type(Category::enumeration, name, node) {};
 };
 
-class BaseType : public Type
-{
+/// Typedef type.
+/// Stores a pointer to the original type, i.e. the real type behind the typedef.
+class BaseType : public Type {
 public:
 	Type* original;
 
@@ -73,28 +77,24 @@ public:
 		: Type(Category::basetype, name, node) {}
 };
 
-class Include : public Type
-{
-
-};
-
-class Define : public Type
-{
+/// Type macro definition
+class Define : public Type {
+public:
 	std::string define;
 };
 
-class ExternalType : public Type
-{
-public:
-	Include* requires;
-
+/// External type definition.
+/// Usually used for platform specific types that are included per platform
+/// headers.
+class ExternalType : public Type {
 public:
 	ExternalType(const std::string& name, const pugi::xml_node& node)
 		: Type(Category::external, name, node) {}
 };
 
-class Bitmask : public Type
-{
+/// Bitmask type aka flags.
+/// Holds the associated enumeration, or nullptr if there is none.
+class Bitmask : public Type {
 public:
 	Enum* bits = nullptr;
 
@@ -104,11 +104,11 @@ public:
 		: Type(Category::bitmask, name, node) {}
 };
 
-class Handle : public Type
-{
+/// Handle type.
+/// Holds the name of the macro type that defines it.
+class Handle : public Type {
 public:
 	std::string type;
-	Handle* parent = nullptr;
 
 public:
 	Handle() = default;
@@ -116,21 +116,28 @@ public:
 		: Type(Category::handle, name, node) {};
 };
 
-struct QualifiedType
-{
+/// Wrapper around a Type object for additional qualifiers.
+/// Has always either the type or the pointer or the array member active.
+class QualifiedType {
 public:
-	Type* type {};
-	bool constant = false;
+	Type* type {}; // the plain type
+	QualifiedType* pointer {}; // the reference/pointer/array type
+	QualifiedType* array {}; // the reference/pointer/array type
+
+	bool constant = false; // is the type contant? (this pointer/array level)
+	std::string arraySize {}; // the size of the array (can be a constant)
+
+	// TODO: remove them (only reference may be valid)
 	bool reference = false;
-	unsigned int pointerlvl = 0;
-	std::vector<std::string> arraylvl;
+	// unsigned int pointerlvl = 0;
+	// std::vector<std::string> arraylvl;
 };
 
-struct Param : public Entry
-{
+/// A function parameter or struct member.
+class Param : public Entry {
 public:
-	QualifiedType type;
-	std::string name;
+	QualifiedType type {};
+	std::string name {};
 	bool optional = false;
 
 public:
@@ -138,8 +145,8 @@ public:
 	Param(const pugi::xml_node& node) : Entry(node) {}
 };
 
-class Struct : public Type
-{
+/// A Structure type
+class Struct : public Type {
 public:
 	std::vector<Param> members;
 	bool returnedonly = false;
@@ -150,15 +157,16 @@ public:
 		: Type(Category::structure, name, node) {}
 };
 
-class FuncSignature
-{
+/// Function signature.
+/// Holds return type and parameters.
+class FuncSignature {
 public:
-	QualifiedType returnType;
+	QualifiedType returnType {};
 	std::vector<Param> params;
 };
 
-class FuncPtr : public Type
-{
+/// Function pointer type
+class FuncPtr : public Type {
 public:
 	FuncSignature signature;
 
@@ -167,8 +175,10 @@ public:
 		: Type(Category::funcptr, name, node) {}
 };
 
-struct Command : public Entry
-{
+/// Command registry entry.
+/// Defines a certain vulkan api function.
+/// Holds signature and name.
+class Command : public Entry {
 public:
 	FuncSignature signature;
 	std::string name;
@@ -178,8 +188,9 @@ public:
 	Command(const pugi::xml_node& node) : Entry(node) {}
 };
 
-class Constant : public Entry
-{
+/// Api constant.
+/// Used for symbolics such as vk::nullHandle.
+class Constant : public Entry {
 public:
 	std::string name;
 	std::string value;
@@ -188,8 +199,9 @@ public:
 	Constant(const pugi::xml_node& node) : Entry(node) {}
 };
 
-class Requirements
-{
+/// Requirements of an extensions or feature.
+/// Basically just groups all other entries together.
+class Requirements {
 public:
 	std::vector<Command*> commands;
 	std::vector<Command*> funcPtr;
@@ -201,8 +213,9 @@ public:
 	void add(Requirements& reqs);
 };
 
-class Extension : public Entry
-{
+/// Extensions entry holding its requirements as well as name and id.
+/// If protect is set, the extensions will not be parsed.
+class Extension : public Entry {
 public:
 	Requirements reqs;
 	std::string protect;
@@ -210,8 +223,9 @@ public:
 	int number;
 };
 
-class Feature : public Entry
-{
+/// A vulkan api feature.
+/// Used for api versions and consists of requirements and extensions.
+class Feature : public Entry {
 public:
 	Requirements reqs;
 	std::string name;
@@ -220,8 +234,9 @@ public:
 	std::vector<Extension*> extensions;
 };
 
-class Registry
-{
+/// The registry class holding the whole vulkan registry.
+/// Does not load the registry, see RegistryLoader.
+class Registry {
 public:
 	template<typename T> using Container = std::deque<T>;
 
@@ -233,17 +248,19 @@ public:
 	Container<Constant> constants;
 	Container<ExternalType> externalTypes;
 	Container<BaseType> baseTypes;
-	Container<Include> includes;
 	Container<Define> defines;
 	Container<FuncPtr> funcPtrs;
 
 	Container<Feature> features;
 	Container<Extension> extensions;
 
+	Container<QualifiedType> qualifieds;
+
 	Container<std::string> vendors;
 	Container<std::string> tags;
 
 	std::string copyright;
+	std::string version; // header patch vesion (e.g. 42 for 1.0.42)
 
 public:
 	Type* findType(const std::string& name);
@@ -263,8 +280,10 @@ public:
 	Extension* findExtension(const std::string& name);
 };
 
-class RegistryLoader
-{
+/// Loads a vulkan registry from a file.
+/// Use the parse member function to parse and retrieve a Registry object
+/// for the passed file.
+class RegistryLoader {
 public:
 	RegistryLoader(const std::string& xmlPath);
 	Registry& parse();

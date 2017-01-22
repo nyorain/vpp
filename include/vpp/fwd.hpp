@@ -69,6 +69,6 @@ class TransferManager;
 
 template<typename T>
 class ThreadStorage;
-class DynamicStorageBase;
+struct DynamicStorageBase;
 
 }

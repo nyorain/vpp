@@ -299,9 +299,6 @@ using PfnInternalAllocationNotification = void(*VKAPI_PTR)(void* pUserData, size
 using PfnInternalFreeNotification = void(*VKAPI_PTR)(void* pUserData, size_t size, InternalAllocationType allocationType, SystemAllocationScope allocationScope);
 using PfnVoidFunction = void(*VKAPI_PTR)();
 
-constexpr auto khrSurfaceSpecVersion = 25;
-constexpr auto khrSurfaceExtensionName = "VK_KHR_surface";
-
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(SurfaceKHR)
 
 enum class SurfaceTransformBitsKHR : int32_t;
@@ -321,9 +318,6 @@ using PfnGetPhysicalDeviceSurfaceCapabilitiesKHR = Result(*VKAPI_PTR)(PhysicalDe
 using PfnGetPhysicalDeviceSurfaceFormatsKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, SurfaceKHR surface, uint32_t* pSurfaceFormatCount, SurfaceFormatKHR* pSurfaceFormats);
 using PfnGetPhysicalDeviceSurfacePresentModesKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, SurfaceKHR surface, uint32_t* pPresentModeCount, PresentModeKHR* pPresentModes);
 
-constexpr auto khrSwapchainSpecVersion = 68;
-constexpr auto khrSwapchainExtensionName = "VK_KHR_swapchain";
-
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(SwapchainKHR)
 
 using SwapchainCreateFlagsKHR = nytl::Flags<DummyEnum>;
@@ -336,9 +330,6 @@ using PfnDestroySwapchainKHR = void(*VKAPI_PTR)(Device device, SwapchainKHR swap
 using PfnGetSwapchainImagesKHR = Result(*VKAPI_PTR)(Device device, SwapchainKHR swapchain, uint32_t* pSwapchainImageCount, Image* pSwapchainImages);
 using PfnAcquireNextImageKHR = Result(*VKAPI_PTR)(Device device, SwapchainKHR swapchain, uint64_t timeout, Semaphore semaphore, Fence fence, uint32_t* pImageIndex);
 using PfnQueuePresentKHR = Result(*VKAPI_PTR)(Queue queue, const PresentInfoKHR* pPresentInfo);
-
-constexpr auto khrDisplaySpecVersion = 21;
-constexpr auto khrDisplayExtensionName = "VK_KHR_display";
 
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(DisplayKHR)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(DisplayModeKHR)
@@ -365,17 +356,11 @@ using PfnCreateDisplayModeKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice
 using PfnGetDisplayPlaneCapabilitiesKHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, DisplayModeKHR mode, uint32_t planeIndex, DisplayPlaneCapabilitiesKHR* pCapabilities);
 using PfnCreateDisplayPlaneSurfaceKHR = Result(*VKAPI_PTR)(Instance instance, const DisplaySurfaceCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
 
-constexpr auto khrDisplaySwapchainSpecVersion = 9;
-constexpr auto khrDisplaySwapchainExtensionName = "VK_KHR_display_swapchain";
-
 struct DisplayPresentInfoKHR;
 
 using PfnCreateSharedSwapchainsKHR = Result(*VKAPI_PTR)(Device device, uint32_t swapchainCount, const SwapchainCreateInfoKHR* pCreateInfos, const AllocationCallbacks* pAllocator, SwapchainKHR* pSwapchains);
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
-
-constexpr auto khrXlibSurfaceSpecVersion = 6;
-constexpr auto khrXlibSurfaceExtensionName = "VK_KHR_xlib_surface";
 
 using XlibSurfaceCreateFlagsKHR = nytl::Flags<DummyEnum>;
 
@@ -388,9 +373,6 @@ using PfnGetPhysicalDeviceXlibPresentationSupportKHR = Bool32(*VKAPI_PTR)(Physic
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
 
-constexpr auto khrXcbSurfaceSpecVersion = 6;
-constexpr auto khrXcbSurfaceExtensionName = "VK_KHR_xcb_surface";
-
 using XcbSurfaceCreateFlagsKHR = nytl::Flags<DummyEnum>;
 
 struct XcbSurfaceCreateInfoKHR;
@@ -401,9 +383,6 @@ using PfnGetPhysicalDeviceXcbPresentationSupportKHR = Bool32(*VKAPI_PTR)(Physica
 #endif //VK_USE_PLATFORM_XCB_KHR
 
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
-
-constexpr auto khrWaylandSurfaceSpecVersion = 5;
-constexpr auto khrWaylandSurfaceExtensionName = "VK_KHR_wayland_surface";
 
 using WaylandSurfaceCreateFlagsKHR = nytl::Flags<DummyEnum>;
 
@@ -416,9 +395,6 @@ using PfnGetPhysicalDeviceWaylandPresentationSupportKHR = Bool32(*VKAPI_PTR)(Phy
 
 #ifdef VK_USE_PLATFORM_MIR_KHR
 
-constexpr auto khrMirSurfaceSpecVersion = 4;
-constexpr auto khrMirSurfaceExtensionName = "VK_KHR_mir_surface";
-
 using MirSurfaceCreateFlagsKHR = nytl::Flags<DummyEnum>;
 
 struct MirSurfaceCreateInfoKHR;
@@ -430,9 +406,6 @@ using PfnGetPhysicalDeviceMirPresentationSupportKHR = Bool32(*VKAPI_PTR)(Physica
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 
-constexpr auto khrAndroidSurfaceSpecVersion = 6;
-constexpr auto khrAndroidSurfaceExtensionName = "VK_KHR_android_surface";
-
 using AndroidSurfaceCreateFlagsKHR = nytl::Flags<DummyEnum>;
 
 struct AndroidSurfaceCreateInfoKHR;
@@ -443,9 +416,6 @@ using PfnCreateAndroidSurfaceKHR = Result(*VKAPI_PTR)(Instance instance, const A
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 
-constexpr auto khrWin32SurfaceSpecVersion = 5;
-constexpr auto khrWin32SurfaceExtensionName = "VK_KHR_win32_surface";
-
 using Win32SurfaceCreateFlagsKHR = nytl::Flags<DummyEnum>;
 
 struct Win32SurfaceCreateInfoKHR;
@@ -454,13 +424,6 @@ using PfnCreateWin32SurfaceKHR = Result(*VKAPI_PTR)(Instance instance, const Win
 using PfnGetPhysicalDeviceWin32PresentationSupportKHR = Bool32(*VKAPI_PTR)(PhysicalDevice physicalDevice, uint32_t queueFamilyIndex);
 
 #endif //VK_USE_PLATFORM_WIN32_KHR
-
-constexpr auto androidNativeBufferSpecVersion = 4;
-constexpr auto androidNativeBufferNumber = 11;
-constexpr auto androidNativeBufferName = "VK_ANDROID_native_buffer";
-
-constexpr auto extDebugReportSpecVersion = 4;
-constexpr auto extDebugReportExtensionName = "VK_EXT_debug_report";
 
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(DebugReportCallbackEXT)
 
@@ -472,47 +435,15 @@ using DebugReportFlagsEXT = nytl::Flags<DebugReportBitsEXT>;
 
 struct DebugReportCallbackCreateInfoEXT;
 
-using PfnDebugReportCallbackEXT = Bool32(*VKAPI_PTR)(DebugReportFlagsEXT flags, DebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData);
+using PfnDebugReportCallbackEXT = Bool32(*VKAPI_PTR)(DebugReportFlagsEXT flags, DebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* const pLayerPrefix, const char* pMessage, void* pUserData);
+
 using PfnCreateDebugReportCallbackEXT = Result(*VKAPI_PTR)(Instance instance, const DebugReportCallbackCreateInfoEXT* pCreateInfo, const AllocationCallbacks* pAllocator, DebugReportCallbackEXT* pCallback);
 using PfnDestroyDebugReportCallbackEXT = void(*VKAPI_PTR)(Instance instance, DebugReportCallbackEXT callback, const AllocationCallbacks* pAllocator);
 using PfnDebugReportMessageEXT = void(*VKAPI_PTR)(Instance instance, DebugReportFlagsEXT flags, DebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage);
 
-constexpr auto nvGlslShaderSpecVersion = 1;
-constexpr auto nvGlslShaderExtensionName = "VK_NV_glsl_shader";
-
-constexpr auto nvExtension1SpecVersion = 0;
-constexpr auto nvExtension1ExtensionName = "VK_NV_extension_1";
-
-constexpr auto khrSamplerMirrorClampToEdgeSpecVersion = 1;
-constexpr auto khrSamplerMirrorClampToEdgeExtensionName = "VK_KHR_sampler_mirror_clamp_to_edge";
-
-constexpr auto imgFilterCubicSpecVersion = 1;
-constexpr auto imgFilterCubicExtensionName = "VK_IMG_filter_cubic";
-
-constexpr auto amdExtension17SpecVersion = 0;
-constexpr auto amdExtension17ExtensionName = "VK_AMD_extension_17";
-
-constexpr auto amdExtension18SpecVersion = 0;
-constexpr auto amdExtension18ExtensionName = "VK_AMD_extension_18";
-
-constexpr auto amdRasterizationOrderSpecVersion = 1;
-constexpr auto amdRasterizationOrderExtensionName = "VK_AMD_rasterization_order";
-
 enum class RasterizationOrderAMD : int32_t;
 
 struct PipelineRasterizationStateRasterizationOrderAMD;
-
-constexpr auto amdExtension20SpecVersion = 0;
-constexpr auto amdExtension20ExtensionName = "VK_AMD_extension_20";
-
-constexpr auto amdShaderTrinaryMinmaxSpecVersion = 1;
-constexpr auto amdShaderTrinaryMinmaxExtensionName = "VK_AMD_shader_trinary_minmax";
-
-constexpr auto amdShaderExplicitVertexParameterSpecVersion = 1;
-constexpr auto amdShaderExplicitVertexParameterExtensionName = "VK_AMD_shader_explicit_vertex_parameter";
-
-constexpr auto extDebugMarkerSpecVersion = 3;
-constexpr auto extDebugMarkerExtensionName = "VK_EXT_debug_marker";
 
 struct DebugMarkerObjectNameInfoEXT;
 struct DebugMarkerObjectTagInfoEXT;
@@ -524,111 +455,12 @@ using PfnCmdDebugMarkerBeginEXT = void(*VKAPI_PTR)(CommandBuffer commandBuffer, 
 using PfnCmdDebugMarkerEndEXT = void(*VKAPI_PTR)(CommandBuffer commandBuffer);
 using PfnCmdDebugMarkerInsertEXT = void(*VKAPI_PTR)(CommandBuffer commandBuffer, DebugMarkerMarkerInfoEXT* pMarkerInfo);
 
-constexpr auto amdExtension24SpecVersion = 0;
-constexpr auto amdExtension24ExtensionName = "VK_AMD_extension_24";
-
-constexpr auto amdExtension25SpecVersion = 0;
-constexpr auto amdExtension25ExtensionName = "VK_AMD_extension_25";
-
-constexpr auto amdGcnShaderSpecVersion = 1;
-constexpr auto amdGcnShaderExtensionName = "VK_AMD_gcn_shader";
-
-constexpr auto nvDedicatedAllocationSpecVersion = 1;
-constexpr auto nvDedicatedAllocationExtensionName = "VK_NV_dedicated_allocation";
-
 struct DedicatedAllocationImageCreateInfoNV;
 struct DedicatedAllocationBufferCreateInfoNV;
 struct DedicatedAllocationMemoryAllocateInfoNV;
 
-constexpr auto extExtension28SpecVersion = 0;
-constexpr auto extExtension28ExtensionName = "VK_NV_extension_28";
-
-constexpr auto nvxExtension29SpecVersion = 0;
-constexpr auto nvxExtension29ExtensionName = "VK_NVX_extension_29";
-
-constexpr auto nvxExtension30SpecVersion = 0;
-constexpr auto nvxExtension30ExtensionName = "VK_NVX_extension_30";
-
-constexpr auto nvxExtension31SpecVersion = 0;
-constexpr auto nvxExtension31ExtensionName = "VK_NVX_extension_31";
-
-constexpr auto amdExtension32SpecVersion = 0;
-constexpr auto amdExtension32ExtensionName = "VK_AMD_extension_32";
-
-constexpr auto amdExtension33SpecVersion = 0;
-constexpr auto amdExtension33ExtensionName = "VK_AMD_extension_33";
-
-constexpr auto amdDrawIndirectCountSpecVersion = 1;
-constexpr auto amdDrawIndirectCountExtensionName = "VK_AMD_draw_indirect_count";
-
 using PfnCmdDrawIndirectCountAMD = void(*VKAPI_PTR)(CommandBuffer commandBuffer, Buffer buffer, DeviceSize offset, Buffer countBuffer, DeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
 using PfnCmdDrawIndexedIndirectCountAMD = void(*VKAPI_PTR)(CommandBuffer commandBuffer, Buffer buffer, DeviceSize offset, Buffer countBuffer, DeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
-
-constexpr auto amdExtension35SpecVersion = 0;
-constexpr auto amdExtension35ExtensionName = "VK_AMD_extension_35";
-
-constexpr auto amdNegativeViewportHeightSpecVersion = 1;
-constexpr auto amdNegativeViewportHeightExtensionName = "VK_AMD_negative_viewport_height";
-
-constexpr auto amdGpuShaderHalfFloatSpecVersion = 1;
-constexpr auto amdGpuShaderHalfFloatExtensionName = "VK_AMD_gpu_shader_half_float";
-
-constexpr auto amdShaderBallotSpecVersion = 1;
-constexpr auto amdShaderBallotExtensionName = "VK_AMD_shader_ballot";
-
-constexpr auto amdExtension39SpecVersion = 0;
-constexpr auto amdExtension39ExtensionName = "VK_AMD_extension_39";
-
-constexpr auto amdExtension40SpecVersion = 0;
-constexpr auto amdExtension40ExtensionName = "VK_AMD_extension_40";
-
-constexpr auto amdExtension41SpecVersion = 0;
-constexpr auto amdExtension41ExtensionName = "VK_AMD_extension_41";
-
-constexpr auto amdExtension42SpecVersion = 0;
-constexpr auto amdExtension42ExtensionName = "VK_AMD_extension_42";
-
-constexpr auto amdExtension43SpecVersion = 0;
-constexpr auto amdExtension43ExtensionName = "VK_AMD_extension_43";
-
-constexpr auto amdExtension44SpecVersion = 0;
-constexpr auto amdExtension44ExtensionName = "VK_AMD_extension_44";
-
-constexpr auto amdExtension45SpecVersion = 0;
-constexpr auto amdExtension45ExtensionName = "VK_AMD_extension_45";
-
-constexpr auto amdExtension46SpecVersion = 0;
-constexpr auto amdExtension46ExtensionName = "VK_AMD_extension_46";
-
-constexpr auto amdExtension47SpecVersion = 0;
-constexpr auto amdExtension47ExtensionName = "VK_AMD_extension_47";
-
-constexpr auto nvxExtension48SpecVersion = 0;
-constexpr auto nvxExtension48ExtensionName = "VK_NVX_extension_48";
-
-constexpr auto googleExtension49SpecVersion = 0;
-constexpr auto googleExtension49ExtensionName = "VK_GOOGLE_extension_49";
-
-constexpr auto googleExtension50SpecVersion = 0;
-constexpr auto googleExtension50ExtensionName = "VK_GOOGLE_extension_50";
-
-constexpr auto nvxExtension51SpecVersion = 0;
-constexpr auto nvxExtension51ExtensionName = "VK_NVX_extension_51";
-
-constexpr auto nvxExtension52SpecVersion = 0;
-constexpr auto nvxExtension52ExtensionName = "VK_NVX_extension_52";
-
-constexpr auto nvExtension53SpecVersion = 0;
-constexpr auto nvExtension53ExtensionName = "VK_NV_extension_53";
-
-constexpr auto nvExtension54SpecVersion = 0;
-constexpr auto nvExtension54ExtensionName = "VK_NV_extension_54";
-
-constexpr auto imgFormatPvrtcSpecVersion = 1;
-constexpr auto imgFormatPvrtcExtensionName = "VK_IMG_format_pvrtc";
-
-constexpr auto nvExternalMemoryCapabilitiesSpecVersion = 1;
-constexpr auto nvExternalMemoryCapabilitiesExtensionName = "VK_NV_external_memory_capabilities";
 
 enum class ExternalMemoryHandleTypeBitsNV : int32_t;
 enum class ExternalMemoryFeatureBitsNV : int32_t;
@@ -640,16 +472,10 @@ struct ExternalImageFormatPropertiesNV;
 
 using PfnGetPhysicalDeviceExternalImageFormatPropertiesNV = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, Format format, ImageType type, ImageTiling tiling, ImageUsageFlags usage, ImageCreateFlags flags, ExternalMemoryHandleTypeFlagsNV externalHandleType, ExternalImageFormatPropertiesNV* pExternalImageFormatProperties);
 
-constexpr auto nvExternalMemorySpecVersion = 1;
-constexpr auto nvExternalMemoryExtensionName = "VK_NV_external_memory";
-
 struct ExternalMemoryImageCreateInfoNV;
 struct ExportMemoryAllocateInfoNV;
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-
-constexpr auto nvExternalMemoryWin32SpecVersion = 1;
-constexpr auto nvExternalMemoryWin32ExtensionName = "VK_NV_external_memory_win32";
 
 struct ImportMemoryWin32HandleInfoNV;
 struct ExportMemoryWin32HandleInfoNV;
@@ -660,100 +486,13 @@ using PfnGetMemoryWin32HandleNV = Result(*VKAPI_PTR)(Device device, DeviceMemory
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 
-constexpr auto nvWin32KeyedMutexSpecVersion = 1;
-constexpr auto nvWin32KeyedMutexExtensionName = "VK_NV_win32_keyed_mutex";
-
 struct Win32KeyedMutexAcquireReleaseInfoNV;
 
 #endif //VK_USE_PLATFORM_WIN32_KHR
 
-constexpr auto khrExtension60SpecVersion = 0;
-constexpr auto khrExtension60ExtensionName = "VK_KHR_extension_60";
-
-constexpr auto khrExtension61SpecVersion = 0;
-constexpr auto khrExtension61ExtensionName = "VK_KHR_extension_61";
-
-constexpr auto extValidationFlagsSpecVersion = 1;
-constexpr auto extValidationFlagsExtensionName = "VK_EXT_validation_flags";
-
 enum class ValidationCheckEXT : int32_t;
 
 struct ValidationFlagsEXT;
-
-constexpr auto nvExtension63SpecVersion = 0;
-constexpr auto nvExtension63ExtensionName = "VK_NV_extension_63";
-
-constexpr auto khrExtension64SpecVersion = 0;
-constexpr auto khrExtension64ExtensionName = "VK_KHR_extension_64";
-
-constexpr auto nvExtension65SpecVersion = 0;
-constexpr auto nvExtension65ExtensionName = "VK_NV_extension_65";
-
-constexpr auto nvExtension66SpecVersion = 0;
-constexpr auto nvExtension66ExtensionName = "VK_NV_extension_66";
-
-constexpr auto armExtension01SpecVersion = 0;
-constexpr auto armExtension01ExtensionName = "VK_ARM_extension_01";
-
-constexpr auto armExtension02SpecVersion = 0;
-constexpr auto armExtension02ExtensionName = "VK_ARM_extension_02";
-
-constexpr auto imgExtension69SpecVersion = 0;
-constexpr auto imgExtension69ExtensionName = "VK_IMG_extension_69";
-
-constexpr auto khrExtension70SpecVersion = 0;
-constexpr auto khrExtension70ExtensionName = "VK_KHR_extension_70";
-
-constexpr auto khrExtension71SpecVersion = 0;
-constexpr auto khrExtension71ExtensionName = "VK_KHR_extension_71";
-
-constexpr auto khrExtension72SpecVersion = 0;
-constexpr auto khrExtension72ExtensionName = "VK_KHR_extension_72";
-
-constexpr auto khrExtension73SpecVersion = 0;
-constexpr auto khrExtension73ExtensionName = "VK_KHR_extension_73";
-
-constexpr auto khrExtension74SpecVersion = 0;
-constexpr auto khrExtension74ExtensionName = "VK_KHR_extension_74";
-
-constexpr auto khrExtension75SpecVersion = 0;
-constexpr auto khrExtension75ExtensionName = "VK_KHR_extension_75";
-
-constexpr auto khrExtension76SpecVersion = 0;
-constexpr auto khrExtension76ExtensionName = "VK_KHR_extension_76";
-
-constexpr auto khrExtension77SpecVersion = 0;
-constexpr auto khrExtension77ExtensionName = "VK_KHR_extension_77";
-
-constexpr auto khrExtension78SpecVersion = 0;
-constexpr auto khrExtension78ExtensionName = "VK_KHR_extension_78";
-
-constexpr auto khrExtension79SpecVersion = 0;
-constexpr auto khrExtension79ExtensionName = "VK_KHR_extension_79";
-
-constexpr auto khrExtension80SpecVersion = 0;
-constexpr auto khrExtension80ExtensionName = "VK_KHR_extension_80";
-
-constexpr auto khrExtension81SpecVersion = 0;
-constexpr auto khrExtension81ExtensionName = "VK_KHR_extension_81";
-
-constexpr auto khrExtension82SpecVersion = 0;
-constexpr auto khrExtension82ExtensionName = "VK_KHR_extension_82";
-
-constexpr auto khrExtension83SpecVersion = 0;
-constexpr auto khrExtension83ExtensionName = "VK_KHR_extension_83";
-
-constexpr auto khrExtension84SpecVersion = 0;
-constexpr auto khrExtension84ExtensionName = "VK_KHR_extension_84";
-
-constexpr auto khrExtension85SpecVersion = 0;
-constexpr auto khrExtension85ExtensionName = "VK_KHR_extension_85";
-
-constexpr auto khrExtension86SpecVersion = 0;
-constexpr auto khrExtension86ExtensionName = "VK_KHR_extension_86";
-
-constexpr auto nvxDeviceGeneratedCommandsSpecVersion = 1;
-constexpr auto nvxDeviceGeneratedCommandsExtensionName = "VK_NVX_device_generated_commands";
 
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(ObjectTableNVX)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(IndirectCommandsLayoutNVX)
@@ -787,63 +526,9 @@ using PfnCreateIndirectCommandsLayoutNVX = Result(*VKAPI_PTR)(Device device, con
 using PfnDestroyIndirectCommandsLayoutNVX = void(*VKAPI_PTR)(Device device, IndirectCommandsLayoutNVX indirectCommandsLayout, const AllocationCallbacks* pAllocator);
 using PfnCreateObjectTableNVX = Result(*VKAPI_PTR)(Device device, const ObjectTableCreateInfoNVX* pCreateInfo, const AllocationCallbacks* pAllocator, ObjectTableNVX* pObjectTable);
 using PfnDestroyObjectTableNVX = void(*VKAPI_PTR)(Device device, ObjectTableNVX objectTable, const AllocationCallbacks* pAllocator);
-using PfnRegisterObjectsNVX = Result(*VKAPI_PTR)(Device device, ObjectTableNVX objectTable, uint32_t objectCount, const ObjectTableEntryNVX** ppObjectTableEntries, const uint32_t* pObjectIndices);
+using PfnRegisterObjectsNVX = Result(*VKAPI_PTR)(Device device, ObjectTableNVX objectTable, uint32_t objectCount, const ObjectTableEntryNVX* const* ppObjectTableEntries, const uint32_t* pObjectIndices);
 using PfnUnregisterObjectsNVX = Result(*VKAPI_PTR)(Device device, ObjectTableNVX objectTable, uint32_t objectCount, const ObjectEntryTypeNVX* pObjectEntryTypes, const uint32_t* pObjectIndices);
 using PfnGetPhysicalDeviceGeneratedCommandsPropertiesNVX = void(*VKAPI_PTR)(PhysicalDevice physicalDevice, DeviceGeneratedCommandsFeaturesNVX* pFeatures, DeviceGeneratedCommandsLimitsNVX* pLimits);
-
-constexpr auto khrExtension88SpecVersion = 0;
-constexpr auto khrExtension88ExtensionName = "VK_KHR_extension_88";
-
-constexpr auto extExtension89SpecVersion = 0;
-constexpr auto extExtension89ExtensionName = "VK_EXT_extension_89";
-
-constexpr auto extExtension90SpecVersion = 0;
-constexpr auto extExtension90ExtensionName = "VK_EXT_extension_90";
-
-constexpr auto extExtension91SpecVersion = 0;
-constexpr auto extExtension91ExtensionName = "VK_EXT_extension_91";
-
-constexpr auto extExtension92SpecVersion = 0;
-constexpr auto extExtension92ExtensionName = "VK_EXT_extension_92";
-
-constexpr auto googleExtension93SpecVersion = 0;
-constexpr auto googleExtension93ExtensionName = "VK_GOOGLE_extension_93";
-
-constexpr auto khrExtension94SpecVersion = 0;
-constexpr auto khrExtension94ExtensionName = "VK_KHR_extension_94";
-
-constexpr auto nvExtension95SpecVersion = 0;
-constexpr auto nvExtension95ExtensionName = "VK_NV_extension_95";
-
-constexpr auto nvExtension96SpecVersion = 0;
-constexpr auto nvExtension96ExtensionName = "VK_NV_extension_96";
-
-constexpr auto nvExtension97SpecVersion = 0;
-constexpr auto nvExtension97ExtensionName = "VK_NV_extension_97";
-
-constexpr auto nvExtension98SpecVersion = 0;
-constexpr auto nvExtension98ExtensionName = "VK_NV_extension_98";
-
-constexpr auto nvExtension99SpecVersion = 0;
-constexpr auto nvExtension99ExtensionName = "VK_NV_extension_99";
-
-constexpr auto nvExtension100SpecVersion = 0;
-constexpr auto nvExtension100ExtensionName = "VK_NV_extension_100";
-
-constexpr auto nvExtension101SpecVersion = 0;
-constexpr auto nvExtension101ExtensionName = "VK_NV_extension_101";
-
-constexpr auto nvExtension102SpecVersion = 0;
-constexpr auto nvExtension102ExtensionName = "VK_NV_extension_102";
-
-constexpr auto nvExtension103SpecVersion = 0;
-constexpr auto nvExtension103ExtensionName = "VK_NV_extension_103";
-
-constexpr auto nvExtension104SpecVersion = 0;
-constexpr auto nvExtension104ExtensionName = "VK_NV_extension_104";
-
-constexpr auto khrExtension105SpecVersion = 0;
-constexpr auto khrExtension105ExtensionName = "VK_EXT_extension_105";
 
 
 

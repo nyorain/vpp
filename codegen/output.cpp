@@ -2,13 +2,6 @@
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
-constexpr const auto copyright = 1 + R"SRC(
-// Copyright (c) 2017 nyorain
-// Distributed under the Boost Software License, Version 1.0.
-// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
-)SRC";
-
-
 #include "output.hpp"
 #include "registry.hpp"
 #include "header.hpp"
@@ -19,12 +12,34 @@ constexpr const auto copyright = 1 + R"SRC(
 #include <regex>
 
 // utility
+// the outputted copyright for the parsed header
+constexpr const auto copyright = 1 + R"SRC(
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+)SRC";
+
+constexpr auto logEnabled = false;
+
+/// log output function
+template<typename... Args>
+void log(Args... args)
+{
+	using Expand = const int[];
+	if(logEnabled) {
+		(void) Expand{(std::cerr << args, 0)...};
+		std::cerr << "\n";
+	}
+}
+
+/// string to lower in place
 void tolowerip(std::string& str)
 {
 	static const auto& f = std::use_facet<std::ctype<char>>(std::locale());
 	f.tolower(&str.front(), &str.back() + 1);
 }
 
+/// string to lower in copy
 std::string tolower(const std::string& str)
 {
 	auto ret = str;
@@ -32,13 +47,14 @@ std::string tolower(const std::string& str)
 	return ret;
 }
 
-
+/// string to upper in place
 void toupperip(std::string& str)
 {
 	static const auto& f = std::use_facet<std::ctype<char>>(std::locale());
 	f.toupper(&str.front(), &str.back() + 1);
 }
 
+/// string to upper in copy
 std::string toupper(const std::string& str)
 {
 	auto ret = str;
@@ -46,9 +62,7 @@ std::string toupper(const std::string& str)
 	return ret;
 }
 
-
-
-//generator
+// generator
 std::string OutputGenerator::removeVkPrefix(const std::string& string, bool* found) const
 {
 	auto ret = string;
@@ -64,8 +78,7 @@ bool OutputGenerator::removeVkPrefix(std::string& string) const
 	auto sub = string.substr(0, 2);
 	tolowerip(sub);
 
-	if(sub == "vk")
-	{
+	if(sub == "vk") {
 		if(string[2] == '_') string = string.substr(3);
 		else string = string.substr(2);
 		return true;
@@ -98,29 +111,27 @@ std::string OutputGenerator::removeExtSuffix(const std::string& string, std::str
 
 std::string OutputGenerator::removeExtSuffix(std::string& string) const
 {
-	for(auto& ext : registry().vendors)
-	{
+	for(auto& ext : registry().vendors) {
+		if(string.size() < ext.size()) continue;
 		ext = tolower(ext);
-		if(string.size() >= ext.size() && tolower(string.substr(string.size() - ext.size())) == ext)
-		{
+		if(tolower(string.substr(string.size() - ext.size())) == ext) {
 			string = string.substr(0, string.size() - ext.size());
 			return ext;
 		}
 	}
 
-	for(auto& ext : registry().tags)
-	{
+	for(auto& ext : registry().tags) {
+		if(string.size() < ext.size()) continue;
 		ext = tolower(ext);
-		if(string.size() >= ext.size() && tolower(string.substr(string.size() - ext.size())) == ext)
-		{
+		if(tolower(string.substr(string.size() - ext.size())) == ext) {
 			string = string.substr(0, string.size() - ext.size());
 			return ext;
 		}
 	}
 
 	std::string ext = "ext";
-	if(string.size() >= ext.size() && tolower(string.substr(string.size() - ext.size())) == ext)
-	{
+	if(string.size() < ext.size()) return "";
+	if(tolower(string.substr(string.size() - ext.size())) == ext){
 		string = string.substr(0, string.size() - ext.size());
 		return ext;
 	}
@@ -141,8 +152,7 @@ void OutputGenerator::camelCaseip(std::string& string, bool firstupper) const
 
 	std::size_t pos = 0u;
 	tolowerip(string);
-	while((pos = string.find('_')) != std::string::npos)
-	{
+	while((pos = string.find('_')) != std::string::npos) {
 		string.erase(pos, 1);
 		if(pos < string.size()) string[pos] = std::toupper(string[pos], std::locale());
 	}
@@ -151,13 +161,11 @@ void OutputGenerator::camelCaseip(std::string& string, bool firstupper) const
 	else string[0] = std::tolower(string[0], std::locale());
 }
 
-void OutputGenerator::upperCaseip(std::string& string) const
+void OutputGenerator::macroCaseip(std::string& string) const
 {
 	std::size_t pos = 0u;
-	while(pos < string.size())
-	{
-		for(auto& c : string.substr(pos))
-		{
+	while(pos < string.size()) {
+		for(auto& c : string.substr(pos)) {
 			if(std::isupper(c, std::locale())) break;
 			pos++;
 		}
@@ -169,16 +177,13 @@ void OutputGenerator::upperCaseip(std::string& string) const
 	toupperip(string);
 }
 
-std::string OutputGenerator::upperCase(const std::string& string) const
+std::string OutputGenerator::macroCase(const std::string& string) const
 {
 	auto ret = string;
-	upperCaseip(ret);
+	macroCaseip(ret);
 	return ret;
 }
 
-
-
-//generator c++
 CCOutputGenerator::CCOutputGenerator(Registry& reg, const CCOutputGeneratorSettings& settings)
 	: OutputGenerator(reg)
 {
@@ -193,44 +198,48 @@ CCOutputGenerator::CCOutputGenerator(Registry& reg, const CCOutputGeneratorSetti
 
 void CCOutputGenerator::generate()
 {
-	//copyrights
+	// copyrights
 	outputAll(copyright);
 	outputAll("\n// Automaitcally generated vulkan header file for the nyorain/vpp library.\n");
 	outputAll("// Do not edit manually, rather edit the codegen files.\n");
 	outputAll("\n#pragma once\n\n");
 
-	//headers from header.hpp
+	auto version = registry().version;
+
+	// headers from header.hpp
 	fwd_ << fwdHeader;
 	main_ << mainHeader;
-	functions_ << functionsHeader;
-	structs_ << structsHeader;
+	functions_ << std::regex_replace(functionsHeader, std::regex("%v"), version);
+	structs_ << std::regex_replace(structsHeader, std::regex("%v"), version);
 	enums_ << enumsHeader;
 
 	outputAllHeader("namespace vk {\n\n");
 
-	//fwd dummy enum
+	// fwd dummy enum
 	fwd_ << "enum class DummyEnum : int32_t {};\n";
+
+	// XXX: use this?
 	// fwd_ << "using nytl::Span; // span.hpp\n";
 	// fwd_ << "using nytl::Flags; // flags.hpp\n\n";
 
-	//all printed requirements
+	// all printed requirements
 	Requirements fulfilled;
 
-	//default vulkan feature
+	// output the default vulkan feature
 	auto& feature = *registry().findFeatureByApi("vulkan");
 	auto& reqs = feature.reqs;
 
 	printReqs(reqs, fulfilled);
 	fulfilled.add(reqs);
 
-	//extensions
-	for(auto& ext : registry().extensions)
-	{
+	// output all extensions
+	// will not output it if it is marked as disabled
+	for(auto& ext : registry().extensions) {
 		printReqs(ext.reqs, fulfilled, ext.protect);
 		fulfilled.add(ext.reqs);
 	}
 
-	//end
+	// end the header files
 	outputAllHeader("\n\n} // namespace vk\n\n");
 
 	outputAll("// The specification (vk.xml) itself is protected by the following license:\n");
@@ -264,106 +273,109 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 	auto funcGuard = false;
 	auto structGuard = false;
 
-	//constants
+	// order:
+	// - contants
+	// - handles
+	// - basetypes
+	// - enums
+	// - bitmasks
+	// - structs
+
+	// constants
 	auto count = 0u;
-	for(auto& constant : reqs.constants)
-	{
+	for(auto& constant : reqs.constants) {
+
+		// only handle not yet fulfilled constants
 		auto it = std::find(fulfilled.constants.cbegin(), fulfilled.constants.cend(), constant);
 		if(it != fulfilled.constants.cend()) continue;
 
 		assureGuard(fwd_, fwdGuard, guard);
 		auto name = constantName(*constant);
 
+		// exceptions - predefined constants
 		if(name == "true" || name == "false") continue;
 		count++;
 
 		fwd_ << "constexpr auto " << name << " = " << constant->value << ";\n";
 	}
 
-	for(auto& constant : reqs.extraConstants)
-	{
-		assureGuard(fwd_, fwdGuard, guard);
-		auto name = constantName(constant);
-		count++;
-
-		fwd_ << "constexpr auto " << name << " = " << constant.value << ";\n";
+	if(count > 0) {
+		log("\tOutputted ", count, " constants\n");
+		fwd_ << "\n";
 	}
 
-	if(count > 0) std::cout << "\tOutputted " << count << " constants\n";
-	if(count > 0) fwd_ << "\n";
-
-	//handles
+	// handles
 	count = 0u;
-	for(auto* typeit : reqs.types)
-	{
-		if(typeit->category != Type::Category::handle) continue;
+	auto types = reqs.types;
+	for(auto i = 0; i < static_cast<int>(types.size()); ++i) {
+		auto& type = *types[i];
 
-		auto it = std::find(fulfilled.types.cbegin(), fulfilled.types.cend(), typeit);
-		if(it != fulfilled.types.cend()) continue;
+		// remove duplicate types
+		// only done in this loop, since this is the first type enitity loop
+		auto it = std::find(fulfilled.types.cbegin(), fulfilled.types.cend(), &type);
+		if(it != fulfilled.types.cend()) {
+			types.erase(types.begin() + i);
+			--i;
+			continue;
+		}
 
-		auto& type = static_cast<Handle&>(*typeit);
-		count++;
+		if(type.category != Type::Category::handle)
+			continue;
+
+		auto& handle = static_cast<const Handle&>(type);
+		++count;
 
 		assureGuard(fwd_, fwdGuard, guard);
 
-		//fwd
+		// output handle macro to fwd
 		auto name = typeName(type);
-		// fwd_ << "using " << name << " = Handle<" << type.name << ">;\n";
-		fwd_ << type.type << "(" << name << ")" << "\n";
+		fwd_ << handle.type << "(" << name << ")" << "\n";
 	}
-	if(count > 0) std::cout << "\tOutputted " << count << " handles\n";
-	if(count > 0) fwd_ << "\n";
 
-	//basetypes
+	if(count > 0) {
+		log("\tOutputted ", count, " handles");
+		fwd_ << "\n";
+	}
+
+	// basetypes
 	count = 0u;
-	for(auto* typeit : reqs.types)
-	{
+	for(auto* typeit : types) {
 		if(typeit->category != Type::Category::basetype) continue;
+		auto& basetype = static_cast<BaseType&>(*typeit);
+		if(basetype.name == "VkFlags") continue;
 
-		auto it = std::find(fulfilled.types.begin(), fulfilled.types.end(), typeit);
-		if(it != fulfilled.types.end()) continue;
-
-		auto& type = static_cast<BaseType&>(*typeit);
-		count++;
-
-		if(type.name == "VkFlags") continue;
-
+		++count;
 		assureGuard(fwd_, fwdGuard, guard);
 
-		//fwd
-		auto name = typeName(type);
-		fwd_ << "using " << name << " = " << type.original->name << ";\n";
+		// fwd
+		auto name = typeName(basetype);
+		fwd_ << "using " << name << " = " << basetype.original->name << ";\n";
 	}
 
-	if(count > 0) std::cout << "\tOutputted " << count << " typedefs\n";
-	if(count > 0) fwd_ << "\n";
+	if(count > 0) {
+		log("\tOutputted ", count, " typedefs");
+		fwd_ << "\n";
+	}
 
-	//enums
+	// enums
 	count = 0u;
-	for(auto* typeit : reqs.types)
-	{
+	for(auto* typeit : types) {
 		if(typeit->category != Type::Category::enumeration) continue;
+		auto& enumeration = static_cast<Enum&>(*typeit);
+		auto name = typeName(enumeration);
 
-		auto it = std::find(fulfilled.types.begin(), fulfilled.types.end(), typeit);
-		if(it != fulfilled.types.end()) continue;
-
-		auto& type = static_cast<Enum&>(*typeit);
-		count++;
-
-		auto name = typeName(type);
-
+		++count;
 		assureGuard(fwd_, fwdGuard, guard);
 		assureGuard(enums_, enumGuard, guard);
 
 		fwd_ << "enum class " << name << " : int32_t;\n";
 
-		//header
+		// output enum values
 		enums_ << "enum class " << name << " : int32_t\n{\n";
 		auto sepr = "";
-		for(auto& value : type.values)
-		{
+		for(auto& value : enumeration.values) {
 			bool bit;
-			auto n = enumName(type, value.first, &bit);
+			auto n = enumName(enumeration, value.first, &bit);
 			enums_ << sepr << "\t" << n << " = ";
 			if(bit) enums_ << "(1 << " << value.second << ")";
 			else enums_ << value.second;
@@ -372,92 +384,86 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 
 		enums_ << "\n};\n";
 
-		if(type.bitmask) enums_<< "NYTL_FLAG_OPS(" << name << ")\n";
+		if(enumeration.bitmask) enums_<< "NYTL_FLAG_OPS(" << name << ")\n";
 		enums_ << "\n";
 	}
 
-	if(count > 0) std::cout << "\tOutputted " << count << " enums\n";
-	if(count > 0) fwd_ << "\n";
-	if(count > 0) enums_ << "\n";
+	if(count > 0) {
+		log("\tOutputted ", count, " enums");
+		fwd_ << "\n";
+		enums_ << "\n";
+	}
 
-	//bitmasks
+	// bitmasks
 	count = 0u;
-	for(auto* typeit : reqs.types)
-	{
+	for(auto* typeit : types) {
 		if(typeit->category != Type::Category::bitmask) continue;
+		auto& bitmask = static_cast<Bitmask&>(*typeit);
+		++count;
 
-		auto it = std::find(fulfilled.types.begin(), fulfilled.types.end(), typeit);
-		if(it != fulfilled.types.end()) continue;
-
-		auto& type = static_cast<Bitmask&>(*typeit);
-		count++;
-
-		auto name = typeName(type);
+		auto name = typeName(bitmask);
 		assureGuard(fwd_, fwdGuard, guard);
 
 		std::string enumName;
-		if(!type.bits) enumName = "DummyEnum";
-		else enumName = typeName(*type.bits);
+		if(!bitmask.bits) enumName = "DummyEnum";
+		else enumName = typeName(*bitmask.bits);
 
 		fwd_ << "using " << name << " = nytl::Flags<" << enumName << ">;\n";
 	}
 
-	if(count > 0) std::cout << "\tOutputted " << count << " bitmasks\n";
-	if(count > 0) fwd_ << "\n";
+	if(count > 0) {
+		log("\tOutputted ", count, " bitmasks");
+		fwd_ << "\n";
+	}
 
-	//structs
+	// structs
 	count = 0u;
-	for(auto* typeit : reqs.types)
-	{
+	for(auto* typeit : types) {
 		if(typeit->category != Type::Category::structure) continue;
-
-		auto it = std::find(fulfilled.types.begin(), fulfilled.types.end(), typeit);
-		if(it != fulfilled.types.end()) continue;
-
-		auto& type = static_cast<Struct&>(*typeit);
-		count++;
+		auto& structure = static_cast<Struct&>(*typeit);
+		++count;
 
 		assureGuard(fwd_, fwdGuard, guard);
 		assureGuard(structs_, structGuard, guard);
-
-		printStruct(type);
+		printStruct(structure);
 	}
 
-	if(count > 0) std::cout << "\tOutputted " << count << " structs\n";
-	if(count > 0) fwd_ << "\n";
-	if(count > 0) structs_ << "\n";
+	if(count > 0) {
+		log("\tOutputted ", count, " structs");
+		fwd_ << "\n";
+		structs_ << "\n";
+	}
 
-	//funcptrs
+	// funcptrs
 	count = 0u;
-	for(auto* typeit : reqs.types)
-	{
+	for(auto* typeit : types) {
 		if(typeit->category != Type::Category::funcptr) continue;
-
-		auto it = std::find(fulfilled.types.begin(), fulfilled.types.end(), typeit);
-		if(it != fulfilled.types.end()) continue;
-
-		auto& type = static_cast<FuncPtr&>(*typeit);
-		count++;
+		auto& funcptr = static_cast<FuncPtr&>(*typeit);
+		++count;
 
 		assureGuard(fwd_, fwdGuard, guard);
 
-		fwd_ << "using " << typeName(type) << " = " << typeName(type.signature.returnType);
+		fwd_ << "using " << typeName(funcptr) << " = " << typeName(funcptr.signature.returnType);
 		fwd_ << "(*VKAPI_PTR)(";
 
 		auto sepr = "";
-		for(auto& param : type.signature.params)
-		{
-			fwd_ << sepr << typeName(param.type) << " " << param.name;
-			for(auto& lvl : param.type.arraylvl) fwd_ << "[" << lvl << "]";
+		for(auto& param : funcptr.signature.params) {
+			fwd_ << sepr << paramName(param, "", true);
 			sepr = ", ";
 		}
 
 		fwd_ << ");\n";
 	}
 
-	//extra funcPOinter
-	for(auto* typeit : reqs.funcPtr)
-	{
+	if(count > 0) {
+		log("\tOutputted ", count, " funcptrs");
+		fwd_ << "\n";
+	}
+
+	// extra funcPointers
+	// extension specific, used to load the commands
+	count = 0;
+	for(auto* typeit : reqs.funcPtr) {
 		auto it = std::find(fulfilled.funcPtr.begin(), fulfilled.funcPtr.end(), typeit);
 		if(it != fulfilled.funcPtr.end()) continue;
 
@@ -471,37 +477,37 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		fwd_ << "(*VKAPI_PTR)(";
 
 		auto sepr = "";
-		for(auto& param : type.signature.params)
-		{
-			fwd_ << sepr << typeName(param.type) << " " << param.name;
-			for(auto& lvl : param.type.arraylvl) fwd_ << "[" << lvl << "]";
+		for(auto& param : type.signature.params) {
+			fwd_ << sepr << paramName(param, "", true);
 			sepr = ", ";
 		}
 
 		fwd_ << ");\n";
 	}
 
-	if(count > 0) std::cout << "\tOutputted " << count << " funcptrs\n";
-	if(count > 0) fwd_ << "\n";
+	if(count > 0) {
+		log("\tOutputted ", count, " extra api funcptrs");
+		fwd_ << "\n";
+	}
 
-	//commands
+	// commands
 	count = 0u;
-	for(auto* cmdit : reqs.commands)
-	{
+	for(auto* cmdit : reqs.commands) {
 		auto it = std::find(fulfilled.commands.begin(), fulfilled.commands.end(), cmdit);
 		if(it != fulfilled.commands.end()) continue;
 
+		++count;
 		assureGuard(functions_, funcGuard, guard);
-
-		auto& cmd = *cmdit;
-		count++;
-
-		printCmd(cmd);
+		printCmd(*cmdit);
+		functions_ << "\n"; // insert blank line between seperate function (groups)
 	}
 
-	if(count > 0) std::cout << "\tOutputted " << count << " commands\n";
-	if(count > 0) functions_ << "\n";
+	if(count > 0) {
+		log("\tOutputted ", count, " commands");
+		functions_ << "\n";
+	}
 
+	// end all open requirements guards
 	endGuard(functions_, funcGuard, guard);
 	endGuard(structs_, structGuard, guard);
 	endGuard(fwd_, fwdGuard, guard);
@@ -510,17 +516,15 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 
 void CCOutputGenerator::assureGuard(std::ofstream& of, bool& guardVar, const std::string& guard)
 {
-	if(guardVar) return;
-
-	if(!guard.empty())of << "#ifdef " << guard << "\n\n";
-	guardVar = true;
+	if(!guardVar) {
+		if(!guard.empty())of << "#ifdef " << guard << "\n\n";
+		guardVar = true;
+	}
 }
 
 void CCOutputGenerator::endGuard(std::ofstream& of, bool guardVar, const std::string& guard)
 {
-	if(!guardVar) return;
-
-	if(!guard.empty())of << "#endif //" << guard << "\n\n";
+	if(guardVar && !guard.empty())of << "#endif //" << guard << "\n\n";
 }
 
 std::string CCOutputGenerator::enumName(const Enum& e, const std::string& name, bool* bit) const
@@ -533,7 +537,7 @@ std::string CCOutputGenerator::enumName(const Enum& e, const std::string& name, 
 	// TODO: better check for common prefix: don't compare char for char but
 	// rather word for word (words are seperated by an underscore)
 
-	//prefixes and suffixes
+	// prefixes and suffixes
 	auto removePrefix = 0u;
 	auto removeSuffix = 0u;
 
@@ -557,29 +561,26 @@ std::string CCOutputGenerator::enumName(const Enum& e, const std::string& name, 
 	ret = ret.substr(0, ret.size() - removeSuffix);
 	ret[0] = tolower(ret[0], std::locale());
 
-	//remove "Bit" from bitmask enums
-	if(ret.size() > 3 && e.bitmask && ret.substr(ret.size() - 3) == "Bit")
-	{
+	// remove "Bit" from bitmask enums
+	if(ret.size() > 3 && e.bitmask && ret.substr(ret.size() - 3) == "Bit") {
 		if(bit) *bit = true;
 		ret = ret.substr(0, ret.size() - 3);
 	}
 
-	//'e' prefix if it is a number
+	// 'e' prefix if it is a number
 	if(std::isdigit(ret[0], std::locale())) ret.insert(0, 1, 'e');
 
-	//make sure it is no keyword
-	//keywords defined in header.hpp
-	for(auto& word : keywords)
-	{
-		if(std::string(word) == ret)
-		{
+	// make sure it is no keyword
+	// keywords defined in header.hpp
+	for(auto& word : keywords) {
+		if(std::string(word) == ret) {
 			ret.insert(0, 1, 'e');
 			ret[1] = std::toupper(ret[1], std::locale());
 			break;
 		}
 	}
 
-	//capitalize extension prefixes
+	// capitalize extension prefixes
 	std::string ext;
 	removeExtSuffix(ret, &ext);
 	if(!ret.empty())
@@ -592,16 +593,13 @@ std::string CCOutputGenerator::enumName(const Enum& e, const std::string& name, 
 std::string CCOutputGenerator::typeName(const Type& type) const
 {
 	auto ret = removeVkPrefix(type.name, nullptr);
-	if(type.category == Type::Category::enumeration)
-	{
+	if(type.category == Type::Category::enumeration) {
 		auto& e = static_cast<const Enum&>(type);
 		std::size_t pos;
 		if(e.bitmask && (pos = ret.find("FlagBits")) != std::string::npos)
-			ret.erase(pos, 4); //erase "Flag" from the name
-	}
-	else if(type.category == Type::Category::funcptr)
-	{
-		ret.erase(0, 6); //PFN_vk
+			ret.erase(pos, 4); // erase "Flag" from the name
+	} else if(type.category == Type::Category::funcptr) {
+		ret.erase(0, 6); // erase PFN_vk from beginning
 		ret.insert(0, "Pfn");
 	}
 
@@ -610,13 +608,25 @@ std::string CCOutputGenerator::typeName(const Type& type) const
 
 std::string CCOutputGenerator::typeName(const QualifiedType& type, bool change) const
 {
-	std::string ret = type.type->name;
-	if(change && type.type->category != Type::Category::external) ret = typeName(*type.type);
-	else ret = type.type->name;
+	std::string ret;
+	if(type.type) {
+		ret = type.type->name;
+		if(change && type.type->category != Type::Category::external) ret = typeName(*type.type);
+		else ret = type.type->name;
 
-	if(type.constant) ret = "const " + ret;
-	for(auto i = 0u; i < type.pointerlvl; ++i) ret += "*";
-	if(type.reference) ret += "&";
+		if(type.constant) ret = "const " + ret;
+		if(type.reference) ret += "&";
+	} else if(type.pointer) {
+		ret = typeName(*type.pointer, change);
+		ret += "*";
+		if(type.constant) ret += " const";
+	} else if(type.array) {
+		ret = typeName(*type.array, change);
+	} else {
+		std::cerr << "### CCOG::typeName: invalid QualifiedType object\n";
+		return "--- unknown ---";
+	}
+
 	return ret;
 }
 
@@ -624,6 +634,45 @@ std::string CCOutputGenerator::constantName(const Constant& c) const
 {
 	auto ret = removeVkPrefix(c.name, nullptr);
 	camelCaseip(ret);
+	return ret;
+}
+
+std::string CCOutputGenerator::paramName(const Param& param, const std::string& namePrefix,
+	bool plainArray) const
+{
+	std::string ret;
+
+	auto it = &param.type;
+	while(!plainArray && it->array) {
+		ret += "std::array<";
+		it = it->array;
+	}
+
+	ret += typeName(param.type);
+
+	std::stack<std::string> ranges;
+	it = &param.type;
+
+	while(it->array) {
+		std::string sizeName = it->arraySize;
+		auto pos = sizeName.find("VK");
+		if(pos != std::string::npos) {
+			removeVkPrefix(sizeName);
+			camelCaseip(sizeName);
+		}
+
+		ranges.push(sizeName);
+		it = it->array;
+	}
+
+	while(!ranges.empty()) {
+		if(plainArray) ret += "[" + ranges.top() + "]";
+		else ret += ", " + ranges.top() + ">";
+		ranges.pop();
+	}
+
+	ret += " " + namePrefix + param.name;
+
 	return ret;
 }
 
@@ -644,22 +693,23 @@ void CCOutputGenerator::printStruct(const Struct& type)
 	std::string paramList;
 	std::string initList;
 	bool printCtor = false;
-	for(auto& member : type.members)
-	{
+
+	// print all members
+	for(auto& member : type.members) {
 		auto mtype = typeName(member.type);
 		auto mname = member.name;
 
-		//member declaration
+		// member declaration
 		std::string init = "";
 		if(member.name == "sType") init = "StructureType::" + nameFirstLower;
 		structs_ << "\t" << paramName(member);
-		if(!type.isUnion || !unionInit) structs_ << " {" << init << "}";
+		if(!type.isUnion || !unionInit)
+			structs_ << " {" << init << "}";
 
 		unionInit = true;
 		structs_ << ";\n";
 
-		if(member.name == "sType" || member.name == "pNext")
-		{
+		if(member.name == "sType" || member.name == "pNext") {
 			printCtor = true;
 			continue;
 		}
@@ -670,46 +720,155 @@ void CCOutputGenerator::printStruct(const Struct& type)
 		sepr = ", ";
 	}
 
-	//init ctor
-	//there will only be one init constructor if the type isnt union, and there are members like
-	//pNext or structureType, other wise uniform init can be used to init the members
-	if(printCtor && !type.returnedonly && !type.isUnion)
-	{
+	// init ctor
+	// there will only be one init constructor if the type isnt union, and there are members like
+	// pNext or structureType, other wise uniform init can be used to init the members
+	// if the struct is returnedonly there is no need for a constructor
+	if(printCtor && !type.returnedonly && !type.isUnion) {
 		structs_ << "\n\t" << name << "(" << paramList << ")";
 		if(!initList.empty()) structs_ << " : " << initList;
 		structs_ << " {}\n";
 	}
 
-	//TODO: union ctors that initialize the different members?
-
-	//explicit conversion function
+	// TODO: union ctors that initialize the different members?
+	// explicit conversion function (useful if passed as pointer)
 	structs_ << "\n\tconst " << type.name << "& vkHandle() const { return reinterpret_cast<const "
 			<< type.name << "&>(*this); }\n";
 
 	structs_ << "\t" << type.name << "& vkHandle() { return reinterpret_cast<"
 			<< type.name << "&>(*this); }\n";
 
-	//conversion operator
+	// conversion operator
 	structs_ << "\n\toperator const " << type.name << "&() const { return vkHandle(); };\n";
 	structs_ << "\toperator " << type.name << "&() { return vkHandle(); };\n";
 	structs_ << "};\n\n";
 }
+
+ParsedCommand CCOutputGenerator::parseCommand(const Command& cmd) const
+{
+	ParsedCommand parsed {};
+	parsed.command = &cmd;
+
+	auto& params = cmd.signature.params;
+	auto& pparams = parsed.parsedParams;
+	pparams.reserve(params.size());
+
+	// iterate through params to find array/count matches
+	for(auto& param : params) {
+		pparams.emplace_back();
+		auto& pparam = pparams.back();
+		pparam.param = &param;
+
+		// check if output param
+		if(param.type.pointer) {
+			auto it = &param.type;
+			pparam.out = true;
+			while(it->pointer) {
+				if(it->constant) {
+					pparam.out = false;
+					break;
+				}
+
+				it = it->pointer;
+			}
+
+			if(it->constant) pparam.out = false;
+		}
+
+		// array attrib, find the matching count param
+		auto attr = param.node.attribute("len");
+		std::string len = attr.value();
+		if(len.empty())
+			continue;
+
+		std::string paramName = len;
+		std::string memName;
+
+		auto memAcc = len.find("::");
+		if(memAcc != std::string::npos) {
+			paramName = len.substr(0, memAcc);
+			memName = len.substr(memAcc + 2);
+		}
+
+		// find the matching data pars
+		for(auto& par : pparams) {
+			if(par.param->name != paramName) continue;
+
+			par.dataPars.push_back(&pparam);
+			pparam.countPar = &par;
+
+			if(!memName.empty()) {
+				auto it2 = &par.param->type;
+				while(!it2->type) {
+					if(it2->array) it2 = it2->array;
+					if(it2->pointer) it2 = it2->pointer;
+				}
+
+				auto& structType = static_cast<const Struct&>(*it2->type);
+				for(auto& member : structType.members) {
+					if(member.name == memName) {
+						pparam.countMember = &member;
+						par.memberAsCount = true;
+						break;
+					}
+				}
+			}
+
+			break;
+		}
+	}
+
+	// reverse iteration for checking which parameters can be optional
+	// first check return pair then optoinal
+	for(auto it = pparams.rbegin(); it < pparams.rend(); ++it) {
+
+		// find param (pair) that should be returned
+		if(it->dataPars.empty() && it->out) {
+			auto it2 = &it->param->type;
+			while(!it2->type) {
+				if(it2->array) it2 = it2->array;
+				if(it2->pointer) it2 = it2->pointer;
+			}
+
+			if(it2->type->category == Type::Category::structure && !it->countPar) {
+				auto& structType = static_cast<const Struct&>(*it2->type);
+				if(!structType.returnedonly) continue;
+			}
+
+			parsed.returnParam = &(*it);
+			break;
+		}
+	}
+
+	auto optional = true;
+	auto optionalWithRet = true;
+	for(auto it = pparams.rbegin(); it < pparams.rend(); ++it) {
+
+		// optional
+		if(&(*it) != parsed.returnParam && !it->param->optional) optional = false;
+		else if(optional) it->optional = true;
+
+		if(!it->param->optional) optionalWithRet = false;
+		else if(optionalWithRet) it->optionalWithRet = true;
+	}
+
+	return parsed;
+}
+
 
 void CCOutputGenerator::printCmd(const Command& cmd)
 {
 	auto name = removeVkPrefix(cmd.name, nullptr);
 	name[0] = std::tolower(name[0], std::locale());
 
+	// parseCommand will analyse intput/output/optional/return attributes
+	// of the commands parameters
 	auto parsed = parseCommand(cmd);
 
-	if(parsed.returnParam && !parsed.returnParam->countPar)
-	{
-		auto typeCpy = parsed.returnParam->param->type;
-		typeCpy.pointerlvl--;
-		functions_ << "inline " << typeName(typeCpy) << " " << name << "(";
-	}
-	else
-	{
+	if(parsed.returnParam && !parsed.returnParam->countPar) {
+		auto derefType = parsed.returnParam->param->type.pointer;
+		functions_ << "inline " << typeName(*derefType) << " " << name << "(";
+	} else {
 		functions_ << "inline " << typeName(cmd.signature.returnType) << " " << name << "(";
 	}
 
@@ -717,13 +876,15 @@ void CCOutputGenerator::printCmd(const Command& cmd)
 	auto declSepr = "";
 	auto callSepr = "";
 	std::string args;
-	for(auto& pparam : parsed.parsedParams)
-	{
-		if(pparam.countPar) printVecVersion = true;
+
+	// iterate over parameters and output their declarations
+	// append thei call usage to args
+	for(auto& pparam : parsed.parsedParams) {
+		if(pparam.countPar)
+			printVecVersion = true;
 
 		auto decl = paramDecl(pparam, false, declSepr, parsed.returnParam);
-		if(!decl.empty())
-		{
+		if(!decl.empty()) {
 			functions_ << decl;
 			declSepr = ", ";
 		}
@@ -736,26 +897,19 @@ void CCOutputGenerator::printCmd(const Command& cmd)
 	std::string after = ";";
 	auto& retType = cmd.signature.returnType;
 
-	if(retType.type->name == "VkResult")
-	{
-		before = "VPP_CALL(static_cast<Result>(";
-		after = "));";
-	}
-
-	if(parsed.returnParam && !parsed.returnParam->countPar)
-	{
-		auto typeCpy = parsed.returnParam->param->type;
-		typeCpy.pointerlvl--;
-		before = typeName(typeCpy) + " ret = {};\n\t" + before;
-		after = after + "\n\treturn ret;";
-	}
-	else if(retType.type->name != "void" || retType.pointerlvl > 0)
-	{
-		before = "return static_cast<" + typeName(cmd.signature.returnType) + ">(";
+	if(retType.type->name == "VkResult") {
+		before = "VPP_CALL(";
 		after = ");";
 	}
-	else
-	{
+
+	if(parsed.returnParam && !parsed.returnParam->countPar) {
+		 auto derefType = parsed.returnParam->param->type.pointer;
+		before = typeName(*derefType) + " ret = {};\n\t" + before;
+		after = after + "\n\treturn ret;";
+	} else if(retType.type->name != "void" || retType.pointer) {
+		before = "return static_cast<" + typeName(cmd.signature.returnType) + ">(";
+		after = ");";
+	} else {
 		before = "return ";
 	}
 
@@ -763,59 +917,27 @@ void CCOutputGenerator::printCmd(const Command& cmd)
 	functions_ << before << cmd.name << "(" << args;
 	functions_ << ")" << after << "\n}\n";
 
-	//if needed, output the std::vector version of the function
+	// if possible/needed, output the std::vector version of the function
 	if(printVecVersion) printVecCmd(parsed, name);
-}
-
-std::string CCOutputGenerator::paramName(const Param& param, const std::string& namePrefix) const
-{
-	std::string ret;
-
-	for(auto& lvl : param.type.arraylvl)
-	{
-		(void)lvl; //unused
-		ret += "std::array<";
-	}
-
-	ret += typeName(param.type);
-
-	for(auto& lvl : param.type.arraylvl)
-	{
-		std::string lvlName = lvl;
-
-		auto pos = lvl.find("VK");
-		if(pos != std::string::npos)
-		{
-			removeVkPrefix(lvlName);
-			camelCaseip(lvlName);
-		}
-
-		ret += ", " + lvlName + ">";
-	}
-
-	ret += " " + namePrefix + param.name;
-
-	return ret;
 }
 
 void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string& name)
 {
 	auto& cmd = *pcmd.command;
 
-	std::pair<const ParsedParam*, const ParsedParam*> vecRetStackVar;
+	std::pair<const ParsedParam*, const ParsedParam*> vecRetStackVar {};
 	std::pair<const ParsedParam*, const ParsedParam*>* vecRet = nullptr;
-	if(pcmd.returnParam && pcmd.returnParam->countPar)
-	{
+
+	if(pcmd.returnParam && pcmd.returnParam->countPar) {
 		vecRet = &vecRetStackVar;
 		vecRet->first = pcmd.returnParam;
 		vecRet->second = pcmd.returnParam->countPar;
 	}
 
 	std::string retType = typeName(cmd.signature.returnType);
-	if(vecRet)
-	{
-		auto typeCpy = vecRet->first->param->type;
-		typeCpy.pointerlvl--;
+	if(vecRet) {
+		auto typeCpy = *vecRet->first->param->type.pointer;
+		typeCpy.constant = false;
 		if(typeCpy.type->name != "void") retType = "std::vector<" + typeName(typeCpy) + ">";
 		else retType = "std::vector<uint8_t>";
 	}
@@ -825,70 +947,73 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 	auto declSepr = "";
 	auto callSepr = "";
 	std::string args;
-	for(auto& pparam : pcmd.parsedParams)
-	{
+	for(auto& pparam : pcmd.parsedParams) {
 		auto decl = paramDecl(pparam, true, declSepr, pcmd.returnParam);
-		if(!decl.empty())
-		{
+		if(!decl.empty()) {
 			functions_ << decl;
 			declSepr = ", ";
 		}
 
-		//paramCall
 		args += paramCall(pparam, true, callSepr, pcmd.returnParam);
 		callSepr = ", ";
 	}
 
 	functions_ << ")\n{\n";
 
-	if(vecRet)
-	{
+	if(vecRet) {
 		std::string code;
 		auto& countPar = *pcmd.returnParam->countPar;
-		if(vecRet->second->memberAsCount || !vecRet->second->out)
-		{
-			if(cmd.signature.returnType.type->name != "VkResult") code = vecFuncTemplateRetGivenVoid;
-			else code = vecFuncTemplateRetGiven;
+		if(vecRet->second->memberAsCount || !vecRet->second->out) {
+			if(cmd.signature.returnType.type->name != "VkResult")
+				code = vecFuncTemplateRetGivenVoid;
+			else
+				code = vecFuncTemplateRetGiven;
 
-			//TODO: check for pointer
+			// TODO: check for pointer
 			std::string count;
-			if(vecRet->first->countMember) count = vecRet->second->param->name + "." + vecRet->first->countMember->name;
-			else if(countPar.dataPars[0] != pcmd.returnParam) count = countPar.dataPars[0]->param->name + ".size()";
-			else count = countPar.param->name;
+			if(vecRet->first->countMember)
+				count = vecRet->second->param->name + "." + vecRet->first->countMember->name;
+			else if(countPar.dataPars[0] != pcmd.returnParam)
+				count = countPar.dataPars[0]->param->name + ".size()";
+			else
+				count = countPar.param->name;
+
 			code = std::regex_replace(code, std::regex("%c"), count);
-		}
-		else
-		{
+		} else {
 			if(cmd.signature.returnType.type->name != "VkResult") code = vecFuncTemplateVoid;
 			else code = vecFuncTemplate;
 		}
 
-		auto typeCpy = vecRet->first->param->type;
-		typeCpy.pointerlvl--;
+		auto typeCpy = *vecRet->first->param->type.pointer;
+		typeCpy.constant = false;
 
-		if(typeCpy.type->name != "void") code = std::regex_replace(code, std::regex("%t"), typeName(typeCpy));
-		else code = std::regex_replace(code, std::regex("%t"), "uint8_t");
+		if(typeCpy.type->name != "void")
+			code = std::regex_replace(code, std::regex("%t"), typeName(typeCpy));
+		else
+			code = std::regex_replace(code, std::regex("%t"), "uint8_t");
+
 		code = std::regex_replace(code, std::regex("%a"), args);
 		code = std::regex_replace(code, std::regex("%f"), cmd.name);
 
-		auto& countType = *countPar.param->type.type;
+		auto it2 = &countPar.param->type;
+		while(!it2->type) {
+			if(it2->array) it2 = it2->array;
+			if(it2->pointer) it2 = it2->pointer;
+		}
+
+		auto& countType = *it2->type;
 		code = std::regex_replace(code, std::regex("%ct"), countType.name);
 
 		functions_ << code;
 		functions_ << "}\n";
-	}
-	else
-	{
+	} else {
 		auto& retType = cmd.signature.returnType;
 		std::string returnString;
 		std::string returnStringEnd;
-		if(retType.type->name == "VkResult")
-		{
+		if(retType.type->name == "VkResult") {
 			returnString = "return VPP_CALL(";
 			returnStringEnd = ")";
-		}
-		else if(retType.type->name != "void" || retType.pointerlvl > 0)
-		{
+		} else if(retType.type->name != "void" || retType.pointer) {
 			returnString = "return static_cast<" + typeName(cmd.signature.returnType) + ">(";
 			returnStringEnd = ")";
 		}
@@ -898,118 +1023,33 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 	}
 }
 
-ParsedCommand CCOutputGenerator::parseCommand(const Command& cmd) const
-{
-	ParsedCommand parsed;
-	parsed.command = &cmd;
-
-	auto& params = cmd.signature.params;
-	auto& pparams = parsed.parsedParams;
-	pparams.reserve(params.size());
-
-	//iterate through params to find array/count matches
-	for(auto& param : params)
-	{
-		pparams.emplace_back();
-		auto& pparam = pparams.back();
-		pparam.param = &param;
-
-		//out?
-		if(param.type.pointerlvl > 0 && !param.type.constant) pparam.out = true;
-
-		//array attrib, find the matching count param
-		auto attr = param.node.attribute("len");
-		std::string len = attr.value();
-		if(len.empty()) continue;
-
-		std::string paramName = len;
-		std::string memName;
-
-		auto memAcc = len.find("::");
-		if(memAcc != std::string::npos)
-		{
-			paramName = len.substr(0, memAcc);
-			memName = len.substr(memAcc + 2);
-		}
-
-		for(auto& par : pparams)
-		{
-			if(par.param->name != paramName) continue;
-
-			par.dataPars.push_back(&pparam);
-			pparam.countPar = &par;
-
-			if(!memName.empty())
-			{
-				auto& structType = static_cast<const Struct&>(*par.param->type.type);
-				for(auto& member : structType.members)
-				{
-					if(member.name == memName)
-					{
-						pparam.countMember = &member;
-						par.memberAsCount = true;
-						break;
-					}
-				}
-			}
-
-			break;
-		}
-	}
-
-	//reverse iteration
-	//first check return pair then optinal
-	for(auto it = pparams.rbegin(); it < pparams.rend(); ++it)
-	{
-		//find param (pair) that should be returned
-		if(it->dataPars.empty() && it->out)
-		{
-			if(it->param->type.type->category == Type::Category::structure && !it->countPar)
-			{
-				auto& structType = static_cast<const Struct&>(*it->param->type.type);
-				if(!structType.returnedonly) continue;
-			}
-
-			parsed.returnParam = &(*it);
-			break;
-		}
-	}
-
-	auto optional = true;
-	auto optionalWithRet = true;
-	for(auto it = pparams.rbegin(); it < pparams.rend(); ++it)
-	{
-		//optional
-		if(&(*it) != parsed.returnParam && !it->param->optional) optional = false;
-		else if(optional) it->optional = true;
-
-		if(!it->param->optional) optionalWithRet = false;
-		else if(optionalWithRet) it->optionalWithRet = true;
-	}
-
-	return parsed;
-}
-
 std::string CCOutputGenerator::paramDecl(const ParsedParam& param, bool rangeify, const char* sepr,
 	const ParsedParam* retParam) const
 {
 	if(retParam && &param == retParam && !retParam->countPar) return ""; //returnParam data part
 
 	std::string ret = sepr;
-	if(rangeify)
-	{
+	if(rangeify) {
 		if(retParam && &param == retParam) return "";
-		if(!param.dataPars.empty() && !param.memberAsCount)
-		{
+
+		if(!param.dataPars.empty() && !param.memberAsCount) {
 			if(param.out || !retParam || (retParam && retParam != param.dataPars[0])) return "";
 		}
-		if(param.countPar && !param.countMember)
-		{
-			auto typeCopy = param.param->type;
-			if(typeCopy.pointerlvl)typeCopy.pointerlvl--;
-			if(typeCopy.type->name == "void") typeCopy.type->name = "uint8_t";
-			ret += "const nytl::Span<" + typeName(typeCopy) + ">& " + param.param->name;
-			if(typeCopy.type->name == "uint8_t") typeCopy.type->name = "void";
+
+		if(param.countPar && !param.countMember) {
+			auto type = &param.param->type;
+			QualifiedType localqt;
+			Type localt;
+			if(type->pointer) type = param.param->type.pointer;
+			if(type->type->name == "void") {
+				localqt = *type;
+				localqt.type = &localt;
+				localt = *type->type;
+				localt.name = "uint8_t";
+				type = &localqt;
+			}
+
+			ret += "nytl::Span<" + typeName(*type) + "> " + param.param->name;
 			return ret;
 		}
 	}
@@ -1019,11 +1059,18 @@ std::string CCOutputGenerator::paramDecl(const ParsedParam& param, bool rangeify
 
 	//reference for non optional pointer parameters
 	auto namedParam = *param.param;
-	if(namedParam.type.pointerlvl > 0 && !param.param->optional && namedParam.type.type->name != "void"
-		&& namedParam.type.type->name != "char")
-	{
-		namedParam.type.pointerlvl--;
-		namedParam.type.reference = true;
+
+	if(namedParam.type.pointer && !param.param->optional) {
+		auto it = namedParam.type.pointer;
+		while(!it->type) {
+			if(it->pointer) it = it->pointer;
+			if(it->array) it = it->array;
+		}
+
+		if(it->type->name != "void" && it->type->name != "char") {
+			namedParam.type = *it;
+			namedParam.type.reference = true;
+		}
 	}
 
 	ret += paramName(namedParam);
@@ -1036,48 +1083,37 @@ std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify
 	const ParsedParam* retParam) const
 {
 	std::string ret = sepr;
-	if(retParam && &param == retParam && !param.countPar) //is return param (data)
-	{
+
+	// check if return param (count or data part)
+	if(retParam && &param == retParam && !param.countPar) {
 		ret += "(" + typeName(param.param->type, false) + ")(&ret)";
 		return ret;
-	}
-	else if(!param.memberAsCount && rangeify && retParam && &param == retParam->countPar) //is count part of return param
-	{
-		if(param.out)
-		{
+	} else if(!param.memberAsCount && rangeify && retParam && &param == retParam->countPar) {
+		if(param.out) {
 			ret += "&count";
 			return ret;
-		}
-		else if(param.dataPars[0] != retParam)
-		{
+		} else if(param.dataPars[0] != retParam) {
 			ret += param.dataPars[0]->param->name + ".size()";
 			return ret;
-		}
-		else
-		{
+		} else {
 			ret += param.param->name;
 			return ret;
 		}
 	}
 
-	if(rangeify)
-	{
-		if(retParam && &param == retParam)
-		{
+	if(rangeify) {
+		if(retParam && &param == retParam) {
 			ret += "(" + typeName(param.param->type, false) + ")(ret.data())";
 			return ret;
-		}
-		else if(!param.dataPars.empty()) //is count part of normal range
-		{
-			if(!param.memberAsCount)
-			{
+		} else if(!param.dataPars.empty()) {
+			//is count part of normal range
+			if(!param.memberAsCount) {
 				ret += param.dataPars[0]->param->name;
 				ret += ".size()";
 				return ret;
 			}
-		}
-		else if(param.countPar) //is data part of normal (nonRet) range
-		{
+		} else if(param.countPar)  {
+			//is data part of normal (nonRet) range
 			std::string ret = sepr;
 			ret += "(" + typeName(param.param->type, false) + ")(";
 			ret += param.param->name;
@@ -1086,17 +1122,30 @@ std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify
 		}
 	}
 
-	//normal params here that will not be returned and are not (directly) part of a range
-	auto category = param.param->type.type->category;
-	if(param.param->type.pointerlvl > 0 || category == Type::Category::handle)
-	{
+	// normal params here that will not be returned and are not (directly) part of a range
+	Type::Category category {};
+	std::string name {};
+	if(param.param->type.type) {
+		category = param.param->type.type->category;
+		name = param.param->type.type->name;
+	} else {
+		auto it = &param.param->type;
+		while(!it->type) {
+			if(it->pointer) it = it->pointer;
+			if(it->array) it = it->array;
+		}
+
+		category = it->type->category;
+		name = it->type->name;
+	}
+
+	if(param.param->type.pointer || category == Type::Category::handle) {
 		bool optional = ((rangeify || (!retParam || !retParam->countPar)) && param.optional);
 		optional |= (!rangeify && retParam && retParam->countPar && param.optionalWithRet);
 
 		const char* ref = "";
-		if(!param.param->optional && param.param->type.pointerlvl > 0 &&
-			param.param->type.type->name != "void" && param.param->type.type->name != "char")
-		ref = "&";
+		if(!param.param->optional && param.param->type.pointer &&
+			name != "void" && name != "char") ref = "&";
 
 		ret += "(";
 		ret += typeName(param.param->type, false);
@@ -1104,21 +1153,15 @@ std::string CCOutputGenerator::paramCall(const ParsedParam& param, bool rangeify
 		ret += ref;
 		ret += param.param->name;
 		ret += ")";
-	}
-	else if(category == Type::Category::enumeration || category == Type::Category::bitmask)
-	{
+	} else if(category == Type::Category::enumeration || category == Type::Category::bitmask) {
 		ret += "static_cast<";
 		ret += typeName(param.param->type, false);
 		ret += ">(";
 		ret += param.param->name;
 		ret += ")";
-	}
-	else if(!param.param->type.arraylvl.empty())
-	{
+	} else if(param.param->type.array) {
 		ret += param.param->name + ".data()";
-	}
-	else
-	{
+	} else {
 		ret += param.param->name;
 	}
 
