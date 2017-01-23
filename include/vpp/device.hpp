@@ -18,17 +18,17 @@ using DynamicStoragePtr = std::unique_ptr<DynamicStorageBase>;
 using DynamicThreadStorage = ThreadStorage<DynamicStoragePtr>;
 
 /// Represents a Vulkan Device.
-/// The centreal objects that all resources are created from.
+/// The central objects that all resources are created from.
 /// Holds important device-related resources such as queried properties and queues, as
 /// well as thread local storage with thread-specific managers and providers.
 /// Allows applications and vpp classes to associate thread-specific variables with
 /// the device (it can be used for pseudo-threadlocal storage).
-/// When a DeviceLost vulkan error occures, the program can try to create a new Device object
+/// When a DeviceLost vulkan error occurs, the program can try to create a new Device object
 /// for the same PhysicalDevice, if this fails again with DeviceLost, then the physical device
 /// is not longer valid.
 /// Notice that Device is one of the few classes that are NOT movable since it is referenced by
 /// all resources.
-/// Creating multiple Device objects for the same vk::Device will reult in undefined behaviour.
+/// Creating multiple Device objects for the same vk::Device will result in undefined behaviour.
 class Device : public nytl::NonMovable {
 public:
 	/// Creates a new vulkan device from the given device create info.

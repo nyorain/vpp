@@ -7,7 +7,7 @@ set(vpatch 0)
 
 include(CMakeDependentOption)
 
-option(BuildExamples "Build Examples" off)
+# option(BuildExamples "Build Examples" off)
 option(Debug "Compile in debug mode" on)
 option(OneDevice "Enable the one device optimization. Not recommended" off)
 
@@ -60,10 +60,10 @@ configure_file(
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/vpp/config.hpp" DESTINATION include/vpp)
 
-if(BuildExamples)
-	if(Win32 OR MSYS OR MINGW)
-		add_subdirectory(examples)
-	else()
-		message("The examples are windows-only at the moment. Pull requests appreciated.")
-	endif()
-endif()
+# if(BuildExamples)
+# 	if(Win32 OR MSYS OR MINGW)
+# 		add_subdirectory(examples)
+# 	else()
+# 		message("The examples are windows-only at the moment. Pull requests appreciated.")
+# 	endif()
+# endif()

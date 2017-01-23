@@ -164,8 +164,15 @@ Device::Device(vk::Instance ini, vk::SurfaceKHR surface, const Queue*& present,
 		queueInfos[1].pQueuePriorities = priorities;
 	}
 
-	devInfo.enabledExtensionCount = extensions.size();
-	devInfo.ppEnabledExtensionNames = extensions.data();
+	// automatically add the swapchain extension
+	std::vector<const char*> exts;
+	exts.reserve(extensions.size() + 1);
+
+	exts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	for(auto ext : extensions) exts.push_back(ext);
+
+	devInfo.enabledExtensionCount = exts.size();
+	devInfo.ppEnabledExtensionNames = exts.data();
 
 	devInfo.pQueueCreateInfos = queueInfos;
 

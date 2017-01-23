@@ -1,11 +1,11 @@
 # Vulkan++
 
 A vulkan abstraction library written in modern C++14 and licensed by the __Boost License__
-(similiar to MIT License).
+(similar to MIT License).
 It does not aim to be a full-sized graphics engine, but rather focuses on providing some useful
 features that make programming vulkan applications in C++ more convenient and less repetitive.
 
-vpp also includes a C++ codegenerator for the vulkan api which focuses on typesafety and less typing
+vpp also includes a C++ code generator for the vulkan api which focuses on typesafety and less typing
 while still being more explicit as well as it tries to not introduce a huge compile time overhead.
 There should be no runtime overhead using the c++ api.
 
@@ -88,12 +88,12 @@ vpp::SwapchainRenderer renderer(swapChain, builderObject, {renderPass, context->
 while(true) renderer.renderBlock();
 ```````````````````````
 
-The example above does bascially picture the structure of a simple vulkan app using vpp.
+The example above does basically picture the structure of a simple vulkan app using vpp.
 If you would rewrite this using just plain vulkan calls, it would have probably
 more than 10x the size of this.
 
 ### Two Step Initialization
-vpp was mainly built for high-perfomance vulkan apps therefore it abstracts the vulkan api while still
+vpp was mainly built for high-performance vulkan apps therefore it abstracts the vulkan api while still
 making use of its explicitness. One of the main concepts of vpp is two step initialization which can
 bring huge performance gains in comparison to naive-written vulkan or opengl apps.
 
@@ -215,13 +215,6 @@ SubmitManager, Device or Swapchain.
 __vpp does not have any external dependencies (excluding vulkan headers and loader lib of course).__
 It does require a solid C++14 compiler though which means that it is (at the moment) not
 buildable with MSVC, but it works with newer clang versions and gcc 5/6.
-
-At the moment, vpp does compile a small part of boost (boost::container::pmr) within its own
-library for more efficient host memory allocations, but since this feature will part of the
-C++17 standard, this will then no longer be needed (and note that you do not have to
-have boost installed, the needed files will be compiled together with the vpp source files).
-Patches that do not decrease vpp code quality but make it msvc 2015 conformant are highly
-appreciated.
 
 Just download the repository or clone it with git, run cmake and then build it
 (with make/ninja/...).

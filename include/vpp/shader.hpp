@@ -31,7 +31,7 @@ public:
 /// ShaderProgram with multiple stages for graphic pipelines.
 /// Can be used to group multiple shader modules together to full programs.
 /// Does not own the references shader modules, therefore they have to remain valid
-/// at least until the ShaderProgram is destruced.
+/// at least until the ShaderProgram is destructed.
 /// Note that this class is not a Resource class since it only logically groups
 /// shader stages togehter and not manages them in any way.
 class ShaderProgram {

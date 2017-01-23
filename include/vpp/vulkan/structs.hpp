@@ -13,7 +13,7 @@
 #include <array>
 #include <vulkan/vulkan.h>
 
-static_assert(VK_HEADER_VERSION ==  38, "Vulkan and vpp header incompatibility");
+static_assert(VK_HEADER_VERSION >=  37, "Newer vulkan header required");
 
 namespace vk {
 
@@ -2645,4 +2645,4 @@ struct ObjectTablePushConstantEntryNVX {
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
 // maintained in the master branch of the Khronos Vulkan GitHub project.
-	
+    

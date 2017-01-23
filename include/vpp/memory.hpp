@@ -22,7 +22,7 @@ enum class AllocationType {
 };
 
 /// DeviceMemory class that keeps track of its allocated and freed areas.
-/// Makes it easy to resuse memory as well as bind multiple memoryRequestors to one allocation.
+/// Makes it easy to reuse memory as well as bind multiple memoryRequestors to one allocation.
 /// Note that there are additional rules for allocating device memory on vulkan (like e.g. needed
 /// offsets between image and buffer allocations) which are not checked/stored by this class, this
 /// has to be done externally.
@@ -45,7 +45,7 @@ public:
 	DeviceMemory(DeviceMemory&&) noexcept = delete;
 	DeviceMemory& operator=(DeviceMemory&&) noexcept = delete;
 
-	/// Tries to allocate a memory part that matches the given size and aligment requirements.
+	/// Tries to allocate a memory part that matches the given size and alignment requirements.
 	/// If there is not enough free space left, a std::runtime_error will be thrown.
 	/// The size parameter has to be not null, otherwise a std::logic_error will be thrown.
 	/// One can test if there is enough space for the needed allocation with the
@@ -54,10 +54,10 @@ public:
 
 	/// Tests if an allocation for the given requirements can be made.
 	/// Will return an empty (size = 0) allocation if it is not possible or the theoretically
-	/// possible alloction. This can then (before any other allocate call) safely be allocated
+	/// possible allocation. This can then (before any other allocate call) safely be allocated
 	/// with a call to allocSpecified.
 	/// Notice that this call itself does NOT reserve any memory for the caller so the memory
-	/// range of the returned allocatin shall not be used.
+	/// range of the returned allocation shall not be used.
 	Allocation allocatable(size_t size, size_t aligment, AllocationType) const;
 
 	/// Allocates the specified memory part. Does not check for matched requirements or if

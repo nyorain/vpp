@@ -18,6 +18,7 @@ set(vpp-sources
 	pipeline.cpp
 	graphicsPipeline.cpp
 	computePipeline.cpp
+	physicalDevice.cpp
 	renderPass.cpp
 	resource.cpp
 	commandBuffer.cpp

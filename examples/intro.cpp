@@ -27,11 +27,20 @@ extern std::uint32_t fragmentSpirv[];
 
 // the needed vulkan extensions
 const char* iniExtensions[] = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME};
-const char* devExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 // some functions for the rather uninteresting parts
-class Window createWindow(vk::Instance instance);
+struct Window {
+	vk::Instance instance;
+	vk::SurfaceKHR vkSurface;
+	HWND window;
+
+	Window(const vpp::Instance&);
+	~Window();
+};
+
+Window createWindow(vk::Instance instance);
 vpp::RenderPass createRenderPass(const vpp::Swapchain& swapchain);
+
 
 int main()
 {
@@ -41,13 +50,13 @@ int main()
 	vk::InstanceCreateInfo instanceInfo;
 	instanceInfo.pApplicationInfo = &appInfo;
 	instanceInfo.enabledExtensionCount = 2;
-	instanceInfo.enabledExtensionCount = iniExtensions;
+	instanceInfo.ppEnabledExtensionNames = iniExtensions;
 
 	vpp::Instance instance(instanceInfo);
 
 	// this function will create a winapi window wrapper and also create a surface for it
 	// this should usually be done by a cross platform window abstraction
-	auto window = createWindow();
+	Window window(instance);
 
 	// now create a device for the instance and surface
 	// note how vpp will automatically select a suited physical device and query
@@ -78,14 +87,14 @@ int main()
 	vpp::ShaderModule vertexShader(device, vertexSpirv);
 	vpp::ShaderModule fragmentShader(device, fragmentSpirv);
 
-	vpp::ShaderProgram shaderStages(device, {
+	vpp::ShaderProgram shaderStages({
 		{vertexShader, vk::ShaderStageBits::vertex},
 		{fragmentShader, vk::ShaderStageBits::fragment}
 	});
 
 	{
 		vk::GraphicsPipelineCreateInfo pipelineInfo;
-		pipelineInfo.stagesCount = shaderStages.vkStageInfos().size();
+		pipelineInfo.stageCount = shaderStages.vkStageInfos().size();
 		pipelineInfo.pStages = shaderStages.vkStageInfos().data();
 
 		vk::PipelineVertexInputStateCreateInfo vertexInfo;
@@ -100,7 +109,7 @@ int main()
 
 	// note how vpp takes care of buffer allocation (in an efficient way, even when used
 	// for multiple resources)
-	constexpr auto size = 3 * 2 * 4; // 3 vertices, vec2 with 4 bytes components
+	constexpr auto size = 3u * 2u * 4u; // 3 vertices, vec2 with 4 bytes components
 	vpp::Buffer vertexBuffer(device, {{}, size, vk::BufferUsageBits::vertexBuffer});
 
 	// out vertex data (only the positions)

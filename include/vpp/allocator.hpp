@@ -21,7 +21,7 @@ namespace vpp {
 /// different memory objects as possible. Will also reuse freed memory.
 /// Can be used manually, but since the buffer and image (memoryResource)
 /// classes already use it, manual usage is usually not required.
-/// The api is nontheless exposed publicly.
+/// The api is nonetheless exposed publicly.
 class DeviceMemoryAllocator : public Resource {
 public:
 	DeviceMemoryAllocator() noexcept = default;
@@ -37,7 +37,7 @@ public:
 	/// these can be modified (in a valid way like e.g. unsetting further memory
 	/// type bits) by the caller.
 	/// \param usage The usage flags the buffer was created with and is used for.
-	/// Needed to satisfy certain alignment and pedding requirements
+	/// Needed to satisfy certain alignment and padding requirements
 	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
 		vk::BufferUsageFlags usage, MemoryEntry& entry);
 
@@ -47,7 +47,7 @@ public:
 	/// these can be modified (in a valid way like e.g. unsetting further memory
 	/// type bits) by the caller.
 	/// \param tiling The ImageTiling for the given image.
-	/// Needed to satisfy certain alignment and pedding requirements
+	/// Needed to satisfy certain alignment and padding requirements
 	void request(vk::Image requestor, const vk::MemoryRequirements& reqs, vk::ImageTiling tiling,
 		MemoryEntry& entry);
 
@@ -68,7 +68,7 @@ public:
 	void allocate();
 
 	/// Makes sure that the given entry has associated memory, i.e. finishes its memory request
-	/// and removes it from the interal list of pending entries.
+	/// and removes it from the internal list of pending entries.
 	/// Prefer the allocate overload without parameters that allocates all pending
 	/// memory request since it might be more efficient overall.
 	/// Will have no effect if the old entry is not found other than outputting
@@ -81,7 +81,7 @@ public:
 
 protected:
 	/// The type of a request/requirement.
-	/// Determines which union member is active and is relevant to satisy
+	/// Determines which union member is active and is relevant to satisfy
 	/// all alignment, padding and layout requirements.
 	enum class RequirementType {
 		linearImage,
@@ -130,7 +130,7 @@ protected:
 /// Objects of this type may have 3 states:
 /// - invalid (defaulted constructed or moved from, no associated memory)
 /// - pending (waiting for associated DeviceMemoryAllocator to allocate memory)
-/// - bound (referncing an associated DeviceMemory object on which the Entry is bound)
+/// - bound (referencing an associated DeviceMemory object on which the Entry is bound)
 /// Will automatically free the associated memory allocation (if any) on destruction or
 /// unregister the pending memory request from the DeviceMemoryAllocator.
 class MemoryEntry : public ResourceReference<MemoryEntry> {
@@ -153,7 +153,7 @@ public:
 
 	/// Assures that there is memory allocated and associated with this entry.
 	/// Will have no effect if the entry already has an associated memory allocation.
-	/// Results in undefined behvaiour if this MemoryEntry is in an invalid state, i.e.
+	/// Results in undefined behavior if this MemoryEntry is in an invalid state, i.e.
 	/// if it has no associated DeviceMemoryAllocator.
 	void allocate() const { if(!allocated()) allocator_->allocate(*this); }
 
@@ -170,7 +170,7 @@ protected:
 	friend class DeviceMemoryAllocator;
 
 	// if there is an allocation associated with this entry (the allocation size is > 0)
-	// the memory member wil be active, otherwise the allocator.
+	// the memory member will be active, otherwise the allocator.
 	// so by default the allocator_ var will simple hold a nullptr and the allocation an empty
 	// allocation {0, 0}. The allocation signals that is it not yet allocated and the
 	// nullptr allocator var that it is invalid (i.e. not yet associated with an allocator).

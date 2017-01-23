@@ -12,10 +12,10 @@
 
 namespace vpp {
 
-/// Tries to select the best phsycial device from the given span by queyring its properties.
+/// Tries to select the best physical device from the given span by querying its properties.
 /// Will usually choose the one with the best properties like device type, biggest memory and
 /// needed queue families. Can be used if an application has no special needs and just wants
-/// to choose the device that is usuall the best.
+/// to choose the device that is usual the best.
 vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice>);
 
 /// Chooses the best physical device that can be used to render on the given surface.
@@ -28,7 +28,7 @@ vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice>, vk::Instance, vk::Surf
 
 /// Specifies in which way a queue family should be selected.
 /// When 'none' is used, the first valid queue family is returned.
-/// When 'highestCount' is used, the valid queue familiy with the highest queue count is returned.
+/// When 'highestCount' is used, the valid queue family with the highest queue count is returned.
 /// When 'mimImageGranularity' is used, the valid queue family with the smallest minimal image
 /// transfer granularity is returned. Note that this treats the granularity (0,0,0) as
 /// the worst, i.e. the greatest.

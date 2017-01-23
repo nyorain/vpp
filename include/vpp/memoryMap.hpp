@@ -23,7 +23,7 @@ public:
 	/// Might remap the mapped range.
 	void remap(const Allocation& allocation);
 
-	/// Makes sure the mapped data is visibile on the device.
+	/// Makes sure the mapped data is visible on the device.
 	/// If memory is coherent, this function will have no effect.
 	void flush() const;
 
@@ -33,7 +33,7 @@ public:
 	void reload() const;
 
 	/// Returns whether this object is valid.
-	/// If it is not, any operations on it may result in undefind behvaiour.
+	/// If it is not, any operations on it may result in undefined behavior.
 	bool valid() const noexcept { return ptr_; }
 
 	const vk::DeviceMemory& vkMemory() const noexcept;
@@ -83,14 +83,14 @@ public:
 	MemoryMapView(MemoryMapView&& lhs) noexcept { swap(lhs); }
 	MemoryMapView& operator=(MemoryMapView lhs) noexcept { swap(lhs); return *this; }
 
-	/// Makes sure the mapped data is visibile on the device.
+	/// Makes sure the mapped data is visible on the device.
 	/// Not needed when memory is coherent, look at vkFlushMappedMemoryRanges.
 	/// Can be checked with coherent().
 	void flush() const;
 
 	/// Reloads the device memory into mapped memory, i.e. makes sure writes by the device
-	/// are made visible. Not needed when memory is coherent, look at vkInvalidateMappedMemoryRanges.
-	/// Can be checked with coherent().
+	/// are made visible. Not needed when memory is coherent, look at
+	/// vkInvalidateMappedMemoryRanges. Can be checked with coherent().
 	void reload() const;
 
 	/// Returns whether the view is valid.
