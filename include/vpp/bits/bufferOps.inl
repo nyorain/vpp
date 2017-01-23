@@ -121,7 +121,7 @@ struct BufferApplier<VT, ShaderType::scalar> {
 	}
 
 	template<typename T>
-	static constexpr unsigned int align(bool std140)
+	static constexpr unsigned int align(bool)
 	{
 		return VT::size64 ? 8 : 4;
 	}

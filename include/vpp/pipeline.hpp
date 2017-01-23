@@ -40,7 +40,7 @@ public:
 	PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info);
 	PipelineLayout(const Device& dev,
 		nytl::Span<const std::reference_wrapper<DescriptorSetLayout>> layouts,
-		nytl::Span<const vk::PushConstantRange> ranges = {});
+		nytl::Span<const vk::PushConstantRange> ranges);
 	~PipelineLayout();
 
 	PipelineLayout(PipelineLayout&& lhs) noexcept { swap(lhs); }

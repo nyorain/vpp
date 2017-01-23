@@ -144,7 +144,7 @@ protected:
 	std::vector<vk::BufferCopy> copies_; // for copy (direct/transfer)
 	size_t internalOffset_ {}; // offset for internal data
 
-	bool direct_;
+	bool direct_ {};
 };
 
 /// Can be used to calculate the size that would be needed to fit certain objects with certain
