@@ -255,7 +255,7 @@ struct BufferApplier<VT, ShaderType::structure> {
 	}
 };
 
-/// BufferApplier container specialization.
+/// BufferApplier container/general specialization.
 template<typename VT>
 struct BufferApplier<VT, ShaderType::none> {
 
@@ -266,22 +266,24 @@ struct BufferApplier<VT, ShaderType::none> {
 		ShaderType V = VulkanType<B>::type>
 	static void call(O& op, T&& obj)
 	{
-		auto sa = roundAlign(bufferAlign<VulkanType<B>, B>(op.std140()), op.std140());
-		op.align(sa);
+		auto sa = bufferAlign<VulkanType<B>, B>(op.std140());
+		auto rounded = roudnAlign(sa, op.std140());
+		op.align(rounded);
 
 		for(auto& a : obj) {
-			if(op.std140()) op.align(sa);
+			if(op.std140()) op.align(rounded);
 			bufferApply(op, a);
 		}
 
-		op.nextOffsetAlign(sa);
+		op.nextOffsetAlign(rounded);
 	}
 
-	template<typename T>
+	template<typename T,
+		typename B = decltype(*std::begin(std::declval<T>())),
+		typename E = decltype(*std::end(std::declval<T>()))>
 	static constexpr unsigned int align(bool std140)
 	{
-		using Value = decltype(*std::begin(std::declval<T>()));
-		return roundAlign(bufferAlign<VulkanType<Value>, Value>(std140), std140);
+		return roundAlign(bufferAlign<VulkanType<B>, B>(std140), std140);
 	}
 };
 

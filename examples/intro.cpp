@@ -5,7 +5,9 @@
 // Note how this example has way less code than the plain c vulkan hello world example
 // while not losing any really revelant parts.
 // Only the main function is really interesting for vpp.
+// Tested with the latest amd windows driver on an r9 270x.
 
+// pull in the vulkan winapi-specific type and prototype defs.
 #define VK_USE_PLATFORM_WIN32_KHR
 
 // Include the basic vpp headers needed in this example
@@ -28,12 +30,6 @@
 #include <chrono>
 
 // the needed vulkan extensions
-const char* iniExtensions[] = {
-	VK_KHR_SURFACE_EXTENSION_NAME,
-	VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-	VK_EXT_DEBUG_REPORT_EXTENSION_NAME
-};
-
 // some functions for the rather uninteresting/usual parts
 struct Window {
 	vk::Instance instance;
@@ -47,7 +43,8 @@ struct Window {
 vpp::RenderPass createRenderPass(const vpp::Swapchain&);
 vpp::Pipeline createGraphicsPipeline(const vpp::Device&, vk::RenderPass, vk::PipelineLayout);
 
-// Our vpp::RendererBuilder implementation
+// Our vpp::RendererBuilder implementation. Used to build the render command buffer
+// Our implementation simply clears with a black color and then renders one triangle.
 // implemented after main
 struct IntroRendererImpl : public vpp::RendererBuilder {
 	void build(unsigned int, const vpp::RenderPassInstance&) override;
@@ -60,6 +57,15 @@ struct IntroRendererImpl : public vpp::RendererBuilder {
 int main()
 {
 	// first, create a vulkan instance
+	// the needed/used instance extensions
+	constexpr const char* iniExtensions[] = {
+		VK_KHR_SURFACE_EXTENSION_NAME,
+		VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+		VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+	};
+
+	// basic application info
+	// we use vulkan api version 1.0
 	vk::ApplicationInfo appInfo ("vpp-intro", 1, "vpp", 1, VK_API_VERSION_1_0);
 
 	vk::InstanceCreateInfo instanceInfo;
@@ -72,7 +78,8 @@ int main()
 	vpp::Instance instance(instanceInfo);
 
 	// create a debug callback for our instance and the default layers
-	// the default implementation will just output to std::cerr
+	// the default implementation will just output to std::cerr when a debug callback
+	// is received
 	vpp::DebugCallback debugCallback(instance);
 
 	// this function will create a winapi window wrapper and also create a surface for it
@@ -107,16 +114,16 @@ int main()
 	vpp::Buffer vertexBuffer(device, {{}, size, usage});
 
 	// vertex data (only positions and color)
-	constexpr std::array<std::array<float, 6>, 3> vertexData = {{
-		{0.f, -0.75f,     1.f, 0.f, 0.f, 1.f}, // top
-		{-0.75f, 0.75f,    0.f, 1.f, 0.f, 1.f}, // left
-		{0.75f, 0.75f,    0.f, 0.f, 1.f, 1.f} // right
+	constexpr std::array<float, 6 * 3> vertexData = {{
+		0.f, -0.75f,     1.f, 0.f, 0.f, 1.f, // top
+		-0.75f, 0.75f,    0.f, 1.f, 0.f, 1.f, // left
+		0.75f, 0.75f,    0.f, 0.f, 1.f, 1.f // right
 	}};
 
 	// vpp can now be used to fill the vertex buffer with data in the most efficient way
-	// we fill it using std140 layout (since thats the default for vertex buffers)
+	// in this case the buffer layout does not matter since its a vertex buffer
 	// note how vpp automatically unpacks the std::array
-	vpp::fill140(vertexBuffer, vpp::raw(*vertexData.data()->data(), size / 4));
+	vpp::fill140(vertexBuffer, vpp::raw(vertexData));
 
 	// to render onto the created swapchain we can use vpp::SwapchainRenderer
 	// the class implements the default framebuffer and commandbuffer handling
@@ -147,8 +154,7 @@ int main()
 			if(msg.message == WM_QUIT) {
 				run = false;
 				break;
-			}
-			else {
+			} else {
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
@@ -157,6 +163,7 @@ int main()
 		if(!run) break;
 		renderer.renderBlock(nullptr, presentQueue);
 
+		// output the average fps count ever second
 		++frames;
 		if(Clock::now() - point >= std::chrono::seconds(1)) {
 			std::cout << frames << " fps\n";
@@ -240,6 +247,19 @@ vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
 	multisampleInfo.rasterizationSamples = vk::SampleCountBits::e1;
 	pipelineInfo.pMultisampleState = &multisampleInfo;
 
+	vk::PipelineColorBlendAttachmentState blendAttachment;
+	blendAttachment.blendEnable = false;
+	blendAttachment.colorWriteMask =
+		vk::ColorComponentBits::r |
+		vk::ColorComponentBits::g |
+		vk::ColorComponentBits::b |
+		vk::ColorComponentBits::a;
+
+	vk::PipelineColorBlendStateCreateInfo blendInfo;
+	blendInfo.attachmentCount = 1;
+	blendInfo.pAttachments = &blendAttachment;
+	pipelineInfo.pColorBlendState = &blendInfo;
+
 	vk::PipelineViewportStateCreateInfo viewportInfo;
 	viewportInfo.scissorCount = 1;
 	viewportInfo.viewportCount = 1;
@@ -285,7 +305,7 @@ vpp::RenderPass createRenderPass(const vpp::Swapchain& swapchain)
 	colorReference.attachment = 0;
 	colorReference.layout = vk::ImageLayout::colorAttachmentOptimal;
 
-	//only subpass
+	// only subpass
 	vk::SubpassDescription subpass;
 	subpass.pipelineBindPoint = vk::PipelineBindPoint::graphics;
 	subpass.colorAttachmentCount = 1;
@@ -332,19 +352,20 @@ Window::Window(const vpp::Instance& instance)
 	wndClass.lpszClassName = name;
 	wndClass.hIconSm = ::LoadIcon(NULL, IDI_WINLOGO);
 
-	if(!RegisterClassEx(&wndClass))
+	if(!::RegisterClassEx(&wndClass))
 		throw std::runtime_error("Failed to register window class");
 
 	auto flags = WS_OVERLAPPEDWINDOW;
-	window = CreateWindowEx(0, name, name, flags, CW_USEDEFAULT,
+	window = ::CreateWindowEx(0, name, name, flags, CW_USEDEFAULT,
 		CW_USEDEFAULT, width, height, nullptr, nullptr, hinstance, nullptr);
 
 	if(!window)
 		throw std::runtime_error("Failed to create window");
 
-	ShowWindow(window, SW_SHOW);
-	SetForegroundWindow(window);
-	SetFocus(window);
+	::ShowWindow(window, SW_SHOW);
+	::SetForegroundWindow(window);
+	::SetFocus(window);
+	::SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<ULONG_PTR>(this));
 
 	// create the vulkan surface
 	vk::Win32SurfaceCreateInfoKHR info;
@@ -359,5 +380,6 @@ Window::Window(const vpp::Instance& instance)
 Window::~Window()
 {
 	surface = {};
-	if(window) ::DestroyWindow(window);
+	if(window)
+		::DestroyWindow(window);
 }
