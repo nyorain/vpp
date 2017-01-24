@@ -11,6 +11,9 @@ Todo list vor vpp
 		- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
 	- threadlocal.hpp: use shared_mutex instead of shared_timed_mutex
 
+- rework:
+	- submit
+
 - move example code snippets out of code!
 - queue constness? (maybe make it related to any operations on the queue?)
 - debug checks: make sure to never throw in destructor!
