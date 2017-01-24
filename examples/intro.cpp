@@ -161,7 +161,7 @@ int main()
 		}
 
 		if(!run) break;
-		renderer.renderBlock(nullptr, presentQueue);
+		renderer.renderBlock(*presentQueue);
 
 		// output the average fps count ever second
 		++frames;

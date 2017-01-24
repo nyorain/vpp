@@ -19,6 +19,7 @@ public:
 	~Instance();
 
 	vk::Instance vkInstance() const { return instance_; }
+	vk::Instance vkHandle() const { return instance_; }
 	operator vk::Instance() const { return instance_; }
 
 protected:

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#define VPP_VMAJOR @ajor@
+#define VPP_VMAJOR @vmajor@
 #define VPP_VMINOR @vminor@
 #define VPP_VPATCH @vpatch@
 
