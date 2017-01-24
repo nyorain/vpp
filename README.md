@@ -1,12 +1,12 @@
 vpp
 ===
 
-A vulkan abstraction library written in modern C++ and licensed by the __Boost License__
-(similar to MIT License).
+A vulkan abstraction library written in modern C++ and licensed by
+the __Boost License__ (similar to MIT License).
 
-Does not aim to be a full-sized graphics engine, but rather focuses on providing some useful
-features that make programming vulkan applications in C++ more convenient and less repetitive
-while not introducing unreasonable overhead.
+Does not aim to be a full-sized graphics engine, but rather focuses on
+providing some useful features that make programming vulkan applications in
+C++ more convenient and less repetitive while not introducing unreasonable overhead.
 
 Includes a C++ code generator for the vulkan api which focuses on typesafety and less typing
 while still being more explicit as well as it tries to not introduce a huge compile time overhead.
@@ -16,11 +16,13 @@ At the moment, vpp is in an experimental pre-alpha state, but the first (usable)
 expected to be released soon.
 
 If you want to improve the library or add your own ideas, just start a pull request.
-__Any contributions (feature requests, critics and recommendations as well) are highly appreciated.__
+Any contributions (feature requests, critics and recommendations as well)
+are highly appreciated.
 
 ## Examples
 
-__A good place to start with vpp is the [hello world triangle intro](exapmles/intro.cpp)__
+__A good place to start with vpp is the [hello world triangle
+example](exapmles/intro.cpp)__
 
 In addition, here are some smaller code snippets to give you an idea on how the
 api will probably look like and in which way in may be useful to program vulkan applications.
@@ -120,12 +122,10 @@ std::uint32_t a = 420;
 std::vector<std::int32_t> b = {1, 4, 2, 5, 6, 3, 2, 4, 3};
 auto work1 = fill140(buffer1, a, b);
 
-
 // In this case the buffer is just filled the buffer with a raw
 // copy of the given type.
 MyPodStructData data;
 auto work2 = fill140(buffer2, 0.f, vpp::raw(data));
-
 
 // Read the aligned data using std430 layout into the given variables.
 // The given variable references must remain valid until the returned
@@ -154,8 +154,8 @@ work3->finish();
 WorkManager workManager;
 workManager.add({std::move(work1), std::move(work2), std::move(work3)});
 
-// The workManager would automatically finish the owned work on destruction or
-// you can call it manually.
+// The workManager would automatically finish the owned work on destruction
+// or you can call it manually.
 workManager.finish();
 `````````````````
 
@@ -174,14 +174,13 @@ can also be accessed on a lower level of abstraction using e.g.
 [SubmitManager](include/vpp/submit.hpp), or
 [DeviceMemoryAllocator](include/vpp/allocator.hpp).
 
-
 ## Building
 __vpp does not have any external dependencies (excluding vulkan headers and loader lib of course).__
 Since it already uses C++17 it compiles (at the moment) only on the latest gcc and clang
 builds.
 
-Just download the repository or clone it with git, run cmake and then build it
-(using make, ninja, ...).
+Just download the repository or clone it with git, run cmake in a
+new build folder and then build it (e.g. using make or ninja with gcc/clang).
 
 ### Troubleshooting
 
