@@ -12,8 +12,10 @@ Todo list vor vpp
 	- threadlocal.hpp: use shared_mutex instead of shared_timed_mutex
 	- pmr for performance critical (every-frame) functions.
 
+
+- rework:
+	- submit
 - remove context
-- update readme!
 - move example code snippets out of code!
 - queue constness? (maybe make it related to any operations on the queue?)
 - debug checks: make sure to never throw in destructor!
