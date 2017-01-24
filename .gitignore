@@ -1,9 +1,5 @@
 build/
-buildwin/
-buildwin2/
-buildwin3/
-test.cpp
-.idea/
 .clang_complete
 .build-tools.cson
 .vscode
+*.swp
