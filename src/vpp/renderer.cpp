@@ -134,6 +134,10 @@ void SwapchainRenderer::init(RenderImpl builder)
 
 void SwapchainRenderer::recreate()
 {
+	// TODO: reuse command buffers?
+	renderBuffers_.clear();
+	staticAttachments_.clear();
+
 	create(*swapChain_, info_);
 	init(std::move(renderImpl_));
 }
