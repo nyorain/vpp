@@ -7,7 +7,80 @@
 
 namespace vpp {
 
-//decriptorSetUpdate
+// DescriptorSetLayout
+DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
+	nytl::Span<const vk::DescriptorSetLayoutBinding> bindings) : ResourceHandle(dev)
+{
+	static constexpr auto defaultBinding = std::uint32_t(-1);
+
+	std::vector<vk::DescriptorSetLayoutBinding> vkbindings;
+	vkbindings.reserve(bindings.size());
+
+	unsigned int highestBinding = 0u;
+	for(auto& binding : bindings) {
+		vkbindings.emplace_back(binding);
+		auto& bid = vkbindings.back().binding;
+		if(bid == defaultBinding) bid = highestBinding++;
+		else highestBinding = std::max(highestBinding, bid + 1);
+	}
+
+	vk::DescriptorSetLayoutCreateInfo descriptorLayout;
+	descriptorLayout.bindingCount = vkbindings.size();
+	descriptorLayout.pBindings = vkbindings.data();
+
+	handle_ = vk::createDescriptorSetLayout(vkDevice(), descriptorLayout);
+}
+
+DescriptorSetLayout::~DescriptorSetLayout()
+{
+	if(vkHandle()) vk::destroyDescriptorSetLayout(vkDevice(), vkHandle());
+}
+
+// DescriptorSet
+DescriptorSet::DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPool pool)
+	: ResourceHandle(layout.device())
+{
+	vk::DescriptorSetAllocateInfo allocInfo;
+	allocInfo.descriptorPool = pool;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &layout.vkHandle();
+
+	vk::allocateDescriptorSets(vkDevice(), allocInfo, handle_);
+}
+
+DescriptorSet::DescriptorSet(const Device& dev, vk::DescriptorSetLayout layout,
+	vk::DescriptorPool pool) : ResourceHandle(dev)
+{
+	vk::DescriptorSetAllocateInfo allocInfo;
+	allocInfo.descriptorPool = pool;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &layout;
+
+	vk::allocateDescriptorSets(vkDevice(), allocInfo, handle_);
+}
+
+DescriptorSet::DescriptorSet(const Device& dev, vk::DescriptorSet set)
+	: ResourceHandle(dev, set)
+{
+}
+
+DescriptorSet::~DescriptorSet()
+{
+	// TODO: something about descriptorSet desctruction/freeing
+}
+
+// DescriptorPool
+DescriptorPool::DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info)
+	: ResourceHandle(dev)
+{
+	handle_ = vk::createDescriptorPool(dev, info);
+}
+DescriptorPool::~DescriptorPool()
+{
+	if(vkHandle()) vk::destroyDescriptorPool(device(), vkHandle());
+}
+
+// DecriptorSetUpdate
 DescriptorSetUpdate::DescriptorSetUpdate(const DescriptorSet& set) : set_(&set)
 {
 }
@@ -36,8 +109,7 @@ void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates
 	std::vector<vk::WriteDescriptorSet> writes;
 	std::vector<vk::CopyDescriptorSet> copies;
 
-	for(auto& updateRef : updates)
-	{
+	for(auto& updateRef : updates) {
 		auto& update = updateRef.get();
 
 		writes.insert(writes.end(), update.writes_.begin(), update.writes_.end());
@@ -49,8 +121,7 @@ void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates
 
 	vk::updateDescriptorSets(updates[0].get().device(), writes, copies);
 
-	for(auto& updateRef : updates)
-	{
+	for(auto& updateRef : updates) {
 		auto& update = updateRef.get();
 
 		update.buffers_.clear();
@@ -178,69 +249,10 @@ void DescriptorSetUpdate::storageView(BufferViewInfos views, int binding, unsign
 }
 void DescriptorSetUpdate::copy(const vk::CopyDescriptorSet& copySet)
 {
-	//current binding?
 	copies_.push_back(copySet);
 }
 
-//descriptorSetLayout
-DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
-	nytl::Span<const vk::DescriptorSetLayoutBinding> bindings) : ResourceHandle(dev)
-{
-	static constexpr auto defaultBinding = std::uint32_t(-1);
-
-	std::vector<vk::DescriptorSetLayoutBinding> vkbindings;
-	vkbindings.reserve(bindings.size());
-
-	unsigned int highestBinding = 0u;
-	for(auto& binding : bindings)
-	{
-		vkbindings.emplace_back(binding);
-		auto& bid = vkbindings.back().binding;
-		if(bid == defaultBinding) bid = highestBinding++;
-		else highestBinding = std::max(highestBinding, bid + 1);
-	}
-
-	vk::DescriptorSetLayoutCreateInfo descriptorLayout;
-	descriptorLayout.bindingCount = vkbindings.size();
-	descriptorLayout.pBindings = vkbindings.data();
-
-	handle_ = vk::createDescriptorSetLayout(vkDevice(), descriptorLayout);
-}
-
-DescriptorSetLayout::~DescriptorSetLayout()
-{
-	if(vkHandle()) vk::destroyDescriptorSetLayout(vkDevice(), vkHandle());
-}
-
-//DescriptorSet
-DescriptorSet::DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPool pool)
-	: ResourceHandle(layout.device())
-{
-	vk::DescriptorSetAllocateInfo allocInfo;
-	allocInfo.descriptorPool = pool;
-	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = &layout.vkHandle();
-
-	vk::allocateDescriptorSets(vkDevice(), allocInfo, handle_);
-}
-
-DescriptorSet::~DescriptorSet()
-{
-	///XXX: something about descriptorSet desctruction/freeing
-}
-
-//DescriptorPool
-DescriptorPool::DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info)
-	: ResourceHandle(dev)
-{
-	handle_ = vk::createDescriptorPool(dev, info);
-}
-DescriptorPool::~DescriptorPool()
-{
-	if(vkHandle()) vk::destroyDescriptorPool(device(), vkHandle());
-}
-
-//utility
+// utility
 vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
 	vk::ShaderStageFlags stages, unsigned int binding,
 	unsigned int count, const vk::Sampler* samplers)

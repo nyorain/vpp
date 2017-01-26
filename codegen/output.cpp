@@ -371,7 +371,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		fwd_ << "enum class " << name << " : int32_t;\n";
 
 		// output enum values
-		enums_ << "enum class " << name << " : int32_t\n{\n";
+		enums_ << "enum class " << name << " : int32_t{\n";
 		auto sepr = "";
 		for(auto& value : enumeration.values) {
 			bool bit;

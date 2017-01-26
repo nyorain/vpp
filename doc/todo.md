@@ -2,7 +2,9 @@ Todo list vor vpp
 =================
 
 - C++17 update (if usable compiler):
+	- procAddr.cpp: use shared_mutex
 	- clean up the Resource::swap mess
+		- base method inheritance
 	- use a destroy function for resources that is called from ResourceHandle destrctor
 	- use "using" declarations in the derived resource classes to make the
 		protected ResourceHandle constructors visisble
@@ -15,6 +17,13 @@ Todo list vor vpp
 
 - rework:
 	- submit
+- alternative two step init
+	- safer
+	- see framebuffer, rather unsafe initializattion spliiting
+- which information should resources carry around, which not?
+- procAddr: test if local cache really faster than load it every time?
+- pipeline init helper functions
+	- Pipeline class rework (?)
 - remove context
 - move example code snippets out of code!
 - queue constness? (maybe make it related to any operations on the queue?)

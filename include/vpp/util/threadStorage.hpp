@@ -81,6 +81,14 @@ using DynamicThreadStorage = ThreadStorage<DynamicStoragePtr>;
 
 // - implementation -
 template<typename T>
+struct SharedLockGuard {
+	SharedLockGuard(T& mutex) : mutex_(mutex) { mutex_.lock_shared(); }
+	~SharedLockGuard() { mutex_.unlock_shared(); }
+
+	T mutex_;
+};
+
+template<typename T>
 unsigned int ThreadStorage<T>::add(T** obj)
 {
 	std::lock_guard<std::shared_timed_mutex> lock(mutex_);
@@ -93,11 +101,7 @@ unsigned int ThreadStorage<T>::add(T** obj)
 template<typename T>
 T* ThreadStorage<T>::get(unsigned int id)
 {
-	mutex_.lock_shared();
-	struct Guard {
-		ThreadStorage<T>* self;
-		~Guard() { self->mutex_.unlock_shared(); }
-	} guard {this};
+	SharedLockGuard<std::shared_timed_mutex> lock(mutex_);
 	if(std::find(ids_.begin(), ids_.end(), id) == ids_.end()) return nullptr;
 	return &objects_[std::this_thread::get_id()][id];
 }
@@ -105,11 +109,7 @@ T* ThreadStorage<T>::get(unsigned int id)
 template<typename T>
 const T* ThreadStorage<T>::get(unsigned int id) const
 {
-	mutex_.lock_shared();
-	struct Guard {
-		ThreadStorage<T>* self;
-		~Guard() { self->mutex_.unlock_shared(); }
-	} guard {this};
+	SharedLockGuard<std::shared_timed_mutex> lock(mutex_);
 	if(std::find(ids_.begin(), ids_.end(), id) == ids_.end()) return nullptr;
 	return &objects_[std::this_thread::get_id()][id];
 }

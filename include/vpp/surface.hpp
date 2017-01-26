@@ -1,3 +1,7 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
 #include <vpp/fwd.hpp>
@@ -6,45 +10,47 @@
 #include <string>
 #include <memory>
 
-namespace vpp
-{
+namespace vpp {
 
-///Base class for vulkan surfaces.
-///There is only a vulkan instance needed to create a Surface, so it is not considered a
-///Resource class.
-///The different backends provide functions for create surfaces from native window handles.
-class Surface
-{
+/// RAII vk::SurfaceKHR wrapper.
+class Surface {
 public:
 	Surface() = default;
-    Surface(vk::Instance instance, vk::SurfaceKHR surface);
-    virtual ~Surface();
+	Surface(vk::Instance instance, vk::SurfaceKHR surface);
+	~Surface();
 
 	Surface(Surface&& other) noexcept;
 	Surface& operator=(Surface other) noexcept;
 
-    const vk::Instance& vkInstance() const { return instance_; }
-    const vk::SurfaceKHR& vkSurface() const { return surface_; }
+	vk::Instance vkInstance() const { return instance_; }
+	vk::SurfaceKHR vkHandle() const { return surface_; }
 
-	///Returns whether the surface suppports the given queue family.
-    bool queueFamilySupported(vk::PhysicalDevice phdev, std::uint32_t qFamiliyIndex) const;
-
-	///Returns all supported queue families.
-    std::vector<std::uint32_t> supportedQueueFamilies(vk::PhysicalDevice phdev) const;
-
-    vk::SurfaceCapabilitiesKHR capabilities(vk::PhysicalDevice phdev) const;
-    std::vector<vk::SurfaceFormatKHR> formats(vk::PhysicalDevice phdev) const;
-    std::vector<vk::PresentModeKHR> presentModes(vk::PhysicalDevice phdev) const;
+	[[deprecated("Use vkHandle instead")]]
+	vk::SurfaceKHR vkSurface() const { return surface_; }
 
 	operator vk::SurfaceKHR() const { return vkSurface(); }
 	friend void swap(Surface& a, Surface& b) noexcept;
 
 protected:
-	void release();
+	void release() { instance_ = {}; surface_ = {}};
 
 protected:
-    vk::Instance instance_ {};
-    vk::SurfaceKHR surface_ {};
+	vk::Instance instance_ {};
+	vk::SurfaceKHR surface_ {};
 };
 
-}
+// free utility functions
+bool queueFamilySupported(vk::Instance, vk::Surface, vk::PhysicalDevice, unsigned int qFamily);
+std::vector<unsigned int> supportedQueueFamilies(vk::Instance, vk::Surface, vk::PhysicalDevice);
+vk::SurfaceCapabilitiesKHR capabilities(vk::Instance, vk::Surface, vk::PhysicalDevice);
+std::vector<vk::SurfaceFormatKHR> formats(vk::Instance, vk::Surface, vk::PhysicalDevice);
+std::vector<vk::PresentModeKHR> presentModes(vk::Instance, vk::Surface, vk::PhysicalDevice);
+
+// overloads for surface class that don't take an additional instance parameter
+bool queueFamilySupported(const Surface& surface, vk::PhysicalDevice, unsigned int qFamily);
+std::vector<unsigned int> supportedQueueFamilies(const Surface& surface, vk::PhysicalDevice);
+vk::SurfaceCapabilitiesKHR capabilities(const Surface& surface, vk::PhysicalDevice);
+std::vector<vk::SurfaceFormatKHR> formats(const Surface& surface, vk::PhysicalDevice);
+std::vector<vk::PresentModeKHR> presentModes(const Surface& surface, vk::PhysicalDevice);
+
+} // namespace vpp

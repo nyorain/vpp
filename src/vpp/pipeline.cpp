@@ -72,7 +72,8 @@ void save(vk::Device dev, vk::PipelineCache cache, nytl::StringParam filename)
 // Pipeline
 Pipeline::~Pipeline()
 {
-	if(vkHandle()) vk::destroyPipeline(device(), vkHandle());
+	if(vkHandle())
+		vk::destroyPipeline(device(), vkHandle());
 }
 
 } // namespace vpp

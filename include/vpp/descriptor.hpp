@@ -29,6 +29,8 @@ public:
 };
 
 // TODO: store a reference to pool/layout instead of the device pointer for additional information.
+// which one?
+/// TODO: currently DescriptorSet does not/cannot free it on desctruction
 
 /// Represents a vulkan descriptor set.
 /// A descriptor set is basically a set of different data types (uniform & storage buffer or
@@ -38,7 +40,9 @@ public:
 class DescriptorSet : public ResourceHandle<vk::DescriptorSet> {
 public:
 	DescriptorSet() = default;
+	DescriptorSet(const Device&, vk::DescriptorSetLayout, vk::DescriptorPool);
 	DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPool pool);
+	DescriptorSet(const Device&, vk::DescriptorSet);
 	~DescriptorSet();
 
 	DescriptorSet(DescriptorSet&& lhs) noexcept { swap(lhs); }

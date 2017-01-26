@@ -1,9 +1,12 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/surface.hpp>
 #include <vpp/vk.hpp>
 #include <vpp/procAddr.hpp>
 
-namespace vpp
-{
+namespace vpp {
 
 Surface::Surface(vk::Instance instance, vk::SurfaceKHR surface)
 	: instance_(instance), surface_(surface)
@@ -14,9 +17,6 @@ Surface::~Surface()
 {
 	if(vkInstance() && vkSurface())
 		VPP_PROC(vkInstance(), DestroySurfaceKHR)(vkInstance(), vkSurface(), nullptr);
-
-	surface_ = {};
-	instance_ = {};
 }
 
 Surface::Surface(Surface&& other) noexcept
@@ -38,67 +38,97 @@ void swap(Surface& a, Surface& b) noexcept
 	std::swap(a.surface_, b.surface_);
 }
 
-void Surface::release()
+// free functions
+bool queueFamilySupported(vk::Instance ini, vk::Surface surf, vk::PhysicalDevice phdev,
+	unsigned int qFamiliyIndex)
 {
-	surface_ = {};
-}
-
-bool Surface::queueFamilySupported(vk::PhysicalDevice phdev, std::uint32_t qFamiliyIndex) const
-{
-	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceSupportKHR);
+	VPP_LOAD_PROC(ini, GetPhysicalDeviceSurfaceSupportKHR);
 
 	vk::Bool32 ret;
-	VPP_CALL(pfGetPhysicalDeviceSurfaceSupportKHR(phdev, qFamiliyIndex, vkSurface(), &ret));
-	return (ret == VK_TRUE);
+	VPP_CALL(pfGetPhysicalDeviceSurfaceSupportKHR(phdev, qFamiliyIndex, surf, &ret));
+	return ret == VK_TRUE;
 }
 
-std::vector<std::uint32_t> Surface::supportedQueueFamilies(vk::PhysicalDevice phdev) const
+std::vector<unsigned int> supportedQueueFamilies(vk::Instance ini, vk::Surface surf,
+	vk::PhysicalDevice phdev)
 {
+	VPP_LOAD_PROC(ini, GetPhysicalDeviceSurfaceSupportKHR);
+
 	std::uint32_t count;
 	vk::getPhysicalDeviceQueueFamilyProperties(phdev, count, nullptr);
 
-	std::vector<std::uint32_t> ret;
-	for(std::size_t i(0); i < count; ++i) {
-		if(queueFamilySupported(phdev, i))
+	std::vector<unsigned int> ret;
+	for(auto i = 0u; i < count; ++i) {
+		vk::Bool32 supported;
+		VPP_CALL(pfGetPhysicalDeviceSurfaceSupportKHR(phdev, qFamiliyIndex, surf, &supported));
+		if(supported == VK_TRUE)
 			ret.push_back(i);
 	}
 
 	return ret;
 }
 
-vk::SurfaceCapabilitiesKHR Surface::capabilities(vk::PhysicalDevice phdev) const
+vk::SurfaceCapabilitiesKHR capabilities(vk::Instance ini, vk::Surface surface,
+	vk::PhysicalDevice phdev)
 {
-	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceCapabilitiesKHR);
+	VPP_LOAD_PROC(ini, GetPhysicalDeviceSurfaceCapabilitiesKHR);
 
 	vk::SurfaceCapabilitiesKHR surfCaps;
-	VPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev, vkSurface(), &surfCaps));
+	VPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev, surface, &surfCaps));
 	return surfCaps;
 }
 
-std::vector<vk::SurfaceFormatKHR> Surface::formats(vk::PhysicalDevice phdev) const
+std::vector<vk::SurfaceFormatKHR> formats(vk::Instance ini, vk::Surface surface,
+	vk::PhysicalDevice phdev)
 {
-	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceFormatsKHR);
+	VPP_LOAD_PROC(ini, GetPhysicalDeviceSurfaceFormatsKHR);
 
 	uint32_t count;
-	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev, vkSurface(), &count, nullptr));
+	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev, surface, &count, nullptr));
 
 	std::vector<vk::SurfaceFormatKHR> ret(count);
-	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev, vkSurface(), &count, ret.data()));
+	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev, surface, &count, ret.data()));
 
 	return ret;
 }
 
-std::vector<vk::PresentModeKHR> Surface::presentModes(vk::PhysicalDevice phdev) const
+std::vector<vk::PresentModeKHR> presentModes(vk::Instance ini, vk::Surface surface,
+	vk::PhysicalDevice phdev)
 {
-	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfacePresentModesKHR);
+	VPP_LOAD_PROC(ini, GetPhysicalDeviceSurfacePresentModesKHR);
 
 	uint32_t count;
-	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev, vkSurface(), &count, nullptr));
+	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev, surface, &count, nullptr));
 
 	std::vector<vk::PresentModeKHR> ret(count);
-	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev, vkSurface(), &count, ret.data()));
+	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev, surface, &count, ret.data()));
 
 	return ret;
 }
 
+bool queueFamilySupported(const Surface& surface, vk::PhysicalDevice phdev, unsigned int qFamily)
+{
+	return queueFamilySupported(surface.instance(), surface, phdev, qFamily);
 }
+
+std::vector<unsigned int> supportedQueueFamilies(const Surface& surface, vk::PhysicalDevice phdev)
+{
+	return supportedQueueFamilies(surface.instance(), surface, phdev);
+}
+
+vk::SurfaceCapabilitiesKHR capabilities(const Surface& surface, vk::PhysicalDevice phdev)
+{
+	return capabilities(surface.instance(), surface, phdev);
+}
+
+std::vector<vk::SurfaceFormatKHR> formats(const Surface& surface, vk::PhysicalDevice phdev)
+{
+	return formats(surface.instance(), surface, phdev);
+}
+
+std::vector<vk::PresentModeKHR> presentModes(const Surface& surface, vk::PhysicalDevice phdev)
+{
+	return presentModes(surface.instance(), surface, phdev);
+}
+
+} // namespace vpp

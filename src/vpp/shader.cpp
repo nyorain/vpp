@@ -29,7 +29,7 @@ vk::ShaderModule loadShaderModule(vk::Device dev, nytl::Span<const std::uint32_t
 	return vk::createShaderModule(dev, info);
 }
 
-//ShaderModule
+// ShaderModule
 ShaderModule::ShaderModule(const Device& dev, nytl::StringParam filename) : ResourceHandle(dev)
 {
 	handle_ = loadShaderModule(dev, filename);
