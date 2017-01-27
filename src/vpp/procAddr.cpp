@@ -4,6 +4,7 @@
 
 #include <vpp/procAddr.hpp>
 #include <vpp/util/threadStorage.hpp> // SharedLockGuard
+#include <vpp/util/debug.hpp> // VPP_DEBUG macros
 #include <vpp/vk.hpp>
 
 #include <unordered_map>
@@ -44,10 +45,10 @@ vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name)
 	// insert
 	{
 		std::lock_guard<std::shared_timed_mutex> lock(instanceMutex);
-        it = instanceProcs[instance].insert({name, addr}).first;
+        instanceProcs[instance].insert({name, addr}).first;
 	}
 
-    return it->second;
+	return addr;
 }
 
 vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name)
@@ -70,10 +71,10 @@ vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name)
 	// insert
 	{
 		std::lock_guard<std::shared_timed_mutex> lock(deviceMutex);
-        it = deviceMutex[device].insert({name, addr}).first;
+        deviceProcs[device].insert({name, addr}).first;
 	}
 
-    return it->second;
+	return addr;
 }
 
 } // namespace vpp

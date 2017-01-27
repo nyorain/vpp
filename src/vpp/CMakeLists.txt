@@ -25,7 +25,6 @@ set(vpp-sources
 	transfer.cpp
 	work.cpp
 	queue.cpp
-	provider.cpp
 	util/file.cpp)
 
 #library

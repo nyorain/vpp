@@ -85,7 +85,7 @@ struct SharedLockGuard {
 	SharedLockGuard(T& mutex) : mutex_(mutex) { mutex_.lock_shared(); }
 	~SharedLockGuard() { mutex_.unlock_shared(); }
 
-	T mutex_;
+	T& mutex_;
 };
 
 template<typename T>

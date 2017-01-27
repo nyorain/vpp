@@ -3,7 +3,6 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/image.hpp>
-#include <vpp/provider.hpp> // vpp::CommandBufferProvider
 #include <vpp/transfer.hpp> // vpp::TransferManager
 #include <vpp/transferWork.hpp> // vpp::transferWork
 #include <vpp/queue.hpp> // vpp::Queue

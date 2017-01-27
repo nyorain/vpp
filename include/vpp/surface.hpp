@@ -28,11 +28,11 @@ public:
 	[[deprecated("Use vkHandle instead")]]
 	vk::SurfaceKHR vkSurface() const { return surface_; }
 
-	operator vk::SurfaceKHR() const { return vkSurface(); }
+	operator vk::SurfaceKHR() const { return surface_; }
 	friend void swap(Surface& a, Surface& b) noexcept;
 
 protected:
-	void release() { instance_ = {}; surface_ = {}};
+	void release() { instance_ = {}; surface_ = {}; }
 
 protected:
 	vk::Instance instance_ {};
@@ -40,11 +40,11 @@ protected:
 };
 
 // free utility functions
-bool queueFamilySupported(vk::Instance, vk::Surface, vk::PhysicalDevice, unsigned int qFamily);
-std::vector<unsigned int> supportedQueueFamilies(vk::Instance, vk::Surface, vk::PhysicalDevice);
-vk::SurfaceCapabilitiesKHR capabilities(vk::Instance, vk::Surface, vk::PhysicalDevice);
-std::vector<vk::SurfaceFormatKHR> formats(vk::Instance, vk::Surface, vk::PhysicalDevice);
-std::vector<vk::PresentModeKHR> presentModes(vk::Instance, vk::Surface, vk::PhysicalDevice);
+bool queueFamilySupported(vk::Instance, vk::SurfaceKHR, vk::PhysicalDevice, unsigned int qFamily);
+std::vector<unsigned int> supportedQueueFamilies(vk::Instance, vk::SurfaceKHR, vk::PhysicalDevice);
+vk::SurfaceCapabilitiesKHR capabilities(vk::Instance, vk::SurfaceKHR, vk::PhysicalDevice);
+std::vector<vk::SurfaceFormatKHR> formats(vk::Instance, vk::SurfaceKHR, vk::PhysicalDevice);
+std::vector<vk::PresentModeKHR> presentModes(vk::Instance, vk::SurfaceKHR, vk::PhysicalDevice);
 
 // overloads for surface class that don't take an additional instance parameter
 bool queueFamilySupported(const Surface& surface, vk::PhysicalDevice, unsigned int qFamily);

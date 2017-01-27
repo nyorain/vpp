@@ -5,7 +5,6 @@
 #include <vpp/bufferOps.hpp>
 #include <vpp/util/debug.hpp>
 #include <vpp/transferWork.hpp>
-#include <vpp/provider.hpp>
 #include <vpp/transfer.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/vk.hpp>

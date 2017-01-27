@@ -4,7 +4,6 @@
 
 #include <vpp/device.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/provider.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/commandBuffer.hpp>
 #include <vpp/submit.hpp>

@@ -15,8 +15,8 @@ Surface::Surface(vk::Instance instance, vk::SurfaceKHR surface)
 
 Surface::~Surface()
 {
-	if(vkInstance() && vkSurface())
-		VPP_PROC(vkInstance(), DestroySurfaceKHR)(vkInstance(), vkSurface(), nullptr);
+	if(vkHandle())
+		VPP_PROC(vkInstance(), DestroySurfaceKHR)(vkInstance(), vkHandle(), nullptr);
 }
 
 Surface::Surface(Surface&& other) noexcept
@@ -39,7 +39,7 @@ void swap(Surface& a, Surface& b) noexcept
 }
 
 // free functions
-bool queueFamilySupported(vk::Instance ini, vk::Surface surf, vk::PhysicalDevice phdev,
+bool queueFamilySupported(vk::Instance ini, vk::SurfaceKHR surf, vk::PhysicalDevice phdev,
 	unsigned int qFamiliyIndex)
 {
 	VPP_LOAD_PROC(ini, GetPhysicalDeviceSurfaceSupportKHR);
@@ -49,7 +49,7 @@ bool queueFamilySupported(vk::Instance ini, vk::Surface surf, vk::PhysicalDevice
 	return ret == VK_TRUE;
 }
 
-std::vector<unsigned int> supportedQueueFamilies(vk::Instance ini, vk::Surface surf,
+std::vector<unsigned int> supportedQueueFamilies(vk::Instance ini, vk::SurfaceKHR surf,
 	vk::PhysicalDevice phdev)
 {
 	VPP_LOAD_PROC(ini, GetPhysicalDeviceSurfaceSupportKHR);
@@ -60,7 +60,7 @@ std::vector<unsigned int> supportedQueueFamilies(vk::Instance ini, vk::Surface s
 	std::vector<unsigned int> ret;
 	for(auto i = 0u; i < count; ++i) {
 		vk::Bool32 supported;
-		VPP_CALL(pfGetPhysicalDeviceSurfaceSupportKHR(phdev, qFamiliyIndex, surf, &supported));
+		VPP_CALL(pfGetPhysicalDeviceSurfaceSupportKHR(phdev, i, surf, &supported));
 		if(supported == VK_TRUE)
 			ret.push_back(i);
 	}
@@ -68,7 +68,7 @@ std::vector<unsigned int> supportedQueueFamilies(vk::Instance ini, vk::Surface s
 	return ret;
 }
 
-vk::SurfaceCapabilitiesKHR capabilities(vk::Instance ini, vk::Surface surface,
+vk::SurfaceCapabilitiesKHR capabilities(vk::Instance ini, vk::SurfaceKHR surface,
 	vk::PhysicalDevice phdev)
 {
 	VPP_LOAD_PROC(ini, GetPhysicalDeviceSurfaceCapabilitiesKHR);
@@ -78,7 +78,7 @@ vk::SurfaceCapabilitiesKHR capabilities(vk::Instance ini, vk::Surface surface,
 	return surfCaps;
 }
 
-std::vector<vk::SurfaceFormatKHR> formats(vk::Instance ini, vk::Surface surface,
+std::vector<vk::SurfaceFormatKHR> formats(vk::Instance ini, vk::SurfaceKHR surface,
 	vk::PhysicalDevice phdev)
 {
 	VPP_LOAD_PROC(ini, GetPhysicalDeviceSurfaceFormatsKHR);
@@ -92,7 +92,7 @@ std::vector<vk::SurfaceFormatKHR> formats(vk::Instance ini, vk::Surface surface,
 	return ret;
 }
 
-std::vector<vk::PresentModeKHR> presentModes(vk::Instance ini, vk::Surface surface,
+std::vector<vk::PresentModeKHR> presentModes(vk::Instance ini, vk::SurfaceKHR surface,
 	vk::PhysicalDevice phdev)
 {
 	VPP_LOAD_PROC(ini, GetPhysicalDeviceSurfacePresentModesKHR);
@@ -108,27 +108,27 @@ std::vector<vk::PresentModeKHR> presentModes(vk::Instance ini, vk::Surface surfa
 
 bool queueFamilySupported(const Surface& surface, vk::PhysicalDevice phdev, unsigned int qFamily)
 {
-	return queueFamilySupported(surface.instance(), surface, phdev, qFamily);
+	return queueFamilySupported(surface.vkInstance(), surface, phdev, qFamily);
 }
 
 std::vector<unsigned int> supportedQueueFamilies(const Surface& surface, vk::PhysicalDevice phdev)
 {
-	return supportedQueueFamilies(surface.instance(), surface, phdev);
+	return supportedQueueFamilies(surface.vkInstance(), surface, phdev);
 }
 
 vk::SurfaceCapabilitiesKHR capabilities(const Surface& surface, vk::PhysicalDevice phdev)
 {
-	return capabilities(surface.instance(), surface, phdev);
+	return capabilities(surface.vkInstance(), surface, phdev);
 }
 
 std::vector<vk::SurfaceFormatKHR> formats(const Surface& surface, vk::PhysicalDevice phdev)
 {
-	return formats(surface.instance(), surface, phdev);
+	return formats(surface.vkInstance(), surface, phdev);
 }
 
 std::vector<vk::PresentModeKHR> presentModes(const Surface& surface, vk::PhysicalDevice phdev)
 {
-	return presentModes(surface.instance(), surface, phdev);
+	return presentModes(surface.vkInstance(), surface, phdev);
 }
 
 } // namespace vpp
