@@ -20,6 +20,11 @@ Todo list vor vpp
 - alternative two step init
 	- safer
 	- see framebuffer, rather unsafe initializattion spliiting
+	- create/init methods for buffer and image?
+		- would be consistent at least
+		- make the constructor fully initialize it (like specified in init.hpp?)
+		- rework/rethink init.hpp specifications
+- util shared lock guard (see procAdddr/threadStorage)
 - which information should resources carry around, which not?
 - procAddr: test if local cache really faster than load it every time?
 - pipeline init helper functions
@@ -67,3 +72,16 @@ Todo list vor vpp
 
 - External constructors for all resources (construct them from existing handles)
 - further examples/snippets/documentation
+
+- copied from init.hpp:
+
+
+// TODO: asynchronous two step initialization concept
+// some operations do need more than 2 steps to be fully initialized.
+// Make their waiting asynchronous in a way that it makes sense (?)
+// e.g. wait 5ms for someone else to ask for an uploadBuffer, if no one is doing, ask yourself
+// then record the needed commands, then wait 20ms for someone else to submit work on a valid
+// queue, if no one is doing submit youself.
+// TODO (e.g. for the point above): dynamic queue mangement. Sometimes more than one queue
+// would be able to execute commands, make it possible to just give some expression that is
+// available to use the first matching queue.

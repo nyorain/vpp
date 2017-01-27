@@ -84,7 +84,7 @@ BufferUpdate::~BufferUpdate()
 	try {
 		if(work_) apply()->finish();
 	} catch(const std::exception& error) {
-		std::cerr << "vpp::~BufferUpdate: apply()->finish: " << error.what() << "\n";
+		std::cerr << "vpp::~BufferUpdate: apply()->finish(): " << error.what() << "\n";
 	}
 }
 

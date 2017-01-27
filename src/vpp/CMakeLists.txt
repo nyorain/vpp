@@ -3,7 +3,6 @@ set(vpp-sources
 	allocator.cpp
 	buffer.cpp
 	bufferOps.cpp
-	context.cpp
 	device.cpp
 	descriptor.cpp
 	procAddr.cpp
@@ -16,8 +15,6 @@ set(vpp-sources
 	instance.cpp
 	debug.cpp
 	pipeline.cpp
-	graphicsPipeline.cpp
-	computePipeline.cpp
 	physicalDevice.cpp
 	renderPass.cpp
 	resource.cpp
@@ -30,13 +27,6 @@ set(vpp-sources
 	queue.cpp
 	provider.cpp
 	util/file.cpp)
-
-#add backends
-if(WIN32 OR MSYS OR MINGW)
-	set(vpp-sources ${vpp-sources} backend/win32.cpp)
-elseif(UNIX)
-	set(vpp-sources ${vpp-sources} backend/xcb.cpp backend/wayland.cpp backend/xlib.cpp)
-endif()
 
 #library
 add_library(vpp SHARED ${vpp-sources})

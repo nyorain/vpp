@@ -97,8 +97,7 @@ TransferManager::TransferManager(const Device& dev) : Resource(dev)
 TransferRange TransferManager::buffer(std::size_t size)
 {
 	std::lock_guard<std::mutex> guard(mutex_);
-	for(auto& buffp : buffers_)
-	{
+	for(auto& buffp : buffers_) {
 		auto alloc = buffp->use(size);
 		if(alloc.size > 0) return BufferRange(*buffp, alloc);
 	}
@@ -155,9 +154,6 @@ void TransferManager::optimize()
 	reserve(size);
 }
 
-/// Returns the id of a transfer queue family for the given device.
-/// Returns -1 if no such queue and family were found.
-/// \param queue Sets the queue to a transfer queue of the returned family.
 int transferQueueFamily(const Device& dev, const Queue** queue)
 {
 	// we do not only query a valid queue family but a valid queue and then chose its queue

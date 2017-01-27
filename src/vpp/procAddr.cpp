@@ -37,7 +37,7 @@ vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name)
 	// load
     auto addr = vk::getInstanceProcAddr(instance, name);
 	if(!addr) {
-		std::cerr << "vpp::vulkanProc: Failed to load instance proc " << name << "\n";
+		VPP_DEBUG_WARN("vpp::vulkanProc: Failed to load instance proc ", name);
 		return nullptr;
 	}
 
@@ -63,7 +63,7 @@ vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name)
 	// load
     auto addr = vk::getDeviceProcAddr(device, name);
 	if(!addr) {
-		std::cerr << "vpp::vulkanProc: Failed to load device proc " << name << "\n";
+		VPP_DEBUG_WARN("vpp::vulkanProc: Failed to load device proc ", name);
 		return nullptr;
 	}
 
