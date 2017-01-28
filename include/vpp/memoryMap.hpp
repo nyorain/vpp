@@ -61,7 +61,7 @@ protected:
 	MemoryMap& operator=(MemoryMap lhs) noexcept { swap(lhs); return *this; }
 
 	void ref() noexcept;
-	void unref();
+	void unref() noexcept;
 	void unmap();
 
 protected:

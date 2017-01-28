@@ -8,10 +8,10 @@
 #include <vpp/submit.hpp>
 #include <vpp/commandBuffer.hpp>
 #include <vpp/util/span.hpp>
+#include <vpp/util/debug.hpp>
 
 #include <memory> // std::unique_ptr
 #include <stdexcept> // std::exception
-#include <iostream> // std::cerr
 
 namespace vpp {
 

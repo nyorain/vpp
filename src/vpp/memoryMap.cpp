@@ -26,7 +26,7 @@ MemoryMap::~MemoryMap()
 	try {
 		unmap();
 	} catch(const std::exception& error) {
-		std::cerr << "vpp::~MemoryMap: unmap(): " << error.what() << "\n";
+		warn("vpp::~MemoryMap: unmap(): ", error.what());
 	}
 }
 
@@ -112,14 +112,20 @@ void MemoryMap::ref() noexcept
 	views_++;
 }
 
-void MemoryMap::unref()
+void MemoryMap::unref() noexcept
 {
 	VPP_DEBUG_CHECK("vpp::MemoryMap::unref", {
-		if(views_ == 0) VPP_CHECK_THROW("refcount already zero");
+		if(views_ == 0) VPP_CHECK_WARN("refcount already zero");
 	})
 
 	views_--;
-	if(views_ == 0) unmap();
+	if(views_ == 0) {
+		try {
+			unmap();
+		} catch(const std::exception& error) {
+			warn("vpp::MemoryMap::unref: unmap: ", error.what());
+		}
+	}
 }
 
 // MemoryMapView
@@ -135,13 +141,8 @@ MemoryMapView::MemoryMapView(MemoryMap& map, const Allocation& allocation)
 
 MemoryMapView::~MemoryMapView()
 {
-	if(memoryMap_) {
-		try {
-			memoryMap_->unref();
-		} catch(const std::exception& error) {
-			std::cerr << "vpp::~MemoryMapView: map->unref(): " << error.what() << "\n";
-		}
-	}
+	if(memoryMap_)
+		memoryMap_->unref();
 }
 
 void MemoryMapView::swap(MemoryMapView& lhs) noexcept

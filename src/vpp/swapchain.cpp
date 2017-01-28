@@ -29,7 +29,7 @@ void onError(DefaultSwapchainSettings::ErrorAction action, const char* field)
 {
 	static const std::string errorMsg = "vpp::DefaultSwapchainSettings: using different ";
 	if(action == DefaultSwapchainSettings::ErrorAction::output)
-		std::cerr << errorMsg << field << "\n";
+		warn(errorMsg, field);
 
 	if(action == DefaultSwapchainSettings::ErrorAction::throwException)
 		throw std::runtime_error(errorMsg + field);

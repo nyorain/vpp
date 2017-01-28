@@ -193,7 +193,7 @@ void SwapchainRenderer::record(int id)
 std::unique_ptr<Work<void>> SwapchainRenderer::render(const Queue& present, const Queue* gfx)
 {
 	if(gfx == nullptr) gfx = device().queue(vk::QueueBits::graphics);
-	if(!gfx) throw std::runtime_error("SwapchainRenderer::render no graphics queue");
+	if(!gfx) throw std::runtime_error("vpp::SwapchainRenderer::render: no graphics queue");
 
 	vk::SemaphoreCreateInfo semaphoreCI;
 	auto acquireComplete = Semaphore(device());
@@ -242,7 +242,7 @@ std::unique_ptr<Work<void>> SwapchainRenderer::render(const Queue& present, cons
 			try {
 				finish();
 			} catch(const std::exception& err) {
-				std::cerr << "vpp::SwapchainRenderer::render Work::finish: " << err.what() << "\n";
+				warn("vpp::SwapchainRenderer::render: Work::finish: ", err.what());
 			}
 		}
 
@@ -275,7 +275,7 @@ std::unique_ptr<Work<void>> SwapchainRenderer::render(const Queue& present, cons
 void SwapchainRenderer::renderBlock(const Queue& present, const Queue* gfx)
 {
 	if(gfx == nullptr) gfx = device().queue(vk::QueueBits::graphics);
-	if(!gfx) throw std::runtime_error("SwapchainRenderer::render no graphics queue");
+	if(!gfx) throw std::runtime_error("vpp::SwapchainRenderer::renderBlock: no graphics queue");
 
 	auto acquireComplete = Semaphore(device());
 	auto renderComplete = Semaphore(device());

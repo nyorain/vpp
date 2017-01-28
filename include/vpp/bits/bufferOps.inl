@@ -331,7 +331,14 @@ template<typename... T> WorkPtr read(const Buffer& buf, BufferLayout align, T&..
 	struct WorkImpl : public Work<void> {
 		WorkImpl(const Buffer& buf, BufferLayout align, T&... args)
 			: buffer_(buf), retrieveWork_(retrieve(buf)), align_(align), args_(args...) {}
-		~WorkImpl() { finish(); }
+		~WorkImpl()
+		{
+			try {
+				finish();
+			} catch(const std::exception& err) {
+				vpp::warn("vpp::read(Buffer)::~WorkImpl: finish: ", err.what());
+			}
+		}
 
 		void submit() override { retrieveWork_->submit(); }
 		void wait() override { retrieveWork_->wait(); }

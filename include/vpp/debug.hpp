@@ -12,11 +12,6 @@
 
 namespace vpp {
 
-/// Returns the names of all common useful instance validation layers.
-/// Note that (although they are usually available since distributed with the
-/// vulkan sdk) they might not be available on all platforms.
-const std::vector<const char*>& defaultLayerNames();
-
 /// Vulkan DebugCallback base class.
 /// By default this will just dump the received information for the given flags
 /// to the standard output. Custom implementations can device from this class

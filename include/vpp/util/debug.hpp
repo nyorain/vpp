@@ -23,7 +23,7 @@ void warn(Args... args)
 {
 	std::stringstream stream;
 	(stream << ... << args);
-	std::cerr << "vpp::warn: " << stream.str() << '\n';
+	std::cerr << "Warning: " << stream.str() << '\n';
 }
 
 } // namespace vpp

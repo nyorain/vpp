@@ -53,8 +53,8 @@ Todo list vor vpp
 - display class for vkDisplayKHR extension
 - queue management
 	- easier querying/creation/using for commands
-- some smaller improvements
-	- mapMemory: check valid usage (esp. alignment and stuff)
+- think about swapchain out of date handling (swapchain/swapchainRenderer)
+	- recreate swapchain automatically? how to handle it?
 
 - shader stage construction in place?
 	- make it easier to create shader modules that are only once used directly inside
@@ -67,7 +67,6 @@ Todo list vor vpp
 
 - further custom exception? like vpp::QueueError if there is not queue that
 	can execute the needed operation
-	- think about swapchain out of date handling (swapchain/swapchainRenderer)
 	- think about some functionality to handle device lost (how to deal with it?)
 
 - External constructors for all resources (construct them from existing handles)

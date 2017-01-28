@@ -80,10 +80,12 @@ BufferUpdate::BufferUpdate(const Buffer& buf, BufferLayout align, bool direct)
 
 BufferUpdate::~BufferUpdate()
 {
-	try {
-		if(work_) apply()->finish();
-	} catch(const std::exception& error) {
-		std::cerr << "vpp::~BufferUpdate: apply()->finish(): " << error.what() << "\n";
+	if(work_) {
+		try {
+			apply()->finish();
+		} catch(const std::exception& error) {
+			warn("vpp::~BufferUpdate: apply()->finish(): ", error.what());
+		}
 	}
 }
 
