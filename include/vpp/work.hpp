@@ -102,7 +102,7 @@ template<typename R>
 class CommandWork : public Work<R> {
 public:
 	CommandWork() = default;
-	CommandWork(CommandBuffer&& buffer, vk::Queue queue);
+	CommandWork(CommandBuffer&&, const vpp::Queue&);
 	~CommandWork();
 
 	virtual void submit() override;

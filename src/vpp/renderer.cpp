@@ -7,6 +7,7 @@
 #include <vpp/surface.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/submit.hpp>
+#include <vpp/sync.hpp>
 #include <vpp/vk.hpp>
 
 #include <stdexcept>
@@ -195,8 +196,8 @@ std::unique_ptr<Work<void>> SwapchainRenderer::render(const Queue& present, cons
 	if(!gfx) throw std::runtime_error("SwapchainRenderer::render no graphics queue");
 
 	vk::SemaphoreCreateInfo semaphoreCI;
-	auto acquireComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
-	auto renderComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
+	auto acquireComplete = Semaphore(device());
+	auto renderComplete = Semaphore(device());
 
 	unsigned int currentBuffer;
 	swapChain().acquire(currentBuffer, acquireComplete);
@@ -220,53 +221,45 @@ std::unique_ptr<Work<void>> SwapchainRenderer::render(const Queue& present, cons
 	submitInfo.waitSemaphoreCount = semaphores.size();
 	submitInfo.pWaitSemaphores = semaphores.data();
 	submitInfo.pWaitDstStageMask = flags.data();
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdBuf.vkHandle();
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &renderComplete;
+	submitInfo.pSignalSemaphores = &renderComplete.vkHandle();
 
 	CommandExecutionState execState;
-	device().submitManager().add(*gfx, submitInfo, &execState);
+	device().submitManager().add(*gfx, {cmdBuf}, submitInfo, &execState);
+	device().submitManager().submit(*gfx);
 
-	// TODO: which kind of submit makes sence here? submit ALL queued commands?
-	// execState.submit();
-	device().submitManager().submit();
-
-	// TODO: some kind of queue lock? must be synchronized.
-	// need some submitmanager improvements as general queue sync manager.
-	swapChain().present(present, currentBuffer, renderComplete);
+	{
+		QueueLock qLock(device(), present);
+		swapChain().present(present, currentBuffer, renderComplete);
+	}
 
 	class WorkImpl : public Work<void> {
 	public:
-		vk::Semaphore acquire_;
-		vk::Semaphore render_;
+		Semaphore acquire_;
+		Semaphore render_;
 		CommandExecutionState executionState_;
 		WorkBase::State state_ = WorkBase::State::submitted;
 
-		WorkImpl(vk::Semaphore acquire, vk::Semaphore render, CommandExecutionState state)
-			: acquire_(acquire), render_(render), executionState_(std::move(state)) {}
+		~WorkImpl()
+		{
+			try {
+				finish();
+			} catch(const std::exception& err) {
+				std::cerr << "vpp::SwapchainRenderer::render Work::finish: " << err.what() << "\n";
+			}
+		}
 
 		virtual void finish() override
 		{
 			wait();
-			auto& dev = executionState_.device();
-
-			if(acquire_) vk::destroySemaphore(dev, acquire_, nullptr);
-			if(render_) vk::destroySemaphore(dev, render_, nullptr);
-
 			acquire_ = {};
 			render_ = {};
-
 			state_ = WorkBase::State::finished;
 		}
-		virtual WorkBase::State state() override
-		{
-			return state_;
-		}
-		virtual void submit() override
-		{
-			VPP_DEBUG_WARN("vpp::SwapchainRenderer::WorkImpl::submit, was already submitted\n");
-		}
+
+		virtual WorkBase::State state() override { return state_; }
+		virtual void submit() override {}
+
 		virtual void wait() override
 		{
 			executionState_.wait();
@@ -274,7 +267,12 @@ std::unique_ptr<Work<void>> SwapchainRenderer::render(const Queue& present, cons
 		}
 	};
 
-	return std::make_unique<WorkImpl>(acquireComplete, renderComplete, std::move(execState));
+	auto work = std::make_unique<WorkImpl>();
+	work->acquire_ = std::move(acquireComplete);
+	work->render_ = std::move(renderComplete);
+	work->executionState_ = std::move(execState);
+
+	return work;
 }
 
 void SwapchainRenderer::renderBlock(const Queue& present, const Queue* gfx)
@@ -282,9 +280,8 @@ void SwapchainRenderer::renderBlock(const Queue& present, const Queue* gfx)
 	if(gfx == nullptr) gfx = device().queue(vk::QueueBits::graphics);
 	if(!gfx) throw std::runtime_error("SwapchainRenderer::render no graphics queue");
 
-	vk::SemaphoreCreateInfo semaphoreCI;
-	auto acquireComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
-	auto renderComplete = vk::createSemaphore(vkDevice(), semaphoreCI);
+	auto acquireComplete = Semaphore(device());
+	auto renderComplete = Semaphore(device());
 
 	unsigned int currentBuffer;
 	swapChain().acquire(currentBuffer, acquireComplete);
@@ -308,26 +305,19 @@ void SwapchainRenderer::renderBlock(const Queue& present, const Queue* gfx)
 	submitInfo.waitSemaphoreCount = semaphores.size();
 	submitInfo.pWaitSemaphores = semaphores.data();
 	submitInfo.pWaitDstStageMask = flags.data();
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdBuf.vkHandle();
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &renderComplete;
+	submitInfo.pSignalSemaphores = &renderComplete.vkHandle();
 
 	CommandExecutionState execState;
-	device().submitManager().add(*gfx, submitInfo, &execState);
+	device().submitManager().add(*gfx, {cmdBuf}, submitInfo, &execState);
+	device().submitManager().submit(*gfx);
 
-	// TODO: which kind of submit makes sense here? submit ALL queued commands?
-	// execState.submit();
-	device().submitManager().submit();
-
-	// TODO: some kind of queue lock? must be synchronized.
-	// need some submitmanager improvements as general queue sync manager.
-	swapChain().present(present, currentBuffer, renderComplete);
+	{
+		QueueLock qLock(device(), present);
+		swapChain().present(present, currentBuffer, renderComplete);
+	}
 
 	execState.wait();
-
-	vk::destroySemaphore(device(), acquireComplete, nullptr);
-	vk::destroySemaphore(device(), renderComplete, nullptr);
 }
 
 } // namespace vpp

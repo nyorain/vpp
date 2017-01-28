@@ -27,6 +27,7 @@ struct Device::Impl {
 	std::vector<vk::QueueFamilyProperties> qFamilyProperties;
 	std::vector<std::unique_ptr<Queue, Device::QueueDeleter>> queues;
 	std::vector<const Queue*> queuesVec; // cache vector for queues() function
+	std::shared_timed_mutex sharedQueueMutex;
 };
 
 struct Device::Provider {
@@ -223,9 +224,7 @@ void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
 	std::map<unsigned int, unsigned int> queueIds;
 	for(std::size_t i(0); i < queues.size(); ++i) {
 		auto id = queueIds[queues[i].second]++;
-		const auto& props = impl_->qFamilyProperties[queues[i].second];
-
-		impl_->queues[i].reset(new Queue(queues[i].first, props, id, queues[i].second));
+		impl_->queues[i].reset(new Queue(*this, queues[i].first, id, queues[i].second));
 		impl_->queuesVec[i] = impl_->queues[i].get();
 	}
 
@@ -334,6 +333,11 @@ SubmitManager& Device::submitManager() const
 TransferManager& Device::transferManager() const
 {
 	return provider_->transfer;
+}
+
+std::shared_timed_mutex& Device::sharedQueueMutex() const
+{
+	return impl_->sharedQueueMutex;
 }
 
 } // namespace vpp
