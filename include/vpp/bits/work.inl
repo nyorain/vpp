@@ -5,9 +5,10 @@
 #pragma once
 
 template<typename R>
-CommandWork<R>::CommandWork(CommandBuffer&& cmd, vk::Queue queue) : cmdBuffer_(std::move(cmd))
+CommandWork<R>::CommandWork(CommandBuffer&& cmd, const vpp::Queue& queue)
+	: cmdBuffer_(std::move(cmd))
 {
-	cmdBuffer_.device().submitManager().add(queue, cmdBuffer_, &executionState_);
+	cmdBuffer_.device().submitManager().add(queue, {cmdBuffer_}, &executionState_);
 	state_ = WorkBase::State::pending;
 }
 

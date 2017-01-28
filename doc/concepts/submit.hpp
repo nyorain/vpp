@@ -38,16 +38,3 @@ class SubmitManager {
 protected:
 	std::vector<std::pair<SubmitInfo, ExecutionState*>> pending_;
 };
-
-class QueueManager {
-	struct Lock;
-
-	/// Acquires ownership over all available queues.
-	/// Must be done before manually submitting command buffers to the device.
-	Lock lock();
-
-	/// Locks only the given queue.
-	/// Note that for some operations (like e.g. submitting command buffers to the device) this
-	/// is not enough and ownership over all queues must be acquired.
-	Lock lock(const vpp::Queue& queue);
-};

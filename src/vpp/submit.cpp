@@ -4,247 +4,253 @@
 
 #include <vpp/submit.hpp>
 #include <vpp/queue.hpp>
+#include <vpp/sync.hpp>
 #include <vpp/vk.hpp>
-#include <algorithm>
+#include <vpp/util/debug.hpp>
+
+#include <algorithm> // std::remove_if
 
 namespace vpp {
 
 struct SubmitManager::Submission {
-	vk::SubmitInfo info;
-	std::vector<vk::CommandBuffer> buffers;
-	std::unique_ptr<CommandExecutionState*> state;
+	const vpp::Queue* queue {};
+	vk::SubmitInfo info {};
+	std::vector<vk::CommandBuffer> buffers {};
+	CommandExecutionState* state {};
 };
 
-//lock typedef for easier lock_guard using
-using LockGuard = std::lock_guard<std::mutex>;
-
-//Fence
-Fence::Fence(const Device& dev) : Fence(dev, {})
-{
-}
-
-Fence::Fence(const Device& dev, const vk::FenceCreateInfo& info) : ResourceHandle(dev)
-{
-	handle_ = vk::createFence(device(), info);
-}
-
-Fence::~Fence()
-{
-	if(vkHandle()) vk::destroyFence(device(), vkHandle());
-}
-
-//ExecutionState
-CommandExecutionState::CommandExecutionState(const Device& dev, CommandExecutionState** ptr)
-	: Resource(dev), self_(ptr)
-{
-	*self_ = this;
-}
-
-CommandExecutionState::~CommandExecutionState()
-{
-	if(self_) self_ = nullptr;
-}
-
-CommandExecutionState::CommandExecutionState(CommandExecutionState&& other) noexcept
-	: Resource(other), fence_(std::move(other.fence_)), self_(other.self_)
-{
-	if(self_) *self_ = this;
-	other.self_ = nullptr;
-}
-
-CommandExecutionState& CommandExecutionState::operator=(CommandExecutionState&& other) noexcept
-{
-	Resource::init(other.device());
-	if(self_) *self_ = nullptr;
-
-	fence_ = std::move(other.fence_);
-	self_ = other.self_;
-	if(self_) *self_ = this;
-	other.self_ = nullptr;
-
-	return *this;
-}
-
-void CommandExecutionState::submit()
-{
-	if(submitted()) return;
-	device().submitManager().submit(*this);
-}
-
-void CommandExecutionState::wait(std::uint64_t timeout)
-{
-	if(completed()) return;
-	submit();
-	vk::waitForFences(vkDevice(), 1, *fence_, 0, timeout);
-}
-
-bool CommandExecutionState::submitted() const
-{
-	return (fence_.get());
-}
-
-bool CommandExecutionState::completed() const
-{
-	if(!submitted()) return false;
-
-	auto result = vk::getFenceStatus(vkDevice(), *fence_);
-	return (result == vk::Result::success);
-}
-
-//SubmitManager
+// SubmitManager
 SubmitManager::SubmitManager(const Device& dev) : Resource(dev)
 {
 }
 
 SubmitManager::~SubmitManager()
 {
+	VPP_DEBUG_CHECK("vpp::~SubmitManager", {
+		if(!pending_.empty())
+			VPP_CHECK_WARN("There are ", pending_.size(), " pending submission left");
+	});
 }
 
 void SubmitManager::submit()
 {
-	while(!submissions_.empty())
-		submit(submissions_.begin()->first);
+	while(!pending_.empty())
+		submit(*pending_.begin()->queue);
 }
 
-void SubmitManager::submit(vk::Queue queue)
+void SubmitManager::submit(const vpp::Queue& queue)
 {
-	//lock own mutex and mutex of all queues
-	LockGuard lock(mutex_);
+	// lock own mutex and mutex of all queues
+	std::lock_guard<std::mutex> internalLock(mutex_);
 
-	auto it = submissions_.find(queue);
-	if(it == submissions_.end()) return;
-
+	// find pending submissions for the given queue
+	// also check if a fence must be created
+	// also make sure command buffer pointers are valid
 	std::vector<vk::SubmitInfo> submitInfos;
-	submitInfos.reserve(it->second.size());
+	submitInfos.reserve(pending_.size());
+	auto createFence = false;
 
-	bool createFence = false;
-	for(auto& submission : it->second)
-	{
-		if(submission.state && *submission.state) createFence = true;
-		submitInfos.push_back(submission.info);
+	for(const auto& sub : pending_) {
+		if(sub.queue != &queue) continue;
+		submitInfos.push_back(sub.info);
+		createFence = (sub.state != nullptr);
+
+		submitInfos.back().pCommandBuffers = sub.buffers.data();
+		submitInfos.back().commandBufferCount = sub.buffers.size();
 	}
 
-	std::shared_ptr<Fence> fence;
-	vk::FenceCreateInfo fenceInfo {};
+	if(submitInfos.empty())
+		return;
 
-	{
-		auto&& lock = acquire();
-		if(createFence)
-		{
-			fence = std::make_shared<Fence>(device(), fenceInfo);
-			vk::queueSubmit(queue, submitInfos, *fence);
-		}
-		else
-		{
-			vk::queueSubmit(queue, submitInfos);
-		}
+	// create fence if needed
+	std::shared_ptr<Fence> shfence;
+	if(createFence) {
+		shfence = std::make_shared<Fence>(device());
+
+		for(const auto& sub : pending_)
+			if(sub.queue == &queue && sub.state)
+				sub.state->fence_ = shfence;
 	}
 
-	if(createFence)
+	// Lock all queues for submission
+	// submit the queue
 	{
-		for(auto& submission : it->second)
-		{
-			if(submission.state && *submission.state)
-				(*submission.state)->fence_ = fence;
-		}
+		QueueLock queueLock(device());
+		if(shfence) vk::queueSubmit(queue, submitInfos, shfence->vkHandle());
+		else vk::queueSubmit(queue, submitInfos);
 	}
 
-	submissions_.erase(it);
+	// erase all submitted submissions
+	auto pred = [&](const Submission& sub) { return sub.queue == &queue; };
+	pending_.erase(std::remove_if(pending_.begin(), pending_.end(), pred), pending_.end());
 }
 
-void SubmitManager::add(vk::Queue queue, const vk::SubmitInfo& info, CommandExecutionState* state)
-{
-	Submission submission;
-	submission.info = info;
-	if(state)
-	{
-		submission.state = std::make_unique<CommandExecutionState*>();
-		*state = {device(), submission.state.get()};
-	}
-
-	LockGuard lock(mutex_);
-	submissions_[queue].emplace_back(std::move(submission));
-}
-
-void SubmitManager::add(vk::Queue queue, const std::vector<vk::CommandBuffer>& bufs,
+void SubmitManager::add(const vpp::Queue& queue, nytl::Span<const vk::CommandBuffer> buffers,
 	CommandExecutionState* state)
 {
-	Submission submission;
-	submission.buffers = bufs;
-	if(state)
-	{
-		submission.state = std::make_unique<CommandExecutionState*>();
-		*state = {device(), submission.state.get()};
-	}
+	add(queue, buffers, {}, state);
+}
 
-	vk::SubmitInfo info;
-	info.commandBufferCount = submission.buffers.size();
-	info.pCommandBuffers = submission.buffers.data();
-
+void SubmitManager::add(const vpp::Queue& queue, nytl::Span<const vk::CommandBuffer> buffers,
+	const vk::SubmitInfo& info, CommandExecutionState* state)
+{
+	auto submission = Submission {};
+	submission.queue = &queue;
 	submission.info = info;
+	submission.buffers = {buffers.begin(), buffers.end()};
 
-	LockGuard lock(mutex_);
-	submissions_[queue].emplace_back(std::move(submission));
-}
-
-void SubmitManager::add(vk::Queue queue, vk::CommandBuffer buffer, CommandExecutionState* state)
-{
-	Submission submission;
-	submission.buffers = {buffer};
-	if(state)
-	{
-		submission.state = std::make_unique<CommandExecutionState*>();
-		*state = {device(), submission.state.get()};
+	if(state) {
+		submission.state = state;
+		state->init(*this);
 	}
 
-	vk::SubmitInfo info;
-	info.commandBufferCount = submission.buffers.size();
-	info.pCommandBuffers = submission.buffers.data();
-
-	submission.info = info;
-
-	LockGuard lock(mutex_);
-	submissions_[queue].emplace_back(std::move(submission));
+	std::lock_guard<std::mutex> internalLock(mutex_);
+	pending_.emplace_back(std::move(submission));
 }
 
-bool SubmitManager::submit(const CommandExecutionState& id)
+void SubmitManager::submit(const CommandExecutionState& state)
 {
-	std::unique_lock<std::mutex> lock(mutex_);
+	const vpp::Queue* queue {};
 
-	for(auto& ent : submissions_)
 	{
-		auto it = std::find_if(ent.second.begin(), ent.second.end(),
-			[&](const Submission& subm) { return(subm.state && *subm.state == &id); });
-
-		if(it != ent.second.end())
-		{
-			lock.unlock(); //the next submit call will lock it again.
-			submit(ent.first);
-			return true;
-		}
+		std::lock_guard<std::mutex> internalLock(mutex_);
+		auto pred = [&](const Submission& sub) { return (sub.state == &state); };
+		auto it = std::find_if(pending_.begin(), pending_.end(), pred);
+		if(it != pending_.end()) queue = it->queue;
 	}
 
-#ifndef NDEBUG
-	std::cerr << "vpp::SubmitManager::submit: could not find the given commandSubmission\n";
-#endif
+	if(!queue) {
+		VPP_DEBUG_THROW("vpp::Submit::submit: could not find given submission state");
+		return;
+	}
 
-	return false;
+	submit(*queue);
 }
 
-SubmitManager::Lock SubmitManager::acquire() const
+void SubmitManager::moveStateObserver(const CommandExecutionState& oldOne,
+	CommandExecutionState& newOne)
 {
-	return {device()};
+	std::lock_guard<std::mutex> internalLock(mutex_);
+	auto pred = [&](const Submission& sub) { return (sub.state == &oldOne); };
+	auto it = std::find_if(pending_.begin(), pending_.end(), pred);
+
+	VPP_DEBUG_CHECK("vpp::SubmitManager::moveStateObserver", {
+		if(it == pending_.end())
+			VPP_CHECK_WARN("Could not find old state. Probably crashing now");
+	});
+
+	it->state = &newOne;
 }
 
-//Lock
-SubmitManager::Lock::Lock(const Device& dev) : Resource(dev)
+void SubmitManager::removeStateObserver(const CommandExecutionState& state)
 {
-	for(auto& q : device().queues()) q->mutex().lock();
+	std::lock_guard<std::mutex> internalLock(mutex_);
+	auto pred = [&](const Submission& sub) { return (sub.state == &state); };
+	auto it = std::find_if(pending_.begin(), pending_.end(), pred);
+
+	VPP_DEBUG_CHECK("vpp::SubmitManager::removeStateObserver", {
+		if(it == pending_.end())
+			VPP_CHECK_WARN("Could not find state");
+	});
+
+	pending_.erase(it);
 }
 
-SubmitManager::Lock::~Lock()
+// CommandExecutionState
+CommandExecutionState::CommandExecutionState() = default;
+CommandExecutionState::~CommandExecutionState()
 {
-	for(auto& q : device().queues()) q->mutex().unlock();
+	if(submitManager_)
+		submitManager_->removeStateObserver(*this);
 }
 
+CommandExecutionState::CommandExecutionState(CommandExecutionState&& other) noexcept
+	: submitManager_(other.submitManager_), fence_(std::move(other.fence_)),
+		completed_(other.completed_)
+{
+	other.completed_ = {};
+	other.submitManager_ = {};
+
+	if(submitManager_)
+		submitManager_->moveStateObserver(other, *this);
 }
+
+CommandExecutionState& CommandExecutionState::operator=(CommandExecutionState&& other) noexcept
+{
+	if(submitManager_)
+		submitManager_->removeStateObserver(*this);
+
+	submitManager_ = other.submitManager_;
+	fence_ = std::move(other.fence_);
+	completed_ = other.completed_;
+
+	other.completed_ = {};
+	other.submitManager_ = {};
+
+	if(submitManager_)
+		submitManager_->moveStateObserver(other, *this);
+
+	return *this;
+}
+
+void CommandExecutionState::submit()
+{
+	if(fence_ || completed_) return;
+	if(!submitManager_) {
+		VPP_DEBUG_THROW("vpp::CommandExeuctionState::submit: invalid object");
+		return;
+	}
+
+	submitManager_->submit(*this);
+}
+
+bool CommandExecutionState::wait(std::uint64_t timeout)
+{
+	if(completed_) return true;
+	if(!fence_) submit();
+
+	auto result = vk::waitForFences(submitManager_->device(), 1, *fence_, 0, timeout);
+	if(result == vk::Result::success) {
+		completed_ = true;
+		fence_ = {};
+	}
+
+	return completed_;
+}
+
+bool CommandExecutionState::submitted() const
+{
+	return fence_.get() != nullptr;
+}
+
+bool CommandExecutionState::completed() const
+{
+	if(!submitted()) return false;
+	if(completed_) return true;
+
+	auto result = vk::getFenceStatus(submitManager_->device(), *fence_);
+	if(result == vk::Result::success) {
+		completed_ = true;
+		fence_ = {};
+	}
+
+	return completed_;
+}
+
+void CommandExecutionState::init(SubmitManager& submitManager)
+{
+	if(submitManager_)
+		submitManager_->removeStateObserver(*this);
+
+	fence_ = {};
+	completed_ = {};
+	submitManager_ = &submitManager;
+}
+
+vk::Fence CommandExecutionState::fence() const
+{
+	if(fence_) return *fence_;
+	return {};
+}
+
+} // namespace vpp

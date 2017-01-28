@@ -5,15 +5,17 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
+#include <vpp/resource.hpp>
 #include <vpp/util/nonCopyable.hpp> // nytl::NonCopyable
 
 #include <mutex> // std::mutex
+#include <shared_mutex> // std::shared_mutex
 
 namespace vpp {
 
 /// Represents a vulkan device queue.
 /// Cannot be created or destroyed, must be received by the device class.
-class Queue final : public nytl::NonMovable {
+class Queue final : public Resource, public nytl::NonMovable {
 public:
 	/// Return the queueFamily of this queue
 	unsigned int family() const noexcept { return family_; }
@@ -26,33 +28,45 @@ public:
 	unsigned int id() const noexcept { return id_; }
 
 	/// Returns the properties of the queue family of this queue.
-	const vk::QueueFamilyProperties& properties() const noexcept { return properties_; }
+	const vk::QueueFamilyProperties& properties() const noexcept { return *properties_; }
 
 	/// The queue must be locked before performing any operations (such as presenting or sparse
 	/// binding) on the queue.
 	/// Note that locking the queues mutex is not enough for submitting command buffers
 	/// to the queue, since while submitting, no operation on any other queue is allowed.
-	/// To submit command buffers to a queue, use the SubmitManager class.
-	/// \sa SubmitManager
+	/// Prefer to use the vpp::QueueManager class over using the plain mutex.
 	std::mutex& mutex() const noexcept { return mutex_; }
-
-	[[deprecated("Use vkHandle instead")]]
-	vk::Queue vkQueue() const noexcept { return queue_; }
 
 	vk::Queue vkHandle() const noexcept { return queue_; }
 	operator vk::Queue() const noexcept { return queue_; }
 
-protected:
+private:
 	friend class Device;
-	Queue(vk::Queue, const vk::QueueFamilyProperties&, unsigned int fam, unsigned int id);
+	Queue(const Device&, vk::Queue, unsigned int fam, unsigned int id);
 	~Queue() = default;
 
-protected:
+private:
 	const vk::Queue queue_;
-	const vk::QueueFamilyProperties& properties_;
+	const vk::QueueFamilyProperties* properties_;
 	const unsigned int family_;
 	const unsigned int id_;
 	mutable std::mutex mutex_;
+};
+
+/// Acquires ownership over a single or all queues.
+/// Used for queue synchronization across threads.
+/// The constructor without a specific queue will lock all queues,
+/// which is e.g. needed when submitting command buffes.
+/// Otherwise just ownership over the given queue is claimed.
+/// RAII lock class, i.e. the lock is bound the objects lifetime.
+struct QueueLock : public nytl::NonMovable {
+	QueueLock(const Device& dev);
+	QueueLock(const Device& dev, const vpp::Queue& queue);
+	~QueueLock();
+
+private:
+	std::mutex* queueMutex_ {};
+	std::shared_timed_mutex& sharedMutex_;
 };
 
 } // namespace vpp

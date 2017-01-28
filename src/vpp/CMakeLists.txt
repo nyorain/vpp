@@ -25,6 +25,7 @@ set(vpp-sources
 	submit.cpp
 	surface.cpp
 	swapchain.cpp
+	sync.cpp
 	transfer.cpp
 	work.cpp
 	queue.cpp

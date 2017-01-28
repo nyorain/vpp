@@ -19,7 +19,7 @@ namespace vpp {
 template<typename T>
 class TransferWork : public CommandWork<T> {
 public:
-	TransferWork(CommandBuffer&& cmdBuf, vk::Queue queue, TransferRange&& range)
+	TransferWork(CommandBuffer&& cmdBuf, const vpp::Queue& queue, TransferRange&& range)
 		: CommandWork<T>(std::move(cmdBuf), queue), transferRange_(std::move(range)) {}
 
 	TransferRange& transferRange() { return transferRange_; }

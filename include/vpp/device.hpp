@@ -10,6 +10,7 @@
 
 #include <memory> // std::unique_ptr
 #include <cstdint> // std::uint32_t
+#include <shared_mutex> // std::shared_mutex
 
 namespace vpp {
 
@@ -160,6 +161,12 @@ public:
 	/// Can be used to associate custom thread specific objects with this device.
 	/// \sa ThreadStorage
 	DynamicThreadStorage& threadStorage() const;
+
+	/// Returns the shared mutex for all queues.
+	/// Should not be used directly, but rather using a QueueLock object.
+	/// Used for queue operation synchronization.
+	/// \sa QueueManager
+	std::shared_timed_mutex& sharedQueueMutex() const;
 
 	vk::Instance vkInstance() const { return instance_; }
 	vk::PhysicalDevice vkPhysicalDevice() const { return physicalDevice_; }
