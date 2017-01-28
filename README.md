@@ -22,7 +22,7 @@ are highly appreciated.
 ## Examples
 
 __A good place to start with vpp is the [hello world triangle
-example](examples/intro.cpp)__
+example](src/examples/intro.cpp)__
 
 In addition, here are some smaller code snippets to give you an idea on how the
 api will probably look like and in which way in may be useful to program vulkan applications.

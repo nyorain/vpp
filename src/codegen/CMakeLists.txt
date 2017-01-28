@@ -41,7 +41,6 @@ add_custom_command(
 add_custom_command(
 	OUTPUT ${outputs}
 	COMMAND vkGenerator "${CMAKE_CURRENT_SOURCE_DIR}/vk.xml"
-	# COMMAND vkGenerator "${CMAKE_BINARY_DIR}/vk2.xml"
 	DEPENDS
 		vkGenerator
 		"${CMAKE_CURRENT_SOURCE_DIR}/vk.xml"

@@ -64,6 +64,9 @@ int main()
 		VK_EXT_DEBUG_REPORT_EXTENSION_NAME
 	};
 
+	// enables all default layers
+	constexpr auto layer = "VK_LAYER_LUNARG_standard_validation";
+
 	// basic application info
 	// we use vulkan api version 1.0
 	vk::ApplicationInfo appInfo ("vpp-intro", 1, "vpp", 1, VK_API_VERSION_1_0);
@@ -72,8 +75,8 @@ int main()
 	instanceInfo.pApplicationInfo = &appInfo;
 	instanceInfo.enabledExtensionCount = sizeof(iniExtensions) / sizeof(iniExtensions[0]);
 	instanceInfo.ppEnabledExtensionNames = iniExtensions;
-	instanceInfo.enabledLayerCount = vpp::defaultLayerNames().size();
-	instanceInfo.ppEnabledLayerNames = vpp::defaultLayerNames().data();
+	instanceInfo.enabledLayerCount = 1;
+	instanceInfo.ppEnabledLayerNames = &layer;
 
 	vpp::Instance instance(instanceInfo);
 

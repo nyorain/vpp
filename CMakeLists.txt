@@ -46,7 +46,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include) #e.g. config file
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
 find_package(Vulkan REQUIRED)
 
-add_subdirectory(codegen)
+add_subdirectory(src/codegen)
 add_subdirectory(include/vpp)
 add_subdirectory(src/vpp)
 
@@ -62,7 +62,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/vpp/config.hpp" DESTINATION i
 
 if(BuildExamples)
 	if(Win32 OR MSYS OR MINGW)
-		add_subdirectory(examples)
+		add_subdirectory(doc/examples)
 	else()
 		message("The examples are windows-only at the moment. Pull requests appreciated.")
 	endif()
