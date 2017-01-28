@@ -162,11 +162,13 @@ int main()
 
 		if(!run) break;
 		renderer.renderBlock(*presentQueue);
+		++frames;
 
 		// output the average fps count ever second
-		++frames;
-		if(Clock::now() - point >= std::chrono::seconds(1)) {
-			std::cout << frames << " fps\n";
+		auto duration = Clock::now() - point;
+		if(duration >= std::chrono::seconds(1)) {
+			auto count = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+			std::cout << static_cast<int>(frames * (1000.0 / count)) << " fps\n";
 			point = Clock::now();
 			frames = 0u;
 		}

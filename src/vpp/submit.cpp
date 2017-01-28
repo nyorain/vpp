@@ -40,6 +40,11 @@ void SubmitManager::submit()
 
 void SubmitManager::submit(const vpp::Queue& queue)
 {
+	VPP_DEBUG_CHECK("vpp::SubmitManager::submit", {
+		if(queue.device() != device())
+			VPP_CHECK_THROW("invalid queue");
+	});
+
 	// lock own mutex and mutex of all queues
 	std::lock_guard<std::mutex> internalLock(mutex_);
 
@@ -94,6 +99,11 @@ void SubmitManager::add(const vpp::Queue& queue, nytl::Span<const vk::CommandBuf
 void SubmitManager::add(const vpp::Queue& queue, nytl::Span<const vk::CommandBuffer> buffers,
 	const vk::SubmitInfo& info, CommandExecutionState* state)
 {
+	VPP_DEBUG_CHECK("vpp::SubmitManager::submit", {
+		if(queue.device() != device())
+			VPP_CHECK_THROW("invalid queue");
+	});
+
 	auto submission = Submission {};
 	submission.queue = &queue;
 	submission.info = info;
@@ -105,7 +115,7 @@ void SubmitManager::add(const vpp::Queue& queue, nytl::Span<const vk::CommandBuf
 	}
 
 	std::lock_guard<std::mutex> internalLock(mutex_);
-	pending_.emplace_back(std::move(submission));
+	pending_.push_back(std::move(submission));
 }
 
 void SubmitManager::submit(const CommandExecutionState& state)
@@ -160,7 +170,7 @@ void SubmitManager::removeStateObserver(const CommandExecutionState& state)
 CommandExecutionState::CommandExecutionState() = default;
 CommandExecutionState::~CommandExecutionState()
 {
-	if(submitManager_)
+	if(submitManager_ && !fence_ && !completed_)
 		submitManager_->removeStateObserver(*this);
 }
 
@@ -239,7 +249,7 @@ bool CommandExecutionState::completed() const
 
 void CommandExecutionState::init(SubmitManager& submitManager)
 {
-	if(submitManager_)
+	if(submitManager_ && !fence_ && !completed_)
 		submitManager_->removeStateObserver(*this);
 
 	fence_ = {};

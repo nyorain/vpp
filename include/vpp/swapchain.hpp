@@ -73,7 +73,8 @@ public:
 		const vk::Extent2D& size) const override;
 };
 
-/// TODO: synchronization for acquire and present commands. Handle acquire:out_of_date
+// TODO: valid usage checking for acquire commands. Handle acquire:out_of_date
+
 /// Represents Vulkan swap chain and associated images/framebuffers.
 class Swapchain : public ResourceHandle<vk::SwapchainKHR> {
 public:
@@ -125,6 +126,7 @@ public:
 	vk::Result acquire(unsigned int& id, vk::Semaphore sem = {}, vk::Fence fence = {}) const;
 
 	/// Queues commands to present the image with the given id on the given queue.
+	/// Will temporarily acquire ownership over the given queue.
 	/// \param wait The semaphore to wait on before presenting (usually signaled at the end
 	/// of all rendering commands for this image). Can be nullHandle.
 	/// \return The result returned by vkQueuePresentKHR. The caller has to handle

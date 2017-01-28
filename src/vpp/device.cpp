@@ -268,6 +268,11 @@ const Queue* Device::queue(vk::QueueFlags flags) const
 	return nullptr;
 }
 
+const vk::QueueFamilyProperties& Device::queueFamilyProperties(unsigned int qFamily) const
+{
+	return impl_->qFamilyProperties[qFamily];
+}
+
 const vk::PhysicalDeviceMemoryProperties& Device::memoryProperties() const
 {
 	return impl_->memoryProperties;

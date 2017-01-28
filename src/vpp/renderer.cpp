@@ -228,10 +228,7 @@ std::unique_ptr<Work<void>> SwapchainRenderer::render(const Queue& present, cons
 	device().submitManager().add(*gfx, {cmdBuf}, submitInfo, &execState);
 	device().submitManager().submit(*gfx);
 
-	{
-		QueueLock qLock(device(), present);
-		swapChain().present(present, currentBuffer, renderComplete);
-	}
+	swapChain().present(present, currentBuffer, renderComplete);
 
 	class WorkImpl : public Work<void> {
 	public:
@@ -312,10 +309,7 @@ void SwapchainRenderer::renderBlock(const Queue& present, const Queue* gfx)
 	device().submitManager().add(*gfx, {cmdBuf}, submitInfo, &execState);
 	device().submitManager().submit(*gfx);
 
-	{
-		QueueLock qLock(device(), present);
-		swapChain().present(present, currentBuffer, renderComplete);
-	}
+	swapChain().present(present, currentBuffer, renderComplete);
 
 	execState.wait();
 }
