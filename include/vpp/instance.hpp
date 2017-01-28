@@ -7,16 +7,18 @@
 #include <vpp/fwd.hpp>
 #include <vpp/util/nonCopyable.hpp>
 
-// TODO: make this class movable (it is not referenced by any other class)
-
 namespace vpp {
 
 /// Instance RAII wrapper.
-class Instance : public nytl::NonMovable {
+class Instance : public nytl::NonCopyable {
 public:
+	Instance() = default;
 	Instance(const vk::InstanceCreateInfo& info);
 	Instance(vk::Instance instance);
 	~Instance();
+
+	Instance(Instance&& other) noexcept;
+	Instance& operator=(Instance&& other) noexcept;
 
 	vk::Instance vkInstance() const { return instance_; }
 	vk::Instance vkHandle() const { return instance_; }

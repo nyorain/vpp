@@ -36,8 +36,3 @@ protected:
 } // namespace nytl
 
 #endif // header guard
-
-namespace vpp {
-	using nytl::NonCopyable;
-	using nytl::NonMovable;
-}

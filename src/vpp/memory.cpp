@@ -101,7 +101,7 @@ Allocation DeviceMemory::allocSpecified(size_t offset, size_t size, AllocationTy
 Allocation DeviceMemory::allocatable(size_t size, size_t alignment,
 	AllocationType type) const
 {
-	// TODO: better allocation finding algorithm.
+	// NOTE: allocation finding algorithm can be improved
 	// atm the allocation with the least waste for alignment or granularity is chosen,
 	// but there may result small gaps between the allocation which will likely never
 	// be used. if an allocation fits a free segment between allocations really good, it should

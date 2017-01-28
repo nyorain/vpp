@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <vpp/util/sharedLock.hpp>
+
 #include <unordered_map> // std::unordered_map
 #include <thread> // std::thread::id
 #include <shared_mutex> // std::shared_mutex
@@ -80,14 +82,6 @@ using DynamicStoragePtr = std::unique_ptr<DynamicStorageBase>;
 using DynamicThreadStorage = ThreadStorage<DynamicStoragePtr>;
 
 // - implementation -
-template<typename T>
-struct SharedLockGuard {
-	SharedLockGuard(T& mutex) : mutex_(mutex) { mutex_.lock_shared(); }
-	~SharedLockGuard() { mutex_.unlock_shared(); }
-
-	T& mutex_;
-};
-
 template<typename T>
 unsigned int ThreadStorage<T>::add(T** obj)
 {

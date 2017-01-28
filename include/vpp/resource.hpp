@@ -135,7 +135,7 @@ public:
 /// member function if there are no additional data members.
 /// \tparam H The vulkan handle type.
 template<typename Handle>
-class ResourceHandle : public Resource, public NonCopyable {
+class ResourceHandle : public Resource, public nytl::NonCopyable {
 public:
 	const Handle& vkHandle() const noexcept { return handle_; }
 	operator Handle() const noexcept { return vkHandle(); }
@@ -170,7 +170,7 @@ protected:
 /// \tparam B The deriving class, needed for the ResourceReference base
 /// \tparam H The vulkan handle type.
 template<typename B, typename Handle>
-class ResourceReferenceHandle : public ResourceReference<B>, public NonCopyable {
+class ResourceReferenceHandle : public ResourceReference<B>, public nytl::NonCopyable {
 public:
 	const Handle& vkHandle() const noexcept { return handle_; }
 	operator Handle() const noexcept { return vkHandle(); }

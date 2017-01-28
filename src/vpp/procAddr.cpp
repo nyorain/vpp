@@ -3,8 +3,8 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/procAddr.hpp>
-#include <vpp/util/threadStorage.hpp> // SharedLockGuard
-#include <vpp/util/debug.hpp> // VPP_DEBUG macros
+#include <vpp/util/sharedLock.hpp>
+#include <vpp/util/debug.hpp>
 #include <vpp/vk.hpp>
 
 #include <unordered_map>

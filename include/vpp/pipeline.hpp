@@ -76,4 +76,4 @@ public:
 	Pipeline& operator=(Pipeline&& lhs) noexcept { swap(lhs); return *this; }
 };
 
-}
+} // namespace vpp

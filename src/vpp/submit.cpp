@@ -40,9 +40,9 @@ void SubmitManager::submit()
 
 void SubmitManager::submit(const vpp::Queue& queue)
 {
-	VPP_DEBUG_CHECK("vpp::SubmitManager::submit", {
+	VPP_DEBUG_CHECK("vpp::SubmitManager::submit(queue)", {
 		if(queue.device() != device())
-			VPP_CHECK_THROW("invalid queue");
+			VPP_CHECK_THROW("invalid queue given");
 	});
 
 	// lock own mutex and mutex of all queues
@@ -99,9 +99,9 @@ void SubmitManager::add(const vpp::Queue& queue, nytl::Span<const vk::CommandBuf
 void SubmitManager::add(const vpp::Queue& queue, nytl::Span<const vk::CommandBuffer> buffers,
 	const vk::SubmitInfo& info, CommandExecutionState* state)
 {
-	VPP_DEBUG_CHECK("vpp::SubmitManager::submit", {
+	VPP_DEBUG_CHECK("vpp::SubmitManager::add", {
 		if(queue.device() != device())
-			VPP_CHECK_THROW("invalid queue");
+			VPP_CHECK_THROW("invalid queue given");
 	});
 
 	auto submission = Submission {};
@@ -130,7 +130,7 @@ void SubmitManager::submit(const CommandExecutionState& state)
 	}
 
 	if(!queue) {
-		VPP_DEBUG_THROW("vpp::Submit::submit: could not find given submission state");
+		VPP_DEBUG_THROW("vpp::Submit::submit(state): could not find given submission state");
 		return;
 	}
 
