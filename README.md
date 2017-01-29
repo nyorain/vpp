@@ -12,8 +12,8 @@ Includes a C++ code generator for the vulkan api which focuses on typesafety and
 while still being more explicit as well as it tries to not introduce a huge compile time overhead.
 There should be no runtime overhead using the generated C++ vulkan api.
 
-At the moment, vpp is in an experimental pre-alpha state, but the first (usable) alpha is
-expected to be released soon.
+At the moment, vpp is still in an alpha state, its first unstable release
+is __[v0.1-alpha](https://github.com/nyorain/vpp/releases)__
 
 If you want to improve the library or add your own ideas, just start a pull request.
 Any contributions (feature requests, critics and recommendations as well)
@@ -37,25 +37,26 @@ expressing any interesting information (note that vpp always offer additional wa
 configuration).
 
 ```cpp
-// the needed vulkan extensions
+// the needed vulkan extensions and debug layer
 constexpr char* iniExts[] = {
 	VK_KHR_SURFACE_EXTENSION_NAME,
 	VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 	VK_EXT_DEBUG_REPORT_EXTENSION_NAME
 };
 
+constexpr auto layer = "VK_LAYER_LUNARG_standard_validation";
 constexpr auto extCount = sizeof(iniExts) / sizeof(iniExts[0]);
 
 // first, create a vulkan instance
-// with all needed extensions are the default debug layers enabled
+// with all needed extensions and the default debug layers enabled
 vk::ApplicationInfo appInfo ("intro", 1, "vpp", 1, VK_API_VERSION_1_0);
 
 vk::InstanceCreateInfo iniInfo;
 iniInfo.pApplicationInfo = &appInfo;
 iniInfo.enabledExtensionCount = extCount;
 iniInfo.ppEnabledExtensionNames = iniExtensions;
-iniInfo.enabledLayerCount = vpp::defaultLayerNames().size();
-iniInfo.ppEnabledLayerNames = vpp::defaultLayerNames().data();
+instanceInfo.enabledLayerCount = 1;
+instanceInfo.ppEnabledLayerNames = &layer;
 
 vpp::Instance instance(iniInfo);
 
@@ -63,20 +64,14 @@ vpp::Instance instance(iniInfo);
 // the default implementation will just output to std::cerr
 vpp::DebugCallback debugCallback(instance);
 
-// now create a device for the instance and SurfaceKHR which is
-// usually retrieved from a window abstraction library.
-// note how vpp will automatically select a suited physical
-// device and query queue families to create basic-needs
-// queues with this constructor.
-// We also retrieve the present queue to present on our
-// surface from this constructor
+// now create a device for the instance and a SurfaceKHR.
+// vpp will take care of basic queue and physical device choosing
+// We retrieve the queue to present on our surface
 const vpp::Queue* presentQueue;
 vpp::Device device(instance, vkSurface, presentQueue);
 
 // now we can create a vulkan swapchain
-// again, we just use the fast way that choses quite sane
-// defaults for us but note that the class
-// offers many convininient configuration possibilities
+// again, we just use the fast way and let vpp choose sane defaults
 vpp::Swapchain swapchain(device, window.surface);
 ```
 
@@ -128,9 +123,6 @@ MyPodStructData data;
 auto work2 = fill140(buffer2, 0.f, vpp::raw(data));
 
 // Read the aligned data using std430 layout into the given variables.
-// The given variable references must remain valid until the returned
-// work is finished
-// since they will be filled with the buffers data on work finish.
 // One can also specify how custom types (e.g. when using glm) should
 // be written or read.
 float d;
@@ -140,9 +132,6 @@ auto work3 = retrieve430(buffer3, d, e, f);
 
 // We can now control and receive the state of the work.
 // For more information see the vpp::Work class template.
-// If we now want to make sure all the needed work is done,
-// we can simply wait for it to finish. Usually one wants to do this
-// later, when there is no more work for the cpu to do.
 work1->finish();
 work2->finish();
 work3->finish();
@@ -157,7 +146,7 @@ workManager.add({std::move(work1), std::move(work2), std::move(work3)});
 // The workManager would automatically finish the owned work on destruction
 // or you can call it manually.
 workManager.finish();
-`````````````````
+```
 
 Submitting just one batch of command buffers to the vulkan device for all operations
 above can bring massive performance gains, since submitting a queue is considered
@@ -196,5 +185,5 @@ of your environment.
 * Make sure your have the latest vulkan sdk path installed, otherwise the generated C++ api will
 not be compatible with the installed plain vulkan api.
 
-For further help or to report any problems (there are probably some at the moment) just open an issue
-at this github page.
+For further help or to report any problems (there are probably some at the moment) just
+open an issue at the [github page](https://github.com/nyorain/vpp)
