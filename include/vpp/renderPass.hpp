@@ -36,9 +36,6 @@ protected:
 	std::vector<vk::AttachmentReference> references_;
 };
 
-// XXX: class at the moment not useful, can later be used for addtional features/checks
-// XXX: if without additional stuff, at least make it a struct with public members.
-
 /// Vulkan RenderPass Instance, i.e. a commandbuffer recording session during a render pass.
 class RenderPassInstance : public nytl::NonCopyable {
 protected:
