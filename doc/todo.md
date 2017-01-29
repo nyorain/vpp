@@ -7,6 +7,8 @@ Todo list vor vpp
 	- SwapchainRenderer::init: call record?
 		- if RendererImpl should call it in init, document it!
 - procAddr: test if local cache really faster than load it every time?
+- seperate interface/implementation for header-only interfaces
+	- see: bufferOps, Resource
 - pipeline init helper functions
 	- Pipeline class rework (?)
 - queue constness? (maybe make it related to any operations on the queue?)
