@@ -41,7 +41,7 @@ auto constexpr functionsHeader = 1 + R"SRC(
 #include <vector>
 #include <vulkan/vulkan.h>
 
-static_assert(VK_HEADER_VERSION == %v, "Vulkan and vpp header incompatibility");
+static_assert(VK_HEADER_VERSION >= %v, "Vulkan and vpp header incompatibility");
 
 )SRC";
 
