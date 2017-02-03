@@ -26,7 +26,7 @@ template<typename C,
 constexpr RawBufferData raw(const C& container)
 {
 	auto ptr = reinterpret_cast<const uint8_t*>(container.data());
-	return {*container.data(), container.size() * sizeof(decltype(*container.data()))};
+	return {ptr, container.size() * sizeof(decltype(*container.data()))};
 }
 
 /// The VulkanType template can be specialized for custom types to make vpp::BufferUpdate

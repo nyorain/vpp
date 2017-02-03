@@ -51,8 +51,8 @@ public:
 	ShaderProgram(nytl::Span<const StageInfo> stages = {});
 	~ShaderProgram() = default;
 
-	ShaderProgram(ShaderProgram& lhs) noexcept = default;
-	ShaderProgram& operator=(ShaderProgram& lhs) noexcept = default;
+	ShaderProgram(const ShaderProgram& lhs) noexcept;
+	ShaderProgram& operator=(const ShaderProgram& lhs) noexcept;
 
 	/// Returns the given shader stage if there is any, nullptr otherwise.
 	/// If not null, the returned pointer is guaranteed to be valid until the object
