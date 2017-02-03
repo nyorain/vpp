@@ -3,7 +3,7 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/renderer.hpp>
-#include <vpp/swapChain.hpp>
+#include <vpp/swapchain.hpp>
 #include <vpp/surface.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/submit.hpp>

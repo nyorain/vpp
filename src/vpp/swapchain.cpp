@@ -2,7 +2,7 @@
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
-#include <vpp/swapChain.hpp>
+#include <vpp/swapchain.hpp>
 #include <vpp/vk.hpp>
 #include <vpp/procAddr.hpp>
 #include <vpp/queue.hpp>
