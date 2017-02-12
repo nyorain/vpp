@@ -269,7 +269,7 @@ std::unique_ptr<Work<void>> SwapchainRenderer::render(const Queue& present, cons
 	work->render_ = std::move(renderComplete);
 	work->executionState_ = std::move(execState);
 
-	return work;
+	return std::move(work);
 }
 
 void SwapchainRenderer::renderBlock(const Queue& present, const Queue* gfx)
