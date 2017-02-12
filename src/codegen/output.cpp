@@ -784,7 +784,11 @@ ParsedCommand CCOutputGenerator::parseCommand(const Command& cmd) const
 		std::string paramName = len;
 		std::string memName;
 
+#ifdef VPP_OLD_LENGTH_PARAM
+		auto memAcc = len.find("->");
+#else
 		auto memAcc = len.find("::");
+#endif
 		if(memAcc != std::string::npos) {
 			paramName = len.substr(0, memAcc);
 			memName = len.substr(memAcc + 2);

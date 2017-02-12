@@ -5,6 +5,9 @@ add_executable(vkGenerator
 	main.cpp
 	pugixml/pugixml.cpp)
 
+# old vulkan version
+target_compile_definitions(vkGenerator PRIVATE VPP_OLD_LENGTH_PARAM=1)
+
 #target_include_directories(vkGenerator PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 set(output-dir "${CMAKE_SOURCE_DIR}/include/vpp/vulkan")
 
@@ -40,10 +43,10 @@ add_custom_command(
 
 add_custom_command(
 	OUTPUT ${outputs}
-	COMMAND vkGenerator "${CMAKE_CURRENT_SOURCE_DIR}/vk.xml"
+	COMMAND vkGenerator "${CMAKE_CURRENT_SOURCE_DIR}/vk20.xml"
 	DEPENDS
 		vkGenerator
-		"${CMAKE_CURRENT_SOURCE_DIR}/vk.xml"
+		"${CMAKE_CURRENT_SOURCE_DIR}/vk20.xml"
 	WORKING_DIRECTORY "${output-dir}"
 	COMMENT "Generating vulkan hpp headers")
 

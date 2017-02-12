@@ -78,11 +78,13 @@ std::string to_string(vk::DebugReportObjectTypeEXT type)
 		case vk::DebugReportObjectTypeEXT::surfaceKHR: return "surfaceKHR";
 		case vk::DebugReportObjectTypeEXT::swapchainKHR: return "swapchainKHR";
 		case vk::DebugReportObjectTypeEXT::debugReport: return "debugReport";
-		case vk::DebugReportObjectTypeEXT::displayKHR: return "displayKHR";
-		case vk::DebugReportObjectTypeEXT::displayModeKHR: return "displayModeKHR";
-		case vk::DebugReportObjectTypeEXT::objectTableNVX: return "objectTableNVX";
-		case vk::DebugReportObjectTypeEXT::indirectCommandsLayoutNVX :
-			return "indirectCommandsLayoutNVX";
+
+		// case vk::DebugReportObjectTypeEXT::displayKHR: return "displayKHR";
+		// case vk::DebugReportObjectTypeEXT::displayModeKHR: return "displayModeKHR";
+
+		// case vk::DebugReportObjectTypeEXT::objectTableNVX: return "objectTableNVX";
+		// case vk::DebugReportObjectTypeEXT::indirectCommandsLayoutNVX :
+			// return "indirectCommandsLayoutNVX";
 		default: return "<unknown>";
 	}
 }

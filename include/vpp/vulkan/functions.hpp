@@ -16,7 +16,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-static_assert(VK_HEADER_VERSION ==  37, "Vulkan and vpp header incompatibility");
+static_assert(VK_HEADER_VERSION >=  20, "Vulkan and vpp header incompatibility");
 
 namespace vk {
 
@@ -1029,5 +1029,5 @@ inline void cmdExecuteCommands(CommandBuffer commandBuffer, nytl::Span<const Com
 // language incorporated into the Specification and reference pages, and other
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
-// maintained in the master branch of the Khronos Vulkan GitHub project.
+// maintained in the master branch of the Khronos Vulkan Github project.
     

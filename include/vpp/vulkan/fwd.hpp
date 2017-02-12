@@ -459,77 +459,6 @@ struct DedicatedAllocationImageCreateInfoNV;
 struct DedicatedAllocationBufferCreateInfoNV;
 struct DedicatedAllocationMemoryAllocateInfoNV;
 
-using PfnCmdDrawIndirectCountAMD = void(*VKAPI_PTR)(CommandBuffer commandBuffer, Buffer buffer, DeviceSize offset, Buffer countBuffer, DeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
-using PfnCmdDrawIndexedIndirectCountAMD = void(*VKAPI_PTR)(CommandBuffer commandBuffer, Buffer buffer, DeviceSize offset, Buffer countBuffer, DeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
-
-enum class ExternalMemoryHandleTypeBitsNV : int32_t;
-enum class ExternalMemoryFeatureBitsNV : int32_t;
-
-using ExternalMemoryHandleTypeFlagsNV = nytl::Flags<ExternalMemoryHandleTypeBitsNV>;
-using ExternalMemoryFeatureFlagsNV = nytl::Flags<ExternalMemoryFeatureBitsNV>;
-
-struct ExternalImageFormatPropertiesNV;
-
-using PfnGetPhysicalDeviceExternalImageFormatPropertiesNV = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, Format format, ImageType type, ImageTiling tiling, ImageUsageFlags usage, ImageCreateFlags flags, ExternalMemoryHandleTypeFlagsNV externalHandleType, ExternalImageFormatPropertiesNV* pExternalImageFormatProperties);
-
-struct ExternalMemoryImageCreateInfoNV;
-struct ExportMemoryAllocateInfoNV;
-
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-
-struct ImportMemoryWin32HandleInfoNV;
-struct ExportMemoryWin32HandleInfoNV;
-
-using PfnGetMemoryWin32HandleNV = Result(*VKAPI_PTR)(Device device, DeviceMemory memory, ExternalMemoryHandleTypeFlagsNV handleType, HANDLE* pHandle);
-
-#endif //VK_USE_PLATFORM_WIN32_KHR
-
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-
-struct Win32KeyedMutexAcquireReleaseInfoNV;
-
-#endif //VK_USE_PLATFORM_WIN32_KHR
-
-enum class ValidationCheckEXT : int32_t;
-
-struct ValidationFlagsEXT;
-
-VK_DEFINE_NON_DISPATCHABLE_HANDLE(ObjectTableNVX)
-VK_DEFINE_NON_DISPATCHABLE_HANDLE(IndirectCommandsLayoutNVX)
-
-enum class IndirectCommandsLayoutUsageBitsNVX : int32_t;
-enum class ObjectEntryUsageBitsNVX : int32_t;
-enum class IndirectCommandsTokenTypeNVX : int32_t;
-enum class ObjectEntryTypeNVX : int32_t;
-
-using IndirectCommandsLayoutUsageFlagsNVX = nytl::Flags<IndirectCommandsLayoutUsageBitsNVX>;
-using ObjectEntryUsageFlagsNVX = nytl::Flags<ObjectEntryUsageBitsNVX>;
-
-struct DeviceGeneratedCommandsFeaturesNVX;
-struct DeviceGeneratedCommandsLimitsNVX;
-struct IndirectCommandsTokenNVX;
-struct IndirectCommandsLayoutTokenNVX;
-struct IndirectCommandsLayoutCreateInfoNVX;
-struct CmdProcessCommandsInfoNVX;
-struct CmdReserveSpaceForCommandsInfoNVX;
-struct ObjectTableCreateInfoNVX;
-struct ObjectTableEntryNVX;
-struct ObjectTablePipelineEntryNVX;
-struct ObjectTableDescriptorSetEntryNVX;
-struct ObjectTableVertexBufferEntryNVX;
-struct ObjectTableIndexBufferEntryNVX;
-struct ObjectTablePushConstantEntryNVX;
-
-using PfnCmdProcessCommandsNVX = void(*VKAPI_PTR)(CommandBuffer commandBuffer, const CmdProcessCommandsInfoNVX* pProcessCommandsInfo);
-using PfnCmdReserveSpaceForCommandsNVX = void(*VKAPI_PTR)(CommandBuffer commandBuffer, const CmdReserveSpaceForCommandsInfoNVX* pReserveSpaceInfo);
-using PfnCreateIndirectCommandsLayoutNVX = Result(*VKAPI_PTR)(Device device, const IndirectCommandsLayoutCreateInfoNVX* pCreateInfo, const AllocationCallbacks* pAllocator, IndirectCommandsLayoutNVX* pIndirectCommandsLayout);
-using PfnDestroyIndirectCommandsLayoutNVX = void(*VKAPI_PTR)(Device device, IndirectCommandsLayoutNVX indirectCommandsLayout, const AllocationCallbacks* pAllocator);
-using PfnCreateObjectTableNVX = Result(*VKAPI_PTR)(Device device, const ObjectTableCreateInfoNVX* pCreateInfo, const AllocationCallbacks* pAllocator, ObjectTableNVX* pObjectTable);
-using PfnDestroyObjectTableNVX = void(*VKAPI_PTR)(Device device, ObjectTableNVX objectTable, const AllocationCallbacks* pAllocator);
-using PfnRegisterObjectsNVX = Result(*VKAPI_PTR)(Device device, ObjectTableNVX objectTable, uint32_t objectCount, const ObjectTableEntryNVX* const* ppObjectTableEntries, const uint32_t* pObjectIndices);
-using PfnUnregisterObjectsNVX = Result(*VKAPI_PTR)(Device device, ObjectTableNVX objectTable, uint32_t objectCount, const ObjectEntryTypeNVX* pObjectEntryTypes, const uint32_t* pObjectIndices);
-using PfnGetPhysicalDeviceGeneratedCommandsPropertiesNVX = void(*VKAPI_PTR)(PhysicalDevice physicalDevice, DeviceGeneratedCommandsFeaturesNVX* pFeatures, DeviceGeneratedCommandsLimitsNVX* pLimits);
-
 
 
 } // namespace vk
@@ -565,6 +494,6 @@ using PfnGetPhysicalDeviceGeneratedCommandsPropertiesNVX = void(*VKAPI_PTR)(Phys
 // language incorporated into the Specification and reference pages, and other
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
-// maintained in the master branch of the Khronos Vulkan GitHub project.
+// maintained in the master branch of the Khronos Vulkan Github project.
     
 

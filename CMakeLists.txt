@@ -7,8 +7,9 @@ set(vpatch 0)
 
 include(CMakeDependentOption)
 
-option(BuildExamples "Build Examples" off)
 option(Debug "Compile in debug mode" on)
+option(Codegen "Regenerate c++ vulkan api" off)
+option(BuildExamples "Build Examples" off)
 option(OneDevice "Enable the one device optimization. Not recommended" off)
 
 if(Debug)
@@ -25,13 +26,14 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED on)
 
 # enable warnings
+set(is_clang CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 if(MSVC)
   if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
     string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   else()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
   endif()
-elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR is_clang)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wextra -Wpedantic")
 endif()
 
@@ -46,7 +48,10 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include) #e.g. config file
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
 find_package(Vulkan REQUIRED)
 
-add_subdirectory(src/codegen)
+if(Codegen)
+	add_subdirectory(src/codegen)
+endif()
+
 add_subdirectory(include/vpp)
 add_subdirectory(src/vpp)
 
