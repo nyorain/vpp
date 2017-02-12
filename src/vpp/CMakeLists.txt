@@ -30,7 +30,10 @@ set(vpp-sources
 
 #library
 add_library(vpp SHARED ${vpp-sources})
-add_dependencies(vpp vkHeaders)
+
+if(Codegen)
+	add_dependencies(vpp vkHeaders)
+endif()
 
 #link to vulkan
 target_link_libraries(vpp ${Vulkan_LIBRARY})
