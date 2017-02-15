@@ -25,6 +25,13 @@ void log(Args... args)
 
 RegistryLoader::RegistryLoader(const std::string& xmlPath)
 {
+	// we first check whether the file exists
+	std::ifstream test(xmlPath);
+	if(!test.is_open())
+		throw std::runtime_error("Cannot open vulkan spec '" + xmlPath +
+			"'. Check the version provided is valid or manually add the file.");
+
+	// parse it
 	auto result = doc_.load_file(xmlPath.c_str());
 	std::cout << "Load result: " << result.description() << "\n";
 }

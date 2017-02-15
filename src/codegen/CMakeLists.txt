@@ -39,14 +39,17 @@ add_custom_command(
 	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 	COMMENT "Copying vulkan headers dependency files")
 
-#message(STATUS "${output-dir}/functions.hpp")
+# check that the xml spec exists
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vk-${ApiVersion}.xml")
+	message(SEND_ERROR "Invalid ApiVersion given. Cannot find spec for ${ApiVersion}")
+endif()
 
 add_custom_command(
 	OUTPUT ${outputs}
-	COMMAND vkGenerator "${CMAKE_CURRENT_SOURCE_DIR}/vk20.xml"
+	COMMAND vkGenerator "${CMAKE_CURRENT_SOURCE_DIR}/vk-${ApiVersion}.xml"
 	DEPENDS
 		vkGenerator
-		"${CMAKE_CURRENT_SOURCE_DIR}/vk20.xml"
+		"${CMAKE_CURRENT_SOURCE_DIR}/vk-${ApiVersion}.xml"
 	WORKING_DIRECTORY "${output-dir}"
 	COMMENT "Generating vulkan hpp headers")
 

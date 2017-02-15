@@ -8,7 +8,10 @@ set(vpatch 0)
 include(CMakeDependentOption)
 
 option(Debug "Compile in debug mode" on)
+
 option(Codegen "Regenerate c++ vulkan api" off)
+option(ApiVersion "C++ vulkan api version to generate [1-0-20|1-0-40|1-0-latest]" off)
+
 option(BuildExamples "Build Examples" off)
 option(OneDevice "Enable the one device optimization. Not recommended" off)
 
@@ -16,6 +19,10 @@ if(Debug)
 	set(CMAKE_BUILD_TYPE Debug)
 else()
 	set(CMAKE_BUILD_TYPE Release)
+endif()
+
+if(NOT ApiVersion)
+	set(ApiVersion "latest")
 endif()
 
 # set(CMAKE_CXX_STANDARD 17)
