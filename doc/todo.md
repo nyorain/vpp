@@ -1,6 +1,9 @@
 Todo list vor vpp
 =================
 
+- make sure to add VKAPI_PTR to all callbacks
+	- REALLY needed on various platforms
+
 - which information should resources carry around, which not?
 - some general SwapChainRenderer improvements/reworking needed
 	- better renderer resetting (all command pools at once, just resize the frameRenderers vector)

@@ -12,7 +12,7 @@
 namespace vpp {
 namespace {
 
-vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags,
+VKAPI_PTR vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags,
 	vk::DebugReportObjectTypeEXT objType,
 	uint64_t srcObject,
 	size_t location,
