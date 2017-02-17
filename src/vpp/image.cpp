@@ -58,7 +58,7 @@ Image::~Image()
 }
 
 WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,
-	vk::ImageLayout layout, const vk::Extent3D& extent, const vk::ImageSubresource& subres,
+	vk::ImageLayout& layout, const vk::Extent3D& extent, const vk::ImageSubresource& subres,
 	const vk::Offset3D& offset, bool allowMap)
 {
 	image.assureMemory();
@@ -112,7 +112,7 @@ WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,
 	}
 }
 
-DataWorkPtr retrieve(const Image& image, vk::ImageLayout layout, vk::Format format,
+DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format format,
 	const vk::Extent3D& extent, const vk::ImageSubresource& subres, const vk::Offset3D& offset,
 	bool allowMap)
 {
