@@ -18,14 +18,15 @@ namespace vpp {
 class Framebuffer : public ResourceHandle<vk::Framebuffer> {
 public:
 	using ExtAttachments = std::unordered_map<unsigned int, vk::ImageView>;
-	using AttachmentsInfo = std::vector<ViewableImage::CreateInfo>; //pair<imgCreate, viewCreate>
+	using AttachmentsInfo = nytl::Span<const ViewableImage::CreateInfo>;
 
 public:
 	/// Can be used to create required framebuffer attachments for a render pass.
 	/// The returned vecotr can be passed as the attachments vector of the CreateInfo
 	/// object that is given as create paramater.
 	/// \param size The size stored in the image create infos.
-	static AttachmentsInfo parseRenderPass(const RenderPass& rp, const vk::Extent2D& size);
+	static std::vector<ViewableImage::CreateInfo>
+		parseRenderPass(const RenderPass& rp, const vk::Extent2D& size);
 
 public:
 	Framebuffer() = default;
@@ -37,13 +38,12 @@ public:
 	Framebuffer(Framebuffer&& lhs) noexcept { swap(lhs); }
 	Framebuffer& operator=(Framebuffer lhs) noexcept { swap(lhs); return *this; }
 
-	void create(const Device&, const vk::Extent2D& size, const std::vector<vk::ImageCreateInfo>&);
 	void create(const Device&, const vk::Extent2D& size, const AttachmentsInfo& info);
 
 	/// \exception std::logic_error if there are less view infos than image infos passed to create.
 	void init(vk::RenderPass rp, const AttachmentsInfo& info, const ExtAttachments& ext = {});
 	void init(vk::RenderPass rp, const std::vector<vk::ImageViewCreateInfo>& info,
-		const ExtAttachments& extAttachments = {});
+		const ExtAttachments& externalAttachments = {});
 
 	const std::vector<ViewableImage>& attachments() const { return attachments_; }
 	vk::Extent2D size() const;

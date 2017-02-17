@@ -175,7 +175,7 @@ public:
 	ViewableImage(ViewableImage&& lhs) noexcept { swap(lhs); }
 	ViewableImage& operator=(ViewableImage lhs) noexcept { swap(lhs); return *this; }
 
-	void create(const Device&, const vk::ImageCreateInfo&, unsigned int memoryTypeBits = {});
+	void create(const Device&, const vk::ImageCreateInfo&, unsigned int memoryTypeBits = ~0u);
 	void init(const vk::ImageViewCreateInfo& info);
 
 	const Image& image() const { return image_; }

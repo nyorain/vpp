@@ -41,27 +41,17 @@ void Framebuffer::swap(Framebuffer& lhs) noexcept
 void Framebuffer::create(const Device& dev, const vk::Extent2D& size,
 	const AttachmentsInfo& attachments)
 {
-	std::vector<vk::ImageCreateInfo> info;
-	info.reserve(attachments.size());
-	for(auto& at : attachments) info.push_back(at.imgInfo);
-
-	create(dev, size, info);
-}
-
-void Framebuffer::create(const Device& dev, const vk::Extent2D& size,
-	const std::vector<vk::ImageCreateInfo>& imgInfo)
-{
 	Resource::init(dev);
 	width_ = size.width;
 	height_ = size.height;
 
-	attachments_.reserve(imgInfo.size());
-	for(auto& attinfo : imgInfo) {
-		auto imageInfo = attinfo;
-		imageInfo.extent = {size.width, size.height, 1};
+	attachments_.reserve(attachments.size());
+	for(auto& attinfo : attachments) {
+		auto imgInfo = attinfo.imgInfo;
+		imgInfo.extent = {size.width, size.height, 1};
 
 		attachments_.emplace_back();
-		attachments_.back().create(device(), imageInfo);
+		attachments_.back().create(device(), imgInfo, attinfo.memoryTypeBits);
 	}
 }
 
@@ -121,10 +111,10 @@ vk::Extent2D Framebuffer::size() const
 }
 
 //static utility
-Framebuffer::AttachmentsInfo Framebuffer::parseRenderPass(const RenderPass& rp,
-	const vk::Extent2D& size)
+std::vector<ViewableImage::CreateInfo>
+Framebuffer::parseRenderPass(const RenderPass& rp, const vk::Extent2D& size)
 {
-	AttachmentsInfo ret;
+	std::vector<ViewableImage::CreateInfo> ret;
 	ret.reserve(rp.attachments().size());
 
 	for(std::size_t i(0); i < rp.attachments().size(); ++i) {
