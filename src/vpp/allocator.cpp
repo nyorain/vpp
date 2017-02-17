@@ -457,8 +457,6 @@ MemoryEntry::MemoryEntry(DeviceMemory& memory, const Allocation& alloc)
 
 MemoryEntry::MemoryEntry(MemoryEntry&& other) noexcept
 {
-	allocation_ = other.allocation_;
-	other.allocation_ = {};
 	if(other.allocated()) {
 		memory_ = other.memory_;
 		other.memory_ = nullptr;
@@ -467,6 +465,9 @@ MemoryEntry::MemoryEntry(MemoryEntry&& other) noexcept
 		other.allocator_ = nullptr;
 		allocator_->moveEntry(other, *this);
 	}
+
+	allocation_ = other.allocation_;
+	other.allocation_ = {};
 }
 
 MemoryEntry& MemoryEntry::operator=(MemoryEntry&& other) noexcept
@@ -476,8 +477,6 @@ MemoryEntry& MemoryEntry::operator=(MemoryEntry&& other) noexcept
 	else if(allocated()) memory_->free(allocation_);
 
 	// move
-	allocation_ = other.allocation_;
-	other.allocation_ = {};
 	if(other.allocated()) {
 		memory_ = other.memory_;
 		other.memory_ = nullptr;
@@ -486,6 +485,9 @@ MemoryEntry& MemoryEntry::operator=(MemoryEntry&& other) noexcept
 		other.allocator_ = nullptr;
 		allocator_->moveEntry(other, *this);
 	}
+
+	allocation_ = other.allocation_;
+	other.allocation_ = {};
 
 	return *this;
 }
