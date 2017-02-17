@@ -180,7 +180,7 @@ struct SpanStorage<const T, 0> {
 		if(!pointer && size != 0) throw std::logic_error("nytl::Span:: invalid data");
 	}
 	constexpr SpanStorage(const T& ref, std::size_t size) : SpanStorage(&ref, size) {}
-	template<std::size_t S> constexpr SpanStorage(T (&arr)[S]) : SpanStorage(arr, S) {}
+	template<std::size_t S> constexpr SpanStorage(const T (&arr)[S]) : SpanStorage(arr, S) {}
 	constexpr SpanStorage(const std::initializer_list<T>& l) : SpanStorage(l.begin(), l.size()) {}
 
 	const T* data_ {};
