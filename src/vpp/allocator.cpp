@@ -457,12 +457,36 @@ MemoryEntry::MemoryEntry(DeviceMemory& memory, const Allocation& alloc)
 
 MemoryEntry::MemoryEntry(MemoryEntry&& other) noexcept
 {
-	swap(*this, other);
+	allocation_ = other.allocation_;
+	other.allocation_ = {};
+	if(other.allocated()) {
+		memory_ = other.memory_;
+		other.memory_ = nullptr;
+	} else if(other.allocator_) {
+		allocator_ = other.allocator_;
+		other.allocator_ = nullptr;
+		allocator_->moveEntry(other, *this);
+	}
 }
 
-MemoryEntry& MemoryEntry::operator=(MemoryEntry other) noexcept
+MemoryEntry& MemoryEntry::operator=(MemoryEntry&& other) noexcept
 {
-	swap(*this, other);
+	// destroy
+	if(!allocated() && allocator_) allocator_->removeRequest(*this);
+	else if(allocated()) memory_->free(allocation_);
+
+	// move
+	allocation_ = other.allocation_;
+	other.allocation_ = {};
+	if(other.allocated()) {
+		memory_ = other.memory_;
+		other.memory_ = nullptr;
+	} else if(other.allocator_) {
+		allocator_ = other.allocator_;
+		other.allocator_ = nullptr;
+		allocator_->moveEntry(other, *this);
+	}
+
 	return *this;
 }
 
@@ -470,30 +494,6 @@ MemoryEntry::~MemoryEntry()
 {
 	if(!allocated() && allocator_) allocator_->removeRequest(*this);
 	else if(allocated()) memory_->free(allocation_);
-}
-
-void swap(MemoryEntry& a, MemoryEntry& b) noexcept
-{
-	using std::swap;
-
-	// backup the memory or allocator values of a
-	auto memTmp = a.allocated() ? a.memory() : nullptr;
-	auto allocTmp = a.allocated() ? nullptr : a.allocator();
-
-	// correctly swap the unions
-	if(b.allocated()) a.memory_ = b.memory_;
-	else a.allocator_ = b.allocator_;
-
-	if(a.allocated()) b.memory_ = memTmp;
-	else b.allocator_ = allocTmp;
-
-	// signal the allocator (if there is any) that the entry has been moved
-	// since the allocator stores references (addresses) of the entries
-	if(!a.allocated() && a.allocator_) a.allocator_->moveEntry(b, a);
-	if(!b.allocated() && b.allocator_) b.allocator_->moveEntry(a, b);
-
-	// swap allocations
-	swap(a.allocation_, b.allocation_);
 }
 
 MemoryMapView MemoryEntry::map() const

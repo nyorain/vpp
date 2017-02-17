@@ -140,7 +140,7 @@ public:
 	~MemoryEntry();
 
 	MemoryEntry(MemoryEntry&& other) noexcept;
-	MemoryEntry& operator=(MemoryEntry other) noexcept;
+	MemoryEntry& operator=(MemoryEntry&& other) noexcept;
 
 	/// Will try to map the Memory and return a view to the location where this entry is placed.
 	/// In debug, throws std::logic_error if it is not bound to memory or the memory
@@ -164,7 +164,6 @@ public:
 	const Allocation& allocation() const noexcept { return allocation_; }
 
 	Resource& resourceRef() const noexcept { if(allocated()) return *memory_; return *allocator_; }
-	friend void swap(MemoryEntry& a, MemoryEntry& b) noexcept;
 
 protected:
 	friend class DeviceMemoryAllocator;
