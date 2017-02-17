@@ -9,14 +9,11 @@
 #include <vpp/allocator.hpp>
 #include <vpp/buffer.hpp>
 #include <vpp/commandBuffer.hpp>
-#include <vpp/computePipeline.hpp>
-#include <vpp/context.hpp>
 #include <vpp/debug.hpp>
 #include <vpp/descriptor.hpp>
 #include <vpp/device.hpp>
 #include <vpp/framebuffer.hpp>
 #include <vpp/fwd.hpp>
-#include <vpp/graphicsPipeline.hpp>
 #include <vpp/image.hpp>
 #include <vpp/init.hpp>
 #include <vpp/memory.hpp>
@@ -24,7 +21,6 @@
 #include <vpp/memoryResource.hpp>
 #include <vpp/pipeline.hpp>
 #include <vpp/procAddr.hpp>
-#include <vpp/provider.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/renderer.hpp>
 #include <vpp/renderPass.hpp>
