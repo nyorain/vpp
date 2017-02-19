@@ -50,6 +50,7 @@ public:
 	/// The size parameter has to be not null, otherwise a std::logic_error will be thrown.
 	/// One can test if there is enough space for the needed allocation with the
 	/// allocatable() member function.
+	/// Alignment must be a power of 2.
 	Allocation alloc(size_t size, size_t aligment, AllocationType type);
 
 	/// Tests if an allocation for the given requirements can be made.
@@ -58,6 +59,7 @@ public:
 	/// with a call to allocSpecified.
 	/// Notice that this call itself does NOT reserve any memory for the caller so the memory
 	/// range of the returned allocation shall not be used.
+	/// Alignment must be a power of 2.
 	Allocation allocatable(size_t size, size_t aligment, AllocationType) const;
 
 	/// Allocates the specified memory part. Does not check for matched requirements or if
@@ -97,7 +99,7 @@ public:
 	bool mappable() const noexcept;
 
 	unsigned int type() const noexcept { return type_; }
-	const std::vector<AllocationEntry> allocations() const noexcept { return allocations_; }
+	const std::vector<AllocationEntry>& allocations() const noexcept { return allocations_; }
 
 protected:
 	std::vector<AllocationEntry> allocations_ {};

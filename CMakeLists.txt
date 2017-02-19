@@ -12,8 +12,9 @@ option(Debug "Compile in debug mode" on)
 option(Codegen "Regenerate c++ vulkan api" off)
 option(ApiVersion "C++ vulkan api version to generate [1-0-20|1-0-40|1-0-latest]" off)
 
-option(BuildExamples "Build Examples" off)
+option(Examples "Build Examples" off)
 option(OneDevice "Enable the one device optimization. Not recommended" off)
+option(Test "Build tests" off)
 
 if(Debug)
 	set(CMAKE_BUILD_TYPE Debug)
@@ -57,6 +58,11 @@ find_package(Vulkan REQUIRED)
 
 if(Codegen)
 	add_subdirectory(src/codegen)
+endif()
+
+if(Test)
+	enable_testing()
+	add_subdirectory(doc/tests)
 endif()
 
 add_subdirectory(include/vpp)

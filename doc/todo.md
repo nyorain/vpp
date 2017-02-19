@@ -4,6 +4,12 @@ Todo list vor vpp
 - make sure to add VKAPI_PTR to all callbacks
 	- REALLY needed on various platforms
 
+- procAddr: give some way to throw when proc could not be loaded
+	- or check in all vpp code and not just expect them to be loaded!
+	- currently segmentation fault (with warning in debug mode)
+- codegen constexpr?
+- when mapping images in write/retrieve, first make sure they have the correct layout
+	- change it, return command work ptr if needed
 - which information should resources carry around, which not?
 - some general SwapChainRenderer improvements/reworking needed
 	- better renderer resetting (all command pools at once, just resize the frameRenderers vector)

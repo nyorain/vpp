@@ -40,6 +40,7 @@ public:
 	/// If no physical device is given, will try to choose the best from the available ones.
 	/// Might (as all vpp classes) throw a vk::VulkanError from the underlaying api calls.
 	/// Will throw std::runtime_error if valid physical device can be found.
+	/// Will automatically create a compute and graphics queue (if possible).
 	/// \param extensions The extensions to be enabled.
 	Device(vk::Instance, vk::PhysicalDevice = {},
 		nytl::Span<const char* const> extensions = {});
