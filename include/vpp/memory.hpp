@@ -47,7 +47,7 @@ public:
 
 	/// Tries to allocate a memory part that matches the given size and alignment requirements.
 	/// If there is not enough free space left, a std::runtime_error will be thrown.
-	/// The size parameter has to be not null, otherwise a std::logic_error will be thrown.
+	/// The size parameter has to be not null, otherwise a std::runtime_error will be thrown.
 	/// One can test if there is enough space for the needed allocation with the
 	/// allocatable() member function.
 	/// Alignment must be a power of 2.

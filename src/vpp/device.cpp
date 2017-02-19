@@ -89,10 +89,19 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev,
 	nytl::Span<const char* const> extensions) : instance_(ini), physicalDevice_(phdev)
 {
+	if(!phdev) {
+		auto phdevs = vk::enumeratePhysicalDevices(ini);
+		physicalDevice_ = choose(phdevs);
+	}
+
+	if(!physicalDevice_)
+		throw std::runtime_error("vpp::Device: could not find physical device");
+
 	// query gfx compute queue
-	int gfxCompQueueFam = findQueueFamily(phdev, vk::QueueBits::compute | vk::QueueBits::graphics);
+	auto queueFlags = vk::QueueBits::compute | vk::QueueBits::graphics;
+	int gfxCompQueueFam = findQueueFamily(vkPhysicalDevice(), queueFlags);
 	if(gfxCompQueueFam == -1)
-		throw std::runtime_error("vpp::Context: unable to find gfx/comp queue family");
+		throw std::runtime_error("vpp::Device: unable to find gfx/comp queue family");
 
 	// init device and queue create info
 	float priorities[1] = {0.0};

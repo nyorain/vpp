@@ -98,7 +98,7 @@ void checkErrorFailed(const char* test, const char* file, int line, const char* 
 {
 	unused(expression);
 
-	std::cout << "\t\n";
+	std::cout << "\t";
 	for(auto i = 0u; i < width; ++i) std::cout << "<";
 	std::cout << "\n";
 

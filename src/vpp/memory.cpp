@@ -195,9 +195,15 @@ size_t DeviceMemory::largestFreeSegment() const noexcept
 	size_t oldend {0};
 
 	for(auto& alloc : allocations_) {
-		if(alloc.allocation.offset - oldend > ret) ret = alloc.allocation.offset - oldend;
-		oldend = alloc.allocation.offset + alloc.allocation.size;
+		if(alloc.allocation.offset - oldend > ret)
+			ret = alloc.allocation.offset - oldend;
+
+		oldend = alloc.allocation.end();
 	}
+
+	// potential last free block
+	if(size_ - oldend > ret)
+		ret = size_ - oldend;
 
 	return ret;
 }

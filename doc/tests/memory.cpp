@@ -22,14 +22,14 @@ TEST_METHOD("[memory-1]") {
 	EXPECT(memory.totalFree(), size - allocSize);
 	EXPECT(memory.allocations().size(), 1u);
 
-	EXPECT_ERROR(memory.alloc(allocSize, 32, vpp::AllocationType::linear), std::logic_error);
-	EXPECT_ERROR(memory.alloc(100, 1024, vpp::AllocationType::linear), std::logic_error);
+	EXPECT_ERROR(memory.alloc(allocSize, 32, vpp::AllocationType::linear), std::runtime_error);
+	EXPECT_ERROR(memory.alloc(100, 1024, vpp::AllocationType::linear), std::runtime_error);
 	EXPECT(memory.allocatable(5, 512, vpp::AllocationType::optimal).size, 0u);
 	EXPECT(memory.allocatable(500, 0, vpp::AllocationType::optimal).size, 0u);
 
-	allocSize = 420u;
+	allocSize = 424u;
 	auto alloc2 = memory.allocatable(allocSize, 4, vpp::AllocationType::linear);
-	EXPECT(alloc2.offset, 604u);
+	EXPECT(alloc2.offset, 600u);
 	EXPECT(alloc2.size, allocSize);
 
 	auto check2 = memory.allocSpecified(alloc2.offset, alloc2.size, vpp::AllocationType::linear);
@@ -45,4 +45,10 @@ TEST_METHOD("[memory-1]") {
 	EXPECT(memory.largestFreeSegment(), size - allocSize);
 	EXPECT(memory.totalFree(), size - allocSize);
 	EXPECT(memory.allocations().size(), 1u);
+
+	memory.free(alloc2);
+
+	EXPECT(memory.largestFreeSegment(), size);
+	EXPECT(memory.totalFree(), size);
+	EXPECT(memory.allocations().empty(), true);
 }
