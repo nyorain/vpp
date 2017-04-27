@@ -13,14 +13,14 @@
 
 namespace vpp {
 
-/// Class that manages all commands submitted to the device.
+/// Responsible for synchronizing submissions to the device.
 /// In vulkan, submitting work to the device is a pretty heavy operation and must be synchronized
-/// (i.e. there should always only be one thread calling vkQueueSubmit no matter on which queue).
-/// This class threadsafely manages this submissions and also batches mulitple command buffers
-/// together which will increase performance.
+/// (e.g. there should always only be one thread calling vkQueueSubmit no matter on which queue).
+/// This class manages these submissions and also batches mulitple command buffers together.
 /// There is always only one SubmitManager for a vulkan device and if vkQueueSumit is called
 /// maually, it must be assured that no other thread calls this function or uses the submitManager
-/// for the same device at the same moment.
+/// for the same device at the same time.
+/// See also the Queue class for more on queue and submission synchronization.
 class SubmitManager : public Resource {
 public:
 	/// Submits all CommandBuffers in the submission queue.
@@ -124,7 +124,7 @@ protected:
 
 	SubmitManager* submitManager_ {};
 
-	// mutable since changed by completed()
+	// mutable since changed by completed(), used as cache
 	mutable std::shared_ptr<Fence> fence_ {};
 	mutable bool completed_ {};
 };
