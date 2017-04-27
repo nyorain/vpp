@@ -23,7 +23,7 @@ else()
 endif()
 
 if(NOT ApiVersion)
-	set(ApiVersion "latest")
+	set(ApiVersion "1-0-latest")
 endif()
 
 # set(CMAKE_CXX_STANDARD 17)
@@ -78,7 +78,7 @@ configure_file(
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/vpp/config.hpp" DESTINATION include/vpp)
 
-if(BuildExamples)
+if(Examples)
 	if(Win32 OR MSYS OR MINGW)
 		add_subdirectory(doc/examples)
 	else()

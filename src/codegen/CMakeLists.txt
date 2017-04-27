@@ -6,7 +6,9 @@ add_executable(vkGenerator
 	pugixml/pugixml.cpp)
 
 # old vulkan version
-target_compile_definitions(vkGenerator PRIVATE VPP_OLD_LENGTH_PARAM=1)
+if(ApiVersion STREQUAL "1-0-20")
+	target_compile_definitions(vkGenerator PRIVATE VPP_OLD_LENGTH_PARAM=1)
+endif()
 
 #target_include_directories(vkGenerator PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 set(output-dir "${CMAKE_SOURCE_DIR}/include/vpp/vulkan")

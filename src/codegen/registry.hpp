@@ -40,7 +40,8 @@ public:
 		external,
 		basetype,
 		define,
-		funcptr
+		funcptr,
+		plain
 	};
 
 public:
@@ -250,6 +251,7 @@ public:
 	Container<BaseType> baseTypes;
 	Container<Define> defines;
 	Container<FuncPtr> funcPtrs;
+	Container<Type> plainTypes;
 
 	Container<Feature> features;
 	Container<Extension> extensions;
@@ -271,6 +273,7 @@ public:
 	BaseType* findBaseType(const std::string& name);
 	Handle* findHandle(const std::string& name);
 	FuncPtr* findFuncPtr(const std::string& name);
+	Type* findPlainType(const std::string& name);
 
 	Command* findCommand(const std::string& name);
 	Constant* findConstant(const std::string& name);

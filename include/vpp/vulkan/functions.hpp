@@ -16,7 +16,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-static_assert(VK_HEADER_VERSION >=  20, "Vulkan and vpp header incompatibility");
+// static_assert(VK_HEADER_VERSION >=  48, "Vulkan and vpp header incompatibility");
 
 namespace vk {
 
@@ -802,9 +802,9 @@ inline void cmdDrawIndexedIndirect(CommandBuffer commandBuffer, Buffer buffer, D
 	return vkCmdDrawIndexedIndirect((VkCommandBuffer)(commandBuffer), (VkBuffer)(buffer), offset, drawCount, stride);
 }
 
-inline void cmdDispatch(CommandBuffer commandBuffer, uint32_t x, uint32_t y, uint32_t z)
+inline void cmdDispatch(CommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
-	return vkCmdDispatch((VkCommandBuffer)(commandBuffer), x, y, z);
+	return vkCmdDispatch((VkCommandBuffer)(commandBuffer), groupCountX, groupCountY, groupCountZ);
 }
 
 inline void cmdDispatchIndirect(CommandBuffer commandBuffer, Buffer buffer, DeviceSize offset)
@@ -1000,7 +1000,7 @@ inline void cmdExecuteCommands(CommandBuffer commandBuffer, nytl::Span<const Com
 
 // The specification (vk.xml) itself is protected by the following license:
 
-// Copyright (c) 2015-2016 The Khronos Group Inc.
+// Copyright (c) 2015-2017 The Khronos Group Inc.
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and/or associated documentation files (the
@@ -1029,5 +1029,5 @@ inline void cmdExecuteCommands(CommandBuffer commandBuffer, nytl::Span<const Com
 // language incorporated into the Specification and reference pages, and other
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
-// maintained in the master branch of the Khronos Vulkan Github project.
+// maintained in the master branch of the Khronos Vulkan GitHub project.
     

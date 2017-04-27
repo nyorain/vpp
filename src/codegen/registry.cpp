@@ -55,6 +55,9 @@ Registry& RegistryLoader::parse()
 	for(auto vendor : regNode.child("vendorids").children("vendorid"))
 		registry_.vendors.push_back(vendor.attribute("name").as_string());
 
+	// add khx
+	registry_.vendors.push_back("KHX");
+
 	// tags
 	for(auto tag : regNode.child("tags").children("tag"))
 		registry_.tags.push_back(tag.attribute("name").as_string());
@@ -97,16 +100,19 @@ Registry& RegistryLoader::parse()
 
 void RegistryLoader::loadTypes(const pugi::xml_node& node)
 {
-	// all external types
+	// all plain && external types
 	for(auto typeit : node.children("type")) {
 		std::string category = typeit.attribute("category").as_string();
 		std::string reqs = typeit.attribute("requires").as_string();
+		auto name = typeit.attribute("name").as_string();
 		if(category == "" && reqs != "") {
-			auto name = typeit.attribute("name").as_string();
 			ExternalType ext(name, typeit);
 			registry_.externalTypes.push_back(ext);
-
 			log("\t\texternal: ", name);
+		} else if(category == "" && reqs == "") {
+			Type type(Type::Category::plain, name, typeit);
+			registry_.plainTypes.push_back(type);
+			log("\t\tplain type: ", name);
 		}
 	}
 
@@ -529,25 +535,42 @@ Requirements RegistryLoader::parseRequirements(const pugi::xml_node& node, bool 
 					ret.constants.push_back(constant);
 				}
 			} else if(extAttrib) {
-				std::string dir = "+";
-				auto dirAttrib = req.attribute("dir");
-				if(dirAttrib) dir = dirAttrib.as_string();
+				// check if bitflag or enumeration
+				auto bitposAttrib = req.attribute("bitpos");
+				if(bitposAttrib) {
+					auto extEnum = registry_.findEnum(extAttrib.as_string());
+					if(!extEnum) {
+						std::cout << "### couldnt find enum " << extAttrib.as_string() << "\n";
+						continue;
+					}
 
-				auto offset = req.attribute("offset").as_llong();
-				offset += number * 1000; //extension number queried in the beginning
+					auto pos = bitposAttrib.as_llong();
+					auto v = std::make_pair(req.attribute("name").as_string(), pos);
+					extEnum->values.push_back(v);
+				} else {
+					std::string dir = "+";
+					auto dirAttrib = req.attribute("dir");
+					if(dirAttrib) dir = dirAttrib.as_string();
 
-				auto extEnum = registry_.findEnum(extAttrib.as_string());
-				if(!extEnum) {
-					std::cout << "### couldnt find enum " << extAttrib.as_string() << "\n";
-					continue;
+					auto offset = req.attribute("offset").as_llong();
+					offset += number * 1000; //extension number queried in the beginning
+
+					auto extEnum = registry_.findEnum(extAttrib.as_string());
+					if(!extEnum) {
+						std::cout << "### couldnt find enum " << extAttrib.as_string() << "\n";
+						continue;
+					}
+
+					std::int64_t value = 0;
+
+					// Base given by khronos
+					if(dir == "+") value = 1000000000 + offset;
+					else if(dir == "-") value = -1000000000 - offset;
+					else std::cerr << "### invalid enum ext dir: '" << dir << "', " << enumName << "\n";
+
+					auto v = std::make_pair(req.attribute("name").as_string(), value);
+					extEnum->values.push_back(v);
 				}
-
-				std::int64_t value = 0;
-				if(dir == "+") value = 1000000000 + offset;
-				else if(dir == "-") value = -1000000000 - offset;
-
-				auto v = std::make_pair(req.attribute("name").as_string(), value);
-				extEnum->values.push_back(v);
 			}
 		}
 	}
@@ -658,6 +681,12 @@ FuncPtr* Registry::findFuncPtr(const std::string& name)
 	return nullptr;
 }
 
+Type* Registry::findPlainType(const std::string& name)
+{
+	for(auto& e : plainTypes) if(e.name == name) return &e;
+	return nullptr;
+}
+
 Type* Registry::findType(const std::string& name)
 {
 	Type* ret = nullptr;
@@ -668,6 +697,7 @@ Type* Registry::findType(const std::string& name)
 	if((ret = findBaseType(name))) return ret;
 	if((ret = findHandle(name))) return ret;
 	if((ret = findFuncPtr(name))) return ret;
+	if((ret = findPlainType(name))) return ret;
 	return nullptr;
 }
 

@@ -242,7 +242,7 @@ vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
 	rasterizationInfo.polygonMode = vk::PolygonMode::fill;
 	rasterizationInfo.cullMode = vk::CullModeBits::none;
 	rasterizationInfo.frontFace = vk::FrontFace::counterClockwise;
-	rasterizationInfo.depthClampEnable = true;
+	rasterizationInfo.depthClampEnable = false;
 	rasterizationInfo.rasterizerDiscardEnable = false;
 	rasterizationInfo.depthBiasEnable = false;
 	rasterizationInfo.lineWidth = 1.f;

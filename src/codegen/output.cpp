@@ -274,7 +274,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 	auto structGuard = false;
 
 	// order:
-	// - contants
+	// - constants
 	// - handles
 	// - basetypes
 	// - enums
@@ -569,6 +569,15 @@ std::string CCOutputGenerator::enumName(const Enum& e, const std::string& name, 
 
 	// 'e' prefix if it is a number
 	if(std::isdigit(ret[0], std::locale())) ret.insert(0, 1, 'e');
+
+	// NOTE: hack/workaround for 'WordIDWord' struct and WORD_ID_WORD enum.
+	// in this case the enum value name is wrongly generated (WordIdWord) and does
+	// not match the (correct) structure name since this information is not
+	// preserved. Rather a temporary workaround here.
+	auto idPos = ret.find("Id");
+	if(idPos != std::string::npos) {
+		ret[idPos + 1] = 'D';
+	}
 
 	// make sure it is no keyword
 	// keywords defined in header.hpp
