@@ -232,17 +232,23 @@ void CCOutputGenerator::generate()
 	printReqs(reqs, fulfilled);
 	fulfilled.add(reqs);
 
-	// output all extensions
-	// will not output it if it is marked as disabled
-	for(auto& ext : registry().extensions) {
-		printReqs(ext.reqs, fulfilled, ext.protect);
-		fulfilled.add(ext.reqs);
+	// output extensions
+	for(auto& ext : feature.extensions) {
+		printReqs(ext->reqs, fulfilled, ext->protect);
+		fulfilled.add(ext->reqs);
 	}
 
-	// end the header files
-	outputAllHeader("\n\n} // namespace vk\n\n");
+	// undef function macros
+	functions_
+		<< "#undef VEC_FUNC\n"
+		<< "#undef VEC_FUNC_VOID\n"
+		<< "#undef VEC_FUNC_RET\n"
+		<< "#undef VEC_FUNC_RET_VOID\n";
 
-	outputAll("// The specification (vk.xml) itself is protected by the following license:\n");
+	// end the header files
+	outputAllHeader("\n} // namespace vk\n\n");
+
+	outputAll("// The specification (vk.xml) itself is published under the following license:\n");
 	outputAll(registry().copyright);
 
 	fwd_ << "\n\n";
@@ -292,9 +298,9 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		assureGuard(fwd_, fwdGuard, guard);
 		auto name = constantName(*constant);
 
-		// exceptions - predefined constants
+		// NOTE: workaround for predefined constants (true/false)
 		if(name == "true" || name == "false") continue;
-		count++;
+		++count;
 
 		fwd_ << "constexpr auto " << name << " = " << constant->value << ";\n";
 	}
@@ -499,7 +505,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		++count;
 		assureGuard(functions_, funcGuard, guard);
 		printCmd(*cmdit);
-		functions_ << "\n"; // insert blank line between seperate function (groups)
+		// functions_ << "\n"; // insert blank line between seperate function (groups)
 	}
 
 	if(count > 0) {
@@ -534,9 +540,6 @@ std::string CCOutputGenerator::enumName(const Enum& e, const std::string& name, 
 	auto ret = removeVkPrefix(name, nullptr);
 	camelCaseip(ret);
 
-	// TODO: better check for common prefix: don't compare char for char but
-	// rather word for word (words are seperated by an underscore)
-
 	// prefixes and suffixes
 	auto removePrefix = 0u;
 	auto removeSuffix = 0u;
@@ -545,26 +548,35 @@ std::string CCOutputGenerator::enumName(const Enum& e, const std::string& name, 
 		std::string ext;
 		removeExtSuffix(e.name, &ext);
 
-		auto fename = tolower(typeName(e)); //fixed enum name
-		if(fename.substr(fename.size() - 4) == "bits") fename = fename.substr(0, fename.size() - 4);
+		auto fename = tolower(typeName(e)); // fixed enum name
+		auto bpos = fename.rfind("bit");
+		if(bpos != std::string::npos) fename = fename.substr(0, bpos);
+		else fename = fename.substr(0, fename.size() - ext.size());
 
-		auto fname = tolower(ret); //fixed name
+		// if(fename.substr(fename.size() - 4) == "bits") fename = fename.substr(0, fename.size() - 4);
+		auto fname = tolower(ret); // fixed name
+
+		// TODO: better check for common prefix: don't compare char for char but
+		// rather word for word (words are seperated by an underscore) (?)
 
 		auto s = 0u;
-		while(fename.size() > s + ext.size() && fname.size() > s && fename[s] == fname[s]) ++s;
+		while(fename.size() > s && fname.size() > s && fename[s] == fname[s]) ++s;
 
 		removePrefix = s;
 		removeSuffix = ext.size();
-	}
 
-	ret = ret.substr(removePrefix);
-	ret = ret.substr(0, ret.size() - removeSuffix);
-	ret[0] = tolower(ret[0], std::locale());
 
-	// remove "Bit" from bitmask enums
-	if(ret.size() > 3 && e.bitmask && ret.substr(ret.size() - 3) == "Bit") {
-		if(bit) *bit = true;
-		ret = ret.substr(0, ret.size() - 3);
+		// actuallly remove prefix and suffix, lower first char
+		ret = ret.substr(removePrefix);
+		ret = ret.substr(0, ret.size() - removeSuffix);
+		ret[0] = tolower(ret[0], std::locale());
+
+		// remove "Bit" from bitmask enums
+		bpos = ret.rfind("Bit");
+		if(e.bitmask && bpos != std::string::npos) {
+			if(bit) *bit = true;
+			ret = ret.erase(bpos, 3);
+		}
 	}
 
 	// 'e' prefix if it is a number
@@ -917,8 +929,8 @@ void CCOutputGenerator::printCmd(const Command& cmd)
 
 	if(parsed.returnParam && !parsed.returnParam->countPar) {
 		 auto derefType = parsed.returnParam->param->type.pointer;
-		before = typeName(*derefType) + " ret = {};\n\t" + before;
-		after = after + "\n\treturn ret;";
+		before = typeName(*derefType) + " ret = {}; " + before;
+		after = after + " return ret;";
 	} else if(retType.type->name != "void" || retType.pointer) {
 		before = "return static_cast<" + typeName(cmd.signature.returnType) + ">(";
 		after = ");";
@@ -926,9 +938,9 @@ void CCOutputGenerator::printCmd(const Command& cmd)
 		before = "return ";
 	}
 
-	functions_ << ")\n{\n\t";
+	functions_ << "){ ";
 	functions_ << before << cmd.name << "(" << args;
-	functions_ << ")" << after << "\n}\n";
+	functions_ << ")" << after << "}\n";
 
 	// if possible/needed, output the std::vector version of the function
 	if(printVecVersion) printVecCmd(parsed, name);
@@ -971,7 +983,7 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 		callSepr = ", ";
 	}
 
-	functions_ << ")\n{\n";
+	functions_ << "){ ";
 
 	if(vecRet) {
 		std::string code;
@@ -1018,7 +1030,7 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 		code = std::regex_replace(code, std::regex("%ct"), countType.name);
 
 		functions_ << code;
-		functions_ << "}\n";
+		functions_ << " }\n";
 	} else {
 		auto& retType = cmd.signature.returnType;
 		std::string returnString;
@@ -1031,8 +1043,8 @@ void CCOutputGenerator::printVecCmd(const ParsedCommand& pcmd, const std::string
 			returnStringEnd = ")";
 		}
 
-		functions_ << "\t" << returnString << cmd.name << "(" << args;
-		functions_ << ")" << returnStringEnd << ";\n}\n";
+		functions_ << returnString << cmd.name << "(" << args;
+		functions_ << ")" << returnStringEnd << " ;}\n";
 	}
 }
 

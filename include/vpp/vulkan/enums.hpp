@@ -202,7 +202,6 @@ enum class Result : int32_t{
 	errorIncompatibleDisplayKHR = -1000003001,
 	errorValidationFailedEXT = -1000011001,
 	errorInvalidShaderNV = -1000012000,
-	nvExtension1Error = -1000013000,
 	errorOutOfPoolMemoryKHR = -1000069000,
 	errorInvalidExternalHandleKHX = -1000072003
 };
@@ -417,9 +416,9 @@ enum class FormatFeatureBits : int32_t{
 	blitSrc = (1 << 10),
 	blitDst = (1 << 11),
 	sampledImageFilterLinear = (1 << 12),
-	sampledImageFilterCubicBitIMG = 13,
-	transferSrcBitKHR = 14,
-	transferDstBitKHR = 15
+	sampledImageFilterCubicIMG = (1 << 13),
+	transferSrcKHR = (1 << 14),
+	transferDstKHR = (1 << 15)
 };
 NYTL_FLAG_OPS(FormatFeatureBits)
 
@@ -452,8 +451,8 @@ enum class ImageCreateBits : int32_t{
 	sparseAliased = (1 << 2),
 	mutableFormat = (1 << 3),
 	cubeCompatible = (1 << 4),
-	bindSfrBitKHX = 6,
-	e2dArrayCompatibleBitKHR = 5
+	bindSfrKHX = (1 << 6),
+	e2dArrayCompatibleKHR = (1 << 5)
 };
 NYTL_FLAG_OPS(ImageCreateBits)
 
@@ -495,7 +494,7 @@ NYTL_FLAG_OPS(MemoryPropertyBits)
 
 enum class MemoryHeapBits : int32_t{
 	deviceLocal = (1 << 0),
-	multiInstanceBitKHX = 1
+	multiInstanceKHX = (1 << 1)
 };
 NYTL_FLAG_OPS(MemoryHeapBits)
 
@@ -517,7 +516,7 @@ enum class PipelineStageBits : int32_t{
 	host = (1 << 14),
 	allGraphics = (1 << 15),
 	allCommands = (1 << 16),
-	commandProcessBitNVX = 17
+	commandProcessNVX = (1 << 17)
 };
 NYTL_FLAG_OPS(PipelineStageBits)
 
@@ -637,7 +636,7 @@ enum class PipelineCreateBits : int32_t{
 	disableOptimization = (1 << 0),
 	allowDerivatives = (1 << 1),
 	derivative = (1 << 2),
-	viewIndexFromDeviceIndexBitKHX = 3,
+	viewIndexFromDeviceIndexKHX = (1 << 3),
 	dispatchBaseKHX = 4
 };
 NYTL_FLAG_OPS(PipelineCreateBits)
@@ -814,7 +813,7 @@ enum class BorderColor : int32_t{
 };
 
 enum class DescriptorSetLayoutCreateBits : int32_t{
-	pushDescriptorBitKHR = 0
+	pushDescriptorKHR = (1 << 0)
 };
 NYTL_FLAG_OPS(DescriptorSetLayoutCreateBits)
 
@@ -854,8 +853,8 @@ enum class AttachmentStoreOp : int32_t{
 };
 
 enum class SubpassDescriptionBits : int32_t{
-	perViewAttributesBitNVX = 0,
-	perViewPositionXOnlyBitNVX = 1
+	perViewAttributesNVX = (1 << 0),
+	perViewPositionXOnlyNVX = (1 << 1)
 };
 NYTL_FLAG_OPS(SubpassDescriptionBits)
 
@@ -882,15 +881,15 @@ enum class AccessBits : int32_t{
 	hostWrite = (1 << 14),
 	memoryRead = (1 << 15),
 	memoryWrite = (1 << 16),
-	commandProcessReadBitNVX = 17,
-	commandProcessWriteBitNVX = 18
+	commandProcessReadNVX = (1 << 17),
+	commandProcessWriteNVX = (1 << 18)
 };
 NYTL_FLAG_OPS(AccessBits)
 
 enum class DependencyBits : int32_t{
 	byRegion = (1 << 0),
-	viewLocalBitKHX = 1,
-	deviceGroupBitKHX = 2
+	viewLocalKHX = (1 << 1),
+	deviceGroupKHX = (1 << 2)
 };
 NYTL_FLAG_OPS(DependencyBits)
 
@@ -992,7 +991,7 @@ enum class PresentModeKHR : int32_t{
 
 
 enum class SwapchainCreateBitsKHR : int32_t{
-	ndSfr = (1 << 0)
+	bindSfr = (1 << 0)
 };
 NYTL_FLAG_OPS(SwapchainCreateBitsKHR)
 
@@ -1222,10 +1221,9 @@ enum class DiscardRectangleModeEXT : int32_t{
 
 
 
-
 } // namespace vk
 
-// The specification (vk.xml) itself is protected by the following license:
+// The specification (vk.xml) itself is published under the following license:
 
 // Copyright (c) 2015-2017 The Khronos Group Inc.
 // 

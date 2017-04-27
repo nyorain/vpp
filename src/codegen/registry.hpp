@@ -221,6 +221,7 @@ public:
 	Requirements reqs;
 	std::string protect;
 	std::string name;
+	std::string supported;
 	int number;
 };
 

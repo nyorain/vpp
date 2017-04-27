@@ -463,20 +463,18 @@ void RegistryLoader::loadFeature(const pugi::xml_node& node)
 void RegistryLoader::loadExtension(const pugi::xml_node& node)
 {
 	Extension extension;
-	extension.reqs = parseRequirements(node, true);
+	extension.supported = node.attribute("supported").as_string();
 	extension.number = node.attribute("number").as_int();
 	extension.name = node.attribute("name").as_string();
 	extension.protect = node.attribute("protect").as_string();
-	registry_.extensions.push_back(extension);
 
-	auto supportedAttrib = node.attribute("supported");
-	if(supportedAttrib) {
-		std::string supported = supportedAttrib.as_string();
-		if(supported != "disabled" && supported != "disable") {
-			auto feature = registry_.findFeatureByApi(supported);
-			if(feature) feature->extensions.push_back(&registry_.extensions.back());
-			else std::cout << "### couldnt find feature " << supported << "\n";
-		}
+	if(extension.supported.find("vulkan") != std::string::npos) {
+		extension.reqs = parseRequirements(node, true);
+		registry_.extensions.push_back(extension);
+
+		auto feature = registry_.findFeatureByApi(extension.supported);
+		if(feature) feature->extensions.push_back(&registry_.extensions.back());
+		else std::cout << "### couldnt find feature " << extension.supported << "\n";
 	}
 
 	log("\t\textension ", extension.name);
@@ -516,23 +514,33 @@ Requirements RegistryLoader::parseRequirements(const pugi::xml_node& node, bool 
 		// enums
 		for(auto& req : require.children("enum")) {
 			auto enumName = req.attribute("name").as_string();
-			auto value = std::string(req.attribute("value").value());
 			auto extAttrib = req.attribute("extends");
 
-			if(!extAttrib && (value[0] == '\"' || value.find("VK") == std::string::npos)) {
+			if(!extAttrib) {
 				auto valueAttrib = req.attribute("value");
-				if(valueAttrib) {
+				auto value = std::string(valueAttrib.value());
+				if(valueAttrib && (value[0] == '\"' || value.find("VK") == std::string::npos)) {
 					Constant constant(req);
 					constant.name = req.attribute("name").as_string();
 					constant.value = valueAttrib.as_string();
 					ret.extraConstants.push_back(constant);
-				} else {
+				} else if(!valueAttrib) {
 					auto constant = registry_.findConstant(enumName);
 					if(!constant) {
 						std::cout << "### couldnt find constant " << enumName << "\n";
 						continue;
 					}
-					ret.constants.push_back(constant);
+
+					// check if already in constants
+					auto found = false;
+					for(const auto& c : ret.constants) {
+						if(c == constant) {
+							found = true;
+							break;
+						}
+					}
+
+					if(!found) ret.constants.push_back(constant);
 				}
 			} else if(extAttrib) {
 				// check if bitflag or enumeration

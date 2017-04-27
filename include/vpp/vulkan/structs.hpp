@@ -3780,10 +3780,9 @@ struct MacOSSurfaceCreateInfoMVK {
 #endif //VK_USE_PLATFORM_MACOS_MVK
 
 
-
 } // namespace vk
 
-// The specification (vk.xml) itself is protected by the following license:
+// The specification (vk.xml) itself is published under the following license:
 
 // Copyright (c) 2015-2017 The Khronos Group Inc.
 // 

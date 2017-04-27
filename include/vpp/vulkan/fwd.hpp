@@ -573,7 +573,6 @@ struct DeviceGroupDeviceCreateInfoKHX;
 
 using PfnEnumeratePhysicalDeviceGroupsKHX = Result(*VKAPI_PTR)(Instance instance, uint32_t* pPhysicalDeviceGroupCount, PhysicalDeviceGroupPropertiesKHX* pPhysicalDeviceGroupProperties);
 
-// constexpr auto luidSizeKhx = 8;
 constexpr auto luidSizeKhx = 8;
 
 enum class ExternalMemoryHandleTypeBitsKHX : int32_t;
@@ -795,13 +794,12 @@ using PfnCreateMacOSSurfaceMVK = Result(*VKAPI_PTR)(Instance instance, const Mac
 #endif //VK_USE_PLATFORM_MACOS_MVK
 
 
-
 } // namespace vk
 
-// The specification (vk.xml) itself is protected by the following license:
+// The specification (vk.xml) itself is published under the following license:
 
 // Copyright (c) 2015-2017 The Khronos Group Inc.
-//
+// 
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and/or associated documentation files (the
 // "Materials"), to deal in the Materials without restriction, including
@@ -809,10 +807,10 @@ using PfnCreateMacOSSurfaceMVK = Result(*VKAPI_PTR)(Instance instance, const Mac
 // distribute, sublicense, and/or sell copies of the Materials, and to
 // permit persons to whom the Materials are furnished to do so, subject to
 // the following conditions:
-//
+// 
 // The above copyright notice and this permission notice shall be included
 // in all copies or substantial portions of the Materials.
-//
+// 
 // THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -820,9 +818,9 @@ using PfnCreateMacOSSurfaceMVK = Result(*VKAPI_PTR)(Instance instance, const Mac
 // CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
-//
+// 
 // ------------------------------------------------------------------------
-//
+// 
 // This file, vk.xml, is the Vulkan API Registry. It is a critically important
 // and normative part of the Vulkan Specification, including a canonical
 // machine-readable definition of the API, parameter and member validation
@@ -830,3 +828,5 @@ using PfnCreateMacOSSurfaceMVK = Result(*VKAPI_PTR)(Instance instance, const Mac
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
 // maintained in the master branch of the Khronos Vulkan GitHub project.
+    
+

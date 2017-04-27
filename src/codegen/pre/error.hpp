@@ -44,7 +44,6 @@ inline const char* name(Result result)
 		case Result::errorIncompatibleDisplayKHR: return "errorIncompatibleDisplayKHR";
 		case Result::errorValidationFailedEXT: return "errorValidationFailedEXT";
 		case Result::errorInvalidShaderNV: return "errorInvalidShaderNV";
-		case Result::nvExtension1Error: return "nvExtension1Error";
 		default: return "<unknown>";
 	}
 }

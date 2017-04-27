@@ -12,7 +12,7 @@
 #include "structs.hpp"
 #include "functions.hpp"
 
-// The specification (vk.xml) itself is protected by the following license:
+// The specification (vk.xml) itself is published under the following license:
 
 // Copyright (c) 2015-2017 The Khronos Group Inc.
 // 
