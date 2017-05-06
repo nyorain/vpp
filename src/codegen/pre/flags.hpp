@@ -9,19 +9,17 @@
 #ifndef NYTL_INCLUDE_FLAGS
 #define NYTL_INCLUDE_FLAGS
 
-#include <type_traits>
+#include <type_traits> // std::underlaying_type_t
 
 namespace nytl {
 
-// forward declaration with default template parameter
 #ifndef NYTL_INCLUDE_FWD_FLAGS
 #define NYTL_INCLUDE_FWD_FLAGS
-	template<typename T, typename U = std::underlying_type_t<T>>
-	class Flags;
-#endif
+	template<typename T, typename U = std::underlying_type_t<T>> class Flags;
+#endif //header guard
 
 /// \brief Can be used to invert the given value on Flags construction
-/// Can be used like this: `nytl::Flags<Enum>(nytl::invsertFlags, Enum::value)`.
+/// Can be used like this: `nytl::Flags<Enum>(nytl::invertFlags, Enum::value)`.
 /// \module utility
 struct InvertFlags {};
 constexpr InvertFlags invertFlags {};
@@ -30,10 +28,10 @@ constexpr InvertFlags invertFlags {};
 /// \details Use the [NYTL_FLAG_OPS]() macro to define binary operations on the
 /// enumeration that result in a nytl::Flags object for it.
 /// \requires Each value in the enumerations should have exactly one bit set and
-/// all values should have different bits set to make them combineable.
+/// all values should have different bits set so they can be combined.
 /// \tparam T The enum type from which values should be combined.
-/// \tparam U The raw type to store the values in. By default the underlaying type of
-/// the enum as reported by std::underlaying_type<T>
+/// \tparam U The raw type to store the values in. By default the underlying type of
+/// the enum as reported by std::underlying_type<T>
 /// \module utility
 template<typename T, typename U>
 class Flags {
@@ -52,13 +50,11 @@ public:
 	constexpr Flags operator&(const Flags& r) const noexcept { return Flags(r) &= *this; }
 	constexpr Flags operator^(const Flags& r) const noexcept { return Flags(r) ^= *this; }
 
-	constexpr operator bool() const noexcept { return (value()); }
-	constexpr bool operator!() const noexcept { return !(value()); }
 	constexpr bool operator==(const Flags& rhs) const noexcept { return value_ == rhs.value(); }
 	constexpr bool operator!=(const Flags& rhs) const noexcept { return value_ != rhs.value(); }
 
-	constexpr explicit operator U() const noexcept { return value_; }
 	constexpr const U& value() const noexcept { return value_; }
+	constexpr operator U() const noexcept { return value_; }
 
 protected:
 	U value_ {};
@@ -83,7 +79,7 @@ Flags<T> operator^(T bit, const Flags<T>& flags) noexcept
 /// Can be used like this: `enum class Enum {}; NYTL_FLAG_OPS(Enum)` which will
 /// make results like `Enum::value1 | Enum::value2` automatically result in a
 /// `nytl::Flags<Enum>` object holding the union of the given values.
-/// \note Inversion of flags or enum values will actually inverse the underlaying value.
+/// \note Inversion of flags or enum values will actually the underlaying value.
 /// Therefore equal comparisions with flags can be error prone and one should prefer to
 /// just check whether flags contain a specific value. The follwing static_assertion will fail:
 /// ```cpp

@@ -45,7 +45,7 @@ vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name)
 	// insert
 	{
 		std::lock_guard<std::shared_timed_mutex> lock(instanceMutex);
-        instanceProcs[instance].insert({name, addr}).first;
+        instanceProcs[instance].insert({name, addr});
 	}
 
 	return addr;
@@ -71,7 +71,7 @@ vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name)
 	// insert
 	{
 		std::lock_guard<std::shared_timed_mutex> lock(deviceMutex);
-        deviceProcs[device].insert({name, addr}).first;
+        deviceProcs[device].insert({name, addr});
 	}
 
 	return addr;
