@@ -21,22 +21,14 @@ public:
 	using AttachmentsInfo = nytl::Span<const ViewableImage::CreateInfo>;
 
 public:
-	/// Can be used to create required framebuffer attachments for a render pass.
-	/// The returned vecotr can be passed as the attachments vector of the CreateInfo
-	/// object that is given as create paramater.
-	/// \param size The size stored in the image create infos.
-	static std::vector<ViewableImage::CreateInfo>
-		parseRenderPass(const RenderPass& rp, const vk::Extent2D& size);
-
-public:
 	Framebuffer() = default;
 	Framebuffer(const Device&, vk::RenderPass, const vk::Extent2D& size,
 		const AttachmentsInfo& attachments, const ExtAttachments& externalAttachments = {});
 	Framebuffer(const Device&, const vk::Extent2D& size, vk::Framebuffer);
 	~Framebuffer();
 
-	Framebuffer(Framebuffer&& lhs) noexcept { swap(lhs); }
-	Framebuffer& operator=(Framebuffer lhs) noexcept { swap(lhs); return *this; }
+	Framebuffer(Framebuffer&& rhs) noexcept { swap(*this, rhs); }
+	Framebuffer& operator=(Framebuffer rhs) noexcept { swap(*this, rhs); return *this; }
 
 	void create(const Device&, const vk::Extent2D& size, const AttachmentsInfo& info);
 
@@ -48,7 +40,7 @@ public:
 	const std::vector<ViewableImage>& attachments() const { return attachments_; }
 	vk::Extent2D size() const;
 
-	void swap(Framebuffer& lhs) noexcept;
+	friend void swap(Framebuffer& a, Framebuffer& b) noexcept;
 
 protected:
 	std::vector<ViewableImage> attachments_;

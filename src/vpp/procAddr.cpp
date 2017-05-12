@@ -8,8 +8,11 @@
 #include <vpp/vk.hpp>
 
 #include <unordered_map>
+#include <string>
 #include <iostream>
 #include <shared_mutex>
+
+using namespace std::literals::string_literals;
 
 namespace vpp {
 namespace {
@@ -25,7 +28,7 @@ std::shared_timed_mutex deviceMutex;
 
 }
 
-vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name)
+vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name, bool except)
 {
 	// try to find it
 	{
@@ -38,7 +41,10 @@ vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name)
 	// load
     auto addr = vk::getInstanceProcAddr(instance, name);
 	if(!addr) {
-		VPP_DEBUG_WARN("vpp::vulkanProc: Failed to load instance proc ", name);
+		auto msg = "vpp::vulkanProc: Failed to load instance proc "s + name;
+		if(except) throw std::runtime_error(msg);
+
+		VPP_DEBUG_WARN(msg);
 		return nullptr;
 	}
 
@@ -51,7 +57,7 @@ vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name)
 	return addr;
 }
 
-vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name)
+vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name, bool except)
 {
 	// try to find it
 	{
@@ -64,7 +70,10 @@ vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name)
 	// load
     auto addr = vk::getDeviceProcAddr(device, name);
 	if(!addr) {
-		VPP_DEBUG_WARN("vpp::vulkanProc: Failed to load device proc ", name);
+		auto msg = "vpp::vulkanProc: Failed to load device proc "s + name;
+		if(except) throw std::runtime_error(msg);
+
+		VPP_DEBUG_WARN(msg);
 		return nullptr;
 	}
 

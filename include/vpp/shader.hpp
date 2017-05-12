@@ -24,8 +24,8 @@ public:
 	ShaderModule(const Device& dev, nytl::Span<const uint32_t> bytes);
 	~ShaderModule();
 
-	ShaderModule(ShaderModule&& lhs) noexcept { swap(lhs); }
-	ShaderModule& operator=(ShaderModule&& lhs) noexcept { swap(lhs); return *this; }
+	ShaderModule(ShaderModule&& rhs) noexcept { swap(*this, rhs); }
+	ShaderModule& operator=(ShaderModule&& rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 /// ShaderProgram with multiple stages for graphic pipelines.
@@ -51,8 +51,8 @@ public:
 	ShaderProgram(nytl::Span<const StageInfo> stages = {});
 	~ShaderProgram() = default;
 
-	ShaderProgram(const ShaderProgram& lhs) noexcept;
-	ShaderProgram& operator=(const ShaderProgram& lhs) noexcept;
+	ShaderProgram(const ShaderProgram& rhs) = default;
+	ShaderProgram& operator=(const ShaderProgram& rhs) = default;
 
 	/// Returns the given shader stage if there is any, nullptr otherwise.
 	/// If not null, the returned pointer is guaranteed to be valid until the object

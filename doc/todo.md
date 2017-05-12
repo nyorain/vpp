@@ -1,43 +1,26 @@
 Todo list vor vpp
 =================
 
-- make sure to add VKAPI_PTR to all callbacks
-	- REALLY needed on various platforms
+Points are only partly sorted by priority.
 
-- procAddr: give some way to throw when proc could not be loaded
-	- or check in all vpp code and not just expect them to be loaded!
-	- currently segmentation fault (with warning in debug mode)
-- codegen constexpr?
-- when mapping images in write/retrieve, first make sure they have the correct layout
-	- change it, return command work ptr if needed
-- which information should resources carry around, which not?
-- some general SwapChainRenderer improvements/reworking needed
-	- better renderer resetting (all command pools at once, just resize the frameRenderers vector)
-	- SwapchainRenderer::init: call record?
-		- if RendererImpl should call it in init, document it!
-- procAddr: test if local cache really faster than load it every time?
-- seperate interface/implementation for header-only interfaces
-	- see: bufferOps, Resource
-- pipeline init helper functions
-	- Pipeline class rework (?)
-- queue constness? (maybe make it related to any operations on the queue?)
-- pipeline rework
-	- see initializers concept...
-	- rather unintuitive at the moment to explicitly call record (?)
-- (further) clean up bufferOps.inl
-	- make it more explicit (make sure to only fill types if sure, see ShaderType::none handling)
-- textures (overthink viewable image + sampler)
-	- scope of vpp?
-- general initializer
-	- something about descriptors and descriptor pools
-	- think about buffer/image providers (better not)
-- display class for vkDisplayKHR extension
-	- scope of vpp?
-	- must wait until supported somewhere, for tests
+- testing!
 - think about swapchain out of date handling (swapchain/swapchainRenderer)
 	- recreate swapchain automatically? how to handle it?
 	- further swapchain improvements: see acquire/present todos
 		- give appliction possibility to gracefully handle outOfDate errors
+	- some bad bugs at the moment in the combination of swapchainrenderer + swapchain
+- fix bufferOps!
+	- (further) clean up bufferOps.inl
+- procAddr: test if local cache really faster than load it every time?
+- when mapping images in write/retrieve, first make sure they have the correct layout
+	- change it, return command work ptr if needed
+- some general SwapChainRenderer improvements/reworking needed
+	- better renderer resetting (all command pools at once, just resize the frameRenderers vector)
+	- SwapchainRenderer::init: call record?
+		- if RendererImpl should call it in init, document it!
+	- the concept (kindof) is alright, maybe just add another (more low level) rendering-helper
+- cleanups/fixes to the 2-step init concept
+	- what about buffers/images?
 
 C++ 17:
 ------
@@ -55,9 +38,33 @@ C++ 17:
 - pmr for performance critical (every-frame) functions.
 
 
-low prio
---------
+low prio / general / ideas
+--------------------------
 
+- work dependencies
+	- make it possible (in some way) for work objects to depend on each other
+	- the work objects itself will figure out how to do it (e.g. by fence or
+		semaphore synchronization, or by simply waiting on the work before
+		submitting or in which step ever)
+- which information should resources carry around, which not?
+- seperate interface/implementation for header-only interfaces
+	- see: bufferOps, Resource
+	- make it more explicit (make sure to only fill types if sure, see ShaderType::none handling)
+	- __really?__ needs discussion
+- textures (overthink viewable image + sampler)
+	- scope of vpp?
+- general initializer
+	- something about descriptors and descriptor pools
+	- think about buffer/image providers (better not)
+- display class for vkDisplayKHR extension
+	- scope of vpp?
+	- must wait until supported somewhere, for tests
+- pipeline init helper functions (really useful/needed?)
+	- pipeline rework
+		- see initializers concept...
+		- rather unintuitive at the moment to explicitly call record (?)
+- queue constness? (maybe make it related to any operations on the queue?)
+- codegen constexpr?
 - write deviceLost handling code snippet example
 - shader stage construction in place?
 	- make it easier to create shader modules that are only once used directly inside
@@ -84,8 +91,7 @@ low prio
 		- make the constructor fully initialize it (like specified in init.hpp?)
 		- rework/rethink init.hpp specifications
 
-- copied from init.hpp:
-
+- idea moved from init.hpp:
 
 // TODO: asynchronous two step initialization concept
 // some operations do need more than 2 steps to be fully initialized.

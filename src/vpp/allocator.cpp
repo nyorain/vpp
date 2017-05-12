@@ -36,7 +36,7 @@ void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept
 {
 	using std::swap;
 
-	swap(a.resourceBase(), b.resourceBase());
+	swap(static_cast<Resource&>(a), static_cast<Resource&>(b));
 	swap(a.requirements_, b.requirements_);
 	swap(a.memories_, b.memories_);
 }

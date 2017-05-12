@@ -1,7 +1,7 @@
 #include "init.hpp"
 #include "test.hpp"
 
-TEST_METHOD("[memory-1]") {
+TEST(memory) {
 	auto size = 1024u;
 	vpp::DeviceMemory memory(*globals.device, size, vk::MemoryPropertyBits::hostVisible);
 
@@ -22,8 +22,8 @@ TEST_METHOD("[memory-1]") {
 	EXPECT(memory.totalFree(), size - allocSize);
 	EXPECT(memory.allocations().size(), 1u);
 
-	EXPECT_ERROR(memory.alloc(allocSize, 32, vpp::AllocationType::linear), std::runtime_error);
-	EXPECT_ERROR(memory.alloc(100, 1024, vpp::AllocationType::linear), std::runtime_error);
+	ERROR(memory.alloc(allocSize, 32, vpp::AllocationType::linear), std::runtime_error);
+	ERROR(memory.alloc(100, 1024, vpp::AllocationType::linear), std::runtime_error);
 	EXPECT(memory.allocatable(5, 512, vpp::AllocationType::optimal).size, 0u);
 	EXPECT(memory.allocatable(500, 0, vpp::AllocationType::optimal).size, 0u);
 

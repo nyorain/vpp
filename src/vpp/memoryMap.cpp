@@ -46,15 +46,16 @@ void MemoryMap::remap(const Allocation& allocation)
 	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
 }
 
-void MemoryMap::swap(MemoryMap& lhs) noexcept
+void swap(MemoryMap& a, MemoryMap& b) noexcept
 {
 	using std::swap;
+	using RR = ResourceReference<MemoryMap>;
 
-	swap(resourceBase(), lhs.resourceBase());
-	swap(memory_, lhs.memory_);
-	swap(allocation_, lhs.allocation_);
-	swap(ptr_, lhs.ptr_);
-	swap(views_, lhs.views_);
+	swap(static_cast<RR&>(a), static_cast<RR&>(b));
+	swap(a.memory_, b.memory_);
+	swap(a.allocation_, b.allocation_);
+	swap(a.ptr_, b.ptr_);
+	swap(a.views_, b.views_);
 }
 
 vk::MappedMemoryRange MemoryMap::mappedMemoryRange() const noexcept

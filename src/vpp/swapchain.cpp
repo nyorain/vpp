@@ -231,15 +231,17 @@ Swapchain::~Swapchain()
 	pfDestroySwapchainKHR(device(), vkHandle(), nullptr);
 }
 
-void Swapchain::swap(Swapchain& lhs) noexcept
+void swap(Swapchain& a, Swapchain& b) noexcept
 {
 	using std::swap;
-	swap(resourceBase(), lhs.resourceBase());
-	swap(surface_, lhs.surface_);
-	swap(buffers_, lhs.buffers_);
-	swap(width_, lhs.width_);
-	swap(height_, lhs.height_);
-	swap(format_, lhs.format_);
+	using RH = ResourceHandle<vk::SwapchainKHR>;
+
+	swap(static_cast<RH&>(a), static_cast<RH&>(b));
+	swap(a.surface_, b.surface_);
+	swap(a.buffers_, b.buffers_);
+	swap(a.width_, b.width_);
+	swap(a.height_, b.height_);
+	swap(a.format_, b.format_);
 }
 
 void Swapchain::createBuffers()

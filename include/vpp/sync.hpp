@@ -16,8 +16,8 @@ public:
 	Fence(const Device&, const vk::FenceCreateInfo&);
 	~Fence();
 
-	Fence(Fence&& lhs) noexcept { swap(lhs); }
-	Fence& operator=(Fence lhs) noexcept { swap(lhs); return *this; }
+	Fence(Fence&& rhs) noexcept { swap(*this, rhs); }
+	Fence& operator=(Fence rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 /// RAII semaphore wrapper
@@ -29,8 +29,8 @@ public:
 	Semaphore(const Device&, const vk::SemaphoreCreateInfo&);
 	~Semaphore();
 
-	Semaphore(Semaphore&& lhs) noexcept { swap(lhs); }
-	Semaphore& operator=(Semaphore lhs) noexcept { swap(lhs); return *this; }
+	Semaphore(Semaphore&& rhs) noexcept { swap(*this, rhs); }
+	Semaphore& operator=(Semaphore rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 /// RAII event wrapper
@@ -42,8 +42,8 @@ public:
 	Event(const Device&, const vk::EventCreateInfo&);
 	~Event();
 
-	Event(Event&& lhs) noexcept { swap(lhs); }
-	Event& operator=(Event lhs) noexcept { swap(lhs); return *this; }
+	Event(Event&& rhs) noexcept { swap(*this, rhs); }
+	Event& operator=(Event rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 } // namespace vpp

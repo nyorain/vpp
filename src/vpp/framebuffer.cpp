@@ -29,13 +29,15 @@ Framebuffer::~Framebuffer()
 	if(vkHandle()) vk::destroyFramebuffer(vkDevice(), vkHandle(), nullptr);
 }
 
-void Framebuffer::swap(Framebuffer& lhs) noexcept
+void swap(Framebuffer& a, Framebuffer& b) noexcept
 {
 	using std::swap;
-	swap(resourceBase(), lhs.resourceBase());
-	swap(attachments_, lhs.attachments_);
-	swap(width_, lhs.width_);
-	swap(height_, lhs.height_);
+	using RH = ResourceHandle<vk::Framebuffer>;
+
+	swap(static_cast<RH&>(a), static_cast<RH&>(b));
+	swap(a.attachments_, b.attachments_);
+	swap(a.width_, b.width_);
+	swap(a.height_, b.height_);
 }
 
 void Framebuffer::create(const Device& dev, const vk::Extent2D& size,
@@ -108,53 +110,6 @@ void Framebuffer::init(vk::RenderPass rp, const std::vector<vk::ImageViewCreateI
 vk::Extent2D Framebuffer::size() const
 {
 	return {width_, height_};
-}
-
-//static utility
-std::vector<ViewableImage::CreateInfo>
-Framebuffer::parseRenderPass(const RenderPass& rp, const vk::Extent2D& size)
-{
-	std::vector<ViewableImage::CreateInfo> ret;
-	ret.reserve(rp.attachments().size());
-
-	for(std::size_t i(0); i < rp.attachments().size(); ++i) {
-		ViewableImage::CreateInfo fbaInfo;
-		fbaInfo.imgInfo.format = rp.attachments()[i].format;
-		fbaInfo.imgInfo.extent = {size.width, size.height, 1};
-		fbaInfo.imgInfo.format = rp.attachments()[i].format;
-
-		vk::ImageUsageFlags usage {};
-		vk::ImageAspectFlags aspect {};
-
-		for(auto& sub : rp.subpasses()) {
-			if(sub.pDepthStencilAttachment && sub.pDepthStencilAttachment->attachment == i) {
-				usage |= vk::ImageUsageBits::depthStencilAttachment;
-				aspect |= vk::ImageAspectBits::depth | vk::ImageAspectBits::stencil;
-			}
-
-			using SpanAR = nytl::Span<const vk::AttachmentReference>;
-			for(auto& ref : SpanAR(*sub.pInputAttachments, sub.inputAttachmentCount)) {
-				if(ref.attachment == i) {
-					usage |= vk::ImageUsageBits::inputAttachment;
-					aspect |= vk::ImageAspectBits::depth;
-				}
-			}
-
-			for(auto& ref : SpanAR(*sub.pColorAttachments, sub.colorAttachmentCount)) {
-				if(ref.attachment == i) {
-					usage |= vk::ImageUsageBits::colorAttachment;
-					aspect |= vk::ImageAspectBits::color;
-				}
-			}
-		}
-
-		fbaInfo.imgInfo.usage = usage;
-		fbaInfo.viewInfo.vkHandle().subresourceRange.aspectMask = aspect;
-
-		ret.push_back(fbaInfo);
-	}
-
-	return ret;
 }
 
 } // namespace vpp

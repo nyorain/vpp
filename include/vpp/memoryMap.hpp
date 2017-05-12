@@ -47,7 +47,7 @@ public:
 	vk::MappedMemoryRange mappedMemoryRange() const noexcept;
 
 	const DeviceMemory& resourceRef() const noexcept { return *memory_; }
-	void swap(MemoryMap& lhs) noexcept;
+	friend void swap(MemoryMap& a, MemoryMap& b) noexcept;
 
 protected:
 	friend class MemoryMapView;
@@ -57,8 +57,8 @@ protected:
 	MemoryMap(const DeviceMemory& memory, const Allocation& alloc);
 	~MemoryMap();
 
-	MemoryMap(MemoryMap&& lhs) noexcept { swap(lhs); }
-	MemoryMap& operator=(MemoryMap lhs) noexcept { swap(lhs); return *this; }
+	MemoryMap(MemoryMap&& rhs) noexcept { swap(*this, rhs); }
+	MemoryMap& operator=(MemoryMap rhs) noexcept { swap(*this, rhs); return *this; }
 
 	void ref() noexcept;
 	void unref() noexcept;

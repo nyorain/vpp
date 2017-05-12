@@ -22,8 +22,8 @@ public:
 	Buffer(vk::Buffer buffer, MemoryEntry&& entry);
 	~Buffer();
 
-	Buffer(Buffer&& other) noexcept = default;
-	Buffer& operator=(Buffer&& other) noexcept = default;
+	Buffer(Buffer&& rhs) noexcept { swap(*this, rhs); }
+	auto& operator=(Buffer rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 } // namespace vpp

@@ -42,9 +42,6 @@ public:
 	vk::Device vkDevice() const noexcept { return device().vkDevice(); }
 	vk::PhysicalDevice vkPhysicalDevice() const noexcept { return device().vkPhysicalDevice(); }
 
-	Resource& resourceBase() noexcept { return *this; }
-	const Resource& resourceBase() const noexcept { return *this; }
-
 protected:
 	Resource() noexcept = default;
 	Resource(const Device& device) noexcept : device_(&device) {}
@@ -70,9 +67,6 @@ public:
 	vk::Instance vkInstance() const noexcept { return device().vkInstance(); }
 	vk::Device vkDevice() const noexcept { return device().vkDevice(); }
 	vk::PhysicalDevice vkPhysicalDevice() const noexcept { return device().vkPhysicalDevice(); }
-
-	Resource& resourceBase() noexcept { return *this; }
-	const Resource& resourceBase() const noexcept { return *this; }
 
 protected:
 	Resource() = default;
@@ -118,16 +112,12 @@ public:
 template <typename B>
 class ResourceReference {
 public:
-	const Device& device() const noexcept { return tSelf().resourceRef().device(); }
+	const Device& device() const noexcept
+		{ return reinterpret_cast<const B&>(*this).resourceRef().device(); }
 
 	vk::Instance vkInstance() const noexcept { return device().vkInstance(); }
 	vk::PhysicalDevice vkPhysicalDevice() const noexcept { return device().vkPhysicalDevice(); }
 	vk::Device vkDevice() const noexcept { return device().vkDevice(); }
-
-	ResourceReference& resourceBase() noexcept { return *this; }
-	const ResourceReference& resourceBase() const noexcept { return *this; }
-
-	const B& tSelf() const noexcept { return reinterpret_cast<const B&>(*this); }
 };
 
 /// Utility template base class that makes RAII wrappers easier.
@@ -150,17 +140,12 @@ protected:
 	ResourceHandle(ResourceHandle&& other) noexcept = delete;
 	ResourceHandle& operator=(ResourceHandle&& other) noexcept = delete;
 
-	ResourceHandle& resourceBase() noexcept { return *this; }
-	const ResourceHandle& resourceBase() const noexcept { return *this; }
-
-	void swap(ResourceHandle<Handle>& other) noexcept
+	friend void swap(ResourceHandle<Handle>& a, ResourceHandle<Handle>& b) noexcept
 	{
 		using std::swap;
-		swap(static_cast<Resource&>(*this), static_cast<Resource&>(other));
-		swap(handle_, other.handle_);
+		swap(static_cast<Resource&>(a), static_cast<Resource&>(b));
+		swap(a.handle_, b.handle_);
 	}
-
-	friend void swap(ResourceHandle& a, ResourceHandle& b) noexcept { return a.swap(b); }
 
 protected:
 	Handle handle_ {};
@@ -184,19 +169,13 @@ protected:
 	ResourceReferenceHandle(ResourceReferenceHandle&& other) noexcept = delete;
 	ResourceReferenceHandle& operator=(ResourceReferenceHandle&& other) noexcept = delete;
 
-	ResourceReferenceHandle& resourceBase() noexcept { return *this; }
-	const ResourceReferenceHandle& resourceBase() const noexcept { return *this; }
-
-	void swap(ResourceReferenceHandle<B, Handle>& other) noexcept
-	{
-		using std::swap;
-		swap(static_cast<ResourceReference<B>&>(*this), static_cast<ResourceReference<B>&>(other));
-		swap(handle_, other.handle_);
-	}
-
 	friend void swap(ResourceReferenceHandle& a, ResourceReferenceHandle& b) noexcept
 	{
-		return a.swap(b);
+		using std::swap;
+		using RR = ResourceReference<B>;
+
+		swap(static_cast<RR&>(a), static_cast<RR&>(b));
+		swap(a.handle_, b.handle_);
 	}
 
 protected:

@@ -10,35 +10,13 @@ namespace vpp {
 
 // RenderPass
 RenderPass::RenderPass(const Device& dev, const vk::RenderPassCreateInfo& info)
-	: RenderPass(dev, vk::createRenderPass(dev, info), info)
+	: RenderPass(dev, vk::createRenderPass(dev, info))
 {
 }
 
-RenderPass::RenderPass(const Device& dev, vk::RenderPass pass, const vk::RenderPassCreateInfo& info)
+RenderPass::RenderPass(const Device& dev, vk::RenderPass pass)
 	: ResourceHandle(dev, pass)
 {
-	attachments_.reserve(info.attachmentCount);
-	for(std::size_t i(0); i < info.attachmentCount; ++i)
-		attachments_.push_back(info.pAttachments[i]);
-
-	subpasses_.reserve(info.subpassCount);
-	for(std::size_t i(0); i < info.subpassCount; ++i) {
-		auto& sub = info.pSubpasses[i];
-		subpasses_.push_back(sub);
-
-		if(sub.pDepthStencilAttachment) references_.push_back(*sub.pDepthStencilAttachment);
-
-		using SpanAR = nytl::Span<const vk::AttachmentReference>;
-		for(auto& ref : SpanAR(*sub.pColorAttachments, sub.colorAttachmentCount))
-			references_.push_back(ref);
-
-		for(auto& ref : SpanAR(*sub.pInputAttachments, sub.inputAttachmentCount))
-			references_.push_back(ref);
-	}
-
-	dependencies_.reserve(info.dependencyCount);
-	for(std::size_t i(0); i < info.dependencyCount; ++i)
-		dependencies_.push_back(info.pDependencies[i]);
 }
 
 RenderPass::~RenderPass()

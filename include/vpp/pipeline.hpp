@@ -28,8 +28,8 @@ public:
 		nytl::Span<const vk::PushConstantRange> ranges);
 	~PipelineLayout();
 
-	PipelineLayout(PipelineLayout&& lhs) noexcept { swap(lhs); }
-	PipelineLayout& operator=(PipelineLayout&& lhs) noexcept { swap(lhs); return *this; }
+	PipelineLayout(PipelineLayout&& rhs) noexcept { swap(*this, rhs); }
+	auto& operator=(PipelineLayout&& rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 /// RAII vulkan pipeline cache wrapper.
@@ -50,8 +50,8 @@ public:
 	PipelineCache(const Device& dev, nytl::StringParam filename);
 	~PipelineCache();
 
-	PipelineCache(PipelineCache&& other) noexcept { swap(other); }
-	PipelineCache& operator=(PipelineCache other) noexcept { swap(other); return *this; }
+	PipelineCache(PipelineCache&& rhs) noexcept { swap(*this, rhs); }
+	auto& operator=(PipelineCache rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 /// Saves a pipeline cache to the given filename.
@@ -72,8 +72,8 @@ public:
 	Pipeline(const Device& dev, vk::Pipeline pipeline) : ResourceHandle(dev, pipeline) {}
 	~Pipeline();
 
-	Pipeline(Pipeline&& lhs) noexcept { swap(lhs); }
-	Pipeline& operator=(Pipeline&& lhs) noexcept { swap(lhs); return *this; }
+	Pipeline(Pipeline&& rhs) noexcept { swap(*this, rhs); }
+	auto& operator=(Pipeline&& rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 } // namespace vpp

@@ -104,9 +104,21 @@ public:
 	/// Tests all registered units.
 	static inline unsigned int run();
 
+	/// Tests the given function for exception E.
+	/// Returns true if E is thrown, or sets the given string
+	/// to a string representing the alternative exception, if any.
+	template<typename E, typename F>
+	static bool errorTest(const F& func, std::string& alternativeMsg);
+
+	/// Outputs a separation line.
+	static void separationLine();
+
 protected:
 	/// Returns a string for the given number of failed tests.
-	static std::string failString(unsigned int failCount);
+	static inline std::string failString(unsigned int failCount);
+
+	/// Prints the error for an unexpected exception
+	static inline void unexpectedException(const std::string& errorString);
 
 	static std::vector<Unit> units;
 	static unsigned int totalFailed;
@@ -115,7 +127,7 @@ protected:
 	static std::stringstream errout;
 };
 
-}
+} // namespace test
 
 /// Declares a new testing unit. After this macro the function body should follow like this:
 /// ``` TEST(SampleTest) { EXPECT(1 + 1, 2); } ```
@@ -135,15 +147,9 @@ protected:
 /// Expects the given expression to throw an error of the given type when
 /// evaluated.
 #define ERROR(expr, error) { \
-	bool TEST_thrown {}; \
-	const char* TEST_other {}; \
-	std::string TEST_otherString {}; \
-	try{ expr; } \
-	catch(const error&) { TEST_thrown = true; } \
-	catch(const std::exception& err) { TEST_other = (TEST_otherString = err.what()).c_str(); } \
-	catch(...) { TEST_other = "<Not a std::exception>"; }\
-	if(!TEST_thrown) \
-			test::Testing::checkErrorFailed({__LINE__, __FILE__}, #error, TEST_other); \
+	std::string TEST_altMsg {}; \
+	if(!test::Testing::errorTest<error>([&]{ expr; }, TEST_altMsg)) \
+			test::Testing::errorFailed({__LINE__, __FILE__}, #error, TEST_altMsg.c_str()); \
 	}
 
 // Implementation
@@ -162,35 +168,34 @@ const char* Testing::currentTest {};
 std::ostream* Testing::output = &std::cout;
 std::stringstream Testing::errout {};
 
+void Testing::separationLine()
+{
+	errout << indentation;
+	for(auto i = 0u; i < separationWidth; ++i) errout << failSeparator;
+	errout << "\n";
+}
+
 template<typename V, typename E>
 void Testing::expectFailed(const FailInfo& info, const V& value, const E& expected)
 {
-	if(currentFailed != 0 ) {
-		errout << indentation;
-		for(auto i = 0u; i < separationWidth; ++i) errout << failSeparator;
-		errout << "\n";
-	} else {
-		errout << "\n";
-	}
+	if(currentFailed == 0) separationLine();
 
+	// error
 	errout << indentation << "Check expect failed in test " << currentTest << "\n"
 		   << indentation << info.file << ":" << info.line << "\n"
 		   << indentation << "Expected " << printable(expected)
 		   << ", got " << printable(value) << "\n";
 
+	separationLine();
 	++currentFailed;
 }
 
 void Testing::errorFailed(const FailInfo& info, const char* error, const char* other)
 {
-	if(currentFailed != 0 ) {
-		errout << indentation;
-		for(auto i = 0u; i < separationWidth; ++i) errout << failSeparator;
-		errout << "\n";
-	} else {
-		errout << "\n";
-	}
+	// topline
+	if(currentFailed == 0) separationLine();
 
+	// error
 	errout << indentation << "Check error failed in test " << currentTest << "\n"
 		   << indentation << info.file << ":" << info.line << "\n"
 		   << indentation << "Expected Error " << error << ", ";
@@ -198,7 +203,35 @@ void Testing::errorFailed(const FailInfo& info, const char* error, const char* o
 	if(other) errout << "other error was thrown instead: " << other << "\n";
  	else errout << ", no error was thrown\n";
 
+	separationLine();
 	++currentFailed;
+}
+
+template<typename E, typename F>
+bool Testing::errorTest(const F& func, std::string& msg)
+{
+	if constexpr(std::is_same<E, std::exception>::value) {
+		try{
+			func();
+		} catch(const E&) {
+			return true;
+		} catch(...) {
+			msg = "<Not a std::exception>";
+		}
+	} else {
+		try{
+			func();
+		} catch(const E&) {
+			return true;
+		} catch(const std::exception& err) {
+			msg = "std::exception: ";
+			msg += err.what();
+		} catch(...) {
+			msg = "<Not a std::exception>";
+		}
+	}
+
+	return false;
 }
 
 int Testing::add(const Unit& unit)
@@ -214,30 +247,52 @@ unsigned int Testing::run()
 		currentFailed = 0;
 
 		currentTest = unit.name.c_str();
-		unit.func();
+		auto thrown = false;
+
+		try {
+			unit.func();
+		} catch(const std::exception& exception) {
+			thrown = true;
+			unexpectedException(std::string("std::exception::what(): ") + exception.what());
+		} catch(...) {
+			thrown = true;
+			unexpectedException("<Not a std::exception object>");
+		}
 
 		auto fstr = failString(currentFailed);
-		auto alls = currentFailed == 0;
+		if(thrown) fstr += ", unexpected exception thrown!";
 
-		*output << unit.name << ": " << fstr;
-		if(!alls) *output << errout.str() << "\n";
+		auto errstr = errout.str();
+		*output << unit.name << ": " << fstr << "\n";
+		if(!errstr.empty()) *output << errstr << "\n";
 
 		totalFailed += currentFailed;
 	}
 
-	*output << "Total" << ": " << failString(totalFailed);
+	*output << "Total" << ": " << failString(totalFailed) << "\n";
 	return totalFailed;
 }
 
 std::string Testing::failString(unsigned int failCount)
 {
 	if(failCount == 0) {
-		return "All tests succeeded!\n";
+		return "All tests succeeded!";
 	} else if(failCount == 1) {
-		return "1 test failed!\n";
+		return "1 test failed!";
 	} else {
-		return std::to_string(failCount) + " tests failed!\n";
+		return std::to_string(failCount) + " tests failed!";
 	}
+}
+
+void Testing::unexpectedException(const std::string& errorString)
+{
+	if(currentFailed == 0) separationLine();
+
+	errout << indentation << "Unexpected error in test " << currentTest << ":\n"
+		   << indentation << errorString << "\n";
+
+	separationLine();
+	++currentFailed;
 }
 
 }

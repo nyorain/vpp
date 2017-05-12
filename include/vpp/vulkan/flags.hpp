@@ -50,11 +50,11 @@ public:
 	constexpr Flags operator&(const Flags& r) const noexcept { return Flags(r) &= *this; }
 	constexpr Flags operator^(const Flags& r) const noexcept { return Flags(r) ^= *this; }
 
-	constexpr operator U() const noexcept { return value_; }
 	constexpr bool operator==(const Flags& rhs) const noexcept { return value_ == rhs.value(); }
 	constexpr bool operator!=(const Flags& rhs) const noexcept { return value_ != rhs.value(); }
 
 	constexpr const U& value() const noexcept { return value_; }
+	constexpr operator U() const noexcept { return value_; }
 
 protected:
 	U value_ {};

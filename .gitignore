@@ -3,3 +3,4 @@ build/
 .build-tools.cson
 .vscode
 *.swp
+.tags*

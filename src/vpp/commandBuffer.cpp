@@ -24,12 +24,14 @@ CommandPool::~CommandPool()
 	if(vkHandle()) vk::destroyCommandPool(vkDevice(), vkHandle(), nullptr);
 }
 
-void CommandPool::swap(CommandPool& lhs) noexcept
+void swap(CommandPool& a, CommandPool& b) noexcept
 {
 	using std::swap;
-	swap(resourceBase(), lhs.resourceBase());
-	swap(flags_, lhs.flags_);
-	swap(qFamily_, lhs.qFamily_);
+	using RH = ResourceHandle<vk::CommandPool>;
+
+	swap(static_cast<RH&>(a), static_cast<RH&>(b));
+	swap(a.flags_, b.flags_);
+	swap(a.qFamily_, b.qFamily_);
 }
 
 std::vector<CommandBuffer> CommandPool::allocate(size_t count, vk::CommandBufferLevel lvl)
@@ -76,11 +78,13 @@ CommandBuffer::~CommandBuffer()
 		vk::freeCommandBuffers(vkDevice(), commandPool(), {vkHandle()});
 }
 
-void CommandBuffer::swap(CommandBuffer& lhs) noexcept
+void swap(CommandBuffer& a, CommandBuffer& b) noexcept
 {
 	using std::swap;
-	swap(resourceBase(), lhs.resourceBase());
-	swap(commandPool_, lhs.commandPool_);
+	using RRH = ResourceReferenceHandle<CommandBuffer, vk::CommandBuffer>;
+
+	swap(static_cast<RRH&>(a), static_cast<RRH&>(b));
+	swap(a.commandPool_, b.commandPool_);
 }
 
 // CommandProvider

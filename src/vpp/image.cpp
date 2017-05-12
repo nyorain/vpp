@@ -336,12 +336,14 @@ ViewableImage::~ViewableImage()
 	if(vkImageView()) vk::destroyImageView(vkDevice(), vkImageView(), nullptr);
 }
 
-void ViewableImage::swap(ViewableImage& lhs) noexcept
+void swap(ViewableImage& a, ViewableImage& b) noexcept
 {
 	using std::swap;
-	swap(resourceBase(), lhs.resourceBase());
-	swap(image_, lhs.image_);
-	swap(imageView_, lhs.imageView_);
+	using RR = ResourceReference<ViewableImage>;
+
+	swap(static_cast<RR&>(a), static_cast<RR&>(b));
+	swap(a.image_, b.image_);
+	swap(a.imageView_, b.imageView_);
 }
 
 void ViewableImage::create(const Device& dev, const vk::ImageCreateInfo& info,

@@ -24,8 +24,8 @@ public:
 		nytl::Span<const vk::DescriptorSetLayoutBinding> bindings);
 	~DescriptorSetLayout();
 
-	DescriptorSetLayout(DescriptorSetLayout&& lhs) noexcept { swap(lhs); }
-	DescriptorSetLayout& operator=(DescriptorSetLayout lhs) noexcept { swap(lhs); return *this; }
+	DescriptorSetLayout(DescriptorSetLayout&& rhs) noexcept { swap(*this, rhs); }
+	auto& operator=(DescriptorSetLayout rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 // TODO: store a reference to pool/layout instead of the device pointer for additional information.
@@ -45,8 +45,8 @@ public:
 	DescriptorSet(const Device&, vk::DescriptorSet);
 	~DescriptorSet();
 
-	DescriptorSet(DescriptorSet&& lhs) noexcept { swap(lhs); }
-	DescriptorSet& operator=(DescriptorSet lhs) noexcept { swap(lhs); return *this; }
+	DescriptorSet(DescriptorSet&& rhs) noexcept { swap(*this, rhs); }
+	auto& operator=(DescriptorSet rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 /// RAII vulkan descriptor pool wrapper.
@@ -56,8 +56,8 @@ public:
 	DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info);
 	~DescriptorPool();
 
-	DescriptorPool(DescriptorPool&& lhs) noexcept { swap(lhs); }
-	DescriptorPool& operator=(DescriptorPool lhs) noexcept { swap(lhs); return *this; }
+	DescriptorPool(DescriptorPool&& rhs) noexcept { swap(*this, rhs); }
+	auto& operator=(DescriptorPool rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 // TODO: rename to DescriptorUpdate? easier and better

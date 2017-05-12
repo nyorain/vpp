@@ -34,7 +34,7 @@ public:
 	uint32_t queueFamily() const { return qFamily_; }
 	vk::CommandPoolCreateFlags flags() const { return flags_; }
 
-	void swap(CommandPool& lhs) noexcept;
+	friend void swap(CommandPool& a, CommandPool& b) noexcept;
 
 protected:
 	vk::CommandPoolCreateFlags flags_ {};
@@ -50,13 +50,13 @@ public:
 	CommandBuffer(vk::CommandBuffer buffer, const CommandPool& pool);
 	~CommandBuffer();
 
-	CommandBuffer(CommandBuffer&& lhs) noexcept { swap(lhs); }
-	CommandBuffer& operator=(CommandBuffer lhs) noexcept { swap(lhs); return *this; }
+	CommandBuffer(CommandBuffer&& lhs) noexcept { swap(*this, lhs); }
+	CommandBuffer& operator=(CommandBuffer lhs) noexcept { swap(*this, lhs); return *this; }
 
 	const CommandPool& commandPool() const { return *commandPool_; }
 	const CommandPool& resourceRef() const { return *commandPool_; }
 
-	void swap(CommandBuffer& lhs) noexcept;
+	friend void swap(CommandBuffer& a, CommandBuffer& b) noexcept;
 
 protected:
 	const CommandPool* commandPool_ {};

@@ -28,8 +28,8 @@ public:
 	Image(vk::Image, MemoryEntry&&);
 	~Image();
 
-	Image(Image&& other) noexcept = default;
-	Image& operator=(Image&& other) noexcept = default;
+	Image(Image&& rhs) noexcept { swap(*this, rhs); }
+	auto& operator=(Image rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 /// Returns the size of the given format in bits.
@@ -144,8 +144,8 @@ public:
 	ImageView(const Device& dev, vk::ImageView imageView);
 	~ImageView();
 
-	ImageView(ImageView&& lhs) noexcept { swap(lhs); }
-	ImageView& operator=(ImageView lhs) noexcept { swap(lhs); return *this; }
+	ImageView(ImageView&& lhs) noexcept { swap(*this, lhs); }
+	ImageView& operator=(ImageView lhs) noexcept { swap(*this, lhs); return *this; }
 };
 
 /// Combines a vulkan image and an imageView for it.
@@ -172,8 +172,8 @@ public:
 	ViewableImage(const Device& dev, const CreateInfo& info);
 	~ViewableImage();
 
-	ViewableImage(ViewableImage&& lhs) noexcept { swap(lhs); }
-	ViewableImage& operator=(ViewableImage lhs) noexcept { swap(lhs); return *this; }
+	ViewableImage(ViewableImage&& rhs) noexcept { swap(*this, rhs); }
+	ViewableImage& operator=(ViewableImage rhs) noexcept { swap(*this, rhs); return *this; }
 
 	void create(const Device&, const vk::ImageCreateInfo&, unsigned int memoryTypeBits = ~0u);
 	void init(const vk::ImageViewCreateInfo& info);
@@ -183,7 +183,7 @@ public:
 	vk::Image vkImage() const { return image(); }
 
 	const Image& resourceRef() const { return image_; }
-	void swap(ViewableImage& lhs) noexcept;
+	friend void swap(ViewableImage& a, ViewableImage& b) noexcept;
 
 protected:
 	Image image_;
@@ -198,8 +198,8 @@ public:
 	Sampler(const Device& dev, vk::Sampler sampler);
 	~Sampler();
 
-	Sampler(Sampler&& lhs) noexcept { swap(lhs); }
-	Sampler& operator=(Sampler lhs) noexcept { swap(lhs); return *this; }
+	Sampler(Sampler&& rhs) noexcept { swap(*this, rhs); }
+	Sampler& operator=(Sampler rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 } // namespace vpp

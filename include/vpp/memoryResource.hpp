@@ -41,13 +41,14 @@ public:
 	std::size_t memorySize() const { return memoryEntry().size(); }
 	const MemoryEntry& resourceRef() const { return memoryEntry(); }
 
-	void swap(MemoryResource& lhs) noexcept;
+	template<typename R>
+	friend void swap(MemoryResource<R>& a, MemoryResource<R>& b) noexcept;
 
 protected:
 	using ResourceReferenceHandle<MemoryResource<H>, H>::ResourceReferenceHandle;
+
 	MemoryResource() = default;
-	MemoryResource(MemoryResource&& lhs) noexcept { swap(lhs); }
-	MemoryResource& operator=(MemoryResource lhs) noexcept { swap(lhs); return *this; }
+	~MemoryResource() = default;
 
 	// needed for default move operators
 	friend class Buffer;
@@ -66,11 +67,13 @@ MemoryMapView MemoryResource<R>::memoryMap() const
 }
 
 template<typename R>
-void MemoryResource<R>::swap(MemoryResource& lhs) noexcept
+void swap(MemoryResource<R>& a, MemoryResource<R>& b) noexcept
 {
 	using std::swap;
-	swap(this->resourceBase(), lhs.resourceBase());
-	swap(memoryEntry_, lhs.memoryEntry_);
+	using RRH = ResourceReferenceHandle<MemoryResource<R>, R>;
+
+	swap(static_cast<RRH&>(a), static_cast<RRH&>(b));
+	swap(a.memoryEntry_, b.memoryEntry_);
 }
 
 } // namespace vpp

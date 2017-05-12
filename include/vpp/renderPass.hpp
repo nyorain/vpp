@@ -18,22 +18,11 @@ class RenderPass : public ResourceHandle<vk::RenderPass> {
 public:
 	RenderPass() = default;
 	RenderPass(const Device& dev, const vk::RenderPassCreateInfo& info);
-	RenderPass(const Device& dev, vk::RenderPass pass, const vk::RenderPassCreateInfo& info);
+	RenderPass(const Device& dev, vk::RenderPass pass);
 	~RenderPass();
 
-	RenderPass(RenderPass&& lhs) noexcept { swap(lhs); }
-	RenderPass& operator=(RenderPass&& lhs) noexcept { swap(lhs); return *this; }
-
-	const std::vector<vk::AttachmentDescription>& attachments() const { return attachments_; }
-	const std::vector<vk::SubpassDependency>& dependencies() const { return dependencies_; }
-	const std::vector<vk::SubpassDescription>& subpasses() const { return subpasses_; }
-	const std::vector<vk::AttachmentReference>& references() const { return references_; }
-
-protected:
-	std::vector<vk::AttachmentDescription> attachments_;
-	std::vector<vk::SubpassDescription> subpasses_;
-	std::vector<vk::SubpassDependency> dependencies_;
-	std::vector<vk::AttachmentReference> references_;
+	RenderPass(RenderPass&& rhs) noexcept { swap(*this, rhs); }
+	RenderPass& operator=(RenderPass&& rhs) noexcept { swap(*this, rhs); return *this; }
 };
 
 /// Vulkan RenderPass Instance, i.e. a commandbuffer recording session during a render pass.

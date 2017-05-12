@@ -128,8 +128,8 @@ public:
 	SwapchainRenderer(const Swapchain& swapChain, const CreateInfo& info, RenderImpl builder);
 	~SwapchainRenderer();
 
-	SwapchainRenderer(SwapchainRenderer&& lhs) noexcept { swap(lhs); }
-	SwapchainRenderer& operator=(SwapchainRenderer lhs) noexcept { swap(lhs); return *this; }
+	SwapchainRenderer(SwapchainRenderer&& lhs) noexcept { swap(*this, lhs); }
+	SwapchainRenderer& operator=(SwapchainRenderer lhs) noexcept { swap(*this, lhs); return *this; }
 
 	/// Creates all static attachments and all framebuffers.
 	void create(const Swapchain& swapChain, const CreateInfo& info);
@@ -176,7 +176,7 @@ public:
 	const std::vector<AttachmentInfo>& attachmentInfos() const { return info_.attachments; }
 
 	const Swapchain& resourceRef() const { return *swapChain_; }
-	void swap(SwapchainRenderer& lhs) noexcept;
+	friend void swap(SwapchainRenderer& a, SwapchainRenderer& b) noexcept;
 
 protected:
 	const Swapchain* swapChain_ = nullptr;
