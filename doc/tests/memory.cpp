@@ -52,3 +52,25 @@ TEST(memory) {
 	EXPECT(memory.totalFree(), size);
 	EXPECT(memory.allocations().empty(), true);
 }
+
+TEST(map) {
+	auto size = 1024u;
+	vpp::DeviceMemory memory(*globals.device, size, vk::MemoryPropertyBits::hostVisible);
+	EXPECT(memory.mappable(), true);
+	auto map = memory.map({0u, 1024u});
+	EXPECT(map.offset(), 0u);
+	EXPECT(map.size(), 1024u);
+	EXPECT(&map.memory(), &memory);
+	EXPECT(map.ptr() != nullptr, true);
+
+	// this will have no effect, just return another view
+	auto map2 = memory.map({0, 256});
+	EXPECT(map2.offset(), 0u);
+	EXPECT(map2.size(), 256u);
+	EXPECT(map2.ptr(), map.ptr());
+	EXPECT(map2.memoryMap().valid(), true);
+
+	// just another view
+	auto map3 = memory.map({256, 256});
+	EXPECT(map3.ptr(), map.ptr() + 256);
+}

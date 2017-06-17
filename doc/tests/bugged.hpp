@@ -155,12 +155,8 @@ protected:
 	static void TEST_##name##_U()
 
 /// Expects the two given values to be equal.
-#define EXPECT(expr, expected) { \
-	auto&& TEST_exprValue = expr; \
-	auto&& TEST_expectedValue = expected; \
-	if(TEST_exprValue != TEST_expectedValue) \
-		bugged::Testing::expectFailed({__LINE__, __FILE__}, TEST_exprValue, TEST_expectedValue); \
-	}
+#define EXPECT(expr, expected) \
+	{ bugged::checkExpect({__LINE__, __FILE__}, expr, expected); }
 
 /// Expects the given expression to throw an error of the given type when
 /// evaluated.
@@ -185,6 +181,15 @@ unsigned int Testing::currentFailed {};
 const char* Testing::currentTest {};
 std::ostream* Testing::output = &std::cout;
 std::stringstream Testing::errout {};
+
+// Utility method used by EXPECT to assure the given expressions are evaluated
+// exactly once
+template<typename V, typename E>
+void checkExpect(const Testing::FailInfo& info, const V& value, const E& expected)
+{
+	if(value != expected)
+		Testing::expectFailed(info, value, expected);
+}
 
 void Testing::separationLine()
 {
