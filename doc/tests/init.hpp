@@ -3,6 +3,7 @@
 #include <vpp/device.hpp>
 #include <vpp/instance.hpp>
 #include <vpp/debug.hpp>
+#include <memory>
 
 struct Globals {
 	vpp::Instance instance;

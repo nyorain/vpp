@@ -73,8 +73,7 @@ public:
 		const vk::Extent2D& size) const override;
 };
 
-// TODO: valid usage checking for acquire commands. Handle acquire:out_of_date
-
+// TODO: valid usage checking for acquire commands. Handle acquire:out_of_date?
 /// Represents Vulkan swap chain and associated images/framebuffers.
 class Swapchain : public ResourceHandle<vk::SwapchainKHR> {
 public:
@@ -119,7 +118,7 @@ public:
 	/// Acquires the next swapchain image (i.e. the next render buffer).
 	/// \param sem Semaphore to be signaled when acquiring is complete or nullHandle.
 	/// \param fence Fence to be signaled when acquiring is complete or nullHandle.
-	/// \param id The id of the newly acquired image.
+	/// \param id Will be set to the id of the newly acquired image.
 	/// \return The result returned by vkAcquireImageKHR. The caller has to handle
 	/// results like outOfDate or suboptimal and can decide if to recreate (resize()) the
 	/// swapChain. There will not be any check performed on the result.

@@ -348,7 +348,7 @@ void Swapchain::resize(const vk::Extent2D& size, const SwapchainSettings& settin
 
 vk::Result Swapchain::acquire(unsigned int& id, vk::Semaphore sem, vk::Fence fence) const
 {
-	// TODO: handle out of date, correct sync, timeout...
+	// TODO: handle out of date, correct sync, timeout... (?)
 	VPP_LOAD_PROC(vkDevice(), AcquireNextImageKHR);
 
 	std::uint32_t id32;

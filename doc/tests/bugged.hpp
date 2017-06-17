@@ -1,7 +1,31 @@
-// Copyright (c) 2017 nyorain
-// Distributed under the Boost Software License, Version 1.0.
-// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+// This is free and unencumbered software released into the public domain.
+//
+// Anyone is free to copy, modify, publish, use, compile, sell, or
+// distribute this software, either in source code form or as a compiled
+// binary, for any purpose, commercial or non-commercial, and by any
+// means.
+//
+// In jurisdictions that recognize copyright laws, the author or authors
+// of this software dedicate any and all copyright interest in the
+// software to the public domain. We make this dedication for the benefit
+// of the public at large and to the detriment of our heirs and
+// successors. We intend this dedication to be an overt act of
+// relinquishment in perpetuity of all present and future rights to this
+// software under copyright law.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+// IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+// OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+// OTHER DEALINGS IN THE SOFTWARE.
+//
+// For more information, please refer to <http://unlicense.org>
 
+// Written by nyorain.
+// For issues and (appreciated) help, see https://github.com/nyorain/bugged.
+// For more information and usage, see example.cpp or README.md
 // Extremely lightweight header-only unit testing for C++.
 // Use the TEST(name), EXPECT(expression, expected) and ERROR(expression, error) macros.
 // Configuration useful for inline testing (define before including the file):
@@ -10,15 +34,14 @@
 
 #pragma once
 
-#include <string>
-#include <cstring>
-#include <typeinfo>
-#include <vector>
-#include <iostream>
-#include <cmath>
-#include <sstream>
+#include <string> // std::string
+#include <typeinfo> // std::type_traits
+#include <vector> // std::vector
+#include <iostream> // std::cout
+#include <sstream> // std::stringstream
+#include <exception> // std::exception
 
-namespace test {
+namespace bugged {
 
 // Utility
 namespace {
@@ -44,13 +67,14 @@ struct Printable {
 /// Default printable specialization for types that can itself
 template<typename T>
 struct Printable<T, void_t<decltype(std::declval<std::ostream&>() << std::declval<T>())>> {
-	static const auto& call(const T& obj) { return obj; }
+	static const T& call(const T& obj) { return obj; }
 };
 
 /// Uses the Printable template to retrieve something printable to an ostream
 /// from the given object.
 template<typename T>
-decltype(auto) printable(const T& obj) { return Printable<T>::call(obj); }
+auto printable(const T& obj) -> decltype(Printable<T>::call(obj))
+	{ return Printable<T>::call(obj); }
 
 /// Static class that holds all test to be run.
 class Testing {
@@ -104,12 +128,6 @@ public:
 	/// Tests all registered units.
 	static inline unsigned int run();
 
-	/// Tests the given function for exception E.
-	/// Returns true if E is thrown, or sets the given string
-	/// to a string representing the alternative exception, if any.
-	template<typename E, typename F>
-	static bool errorTest(const F& func, std::string& alternativeMsg);
-
 	/// Outputs a separation line.
 	static void separationLine();
 
@@ -133,7 +151,7 @@ protected:
 /// ``` TEST(SampleTest) { EXPECT(1 + 1, 2); } ```
 #define TEST(name) \
 	static void TEST_##name##_U(); \
-	namespace { static auto TEST_##name = test::Testing::add({#name, TEST_##name##_U}); } \
+	namespace { static auto TEST_##name = bugged::Testing::add({#name, TEST_##name##_U}); } \
 	static void TEST_##name##_U()
 
 /// Expects the two given values to be equal.
@@ -141,21 +159,21 @@ protected:
 	auto&& TEST_exprValue = expr; \
 	auto&& TEST_expectedValue = expected; \
 	if(TEST_exprValue != TEST_expectedValue) \
-		test::Testing::expectFailed({__LINE__, __FILE__}, TEST_exprValue, TEST_expectedValue); \
+		bugged::Testing::expectFailed({__LINE__, __FILE__}, TEST_exprValue, TEST_expectedValue); \
 	}
 
 /// Expects the given expression to throw an error of the given type when
 /// evaluated.
 #define ERROR(expr, error) { \
 	std::string TEST_altMsg {}; \
-	if(!test::Testing::errorTest<error>([&]{ expr; }, TEST_altMsg)) \
-			test::Testing::errorFailed({__LINE__, __FILE__}, #error, TEST_altMsg.c_str()); \
+	if(!bugged::detail::ErrorTest<error>::call([&]{ expr; }, TEST_altMsg)) \
+			bugged::Testing::errorFailed({__LINE__, __FILE__}, #error, TEST_altMsg.c_str()); \
 	}
 
 // Implementation
 #ifndef TEST_NO_IMPL
 
-namespace test {
+namespace bugged {
 
 unsigned int Testing::separationWidth = 50;
 char Testing::failSeparator = '-';
@@ -200,25 +218,24 @@ void Testing::errorFailed(const FailInfo& info, const char* error, const char* o
 		   << indentation << info.file << ":" << info.line << "\n"
 		   << indentation << "Expected Error " << error << ", ";
 
-	if(other) errout << "other error was thrown instead: " << other << "\n";
- 	else errout << ", no error was thrown\n";
+	if(other) {
+		errout << "other error was thrown instead: \n";
+		errout << indentation << indentation << other << "\n";
+	} else errout << ", no other error was thrown\n";
 
 	separationLine();
 	++currentFailed;
 }
 
-template<typename E, typename F>
-bool Testing::errorTest(const F& func, std::string& msg)
-{
-	if constexpr(std::is_same<E, std::exception>::value) {
-		try{
-			func();
-		} catch(const E&) {
-			return true;
-		} catch(...) {
-			msg = "<Not a std::exception>";
-		}
-	} else {
+namespace detail {
+
+/// Tries to catch an error of the given type in the given function.
+/// Specialization needed to surpress warnings when E == std::exception.
+template<typename E>
+struct ErrorTest {
+	template<typename F>
+	static bool call(const F& func, std::string& msg)
+	{
 		try{
 			func();
 		} catch(const E&) {
@@ -229,9 +246,26 @@ bool Testing::errorTest(const F& func, std::string& msg)
 		} catch(...) {
 			msg = "<Not a std::exception>";
 		}
+		return false;
 	}
+};
 
-	return false;
+template<>
+struct ErrorTest<std::exception> {
+	template<typename F>
+	static bool call(const F& func, std::string& msg)
+	{
+		try {
+			func();
+		} catch(const std::exception&) {
+			return true;
+		} catch(...) {
+			msg = "<Not a std::exception>";
+		}
+		return false;
+	}
+};
+
 }
 
 int Testing::add(const Unit& unit)
@@ -276,11 +310,11 @@ unsigned int Testing::run()
 std::string Testing::failString(unsigned int failCount)
 {
 	if(failCount == 0) {
-		return "All tests succeeded!";
+		return "All tests succeeded";
 	} else if(failCount == 1) {
-		return "1 test failed!";
+		return "1 test failed";
 	} else {
-		return std::to_string(failCount) + " tests failed!";
+		return std::to_string(failCount) + " tests failed";
 	}
 }
 
@@ -301,10 +335,5 @@ void Testing::unexpectedException(const std::string& errorString)
 
 // Main function
 #ifndef TEST_NO_MAIN
-
-int main()
-{
-	return test::Testing::run();
-}
-
+	int main() { return bugged::Testing::run(); }
 #endif // TEST_NO_MAIN

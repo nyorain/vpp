@@ -1,5 +1,5 @@
 #include "init.hpp"
-#include "test.hpp"
+#include "bugged.hpp"
 
 TEST(memory) {
 	auto size = 1024u;
