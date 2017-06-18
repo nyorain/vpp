@@ -72,4 +72,4 @@ template<typename T>
 class ThreadStorage;
 struct DynamicStorageBase;
 
-}
+} // namespace vpp

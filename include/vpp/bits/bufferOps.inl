@@ -4,6 +4,8 @@
 
 #pragma once
 
+// TODO: BufferApplier::size should probably rather return a value than calling operate.
+
 namespace detail {
 
 /// Rounds up the given align to a multiple of 16 if the layout is std140
@@ -29,10 +31,12 @@ template<typename T, typename M> constexpr TypeDummy<M> memPtr(M T::*);
 template<typename VT, ShaderType V = VT::type>
 struct BufferApplier;
 
-/// Checks that the given BufferApplier specialization has the size function available.
-template<typename T>
-struct HasSizeFunction;
+/// - Utility expressions to check -
+/// Expression that checks if T has a static size(O&) function.
+template<typename T, typename O> using HasSizeFunction =
+	decltype(T::size(std::declval<O&>()));
 
+/// - Utility shortcut functions -
 /// Utility function using the different BufferApplier specializations.
 /// Prefer to use this function instead of directly calling the BufferApplier Structure.
 template<typename O, typename T, typename VT = VulkanType<T>>
@@ -42,7 +46,8 @@ void bufferApply(O& op, T&& obj) { BufferApplier<VT>::call(op, obj); }
 template<typename VT, typename O>
 constexpr void bufferSize(O& op)
 {
-	static_assert(HasSizeFunction<BufferApplier<VT>>::value, "Type is not static sized");
+	static_assert(nytl::validExpression<HasSizeFunction, BufferApplier<VT>, O>,
+		"Type is not static sized");
 	BufferApplier<VT>::size(op);
 }
 
@@ -55,6 +60,7 @@ unsigned int bufferAlign(bool std140) { return BufferApplier<VT>::template align
 template<typename VT, typename Seq = std::make_index_sequence<
 	std::tuple_size<decltype(VT::members)>::value>> struct MembersOp;
 
+/// Implements the BufferOperator dispatching for members of a structure type.
 template<typename VT, std::size_t... I>
 struct MembersOp<VT, std::index_sequence<I...>> {
 	static constexpr decltype(VT::members) members = VT::members;
@@ -69,11 +75,13 @@ struct MembersOp<VT, std::index_sequence<I...>> {
 	}
 
 	// applySize - utility for size
-	template<typename MP, typename O> constexpr static void applySize(const MP& memptr, O& op)
+	template<typename MP, typename O>
+	constexpr static void applySize(const MP& memptr, O& op)
 		{ bufferSize<VulkanType<typename decltype(memPtr(memptr))::type>>(op); }
 
 	// applyAlign - utility for align
-	template<typename MP> constexpr static unsigned int applyAlign(const MP& memptr, bool std140)
+	template<typename MP>
+	constexpr static unsigned int applyAlign(const MP& memptr, bool std140)
 	{
 		using V = typename decltype(memPtr(memptr))::type;
 		return bufferAlign<VulkanType<V>, V>(std140);
@@ -127,7 +135,7 @@ struct BufferApplier<VT, ShaderType::scalar> {
 	}
 };
 
-/// BufferApplier specialization for vec
+/// BufferApplier specialization for vector types.
 template<typename VT>
 struct BufferApplier<VT, ShaderType::vec> {
 	template<typename T, typename O>
@@ -153,6 +161,7 @@ struct BufferApplier<VT, ShaderType::vec> {
 	}
 };
 
+// TODO: is this really a good idea this way? double dispatching...
 /// BufferApplier Specialization for custom shader types.
 template<typename VT>
 struct BufferApplier<VT, ShaderType::custom> {
@@ -165,7 +174,10 @@ struct BufferApplier<VT, ShaderType::custom> {
 };
 
 /// Specialization for raw buffers.
-/// Does not implement BufferApplier::size since it depends on the given object.
+/// Buffers are generally dynamic sized and therefore this specialization does
+/// not implement the size function.
+/// Note that this simply implements 0 as alignment requirement since alignment
+/// must also be manually managed for the buffer type.
 template<typename VT>
 struct BufferApplier<VT, ShaderType::buffer> {
 	template<typename O, typename T,
@@ -177,6 +189,7 @@ struct BufferApplier<VT, ShaderType::buffer> {
 };
 
 /// BufferApplier Specialization for matrix types.
+/// Probably the most complex specialization in regard of specified rules.
 template<typename VT>
 struct BufferApplier<VT, ShaderType::mat> {
 	static constexpr auto major = VT::major;
@@ -184,6 +197,12 @@ struct BufferApplier<VT, ShaderType::mat> {
 	static constexpr auto transpose = VT::transpose;
 	static constexpr auto csize = 4 + VT::size64 * 4;
 
+	/// Minor value for alignment-related uses.
+	static constexpr auto minorAlign = minor == 3 ? 4 : minor;
+
+	/// If this static assert fails, the VulkanType specialization for your type specified
+	/// invalid dimensions. Glsl (and this implementation) does only allow
+	/// matrices with dimensions 2x2 to 4x4
 	static_assert(major > 1 && minor > 1 && major < 5 && minor < 5, "Invalid matrix dimensions!");
 
 	template<typename O, typename T>
@@ -193,23 +212,26 @@ struct BufferApplier<VT, ShaderType::mat> {
 		static_assert(std::is_same<Value, float>::value || std::is_same<Value, double>::value,
 			"Only floating point matrix types are supported!");
 
-		auto sa = roundAlign(minor * csize, op.std140());
+		auto sa = roundAlign(minorAlign * csize, op.std140());
 		op.align(sa);
 
-		// raw write sometimes possible
-		if(minor != 3 && sizeof(obj) == major * minor * csize && !transpose) {
-			op.operate(&obj, sizeof(obj));
-		} else if(!transpose) {
-			for(auto mj = 0u; mj < major; ++mj)
-			{
+		// TODO: raw write sometimes possible?
+		// current if condition probably not correct for std140 and mat2f (stride!)
+		// if(minor != 3 && sizeof(obj) == major * minor * csize && !transpose) {
+		// 	op.operate(&obj, sizeof(obj));
+		// }
+
+		if(!transpose) {
+			for(auto mj = 0u; mj < major; ++mj) {
 				op.align(sa);
-				for(auto mn = 0u; mn < minor; ++mn) op.operate(&obj[mj][mn], csize);
+				for(auto mn = 0u; mn < minor; ++mn)
+					op.operate(&obj[mj][mn], csize);
 			}
 		} else {
-			for(auto mn = 0u; mn < minor; ++mn)
-			{
+			for(auto mn = 0u; mn < minor; ++mn) {
 				op.align(sa);
-				for(auto mj = 0u; mj < major; ++mj) op.operate(&obj[mj][mn], csize);
+				for(auto mj = 0u; mj < major; ++mj)
+					op.operate(&obj[mj][mn], csize);
 			}
 		}
 
@@ -220,20 +242,22 @@ struct BufferApplier<VT, ShaderType::mat> {
 	template<typename O>
 	static constexpr void size(O& op)
 	{
-		auto sa = roundAlign(minor * csize, op.std140());
+		auto sa = roundAlign(minorAlign * csize, op.std140());
 		op.align(sa);
-		op.operate(nullptr, major * roundAlign(minor * csize, op.std140()));
+		op.operate(nullptr, major * sa);
 		op.nextOffsetAlign(sa);
 	}
 
 	template<typename T>
 	constexpr static unsigned int align(bool std140)
 	{
-		return detail::roundAlign(minor * csize, std140);
+		return roundAlign(minorAlign * csize, std140);
 	}
 };
 
 /// BufferApplier specialization for structures.
+/// Uses the MemrsOp specialization to simply forward operations to all
+/// members of the structure.
 template<typename VT>
 struct BufferApplier<VT, ShaderType::structure> {
 	template<typename O, typename T>
@@ -256,6 +280,8 @@ struct BufferApplier<VT, ShaderType::structure> {
 };
 
 /// BufferApplier container/general specialization.
+/// Will try to iterate over a given object and simply apply
+/// all iterated values to the buffer, aligning it as array.
 template<typename VT>
 struct BufferApplier<VT, ShaderType::none> {
 
@@ -267,7 +293,7 @@ struct BufferApplier<VT, ShaderType::none> {
 	static void call(O& op, T&& obj)
 	{
 		auto sa = bufferAlign<VulkanType<B>, B>(op.std140());
-		auto rounded = roudnAlign(sa, op.std140());
+		auto rounded = roundAlign(sa, op.std140());
 		op.align(rounded);
 
 		for(auto& a : obj) {
@@ -285,17 +311,6 @@ struct BufferApplier<VT, ShaderType::none> {
 	{
 		return roundAlign(bufferAlign<VulkanType<B>, B>(std140), std140);
 	}
-};
-
-template<typename T>
-struct HasSizeFunction {
-	template <typename C>
-	static char test(decltype(std::declval<C>().size(std::declval<BufferSizer&>()))*);
-
-    template <typename C>
-	static long test(...);
-
-    static constexpr auto value = (sizeof(test<T>(0)) == sizeof(char));
 };
 
 } //namespace detail
@@ -326,8 +341,8 @@ constexpr void BufferSizer::operate(const void*, std::size_t size)
 
 template<typename... T> WorkPtr read(const Buffer& buf, BufferLayout align, T&... args)
 {
-	///WorkImpl that will store references to the given args and write the buffer data into
-	///it once it was retrieved
+	/// WorkImpl that will store references to the given args and write the buffer data into
+	/// it once it was retrieved
 	struct WorkImpl : public Work<void> {
 		WorkImpl(const Buffer& buf, BufferLayout align, T&... args)
 			: buffer_(buf), retrieveWork_(retrieve(buf)), align_(align), args_(args...) {}
@@ -354,7 +369,7 @@ template<typename... T> WorkPtr read(const Buffer& buf, BufferLayout align, T&..
 
 			retrieveWork_->finish();
 			BufferReader reader(buffer_.device(), align_, retrieveWork_->data());
-			nytl::apply([&](auto&... args){ reader.add(args...); }, args_); //std::apply c++17
+			std::apply([&](auto&... args){ reader.add(args...); }, args_); //std::apply c++17
 			retrieveWork_.reset();
 		}
 

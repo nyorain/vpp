@@ -10,8 +10,8 @@ using RawBufferData = nytl::Span<const uint8_t>;
 /// \requires The given obj (or array of objects) must have pod type, otherwise
 /// they cannot be converted to raw memory.
 template<typename T,
-	typename = std::enable_if_t<!std::is_pointer<T>::value>,
-	typename = std::enable_if_t<std::is_pod<T>::value>>
+	typename = std::enable_if_t<!std::is_pointer_v<T>>,
+	typename = std::enable_if_t<std::is_pod_v<T>>>
 constexpr RawBufferData raw(const T& obj, std::size_t count = 1)
 {
 	auto ptr = reinterpret_cast<const uint8_t*>(&obj);
@@ -20,13 +20,13 @@ constexpr RawBufferData raw(const T& obj, std::size_t count = 1)
 
 /// Converts a given container of pod values into a raw data buffer.
 template<typename C,
-	typename = decltype(std::declval<C>().data()),
+	typename D = decltype(*std::declval<C>().data()),
 	typename = decltype(std::declval<C>().size()),
-	typename = std::enable_if_t<std::is_pod<decltype(*std::declval<C>().data())>::value>>
+	typename = std::enable_if_t<std::is_pod_v<std::remove_reference_t<D>>>>
 constexpr RawBufferData raw(const C& container)
 {
 	auto ptr = reinterpret_cast<const uint8_t*>(container.data());
-	return {ptr, container.size() * sizeof(decltype(*container.data()))};
+	return {ptr, container.size() * sizeof(std::remove_reference_t<D>)};
 }
 
 /// The VulkanType template can be specialized for custom types to make vpp::BufferUpdate
@@ -87,7 +87,7 @@ struct VulkanTypeStruct {
 	static constexpr auto type = ShaderType::structure;
 	static constexpr auto align = Align; // defines whether it should be aligned like a structure
 
-	// The static constexpr "members" tuple must be custom specified.
+	// NOTE: The static constexpr "members" tuple must be custom specified.
 	// The tuple will determine which members will be written/read in which order to/from the device
 	// static constexpr auto members = std::make_tuple(&Type::member1, &Type::member2, ...);
 };
