@@ -12,7 +12,7 @@ namespace detail {
 /// Otherwise just returns the given align value.
 constexpr unsigned int roundAlign(unsigned int align, bool std140)
 {
-	return std140 ? std::ceil(align / 16.f) * 16.f : align;
+	return std140 ? vpp::align(align, 16) : align;
 }
 
 /// Utility to get the member type of a pointer to member object (Used with decltype).

@@ -19,6 +19,9 @@ struct Allocation {
 
 /// Aligns an offset to the given alignment
 template<typename A, typename B> constexpr auto align(A offset, B alignment)
-	{ return std::ceil(offset / double(alignment)) * alignment; }
+{
+	auto rest = offset % alignment;
+	return rest ? offset + (alignment - rest) : offset;
+}
 
 } // namespace vpp
