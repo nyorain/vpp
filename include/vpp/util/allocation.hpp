@@ -17,9 +17,14 @@ struct Allocation {
 	std::size_t end() const { return offset + size; }
 };
 
-/// Aligns an offset to the given alignment
+/// Aligns an offset to the given alignment.
+/// An alignment of 0 zero will not change the offset.
+/// An offset of 0 is treated as aligned with every possible alignment.
 template<typename A, typename B> constexpr auto align(A offset, B alignment)
 {
+	if(offset == 0 || alignment == 0)
+		return offset;
+
 	auto rest = offset % alignment;
 	return rest ? offset + (alignment - rest) : offset;
 }

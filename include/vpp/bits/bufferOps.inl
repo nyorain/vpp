@@ -316,14 +316,14 @@ struct BufferApplier<VT, ShaderType::none> {
 } //namespace detail
 
 template<typename B> template<typename T>
-void BufferOperator<B>::addSingle(const T& obj)
+void BufferOperator<B>::addSingle(T&& obj)
 {
 	auto& bself = *static_cast<B*>(this);
 	detail::bufferApply(bself, obj);
 }
 
 template<typename B> template<typename... T>
-void BufferOperator<B>::add(const T&... objs)
+void BufferOperator<B>::add(T&&... objs)
 {
 	(addSingle(objs), ...);
 }

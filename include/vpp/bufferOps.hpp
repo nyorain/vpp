@@ -53,11 +53,11 @@ public:
 	/// an object which will wrap it into a temporary RawBuffer object that can also be operated
 	/// on without any alignment or offsets.
 	template<typename T>
-	void addSingle(const T& obj);
+	void addSingle(T&& obj);
 
 	/// Utility function that calls addSingle for all ob the given objects.
 	template<typename... T>
-	void add(const T&... obj);
+	void add(T&&... obj);
 
 	/// Returns the current offset on the buffer.
 	constexpr std::size_t offset() const noexcept { return offset_; }
