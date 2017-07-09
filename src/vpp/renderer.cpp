@@ -245,7 +245,7 @@ std::unique_ptr<Work<void>> SwapchainRenderer::render(const Queue& present, cons
 			try {
 				finish();
 			} catch(const std::exception& err) {
-				warn("vpp::SwapchainRenderer::render: Work::finish: ", err.what());
+				vpp_warn("::SwapchainRenderer::render"_src, "Work::finish: {}", err.what());
 			}
 		}
 

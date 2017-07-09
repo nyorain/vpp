@@ -351,7 +351,7 @@ template<typename... T> WorkPtr read(const Buffer& buf, BufferLayout align, T&..
 			try {
 				finish();
 			} catch(const std::exception& err) {
-				vpp::warn("vpp::read(Buffer)::~WorkImpl: finish: ", err.what());
+				vpp_warn("::read(Buffer)::~WorkImpl"_src, "finish: ", err.what());
 			}
 		}
 

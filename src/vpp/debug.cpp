@@ -5,6 +5,7 @@
 #include <vpp/debug.hpp>
 #include <vpp/procAddr.hpp>
 #include <vpp/vk.hpp>
+#include <vpp/util/log.hpp>
 
 #include <iostream> // std::cerr
 #include <sstream> // std::stringstream
@@ -120,7 +121,13 @@ bool DebugCallback::call(const CallbackInfo& info) const noexcept
 		<< "code: " << info.messageCode << "\n\t"
 		<< "layer: " << info.layer << "\n";
 
-	std::cerr << message.str();
+	dlg::SourceGuard sourceGuard("DebugCallback"_module);
+	if(info.flags & vk::DebugReportBitsEXT::error) vpp_error(message.str());
+	else if(info.flags & vk::DebugReportBitsEXT::warning) vpp_warn(message.str());
+	else if(info.flags & vk::DebugReportBitsEXT::information) vpp_info(message.str());
+	else if(info.flags & vk::DebugReportBitsEXT::performanceWarning) vpp_info(message.str());
+	else if(info.flags & vk::DebugReportBitsEXT::debug) vpp_debug(message.str());
+
 	return info.flags == vk::DebugReportBitsEXT::error;
 }
 

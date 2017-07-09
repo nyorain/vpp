@@ -26,10 +26,15 @@ set(vpp-sources
 	transfer.cpp
 	work.cpp
 	queue.cpp
-	util/file.cpp)
+	util/file.cpp
+	util/log.cpp)
 
 #library
 add_library(vpp SHARED ${vpp-sources})
+
+if(Depend)
+	add_dependencies(vpp dlg_ep)
+endif()
 
 if(Codegen)
 	add_dependencies(vpp vkHeaders)

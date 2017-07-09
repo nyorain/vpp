@@ -5,7 +5,7 @@
 #include <vpp/transfer.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/util/debug.hpp>
+#include <vpp/util/log.hpp>
 #include <algorithm>
 
 namespace vpp {
@@ -25,9 +25,9 @@ TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t s
 
 TransferManager::TransferBuffer::~TransferBuffer()
 {
-	VPP_DEBUG_CHECK("vpp::~TransferBuffer", {
+	dlg_check("~TransferBuffer", {
 		auto rc = ranges_.size();
-		if(rc > 0) VPP_CHECK_WARN(rc, " allocations left");
+		if(rc > 0) vpp_warn("{} allocations left", rc);
 	})
 }
 

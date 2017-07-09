@@ -3,7 +3,7 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/bufferOps.hpp>
-#include <vpp/util/debug.hpp>
+#include <vpp/util/log.hpp>
 #include <vpp/transferWork.hpp>
 #include <vpp/transfer.hpp>
 #include <vpp/queue.hpp>
@@ -17,8 +17,8 @@ namespace vpp {
 
 DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize size)
 {
-	VPP_DEBUG_CHECK("vpp::retrive(buffer)", {
-		if(!buf.memoryEntry().allocated()) VPP_CHECK_THROW("buffer has no memory");
+	dlg_check("retrive(buffer)", {
+		if(!buf.memoryEntry().allocated()) vpp_error("buffer has no memory");
 	});
 
 	if(size == vk::wholeSize) size = buf.memoryEntry().size() - offset;
@@ -84,7 +84,7 @@ BufferUpdate::~BufferUpdate()
 		try {
 			apply()->finish();
 		} catch(const std::exception& error) {
-			warn("vpp::~BufferUpdate: apply()->finish(): ", error.what());
+			vpp_warn("~BufferUpdate"_scope, "apply()->finish(): {}", error.what());
 		}
 	}
 }
@@ -119,8 +119,8 @@ void BufferUpdate::align(size_t align, bool update)
 
 void BufferUpdate::operate(const void* ptr, std::size_t size)
 {
-	VPP_DEBUG_CHECK("vpp::BufferUpdate::operate", {
-		if(!ptr) VPP_CHECK_THROW("invalid data ptr");
+	dlg_check("BufferUpdate::operate", {
+		if(!ptr) vpp_error("invalid data ptr");
 	});
 
 	std::memcpy(&data(), ptr, size);
@@ -132,8 +132,8 @@ void BufferUpdate::operate(const void* ptr, std::size_t size)
 
 void BufferUpdate::checkCopies()
 {
-	VPP_DEBUG_CHECK("vpp::BufferUpdate::checkCopies", {
-		if(offset_ > buffer().memorySize()) VPP_CHECK_THROW("Buffer write overflow");
+	dlg_check("BufferUpdate::checkCopies", {
+		if(offset_ > buffer().memorySize()) vpp_error("Buffer write overflow");
 	});
 
 	while(direct_ && copies_.back().size > 65536) {
@@ -152,9 +152,9 @@ std::uint8_t& BufferUpdate::data()
 
 WorkPtr BufferUpdate::apply()
 {
-	VPP_DEBUG_CHECK("vpp::BufferUpdate::apply", {
-		if(!work_) VPP_CHECK_THROW("work is null, was already called");
-		if(offset_ == 0) VPP_CHECK_WARN("offset is 0, no update data");
+	dlg_check("BufferUpdate::apply", {
+		if(!work_) vpp_error("work is null, was already called");
+		if(offset_ == 0) vpp_warn("offset is 0, no update data");
 	})
 
 	if(!direct_ && !map_.coherent()) map_.flush();
@@ -228,8 +228,8 @@ BufferReader::BufferReader(const Device& dev, BufferLayout align,
 void BufferReader::operate(void* ptr, std::size_t size)
 {
 	offset_ = std::max(offset_, nextOffset_);
-	VPP_DEBUG_CHECK("vpp::BufferReader::operate", {
-		if(offset_ > data_.size()) VPP_CHECK_THROW("buffer read overflow");
+	dlg_check("BufferReader::operate", {
+		if(offset_ > data_.size()) vpp_error("buffer read overflow");
 	});
 
 	std::memcpy(ptr, &data_[offset_], size);

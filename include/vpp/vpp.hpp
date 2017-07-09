@@ -2,7 +2,7 @@
 
 #include <vpp/util/span.hpp>
 #include <vpp/util/stringParam.hpp>
-#include <vpp/util/debug.hpp>
+#include <vpp/util/log.hpp>
 #include <vpp/util/file.hpp>
 #include <vpp/util/allocation.hpp>
 

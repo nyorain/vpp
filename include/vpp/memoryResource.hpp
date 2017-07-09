@@ -7,7 +7,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/allocator.hpp>
-#include <vpp/util/debug.hpp>
+#include <vpp/util/log.hpp>
 
 namespace vpp {
 

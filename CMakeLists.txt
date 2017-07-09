@@ -8,6 +8,7 @@ set(vpatch 0)
 include(CMakeDependentOption)
 
 option(Debug "Compile in debug mode" on)
+option(Depend "Depend on needed libraries. Development option" on)
 
 option(Codegen "Regenerate c++ vulkan api" off)
 option(ApiVersion "C++ vulkan api version to generate [1-0-20|1-0-40|1-0-latest]" off)
@@ -60,13 +61,35 @@ if(Codegen)
 	add_subdirectory(src/codegen)
 endif()
 
+# dlg for logging
+include(ExternalProject)
+set(ExternalProjectCMakeArgs
+	-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/external/install
+	-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+	-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+	-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
+
+ExternalProject_Add(dlg_ep
+	PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dlg
+	GIT_REPOSITORY https://github.com/nyorain/dlg.git
+	GIT_TAG master
+	INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/external/install
+	CMAKE_ARGS ${ExternalProjectCMakeArgs})
+
+include_directories("${CMAKE_BINARY_DIR}/external/install/include")
+add_definitions(-DDLG_BASE_PATH="${CMAKE_SOURCE_DIR}")
+add_definitions(-DDLG_HEADER_ONLY=0)
+add_definitions(-DDLG_DEBUG=${Debug})
+
+# src/include
+add_subdirectory(include/vpp)
+add_subdirectory(src/vpp)
+
+
 if(Test)
 	enable_testing()
 	add_subdirectory(doc/tests)
 endif()
-
-add_subdirectory(include/vpp)
-add_subdirectory(src/vpp)
 
 #config file
 set(VPP_DEBUG ${Debug})
