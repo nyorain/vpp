@@ -109,17 +109,21 @@ DebugCallback::~DebugCallback()
 
 bool DebugCallback::call(const CallbackInfo& info) const noexcept
 {
+	static constexpr bool verbose = false;
 	// we use a stringstream here because the callback might be called from multiple threads
 	// and debug messages should not interfer with each other
 
 	std::stringstream message;
-	message << "vpp::DebugCallback: " << to_string(info.flags) << " callback: \n\t"
-		<< info.message << "\n\t"
-		<< "objType: " << to_string(info.objectType) << "\n\t"
-		<< "srcObject: " << info.srcObject << "\n\t"
-		<< "location: " << info.location << "\n\t"
-		<< "code: " << info.messageCode << "\n\t"
-		<< "layer: " << info.layer << "\n";
+	message << info.message;
+
+	if(verbose) {
+		message << "\n\tflags: " << to_string(info.flags) << "\n\t"
+			    << "objType: " << to_string(info.objectType) << "\n\t"
+			    << "srcObject: " << info.srcObject << "\n\t"
+			    << "location: " << info.location << "\n\t"
+			    << "code: " << info.messageCode << "\n\t"
+			    << "layer: " << info.layer;
+	}
 
 	dlg::SourceGuard sourceGuard("DebugCallback"_module);
 	if(info.flags & vk::DebugReportBitsEXT::error) vpp_error(message.str());

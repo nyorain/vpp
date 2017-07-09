@@ -77,7 +77,7 @@ ExternalProject_Add(dlg_ep
 	CMAKE_ARGS ${ExternalProjectCMakeArgs})
 
 include_directories("${CMAKE_BINARY_DIR}/external/install/include")
-add_definitions(-DDLG_BASE_PATH="${CMAKE_SOURCE_DIR}")
+add_definitions(-DDLG_BASE_PATH="${CMAKE_SOURCE_DIR}/")
 add_definitions(-DDLG_HEADER_ONLY=0)
 add_definitions(-DDLG_DEBUG=${Debug})
 
