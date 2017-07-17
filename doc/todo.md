@@ -44,6 +44,8 @@ C++ 17:
 low prio / general / ideas
 --------------------------
 
+- config: vpp_debug vs vpp_ndebug rather messy now
+	- configurable from build system?
 - work dependencies
 	- make it possible (in some way) for work objects to depend on each other
 	- the work objects itself will figure out how to do it (e.g. by fence or

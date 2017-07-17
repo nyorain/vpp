@@ -83,85 +83,7 @@ enum class StructureType : int32_t{
 	debugMarkerMarkerInfoEXT = 1000022002,
 	dedicatedAllocationImageCreateInfoNV = 1000026000,
 	dedicatedAllocationBufferCreateInfoNV = 1000026001,
-	dedicatedAllocationMemoryAllocateInfoNV = 1000026002,
-	renderPassMultiviewCreateInfoKHX = 1000053000,
-	physicalDeviceMultiviewFeaturesKHX = 1000053001,
-	physicalDeviceMultiviewPropertiesKHX = 1000053002,
-	externalMemoryImageCreateInfoNV = 1000056000,
-	exportMemoryAllocateInfoNV = 1000056001,
-	importMemoryWin32HandleInfoNV = 1000057000,
-	exportMemoryWin32HandleInfoNV = 1000057001,
-	win32KeyedMutexAcquireReleaseInfoNV = 1000058000,
-	physicalDeviceFeatures2KHR = 1000059000,
-	physicalDeviceProperties2KHR = 1000059001,
-	formatProperties2KHR = 1000059002,
-	imageFormatProperties2KHR = 1000059003,
-	physicalDeviceImageFormatInfo2KHR = 1000059004,
-	queueFamilyProperties2KHR = 1000059005,
-	physicalDeviceMemoryProperties2KHR = 1000059006,
-	sparseImageFormatProperties2KHR = 1000059007,
-	physicalDeviceSparseImageFormatInfo2KHR = 1000059008,
-	memoryAllocateFlagsInfoKHX = 1000060000,
-	bindBufferMemoryInfoKHX = 1000060001,
-	bindImageMemoryInfoKHX = 1000060002,
-	deviceGroupRenderPassBeginInfoKHX = 1000060003,
-	deviceGroupCommandBufferBeginInfoKHX = 1000060004,
-	deviceGroupSubmitInfoKHX = 1000060005,
-	deviceGroupBindSparseInfoKHX = 1000060006,
-	deviceGroupPresentCapabilitiesKHX = 1000060007,
-	imageSwapchainCreateInfoKHX = 1000060008,
-	bindImageMemorySwapchainInfoKHX = 1000060009,
-	acquireNextImageInfoKHX = 1000060010,
-	deviceGroupPresentInfoKHX = 1000060011,
-	deviceGroupSwapchainCreateInfoKHX = 1000060012,
-	validationFlagsEXT = 1000061000,
-	viSurfaceCreateInfoNN = 1000062000,
-	physicalDeviceGroupPropertiesKHX = 1000070000,
-	deviceGroupDeviceCreateInfoKHX = 1000070001,
-	physicalDeviceExternalImageFormatInfoKHX = 1000071000,
-	externalImageFormatPropertiesKHX = 1000071001,
-	physicalDeviceExternalBufferInfoKHX = 1000071002,
-	externalBufferPropertiesKHX = 1000071003,
-	physicalDeviceIDPropertiesKHX = 1000071004,
-	externalMemoryBufferCreateInfoKHX = 1000072000,
-	externalMemoryImageCreateInfoKHX = 1000072001,
-	exportMemoryAllocateInfoKHX = 1000072002,
-	importMemoryWin32HandleInfoKHX = 1000073000,
-	exportMemoryWin32HandleInfoKHX = 1000073001,
-	memoryWin32HandlePropertiesKHX = 1000073002,
-	importMemoryFdInfoKHX = 1000074000,
-	memoryFdPropertiesKHX = 1000074001,
-	win32KeyedMutexAcquireReleaseInfoKHX = 1000075000,
-	physicalDeviceExternalSemaphoreInfoKHX = 1000076000,
-	externalSemaphorePropertiesKHX = 1000076001,
-	exportSemaphoreCreateInfoKHX = 1000077000,
-	importSemaphoreWin32HandleInfoKHX = 1000078000,
-	exportSemaphoreWin32HandleInfoKHX = 1000078001,
-	d3d12FenceSubmitInfoKHX = 1000078002,
-	importSemaphoreFdInfoKHX = 1000079000,
-	physicalDevicePushDescriptorPropertiesKHR = 1000080000,
-	presentRegionsKHR = 1000084000,
-	descriptorUpdateTemplateCreateInfoKHR = 1000085000,
-	objectTableCreateInfoNVX = 1000086000,
-	indirectCommandsLayoutCreateInfoNVX = 1000086001,
-	cmdProcessCommandsInfoNVX = 1000086002,
-	cmdReserveSpaceForCommandsInfoNVX = 1000086003,
-	deviceGeneratedCommandsLimitsNVX = 1000086004,
-	deviceGeneratedCommandsFeaturesNVX = 1000086005,
-	pipelineViewportWScalingStateCreateInfoNV = 1000087000,
-	surfaceCapabilities2EXT = 1000090000,
-	displayPowerInfoEXT = 1000091000,
-	deviceEventInfoEXT = 1000091001,
-	displayEventInfoEXT = 1000091002,
-	swapchainCounterCreateInfoEXT = 1000091003,
-	presentTimesInfoGOOGLE = 1000092000,
-	physicalDeviceMultiviewPerViewAttributesPropertiesNVX = 1000097000,
-	pipelineViewportSwizzleStateCreateInfoNV = 1000098000,
-	physicalDeviceDiscardRectanglePropertiesEXT = 1000099000,
-	pipelineDiscardRectangleStateCreateInfoEXT = 1000099001,
-	hdrMetadataEXT = 1000105000,
-	iosSurfaceCreateInfoMVK = 1000122000,
-	macosSurfaceCreateInfoMVK = 1000123000
+	dedicatedAllocationMemoryAllocateInfoNV = 1000026002
 };
 
 enum class SystemAllocationScope : int32_t{
@@ -194,16 +116,13 @@ enum class Result : int32_t{
 	errorIncompatibleDriver = -9,
 	errorTooManyObjects = -10,
 	errorFormatNotSupported = -11,
-	errorFragmentedPool = -12,
 	errorSurfaceLostKHR = -1000000000,
 	errorNativeWindowInUseKHR = -1000000001,
 	suboptimalKHR = 1000001003,
 	errorOutOfDateKHR = -1000001004,
 	errorIncompatibleDisplayKHR = -1000003001,
 	errorValidationFailedEXT = -1000011001,
-	errorInvalidShaderNV = -1000012000,
-	errorOutOfPoolMemoryKHR = -1000069000,
-	errorInvalidExternalHandleKHX = -1000072003
+	errorInvalidShaderNV = -1000012000
 };
 
 enum class Format : int32_t{
@@ -391,15 +310,7 @@ enum class Format : int32_t{
 	astc12x10UnormBlock = 181,
 	astc12x10SrgbBlock = 182,
 	astc12x12UnormBlock = 183,
-	astc12x12SrgbBlock = 184,
-	pvrtc12bppUnormBlockIMG = 1000054000,
-	pvrtc14bppUnormBlockIMG = 1000054001,
-	pvrtc22bppUnormBlockIMG = 1000054002,
-	pvrtc24bppUnormBlockIMG = 1000054003,
-	pvrtc12bppSrgbBlockIMG = 1000054004,
-	pvrtc14bppSrgbBlockIMG = 1000054005,
-	pvrtc22bppSrgbBlockIMG = 1000054006,
-	pvrtc24bppSrgbBlockIMG = 1000054007
+	astc12x12SrgbBlock = 184
 };
 
 enum class FormatFeatureBits : int32_t{
@@ -416,9 +327,7 @@ enum class FormatFeatureBits : int32_t{
 	blitSrc = (1 << 10),
 	blitDst = (1 << 11),
 	sampledImageFilterLinear = (1 << 12),
-	sampledImageFilterCubicIMG = (1 << 13),
-	transferSrcKHR = (1 << 14),
-	transferDstKHR = (1 << 15)
+	sampledImageFilterCubicIMG = (1 << 13)
 };
 NYTL_FLAG_OPS(FormatFeatureBits)
 
@@ -450,9 +359,7 @@ enum class ImageCreateBits : int32_t{
 	sparseResidency = (1 << 1),
 	sparseAliased = (1 << 2),
 	mutableFormat = (1 << 3),
-	cubeCompatible = (1 << 4),
-	bindSfrKHX = (1 << 6),
-	e2dArrayCompatibleKHR = (1 << 5)
+	cubeCompatible = (1 << 4)
 };
 NYTL_FLAG_OPS(ImageCreateBits)
 
@@ -493,8 +400,7 @@ enum class MemoryPropertyBits : int32_t{
 NYTL_FLAG_OPS(MemoryPropertyBits)
 
 enum class MemoryHeapBits : int32_t{
-	deviceLocal = (1 << 0),
-	multiInstanceKHX = (1 << 1)
+	deviceLocal = (1 << 0)
 };
 NYTL_FLAG_OPS(MemoryHeapBits)
 
@@ -515,8 +421,7 @@ enum class PipelineStageBits : int32_t{
 	bottomOfPipe = (1 << 13),
 	host = (1 << 14),
 	allGraphics = (1 << 15),
-	allCommands = (1 << 16),
-	commandProcessNVX = (1 << 17)
+	allCommands = (1 << 16)
 };
 NYTL_FLAG_OPS(PipelineStageBits)
 
@@ -635,9 +540,7 @@ enum class ComponentSwizzle : int32_t{
 enum class PipelineCreateBits : int32_t{
 	disableOptimization = (1 << 0),
 	allowDerivatives = (1 << 1),
-	derivative = (1 << 2),
-	viewIndexFromDeviceIndexKHX = (1 << 3),
-	dispatchBaseKHX = 4
+	derivative = (1 << 2)
 };
 NYTL_FLAG_OPS(PipelineCreateBits)
 
@@ -779,9 +682,7 @@ enum class DynamicState : int32_t{
 	depthBounds = 5,
 	stencilCompareMask = 6,
 	stencilWriteMask = 7,
-	stencilReference = 8,
-	viewportWScalingNV = 1000087000,
-	discardRectangleEXT = 1000099000
+	stencilReference = 8
 };
 
 enum class Filter : int32_t{
@@ -811,11 +712,6 @@ enum class BorderColor : int32_t{
 	floatOpaqueWhite = 4,
 	intOpaqueWhite = 5
 };
-
-enum class DescriptorSetLayoutCreateBits : int32_t{
-	pushDescriptorKHR = (1 << 0)
-};
-NYTL_FLAG_OPS(DescriptorSetLayoutCreateBits)
 
 enum class DescriptorType : int32_t{
 	sampler = 0,
@@ -852,12 +748,6 @@ enum class AttachmentStoreOp : int32_t{
 	dontCare = 1
 };
 
-enum class SubpassDescriptionBits : int32_t{
-	perViewAttributesNVX = (1 << 0),
-	perViewPositionXOnlyNVX = (1 << 1)
-};
-NYTL_FLAG_OPS(SubpassDescriptionBits)
-
 enum class PipelineBindPoint : int32_t{
 	graphics = 0,
 	compute = 1
@@ -880,16 +770,12 @@ enum class AccessBits : int32_t{
 	hostRead = (1 << 13),
 	hostWrite = (1 << 14),
 	memoryRead = (1 << 15),
-	memoryWrite = (1 << 16),
-	commandProcessReadNVX = (1 << 17),
-	commandProcessWriteNVX = (1 << 18)
+	memoryWrite = (1 << 16)
 };
 NYTL_FLAG_OPS(AccessBits)
 
 enum class DependencyBits : int32_t{
-	byRegion = (1 << 0),
-	viewLocalKHX = (1 << 1),
-	deviceGroupKHX = (1 << 2)
+	byRegion = (1 << 0)
 };
 NYTL_FLAG_OPS(DependencyBits)
 
@@ -966,20 +852,7 @@ enum class CompositeAlphaBitsKHR : int32_t{
 NYTL_FLAG_OPS(CompositeAlphaBitsKHR)
 
 enum class ColorSpaceKHR : int32_t{
-	srgbNonlinear = 0,
-	displayP3Nonlinear = 1000104001,
-	extendedSrgbLinear = 1000104002,
-	dciP3Linear = 1000104003,
-	dciP3Nonlinear = 1000104004,
-	bt709Linear = 1000104005,
-	bt709Nonlinear = 1000104006,
-	bt2020Linear = 1000104007,
-	hdr10St2084 = 1000104008,
-	dolbyvision = 1000104009,
-	hdr10Hlg = 1000104010,
-	adobergbLinear = 1000104011,
-	adobergbNonlinear = 1000104012,
-	passThrough = 1000104013
+	srgbNonlinear = 0
 };
 
 enum class PresentModeKHR : int32_t{
@@ -988,12 +861,6 @@ enum class PresentModeKHR : int32_t{
 	fifo = 2,
 	fifoRelaxed = 3
 };
-
-
-enum class SwapchainCreateBitsKHR : int32_t{
-	bindSfr = (1 << 0)
-};
-NYTL_FLAG_OPS(SwapchainCreateBitsKHR)
 
 
 enum class DisplayPlaneAlphaBitsKHR : int32_t{
@@ -1034,12 +901,7 @@ enum class DebugReportObjectTypeEXT : int32_t{
 	commandPool = 25,
 	surfaceKHR = 26,
 	swapchainKHR = 27,
-	debugReport = 28,
-	displayKHR = 29,
-	displayModeKHR = 30,
-	objectTableNVX = 31,
-	indirectCommandsLayoutNVX = 32,
-	descriptorUpdateTemplateKHR = 1000085000
+	debugReport = 28
 };
 
 enum class DebugReportErrorEXT : int32_t{
@@ -1063,169 +925,12 @@ enum class RasterizationOrderAMD : int32_t{
 };
 
 
-enum class ExternalMemoryHandleTypeBitsNV : int32_t{
-	opaqueWin32 = (1 << 0),
-	opaqueWin32Kmt = (1 << 1),
-	d3d11Image = (1 << 2),
-	d3d11ImageKmt = (1 << 3)
-};
-NYTL_FLAG_OPS(ExternalMemoryHandleTypeBitsNV)
-
-enum class ExternalMemoryFeatureBitsNV : int32_t{
-	dedicatedOnly = (1 << 0),
-	exportable = (1 << 1),
-	importable = (1 << 2)
-};
-NYTL_FLAG_OPS(ExternalMemoryFeatureBitsNV)
-
-
-enum class PeerMemoryFeatureBitsKHX : int32_t{
-	copySrc = (1 << 0),
-	copyDst = (1 << 1),
-	genericSrc = (1 << 2),
-	genericDst = (1 << 3)
-};
-NYTL_FLAG_OPS(PeerMemoryFeatureBitsKHX)
-
-enum class MemoryAllocateBitsKHX : int32_t{
-	deviceMask = (1 << 0)
-};
-NYTL_FLAG_OPS(MemoryAllocateBitsKHX)
-
-enum class DeviceGroupPresentModeBitsKHX : int32_t{
-	local = (1 << 0),
-	remote = (1 << 1),
-	sum = (1 << 2),
-	localMultiDevice = (1 << 3)
-};
-NYTL_FLAG_OPS(DeviceGroupPresentModeBitsKHX)
-
-
-enum class ValidationCheckEXT : int32_t{
-	all = 0
-};
-
-
-enum class ExternalMemoryHandleTypeBitsKHX : int32_t{
-	opaqueFd = (1 << 0),
-	opaqueWin32 = (1 << 1),
-	opaqueWin32Kmt = (1 << 2),
-	d3d11Texture = (1 << 3),
-	d3d11TextureKmt = (1 << 4),
-	d3d12Heap = (1 << 5),
-	d3d12Resource = (1 << 6)
-};
-NYTL_FLAG_OPS(ExternalMemoryHandleTypeBitsKHX)
-
-enum class ExternalMemoryFeatureBitsKHX : int32_t{
-	dedicatedOnly = (1 << 0),
-	exportable = (1 << 1),
-	importable = (1 << 2)
-};
-NYTL_FLAG_OPS(ExternalMemoryFeatureBitsKHX)
-
-
-enum class ExternalSemaphoreHandleTypeBitsKHX : int32_t{
-	opaqueFd = (1 << 0),
-	opaqueWin32 = (1 << 1),
-	opaqueWin32Kmt = (1 << 2),
-	d3d12Fence = (1 << 3),
-	fenceFd = (1 << 4)
-};
-NYTL_FLAG_OPS(ExternalSemaphoreHandleTypeBitsKHX)
-
-enum class ExternalSemaphoreFeatureBitsKHX : int32_t{
-	exportable = (1 << 0),
-	importable = (1 << 1)
-};
-NYTL_FLAG_OPS(ExternalSemaphoreFeatureBitsKHX)
-
-
-enum class DescriptorUpdateTemplateTypeKHR : int32_t{
-	descriptorSet = 0,
-	pushDescriptors = 1
-};
-
-
-enum class IndirectCommandsLayoutUsageBitsNVX : int32_t{
-	unorderedSequences = (1 << 0),
-	sparseSequences = (1 << 1),
-	emptyExecutions = (1 << 2),
-	indexedSequences = (1 << 3)
-};
-NYTL_FLAG_OPS(IndirectCommandsLayoutUsageBitsNVX)
-
-enum class ObjectEntryUsageBitsNVX : int32_t{
-	graphics = (1 << 0),
-	compute = (1 << 1)
-};
-NYTL_FLAG_OPS(ObjectEntryUsageBitsNVX)
-
-enum class IndirectCommandsTokenTypeNVX : int32_t{
-	pipeline = 0,
-	descriptorSet = 1,
-	indexBuffer = 2,
-	vertexBuffer = 3,
-	pushConstant = 4,
-	drawIndexed = 5,
-	draw = 6,
-	dispatch = 7
-};
-
-enum class ObjectEntryTypeNVX : int32_t{
-	descriptorSet = 0,
-	pipeline = 1,
-	indexBuffer = 2,
-	vertexBuffer = 3,
-	pushConstant = 4
-};
-
-
-enum class SurfaceCounterBitsEXT : int32_t{
-	vblank = 0
-};
-NYTL_FLAG_OPS(SurfaceCounterBitsEXT)
-
-
-enum class DisplayPowerStateEXT : int32_t{
-	off = 0,
-	suspend = 1,
-	on = 2
-};
-
-enum class DeviceEventTypeEXT : int32_t{
-	displayHotplug = 0
-};
-
-enum class DisplayEventTypeEXT : int32_t{
-	firstPixelOut = 0
-};
-
-
-enum class ViewportCoordinateSwizzleNV : int32_t{
-	positiveX = 0,
-	negativeX = 1,
-	positiveY = 2,
-	negativeY = 3,
-	positiveZ = 4,
-	negativeZ = 5,
-	positiveW = 6,
-	negativeW = 7
-};
-
-
-enum class DiscardRectangleModeEXT : int32_t{
-	inclusive = 0,
-	exclusive = 1
-};
-
-
 
 } // namespace vk
 
 // The specification (vk.xml) itself is published under the following license:
 
-// Copyright (c) 2015-2017 The Khronos Group Inc.
+// Copyright (c) 2015-2016 The Khronos Group Inc.
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and/or associated documentation files (the
@@ -1254,5 +959,5 @@ enum class DiscardRectangleModeEXT : int32_t{
 // language incorporated into the Specification and reference pages, and other
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
-// maintained in the master branch of the Khronos Vulkan GitHub project.
+// maintained in the master branch of the Khronos Vulkan Github project.
     

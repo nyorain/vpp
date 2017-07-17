@@ -1,4 +1,5 @@
 build/
+subprojects/*/
 .clang_complete
 .build-tools.cson
 .vscode

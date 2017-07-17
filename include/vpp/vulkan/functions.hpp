@@ -16,7 +16,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-// static_assert(VK_HEADER_VERSION >=  48, "Vulkan and vpp header incompatibility");
+// static_assert(VK_HEADER_VERSION >=  20, "Vulkan and vpp header incompatibility");
 
 #define VEC_FUNC(T, CT, F, ...) \
 	std::vector<T> ret; \
@@ -186,7 +186,7 @@ inline void cmdDraw(CommandBuffer commandBuffer, uint32_t vertexCount, uint32_t 
 inline void cmdDrawIndexed(CommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance){ return vkCmdDrawIndexed((VkCommandBuffer)(commandBuffer), indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);}
 inline void cmdDrawIndirect(CommandBuffer commandBuffer, Buffer buffer, DeviceSize offset, uint32_t drawCount, uint32_t stride){ return vkCmdDrawIndirect((VkCommandBuffer)(commandBuffer), (VkBuffer)(buffer), offset, drawCount, stride);}
 inline void cmdDrawIndexedIndirect(CommandBuffer commandBuffer, Buffer buffer, DeviceSize offset, uint32_t drawCount, uint32_t stride){ return vkCmdDrawIndexedIndirect((VkCommandBuffer)(commandBuffer), (VkBuffer)(buffer), offset, drawCount, stride);}
-inline void cmdDispatch(CommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ){ return vkCmdDispatch((VkCommandBuffer)(commandBuffer), groupCountX, groupCountY, groupCountZ);}
+inline void cmdDispatch(CommandBuffer commandBuffer, uint32_t x, uint32_t y, uint32_t z){ return vkCmdDispatch((VkCommandBuffer)(commandBuffer), x, y, z);}
 inline void cmdDispatchIndirect(CommandBuffer commandBuffer, Buffer buffer, DeviceSize offset){ return vkCmdDispatchIndirect((VkCommandBuffer)(commandBuffer), (VkBuffer)(buffer), offset);}
 inline void cmdCopyBuffer(CommandBuffer commandBuffer, Buffer srcBuffer, Buffer dstBuffer, uint32_t regionCount, const BufferCopy& pRegions){ return vkCmdCopyBuffer((VkCommandBuffer)(commandBuffer), (VkBuffer)(srcBuffer), (VkBuffer)(dstBuffer), regionCount, (const VkBufferCopy*)(&pRegions));}
 inline void cmdCopyBuffer(CommandBuffer commandBuffer, Buffer srcBuffer, Buffer dstBuffer, nytl::Span<const BufferCopy> pRegions){ vkCmdCopyBuffer((VkCommandBuffer)(commandBuffer), (VkBuffer)(srcBuffer), (VkBuffer)(dstBuffer), pRegions.size(), (const VkBufferCopy*)(pRegions.data())) ;}
@@ -237,7 +237,7 @@ inline void cmdExecuteCommands(CommandBuffer commandBuffer, nytl::Span<const Com
 
 // The specification (vk.xml) itself is published under the following license:
 
-// Copyright (c) 2015-2017 The Khronos Group Inc.
+// Copyright (c) 2015-2016 The Khronos Group Inc.
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and/or associated documentation files (the
@@ -266,5 +266,5 @@ inline void cmdExecuteCommands(CommandBuffer commandBuffer, nytl::Span<const Com
 // language incorporated into the Specification and reference pages, and other
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
-// maintained in the master branch of the Khronos Vulkan GitHub project.
+// maintained in the master branch of the Khronos Vulkan Github project.
     

@@ -35,6 +35,9 @@ deps = [
 	dep_dlg,
 	dep_vulkan]
 
+vpp_inc = include_directories('include')
+vpp_inc_private = include_directories('src')
+
 # subdirs
 if codegen != 'none'
 		subdir('src/codegen')

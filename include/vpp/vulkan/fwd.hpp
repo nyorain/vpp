@@ -107,13 +107,11 @@ enum class Filter : int32_t;
 enum class SamplerMipmapMode : int32_t;
 enum class SamplerAddressMode : int32_t;
 enum class BorderColor : int32_t;
-enum class DescriptorSetLayoutCreateBits : int32_t;
 enum class DescriptorType : int32_t;
 enum class DescriptorPoolCreateBits : int32_t;
 enum class AttachmentDescriptionBits : int32_t;
 enum class AttachmentLoadOp : int32_t;
 enum class AttachmentStoreOp : int32_t;
-enum class SubpassDescriptionBits : int32_t;
 enum class PipelineBindPoint : int32_t;
 enum class AccessBits : int32_t;
 enum class DependencyBits : int32_t;
@@ -170,13 +168,13 @@ using PipelineDynamicStateCreateFlags = nytl::Flags<DummyEnum>;
 using PipelineLayoutCreateFlags = nytl::Flags<DummyEnum>;
 using ShaderStageFlags = nytl::Flags<ShaderStageBits>;
 using SamplerCreateFlags = nytl::Flags<DummyEnum>;
-using DescriptorSetLayoutCreateFlags = nytl::Flags<DescriptorSetLayoutCreateBits>;
+using DescriptorSetLayoutCreateFlags = nytl::Flags<DummyEnum>;
 using DescriptorPoolCreateFlags = nytl::Flags<DescriptorPoolCreateBits>;
 using DescriptorPoolResetFlags = nytl::Flags<DummyEnum>;
 using FramebufferCreateFlags = nytl::Flags<DummyEnum>;
 using RenderPassCreateFlags = nytl::Flags<DummyEnum>;
 using AttachmentDescriptionFlags = nytl::Flags<AttachmentDescriptionBits>;
-using SubpassDescriptionFlags = nytl::Flags<SubpassDescriptionBits>;
+using SubpassDescriptionFlags = nytl::Flags<DummyEnum>;
 using AccessFlags = nytl::Flags<AccessBits>;
 using DependencyFlags = nytl::Flags<DependencyBits>;
 using CommandPoolCreateFlags = nytl::Flags<CommandPoolCreateBits>;
@@ -322,9 +320,7 @@ using PfnGetPhysicalDeviceSurfacePresentModesKHR = Result(*VKAPI_PTR)(PhysicalDe
 
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(SwapchainKHR)
 
-enum class SwapchainCreateBitsKHR : int32_t;
-
-using SwapchainCreateFlagsKHR = nytl::Flags<SwapchainCreateBitsKHR>;
+using SwapchainCreateFlagsKHR = nytl::Flags<DummyEnum>;
 
 struct SwapchainCreateInfoKHR;
 struct PresentInfoKHR;
@@ -463,342 +459,12 @@ struct DedicatedAllocationImageCreateInfoNV;
 struct DedicatedAllocationBufferCreateInfoNV;
 struct DedicatedAllocationMemoryAllocateInfoNV;
 
-using PfnCmdDrawIndirectCountAMD = void(*VKAPI_PTR)(CommandBuffer commandBuffer, Buffer buffer, DeviceSize offset, Buffer countBuffer, DeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
-using PfnCmdDrawIndexedIndirectCountAMD = void(*VKAPI_PTR)(CommandBuffer commandBuffer, Buffer buffer, DeviceSize offset, Buffer countBuffer, DeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
-
-struct RenderPassMultiviewCreateInfoKHX;
-struct PhysicalDeviceMultiviewFeaturesKHX;
-struct PhysicalDeviceMultiviewPropertiesKHX;
-
-enum class ExternalMemoryHandleTypeBitsNV : int32_t;
-enum class ExternalMemoryFeatureBitsNV : int32_t;
-
-using ExternalMemoryHandleTypeFlagsNV = nytl::Flags<ExternalMemoryHandleTypeBitsNV>;
-using ExternalMemoryFeatureFlagsNV = nytl::Flags<ExternalMemoryFeatureBitsNV>;
-
-struct ExternalImageFormatPropertiesNV;
-
-using PfnGetPhysicalDeviceExternalImageFormatPropertiesNV = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, Format format, ImageType type, ImageTiling tiling, ImageUsageFlags usage, ImageCreateFlags flags, ExternalMemoryHandleTypeFlagsNV externalHandleType, ExternalImageFormatPropertiesNV* pExternalImageFormatProperties);
-
-struct ExternalMemoryImageCreateInfoNV;
-struct ExportMemoryAllocateInfoNV;
-
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-
-struct ImportMemoryWin32HandleInfoNV;
-struct ExportMemoryWin32HandleInfoNV;
-
-using PfnGetMemoryWin32HandleNV = Result(*VKAPI_PTR)(Device device, DeviceMemory memory, ExternalMemoryHandleTypeFlagsNV handleType, HANDLE* pHandle);
-
-#endif //VK_USE_PLATFORM_WIN32_KHR
-
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-
-struct Win32KeyedMutexAcquireReleaseInfoNV;
-
-#endif //VK_USE_PLATFORM_WIN32_KHR
-
-struct PhysicalDeviceFeatures2KHR;
-struct PhysicalDeviceProperties2KHR;
-struct FormatProperties2KHR;
-struct ImageFormatProperties2KHR;
-struct PhysicalDeviceImageFormatInfo2KHR;
-struct QueueFamilyProperties2KHR;
-struct PhysicalDeviceMemoryProperties2KHR;
-struct SparseImageFormatProperties2KHR;
-struct PhysicalDeviceSparseImageFormatInfo2KHR;
-
-using PfnGetPhysicalDeviceFeatures2KHR = void(*VKAPI_PTR)(PhysicalDevice physicalDevice, PhysicalDeviceFeatures2KHR* pFeatures);
-using PfnGetPhysicalDeviceProperties2KHR = void(*VKAPI_PTR)(PhysicalDevice physicalDevice, PhysicalDeviceProperties2KHR* pProperties);
-using PfnGetPhysicalDeviceFormatProperties2KHR = void(*VKAPI_PTR)(PhysicalDevice physicalDevice, Format format, FormatProperties2KHR* pFormatProperties);
-using PfnGetPhysicalDeviceImageFormatProperties2KHR = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, const PhysicalDeviceImageFormatInfo2KHR* pImageFormatInfo, ImageFormatProperties2KHR* pImageFormatProperties);
-using PfnGetPhysicalDeviceQueueFamilyProperties2KHR = void(*VKAPI_PTR)(PhysicalDevice physicalDevice, uint32_t* pQueueFamilyPropertyCount, QueueFamilyProperties2KHR* pQueueFamilyProperties);
-using PfnGetPhysicalDeviceMemoryProperties2KHR = void(*VKAPI_PTR)(PhysicalDevice physicalDevice, PhysicalDeviceMemoryProperties2KHR* pMemoryProperties);
-using PfnGetPhysicalDeviceSparseImageFormatProperties2KHR = void(*VKAPI_PTR)(PhysicalDevice physicalDevice, const PhysicalDeviceSparseImageFormatInfo2KHR* pFormatInfo, uint32_t* pPropertyCount, SparseImageFormatProperties2KHR* pProperties);
-
-constexpr auto maxDeviceGroupSizeKhx = 32;
-
-enum class PeerMemoryFeatureBitsKHX : int32_t;
-enum class MemoryAllocateBitsKHX : int32_t;
-enum class DeviceGroupPresentModeBitsKHX : int32_t;
-
-using PeerMemoryFeatureFlagsKHX = nytl::Flags<PeerMemoryFeatureBitsKHX>;
-using MemoryAllocateFlagsKHX = nytl::Flags<MemoryAllocateBitsKHX>;
-using DeviceGroupPresentModeFlagsKHX = nytl::Flags<DeviceGroupPresentModeBitsKHX>;
-
-struct MemoryAllocateFlagsInfoKHX;
-struct BindBufferMemoryInfoKHX;
-struct BindImageMemoryInfoKHX;
-struct DeviceGroupRenderPassBeginInfoKHX;
-struct DeviceGroupCommandBufferBeginInfoKHX;
-struct DeviceGroupSubmitInfoKHX;
-struct DeviceGroupBindSparseInfoKHX;
-struct DeviceGroupPresentCapabilitiesKHX;
-struct ImageSwapchainCreateInfoKHX;
-struct BindImageMemorySwapchainInfoKHX;
-struct AcquireNextImageInfoKHX;
-struct DeviceGroupPresentInfoKHX;
-struct DeviceGroupSwapchainCreateInfoKHX;
-
-using PfnGetDeviceGroupPeerMemoryFeaturesKHX = void(*VKAPI_PTR)(Device device, uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, PeerMemoryFeatureFlagsKHX* pPeerMemoryFeatures);
-using PfnBindBufferMemory2KHX = Result(*VKAPI_PTR)(Device device, uint32_t bindInfoCount, const BindBufferMemoryInfoKHX* pBindInfos);
-using PfnBindImageMemory2KHX = Result(*VKAPI_PTR)(Device device, uint32_t bindInfoCount, const BindImageMemoryInfoKHX* pBindInfos);
-using PfnCmdSetDeviceMaskKHX = void(*VKAPI_PTR)(CommandBuffer commandBuffer, uint32_t deviceMask);
-using PfnGetDeviceGroupPresentCapabilitiesKHX = Result(*VKAPI_PTR)(Device device, DeviceGroupPresentCapabilitiesKHX* pDeviceGroupPresentCapabilities);
-using PfnGetDeviceGroupSurfacePresentModesKHX = Result(*VKAPI_PTR)(Device device, SurfaceKHR surface, DeviceGroupPresentModeFlagsKHX* pModes);
-using PfnAcquireNextImage2KHX = Result(*VKAPI_PTR)(Device device, const AcquireNextImageInfoKHX* pAcquireInfo, uint32_t* pImageIndex);
-using PfnCmdDispatchBaseKHX = void(*VKAPI_PTR)(CommandBuffer commandBuffer, uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
-using PfnGetPhysicalDevicePresentRectanglesKHX = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, SurfaceKHR surface, uint32_t* pRectCount, Rect2D* pRects);
-
-enum class ValidationCheckEXT : int32_t;
-
-struct ValidationFlagsEXT;
-
-#ifdef VK_USE_PLATFORM_VI_NN
-
-using ViSurfaceCreateFlagsNN = nytl::Flags<DummyEnum>;
-
-struct ViSurfaceCreateInfoNN;
-
-using PfnCreateViSurfaceNN = Result(*VKAPI_PTR)(Instance instance, const ViSurfaceCreateInfoNN* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
-
-#endif //VK_USE_PLATFORM_VI_NN
-
-using CommandPoolTrimFlagsKHR = nytl::Flags<DummyEnum>;
-
-using PfnTrimCommandPoolKHR = void(*VKAPI_PTR)(Device device, CommandPool commandPool, CommandPoolTrimFlagsKHR flags);
-
-struct PhysicalDeviceGroupPropertiesKHX;
-struct DeviceGroupDeviceCreateInfoKHX;
-
-using PfnEnumeratePhysicalDeviceGroupsKHX = Result(*VKAPI_PTR)(Instance instance, uint32_t* pPhysicalDeviceGroupCount, PhysicalDeviceGroupPropertiesKHX* pPhysicalDeviceGroupProperties);
-
-constexpr auto luidSizeKhx = 8;
-
-enum class ExternalMemoryHandleTypeBitsKHX : int32_t;
-enum class ExternalMemoryFeatureBitsKHX : int32_t;
-
-using ExternalMemoryHandleTypeFlagsKHX = nytl::Flags<ExternalMemoryHandleTypeBitsKHX>;
-using ExternalMemoryFeatureFlagsKHX = nytl::Flags<ExternalMemoryFeatureBitsKHX>;
-
-struct ExternalMemoryPropertiesKHX;
-struct PhysicalDeviceExternalImageFormatInfoKHX;
-struct ExternalImageFormatPropertiesKHX;
-struct PhysicalDeviceExternalBufferInfoKHX;
-struct ExternalBufferPropertiesKHX;
-struct PhysicalDeviceIDPropertiesKHX;
-
-using PfnGetPhysicalDeviceExternalBufferPropertiesKHX = void(*VKAPI_PTR)(PhysicalDevice physicalDevice, const PhysicalDeviceExternalBufferInfoKHX* pExternalBufferInfo, ExternalBufferPropertiesKHX* pExternalBufferProperties);
-
-constexpr auto queueFamilyExternalKhx = (~0U-1);
-
-struct ExternalMemoryImageCreateInfoKHX;
-struct ExternalMemoryBufferCreateInfoKHX;
-struct ExportMemoryAllocateInfoKHX;
-
-#ifdef VK_USE_PLATFORM_WIN32_KHX
-
-struct ImportMemoryWin32HandleInfoKHX;
-struct ExportMemoryWin32HandleInfoKHX;
-struct MemoryWin32HandlePropertiesKHX;
-
-using PfnGetMemoryWin32HandleKHX = Result(*VKAPI_PTR)(Device device, DeviceMemory memory, ExternalMemoryHandleTypeBitsKHX handleType, HANDLE* pHandle);
-using PfnGetMemoryWin32HandlePropertiesKHX = Result(*VKAPI_PTR)(Device device, ExternalMemoryHandleTypeBitsKHX handleType, HANDLE handle, MemoryWin32HandlePropertiesKHX* pMemoryWin32HandleProperties);
-
-#endif //VK_USE_PLATFORM_WIN32_KHX
-
-struct ImportMemoryFdInfoKHX;
-struct MemoryFdPropertiesKHX;
-
-using PfnGetMemoryFdKHX = Result(*VKAPI_PTR)(Device device, DeviceMemory memory, ExternalMemoryHandleTypeBitsKHX handleType, int* pFd);
-using PfnGetMemoryFdPropertiesKHX = Result(*VKAPI_PTR)(Device device, ExternalMemoryHandleTypeBitsKHX handleType, int fd, MemoryFdPropertiesKHX* pMemoryFdProperties);
-
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-
-struct Win32KeyedMutexAcquireReleaseInfoKHX;
-
-#endif //VK_USE_PLATFORM_WIN32_KHR
-
-enum class ExternalSemaphoreHandleTypeBitsKHX : int32_t;
-enum class ExternalSemaphoreFeatureBitsKHX : int32_t;
-
-using ExternalSemaphoreHandleTypeFlagsKHX = nytl::Flags<ExternalSemaphoreHandleTypeBitsKHX>;
-using ExternalSemaphoreFeatureFlagsKHX = nytl::Flags<ExternalSemaphoreFeatureBitsKHX>;
-
-struct PhysicalDeviceExternalSemaphoreInfoKHX;
-struct ExternalSemaphorePropertiesKHX;
-
-using PfnGetPhysicalDeviceExternalSemaphorePropertiesKHX = void(*VKAPI_PTR)(PhysicalDevice physicalDevice, const PhysicalDeviceExternalSemaphoreInfoKHX* pExternalSemaphoreInfo, ExternalSemaphorePropertiesKHX* pExternalSemaphoreProperties);
-
-struct ExportSemaphoreCreateInfoKHX;
-
-#ifdef VK_USE_PLATFORM_WIN32_KHX
-
-struct ImportSemaphoreWin32HandleInfoKHX;
-struct ExportSemaphoreWin32HandleInfoKHX;
-struct D3D12FenceSubmitInfoKHX;
-
-using PfnImportSemaphoreWin32HandleKHX = Result(*VKAPI_PTR)(Device device, const ImportSemaphoreWin32HandleInfoKHX* pImportSemaphoreWin32HandleInfo);
-using PfnGetSemaphoreWin32HandleKHX = Result(*VKAPI_PTR)(Device device, Semaphore semaphore, ExternalSemaphoreHandleTypeBitsKHX handleType, HANDLE* pHandle);
-
-#endif //VK_USE_PLATFORM_WIN32_KHX
-
-struct ImportSemaphoreFdInfoKHX;
-
-using PfnImportSemaphoreFdKHX = Result(*VKAPI_PTR)(Device device, const ImportSemaphoreFdInfoKHX* pImportSemaphoreFdInfo);
-using PfnGetSemaphoreFdKHX = Result(*VKAPI_PTR)(Device device, Semaphore semaphore, ExternalSemaphoreHandleTypeBitsKHX handleType, int* pFd);
-
-struct PhysicalDevicePushDescriptorPropertiesKHR;
-
-using PfnCmdPushDescriptorSetKHR = void(*VKAPI_PTR)(CommandBuffer commandBuffer, PipelineBindPoint pipelineBindPoint, PipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const WriteDescriptorSet* pDescriptorWrites);
-
-struct RectLayerKHR;
-struct PresentRegionKHR;
-struct PresentRegionsKHR;
-
-VK_DEFINE_NON_DISPATCHABLE_HANDLE(DescriptorUpdateTemplateKHR)
-
-enum class DescriptorUpdateTemplateTypeKHR : int32_t;
-
-using DescriptorUpdateTemplateCreateFlagsKHR = nytl::Flags<DummyEnum>;
-
-struct DescriptorUpdateTemplateEntryKHR;
-struct DescriptorUpdateTemplateCreateInfoKHR;
-
-using PfnCreateDescriptorUpdateTemplateKHR = Result(*VKAPI_PTR)(Device device, const DescriptorUpdateTemplateCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, DescriptorUpdateTemplateKHR* pDescriptorUpdateTemplate);
-using PfnDestroyDescriptorUpdateTemplateKHR = void(*VKAPI_PTR)(Device device, DescriptorUpdateTemplateKHR descriptorUpdateTemplate, const AllocationCallbacks* pAllocator);
-using PfnUpdateDescriptorSetWithTemplateKHR = void(*VKAPI_PTR)(Device device, DescriptorSet descriptorSet, DescriptorUpdateTemplateKHR descriptorUpdateTemplate, const void* pData);
-using PfnCmdPushDescriptorSetWithTemplateKHR = void(*VKAPI_PTR)(CommandBuffer commandBuffer, DescriptorUpdateTemplateKHR descriptorUpdateTemplate, PipelineLayout layout, uint32_t set, const void* pData);
-
-VK_DEFINE_NON_DISPATCHABLE_HANDLE(ObjectTableNVX)
-VK_DEFINE_NON_DISPATCHABLE_HANDLE(IndirectCommandsLayoutNVX)
-
-enum class IndirectCommandsLayoutUsageBitsNVX : int32_t;
-enum class ObjectEntryUsageBitsNVX : int32_t;
-enum class IndirectCommandsTokenTypeNVX : int32_t;
-enum class ObjectEntryTypeNVX : int32_t;
-
-using IndirectCommandsLayoutUsageFlagsNVX = nytl::Flags<IndirectCommandsLayoutUsageBitsNVX>;
-using ObjectEntryUsageFlagsNVX = nytl::Flags<ObjectEntryUsageBitsNVX>;
-
-struct DeviceGeneratedCommandsFeaturesNVX;
-struct DeviceGeneratedCommandsLimitsNVX;
-struct IndirectCommandsTokenNVX;
-struct IndirectCommandsLayoutTokenNVX;
-struct IndirectCommandsLayoutCreateInfoNVX;
-struct CmdProcessCommandsInfoNVX;
-struct CmdReserveSpaceForCommandsInfoNVX;
-struct ObjectTableCreateInfoNVX;
-struct ObjectTableEntryNVX;
-struct ObjectTablePipelineEntryNVX;
-struct ObjectTableDescriptorSetEntryNVX;
-struct ObjectTableVertexBufferEntryNVX;
-struct ObjectTableIndexBufferEntryNVX;
-struct ObjectTablePushConstantEntryNVX;
-
-using PfnCmdProcessCommandsNVX = void(*VKAPI_PTR)(CommandBuffer commandBuffer, const CmdProcessCommandsInfoNVX* pProcessCommandsInfo);
-using PfnCmdReserveSpaceForCommandsNVX = void(*VKAPI_PTR)(CommandBuffer commandBuffer, const CmdReserveSpaceForCommandsInfoNVX* pReserveSpaceInfo);
-using PfnCreateIndirectCommandsLayoutNVX = Result(*VKAPI_PTR)(Device device, const IndirectCommandsLayoutCreateInfoNVX* pCreateInfo, const AllocationCallbacks* pAllocator, IndirectCommandsLayoutNVX* pIndirectCommandsLayout);
-using PfnDestroyIndirectCommandsLayoutNVX = void(*VKAPI_PTR)(Device device, IndirectCommandsLayoutNVX indirectCommandsLayout, const AllocationCallbacks* pAllocator);
-using PfnCreateObjectTableNVX = Result(*VKAPI_PTR)(Device device, const ObjectTableCreateInfoNVX* pCreateInfo, const AllocationCallbacks* pAllocator, ObjectTableNVX* pObjectTable);
-using PfnDestroyObjectTableNVX = void(*VKAPI_PTR)(Device device, ObjectTableNVX objectTable, const AllocationCallbacks* pAllocator);
-using PfnRegisterObjectsNVX = Result(*VKAPI_PTR)(Device device, ObjectTableNVX objectTable, uint32_t objectCount, const ObjectTableEntryNVX* const* ppObjectTableEntries, const uint32_t* pObjectIndices);
-using PfnUnregisterObjectsNVX = Result(*VKAPI_PTR)(Device device, ObjectTableNVX objectTable, uint32_t objectCount, const ObjectEntryTypeNVX* pObjectEntryTypes, const uint32_t* pObjectIndices);
-using PfnGetPhysicalDeviceGeneratedCommandsPropertiesNVX = void(*VKAPI_PTR)(PhysicalDevice physicalDevice, DeviceGeneratedCommandsFeaturesNVX* pFeatures, DeviceGeneratedCommandsLimitsNVX* pLimits);
-
-struct ViewportWScalingNV;
-struct PipelineViewportWScalingStateCreateInfoNV;
-
-using PfnCmdSetViewportWScalingNV = void(*VKAPI_PTR)(CommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const ViewportWScalingNV* pViewportWScalings);
-
-using PfnReleaseDisplayEXT = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, DisplayKHR display);
-
-#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
-
-using PfnAcquireXlibDisplayEXT = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, Display* dpy, DisplayKHR display);
-using PfnGetRandROutputDisplayEXT = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, Display* dpy, RROutput rrOutput, DisplayKHR* pDisplay);
-
-#endif //VK_USE_PLATFORM_XLIB_XRANDR_EXT
-
-enum class SurfaceCounterBitsEXT : int32_t;
-
-using SurfaceCounterFlagsEXT = nytl::Flags<SurfaceCounterBitsEXT>;
-
-struct SurfaceCapabilities2EXT;
-
-using PfnGetPhysicalDeviceSurfaceCapabilities2EXT = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, SurfaceKHR surface, SurfaceCapabilities2EXT* pSurfaceCapabilities);
-
-enum class DisplayPowerStateEXT : int32_t;
-enum class DeviceEventTypeEXT : int32_t;
-enum class DisplayEventTypeEXT : int32_t;
-
-struct DisplayPowerInfoEXT;
-struct DeviceEventInfoEXT;
-struct DisplayEventInfoEXT;
-struct SwapchainCounterCreateInfoEXT;
-
-using PfnDisplayPowerControlEXT = Result(*VKAPI_PTR)(Device device, DisplayKHR display, const DisplayPowerInfoEXT* pDisplayPowerInfo);
-using PfnRegisterDeviceEventEXT = Result(*VKAPI_PTR)(Device device, const DeviceEventInfoEXT* pDeviceEventInfo, const AllocationCallbacks* pAllocator, Fence* pFence);
-using PfnRegisterDisplayEventEXT = Result(*VKAPI_PTR)(Device device, DisplayKHR display, const DisplayEventInfoEXT* pDisplayEventInfo, const AllocationCallbacks* pAllocator, Fence* pFence);
-using PfnGetSwapchainCounterEXT = Result(*VKAPI_PTR)(Device device, SwapchainKHR swapchain, SurfaceCounterBitsEXT counter, uint64_t* pCounterValue);
-
-struct RefreshCycleDurationGOOGLE;
-struct PastPresentationTimingGOOGLE;
-struct PresentTimeGOOGLE;
-struct PresentTimesInfoGOOGLE;
-
-using PfnGetRefreshCycleDurationGOOGLE = Result(*VKAPI_PTR)(Device device, SwapchainKHR swapchain, RefreshCycleDurationGOOGLE* pDisplayTimingProperties);
-using PfnGetPastPresentationTimingGOOGLE = Result(*VKAPI_PTR)(Device device, SwapchainKHR swapchain, uint32_t* pPresentationTimingCount, PastPresentationTimingGOOGLE* pPresentationTimings);
-
-struct PhysicalDeviceMultiviewPerViewAttributesPropertiesNVX;
-
-enum class ViewportCoordinateSwizzleNV : int32_t;
-
-using PipelineViewportSwizzleStateCreateFlagsNV = nytl::Flags<DummyEnum>;
-
-struct ViewportSwizzleNV;
-struct PipelineViewportSwizzleStateCreateInfoNV;
-
-enum class DiscardRectangleModeEXT : int32_t;
-
-using PipelineDiscardRectangleStateCreateFlagsEXT = nytl::Flags<DummyEnum>;
-
-struct PhysicalDeviceDiscardRectanglePropertiesEXT;
-struct PipelineDiscardRectangleStateCreateInfoEXT;
-
-using PfnCmdSetDiscardRectangleEXT = void(*VKAPI_PTR)(CommandBuffer commandBuffer, uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const Rect2D* pDiscardRectangles);
-
-struct XYColorEXT;
-struct HdrMetadataEXT;
-
-using PfnSetHdrMetadataEXT = void(*VKAPI_PTR)(Device device, uint32_t swapchainCount, const SwapchainKHR* pSwapchains, const HdrMetadataEXT* pMetadata);
-
-#ifdef VK_USE_PLATFORM_IOS_MVK
-
-using IOSSurfaceCreateFlagsMVK = nytl::Flags<DummyEnum>;
-
-struct IOSSurfaceCreateInfoMVK;
-
-using PfnCreateIOSSurfaceMVK = Result(*VKAPI_PTR)(Instance instance, const IOSSurfaceCreateInfoMVK* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
-
-#endif //VK_USE_PLATFORM_IOS_MVK
-
-#ifdef VK_USE_PLATFORM_MACOS_MVK
-
-using MacOSSurfaceCreateFlagsMVK = nytl::Flags<DummyEnum>;
-
-struct MacOSSurfaceCreateInfoMVK;
-
-using PfnCreateMacOSSurfaceMVK = Result(*VKAPI_PTR)(Instance instance, const MacOSSurfaceCreateInfoMVK* pCreateInfo, const AllocationCallbacks* pAllocator, SurfaceKHR* pSurface);
-
-#endif //VK_USE_PLATFORM_MACOS_MVK
-
 
 } // namespace vk
 
 // The specification (vk.xml) itself is published under the following license:
 
-// Copyright (c) 2015-2017 The Khronos Group Inc.
+// Copyright (c) 2015-2016 The Khronos Group Inc.
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and/or associated documentation files (the
@@ -827,6 +493,6 @@ using PfnCreateMacOSSurfaceMVK = Result(*VKAPI_PTR)(Instance instance, const Mac
 // language incorporated into the Specification and reference pages, and other
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
-// maintained in the master branch of the Khronos Vulkan GitHub project.
+// maintained in the master branch of the Khronos Vulkan Github project.
     
 
