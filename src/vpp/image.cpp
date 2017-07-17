@@ -116,7 +116,7 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format for
 	const vk::Extent3D& extent, const vk::ImageSubresource& subres, const vk::Offset3D& offset,
 	bool allowMap)
 {
-	dlg_check("retrieve(image)", {
+	dlg_check("retrieve(image)"_scope, {
 		if(!image.memoryEntry().allocated()) vpp_error("Image has no memory");
 	})
 

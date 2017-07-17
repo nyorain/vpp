@@ -13,7 +13,7 @@ namespace vpp {
 MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
 	: memory_(&memory), allocation_(alloc)
 {
-	dlg_check("MemoryMap", {
+	dlg_check("::MemoryMap::MemoryMap"_src, {
 		if(!(memory.properties() & vk::MemoryPropertyBits::hostVisible))
 			vpp_error("trying to map unmappable memory");
 	})
@@ -26,7 +26,7 @@ MemoryMap::~MemoryMap()
 	try {
 		unmap();
 	} catch(const std::exception& error) {
-		vpp_warn("~MemoryMap"_scope, "unmap(): {}", error.what());
+		vpp_warn("MemoryMap::~MemoryMap"_src, "unmap(): {}", error.what());
 	}
 }
 
@@ -70,7 +70,7 @@ const vk::DeviceMemory& MemoryMap::vkMemory() const noexcept
 
 void MemoryMap::flush() const
 {
-	dlg_check("MemoryMap::flush", {
+	dlg_check("::MemoryMap::flush"_src, {
 		if(coherent()) vpp_warn("Called on coherent memory. Not needed.");
 	})
 
@@ -80,7 +80,7 @@ void MemoryMap::flush() const
 
 void MemoryMap::reload() const
 {
-	dlg_check("MemoryMap::reload", {
+	dlg_check("::MemoryMap::reload"_src, {
 		if(coherent()) vpp_warn("Called on coherent memory. Not needed.");
 	})
 
@@ -95,7 +95,7 @@ bool MemoryMap::coherent() const noexcept
 
 void MemoryMap::unmap()
 {
-	dlg_check("MemoryMap::ummap", {
+	dlg_check("::MemoryMap::ummap"_src, {
 		if(views_ > 0) vpp_error("there are still views for this map");
 	})
 
@@ -115,7 +115,7 @@ void MemoryMap::ref() noexcept
 
 void MemoryMap::unref() noexcept
 {
-	dlg_check("MemoryMap::unref", {
+	dlg_check("::MemoryMap::unref"_src, {
 		if(views_ == 0) vpp_warn("refcount already zero");
 	})
 
@@ -133,7 +133,7 @@ void MemoryMap::unref() noexcept
 MemoryMapView::MemoryMapView(MemoryMap& map, const Allocation& allocation)
 	: memoryMap_(&map), allocation_(allocation)
 {
-	dlg_check("MemoryMapView", {
+	dlg_check("::MemoryMapView::MemoryMapView"_src, {
 		if(allocation.size == 0) vpp_error("invalid allocatoin");
 	})
 
@@ -161,7 +161,7 @@ vk::MappedMemoryRange MemoryMapView::mappedMemoryRange() const noexcept
 
 void MemoryMapView::flush() const
 {
-	dlg_check("MemoryMapView::flush", {
+	dlg_check("::MemoryMapView::flush"_src, {
 		if(coherent()) vpp_warn("Called on coherent memory. Not needed.");
 	})
 
@@ -171,7 +171,7 @@ void MemoryMapView::flush() const
 
 void MemoryMapView::reload() const
 {
-	dlg_check("MemoryMapView::reload", {
+	dlg_check("::MemoryMapView::reload"_src, {
 		if(coherent()) vpp_warn("Called on coherent memory. Not needed.");
 	})
 

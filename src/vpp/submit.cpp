@@ -26,7 +26,7 @@ SubmitManager::SubmitManager(const Device& dev) : Resource(dev)
 
 SubmitManager::~SubmitManager()
 {
-	dlg_check("~SubmitManager", {
+	dlg_check("::SubmitManager::~SubmitManager"_src, {
 		if(!pending_.empty())
 			vpp_warn("There are ", pending_.size(), " pending submission left");
 	});
@@ -40,7 +40,7 @@ void SubmitManager::submit()
 
 void SubmitManager::submit(const vpp::Queue& queue)
 {
-	dlg_check("SubmitManager::submit(queue)", {
+	dlg_check("::SubmitManager::submit(queue)"_src, {
 		if(queue.device() != device())
 			vpp_error("invalid queue given");
 	});
@@ -99,7 +99,7 @@ void SubmitManager::add(const vpp::Queue& queue, nytl::Span<const vk::CommandBuf
 void SubmitManager::add(const vpp::Queue& queue, nytl::Span<const vk::CommandBuffer> buffers,
 	const vk::SubmitInfo& info, CommandExecutionState* state)
 {
-	dlg_check("SubmitManager::add", {
+	dlg_check("::SubmitManager::add"_src, {
 		if(queue.device() != device())
 			vpp_error("invalid queue given");
 	});
@@ -129,7 +129,7 @@ void SubmitManager::submit(const CommandExecutionState& state)
 		if(it != pending_.end()) queue = it->queue;
 	}
 
-	dlg_check("SubmitManager::submit(state)", {
+	dlg_check(":;SubmitManager::submit(state)"_src, {
 		if(!queue)
 			vpp_error("::SubmitManager::submit(state)"_src, "could not find given state");
 	});
@@ -144,7 +144,7 @@ void SubmitManager::moveStateObserver(const CommandExecutionState& oldOne,
 	auto pred = [&](const Submission& sub) { return (sub.state == &oldOne); };
 	auto it = std::find_if(pending_.begin(), pending_.end(), pred);
 
-	dlg_check("SubmitManager::moveStateObserver", {
+	dlg_check("::SubmitManager::moveStateObserver"_src, {
 		if(it == pending_.end())
 			vpp_warn("Could not find old state. Probably crashing now");
 	});
@@ -158,7 +158,7 @@ void SubmitManager::removeStateObserver(const CommandExecutionState& state)
 	auto pred = [&](const Submission& sub) { return (sub.state == &state); };
 	auto it = std::find_if(pending_.begin(), pending_.end(), pred);
 
-	dlg_check("SubmitManager::removeStateObserver", {
+	dlg_check("::SubmitManager::removeStateObserver"_src, {
 		if(it == pending_.end())
 			vpp_warn("Could not find command execution state");
 	});
@@ -207,7 +207,7 @@ void CommandExecutionState::submit()
 {
 	if(fence_ || completed_) return;
 
-	dlg_check("CommandExecutionState::submit", {
+	dlg_check("::CommandExecutionState::submit"_src, {
 		if(!submitManager_)
 			vpp_error("::CommandExecutionState::submit"_src, "invalid object");
 	});

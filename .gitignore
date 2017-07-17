@@ -1,4 +1,5 @@
 build/
+mbuild/
 subprojects/*/
 .clang_complete
 .build-tools.cson

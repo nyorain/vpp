@@ -76,7 +76,7 @@ vk::SwapchainCreateInfoKHR SwapchainSettings::parse(const vk::SurfaceCapabilitie
 	// manually (using the given size)
 	if(caps.currentExtent.width == 0xFFFFFFFF && caps.currentExtent.height == 0xFFFFFFFF) {
 		ret.imageExtent = size;
-		dlg_check("SwapchainSettings", {
+		dlg_check("::SwapchainSettings::parse"_src, {
 			if(!size.width || !size.height)
 				vpp_error("Invalid size will be set");
 		});
@@ -165,7 +165,7 @@ vk::SwapchainCreateInfoKHR DefaultSwapchainSettings::parse(const vk::SurfaceCapa
 	// size as in basic implementation
 	if(caps.currentExtent.width == 0xFFFFFFFF && caps.currentExtent.height == 0xFFFFFFFF) {
 		ret.imageExtent = size;
-		dlg_check("SwapchainSettings", {
+		dlg_check("::SwapchainSettings::parse"_src, {
 			if(!size.width || !size.height) vpp_error("Invalid size will be set.");
 		});
 	} else {

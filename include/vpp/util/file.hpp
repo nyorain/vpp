@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <vpp/util/span.hpp> // nytl::Span
 #include <vector> // std::vector
 #include <cstdint> // std::uint8_t
 #include <string_view> // std::string_view

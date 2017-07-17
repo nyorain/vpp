@@ -18,7 +18,7 @@ std::vector<std::uint8_t> readFile(std::string_view filename, bool binary)
 	auto openmode = std::ios::ate;
 	if(binary) openmode |= std::ios::binary;
 
-	std::ifstream ifs(filename, openmode);
+	std::ifstream ifs(std::string{filename}, openmode);
 	if(!ifs.is_open()) throw std::runtime_error(errorMsg1 + filename.data());
 
 	auto size = ifs.tellg();
@@ -38,7 +38,7 @@ void writeFile(std::string_view filename, nytl::Span<const std::uint8_t> buffer,
 	auto openmode = std::ios::openmode{};
 	if(binary) openmode = std::ios::binary;
 
-	std::ofstream ofs(filename, openmode);
+	std::ofstream ofs(std::string{filename}, openmode);
 	if(!ofs.is_open()) throw std::runtime_error(errorMsg + filename.data());
 
 	auto data = reinterpret_cast<const char*>(buffer.data());
@@ -47,7 +47,7 @@ void writeFile(std::string_view filename, nytl::Span<const std::uint8_t> buffer,
 
 bool fileExists(std::string_view filename)
 {
-	std::string filenamen = filename;
+	std::string filenamen {filename};
 	struct stat s;
 	return !stat(filenamen.c_str(), &s);
 }

@@ -18,7 +18,7 @@ CommandWork<R>::~CommandWork()
 	try {
 		finish();
 	} catch(const std::exception& error) {
-		vpp_warn("~CommandWork"_scope, "finish(): {}", error.what());
+		vpp_warn("::Commandwork::~CommandWork"_src, "finish(): {}", error.what());
 	}
 }
 

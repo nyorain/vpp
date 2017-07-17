@@ -32,7 +32,7 @@ QueueLock::QueueLock(const Device& dev, const vpp::Queue& queue)
 	queueMutex_->lock();
 	sharedMutex_.lock_shared();
 
-	dlg_check("QueueLock", {
+	dlg_check("::QueueLock::QueueLock"_src, {
 		if(&queue.device() != &dev)
 			vpp_error("invalid queue/device given, queue does not belong to device");
 	});

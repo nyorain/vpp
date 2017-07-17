@@ -50,7 +50,7 @@ DeviceMemory::DeviceMemory(const Device& dev, uint32_t size, vk::MemoryPropertyF
 
 DeviceMemory::~DeviceMemory()
 {
-	dlg_check("~DeviceMemory", {
+	dlg_check("::DeviceMemory::~DeviceMemory"_src, {
 		if(!allocations_.empty()) {
 			std::string msg = std::to_string(allocations_.size()) + " allocations left:";
 			for(auto& a : allocations_) {
@@ -74,7 +74,7 @@ Allocation DeviceMemory::alloc(size_t size, size_t alignment, AllocationType typ
 
 Allocation DeviceMemory::allocSpecified(size_t offset, size_t size, AllocationType type)
 {
-	dlg_check("DeviceMemory::allocSpecified", {
+	dlg_check("::DeviceMemory::allocSpecified"_src, {
 		if(size == 0) vpp_error("size is not allowed to be 0");
 		for(auto& alloc : allocations_) {
 			const auto& a = alloc.allocation;
@@ -118,7 +118,7 @@ Allocation DeviceMemory::allocatable(size_t size, size_t alignment,
 	// a taken in account (smaller = better) since the new sizes on both sides should be as small as
 	// possible. true?
 
-	dlg_check("DeviceMemory::allocatable", {
+	dlg_check("::DeviceMemory::allocatable"_src, {
 		if(alignment % 2) vpp_error("alignment param ", alignment, "not a power of 2");
 		if(size == 0) vpp_error("size is not allowed to be 0");
 		if(type == AllocationType::none) vpp_error("type is none. Can cause aliasing");
