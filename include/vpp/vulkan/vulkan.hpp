@@ -14,7 +14,7 @@
 
 // The specification (vk.xml) itself is published under the following license:
 
-// Copyright (c) 2015-2016 The Khronos Group Inc.
+// Copyright (c) 2015-2017 The Khronos Group Inc.
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and/or associated documentation files (the
@@ -43,5 +43,5 @@
 // language incorporated into the Specification and reference pages, and other
 // material which is registered by Khronos, such as tags used by extension and
 // layer authors. The only authoritative version of vk.xml is the one
-// maintained in the master branch of the Khronos Vulkan Github project.
+// maintained in the master branch of the Khronos Vulkan GitHub project.
     

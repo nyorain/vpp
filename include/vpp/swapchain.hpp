@@ -29,6 +29,8 @@ public:
 	static const SwapchainSettings& instance();
 
 public:
+	virtual ~SwapchainSettings() = default;
+	
 	/// This function will be called by the Swapchain this object was passed to.
 	/// The returned SwapchainCreateInfo will be used to create the vulkan swapchain.
 	/// \param caps The queried capabilities for the surface the swapChain will be created for.

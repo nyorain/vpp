@@ -40,7 +40,9 @@ vpp_inc_private = include_directories('src')
 
 # subdirs
 if codegen != 'none'
-		subdir('src/codegen')
+	subdir('src/codegen')
+else
+	vk_headers = []
 endif
 
 subdir('include/vpp')

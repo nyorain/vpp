@@ -10,14 +10,16 @@
 
 int main(int argc, const char** argv)
 {
-	if(argc < 2) return EXIT_FAILURE;
+	if(argc != 3) return EXIT_FAILURE;
 	RegistryLoader loader(argv[1]);
 
 	std::cout << "loaded ... \n";
 	auto& registry = loader.parse();
 
 	std::cout << "parsed ... \n";
-	CCOutputGenerator generator(registry);
+	CCOutputGeneratorSettings settings;
+	settings.outputFolder = argv[2];
+	CCOutputGenerator generator(registry, settings);
 	generator.generate();
 
 	std::cout << "generated ... \n";

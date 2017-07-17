@@ -29,6 +29,6 @@ vpp_sources = [
 
 # TODO: optional codegen/vkHeaders dependency
 vpp_lib = library('vpp',
-	sources: vpp_sources,
+	sources: [vpp_sources, vk_headers],
 	dependencies: deps,
 	include_directories: [vpp_inc, vpp_inc_private])
