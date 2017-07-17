@@ -4,23 +4,26 @@ Todo list vor vpp
 Points are only partly sorted by priority.
 
 - testing!
+	- continue bufferops testing/fixing
 - think about swapchain out of date handling (swapchain/swapchainRenderer)
 	- recreate swapchain automatically? how to handle it?
 	- further swapchain improvements: see acquire/present todos
 		- give appliction possibility to gracefully handle outOfDate errors
 	- some bad bugs at the moment in the combination of swapchainrenderer + swapchain
-- fix bufferOps!
-	- (further) clean up bufferOps.inl
 - procAddr: test if local cache really faster than load it every time?
 - when mapping images in write/retrieve, first make sure they have the correct layout
 	- change it, return command work ptr if needed
 - some general SwapChainRenderer improvements/reworking needed
 	- better renderer resetting (all command pools at once, just resize the frameRenderers vector)
+	- remove/totally rework the class? only useful for really basic stuff (and basic stuff
+		can be made easier...)
 	- SwapchainRenderer::init: call record?
 		- if RendererImpl should call it in init, document it!
 	- the concept (kindof) is alright, maybe just add another (more low level) rendering-helper
 - cleanups/fixes to the 2-step init concept
 	- what about buffers/images?
+- get rid of vpp::fileExists
+	- probably never what you want to know, test for read/write instead
 
 C++ 17:
 ------
@@ -72,7 +75,7 @@ low prio / general / ideas
 
 - think about include of nytl headers. Should really the namespace be replaced? header guards?
 	projects using nytl outside of vpp should be able to do so (and use it for vpp calls).
-	[stringParam, range, nonCopyable in utility]
+	[range, nonCopyable in utility]
 	- where (if) to use namespace nytl (fwd.hpp? already in the vk headers?)
 
 - further custom exception? like vpp::QueueError if there is not queue that

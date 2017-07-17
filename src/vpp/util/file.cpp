@@ -10,7 +10,7 @@
 
 namespace vpp {
 
-std::vector<std::uint8_t> readFile(nytl::StringParam filename, bool binary)
+std::vector<std::uint8_t> readFile(std::string_view filename, bool binary)
 {
 	const static std::string errorMsg1 = "vpp::readFile: couldnt open file ";
 	const static std::string errorMsg2 = "vpp::readFile: failed to read file ";
@@ -31,7 +31,7 @@ std::vector<std::uint8_t> readFile(nytl::StringParam filename, bool binary)
 	return buffer;
 }
 
-void writeFile(nytl::StringParam filename, nytl::Span<const std::uint8_t> buffer, bool binary)
+void writeFile(std::string_view filename, nytl::Span<const std::uint8_t> buffer, bool binary)
 {
 	const static std::string errorMsg = "vpp::writeFile: couldnt open file ";
 
@@ -45,10 +45,11 @@ void writeFile(nytl::StringParam filename, nytl::Span<const std::uint8_t> buffer
 	ofs.write(data, buffer.size());
 }
 
-bool fileExists(nytl::StringParam filename)
+bool fileExists(std::string_view filename)
 {
+	std::string filenamen = filename;
 	struct stat s;
-	return !stat(filename, &s);
+	return !stat(filenamen.c_str(), &s);
 }
 
 } // namespace vpp

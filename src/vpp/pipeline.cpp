@@ -51,7 +51,7 @@ PipelineCache::PipelineCache(const Device& dev, nytl::Span<const std::uint8_t> d
 	handle_ = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
 }
 
-PipelineCache::PipelineCache(const Device& dev, nytl::StringParam filename)
+PipelineCache::PipelineCache(const Device& dev, std::string_view filename)
 	: ResourceHandle(dev)
 {
 	auto data = readFile(filename);
@@ -63,7 +63,7 @@ PipelineCache::~PipelineCache()
 	if(vkHandle()) vk::destroyPipelineCache(device(), vkHandle());
 }
 
-void save(vk::Device dev, vk::PipelineCache cache, nytl::StringParam filename)
+void save(vk::Device dev, vk::PipelineCache cache, std::string_view filename)
 {
 	auto data = vk::getPipelineCacheData(dev, cache);
 	writeFile(filename, data);
