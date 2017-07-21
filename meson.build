@@ -9,6 +9,7 @@ examples = get_option('examples')
 tests = get_option('tests')
 codegen = get_option('codegen')
 one_device = get_option('one_device')
+vulkan_sdk = get_option('vulkan_sdk')
 
 # default arrguments
 # warnings and stuff
@@ -20,15 +21,38 @@ add_project_arguments(
 	'-Wno-missing-braces',
 	language: 'cpp')
 
-# project-specific stuff
-add_project_arguments(
-	'-DDLG_BASE_PATH="@0@"'.format(meson.source_root()),
-	language: 'cpp')
+# vulkan lib name
+if build_machine.system() == 'windows'
+	vulkan_lib = 'vulkan-1'
+else
+	vulkan_lib = 'vulkan'
+
+	# we only do this on linux since on windows the paths
+	# uses backslashes which are not (or cannot be) handled by meson/ninja
+	add_project_arguments(
+		'-DDLG_BASE_PATH="@0@"'.format(meson.source_root()),
+		language: 'cpp')
+endif
+
+# try to find vulkan library
+vulkan_inc_arg = ''
+if vulkan_sdk != ''
+	if meson.get_compiler('cpp').sizeof('void*') == 8
+		vulkan_lib_path = join_paths(vulkan_sdk, 'Lib')
+	else
+		vulkan_lib_path = join_paths(vulkan_sdk, 'Lib32')
+	endif
+
+	vulkan_inc_arg = '-I' + join_paths(vulkan_sdk, 'Include')
+	add_project_arguments(vulkan_inc_arg, language: 'cpp')
+	dep_vulkan = meson.get_compiler('cpp').find_library(vulkan_lib, dirs: vulkan_lib_path)
+else
+	dep_vulkan = meson.get_compiler('cpp').find_library(vulkan_lib)
+endif
 
 # dependencies
 dep_threads = dependency('threads')
 dep_dlg = dependency('dlg', fallback: ['dlg', 'dlg_dep'])
-dep_vulkan = meson.get_compiler('cpp').find_library('vulkan')
 
 deps = [
 	dep_threads,
@@ -50,8 +74,9 @@ subdir('src/vpp')
 
 # declare dependency
 vpp_dep = declare_dependency(
-	include_directories: vpp_inc,
+	include_directories: [vpp_inc],
 	dependencies: deps,
+	extra_cargs: vulkan_inc_arg,
 	link_with: vpp_lib)
 
 # examples, test
