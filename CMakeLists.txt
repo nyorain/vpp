@@ -85,7 +85,7 @@ add_definitions(-DDLG_DEBUG=${Debug})
 
 install(DIRECTORY "${CMAKE_BINARY_DIR}/external/install/include" DESTINATION .)
 install(DIRECTORY "${CMAKE_BINARY_DIR}/external/install/lib" DESTINATION .)
-install(DIRECTORY "${CMAKE_BINARY_DIR}/external/install/bin" DESTINATION .)
+# install(DIRECTORY "${CMAKE_BINARY_DIR}/external/install/bin" DESTINATION .)
 
 # src/include
 add_subdirectory(include/vpp)
