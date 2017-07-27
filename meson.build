@@ -35,7 +35,7 @@ else
 endif
 
 # try to find vulkan library
-vulkan_inc_arg = ''
+vulkan_inc_arg = []
 if vulkan_sdk != 'none'
 	if meson.get_compiler('cpp').sizeof('void*') == 8
 		vulkan_lib_path = join_paths(vulkan_sdk, 'Lib')
