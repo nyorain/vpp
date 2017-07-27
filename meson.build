@@ -76,7 +76,7 @@ subdir('src/vpp')
 vpp_dep = declare_dependency(
 	include_directories: [vpp_inc],
 	dependencies: deps,
-	extra_cargs: vulkan_inc_arg,
+	compile_args: vulkan_inc_arg,
 	link_with: vpp_lib)
 
 # examples, test
