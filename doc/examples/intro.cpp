@@ -126,6 +126,10 @@ int main()
 	// vpp can now be used to fill the vertex buffer with data in the most efficient way
 	// in this case the buffer layout does not matter since its a vertex buffer
 	// note how vpp automatically unpacks the std::array
+	// We have to pass the data as vpp::raw here actually, since otherwise it would
+	// be interpreted as float array which is (for our purposes) weirdly aligned
+	// on std140. Using vpp::raw it will simply dump the data to the buffer, which
+	// is what we want in this case (since we cared about alignment manually).
 	vpp::fill140(vertexBuffer, vpp::raw(vertexData));
 
 	// to render onto the created swapchain we can use vpp::SwapchainRenderer

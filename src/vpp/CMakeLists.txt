@@ -26,8 +26,7 @@ set(vpp-sources
 	transfer.cpp
 	work.cpp
 	queue.cpp
-	util/file.cpp
-	util/log.cpp)
+	util/file.cpp)
 
 #library
 add_library(vpp SHARED ${vpp-sources})
@@ -41,7 +40,7 @@ if(Codegen)
 endif()
 
 #link to vulkan
-target_link_libraries(vpp ${Vulkan_LIBRARY})
+target_link_libraries(vpp ${Vulkan_LIBRARY} dlg)
 target_include_directories(vpp PUBLIC ${Vulkan_INCLUDE_DIR})
 
 #install
@@ -49,3 +48,11 @@ install(TARGETS vpp
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)
+
+# copy external binary files
+add_custom_command(
+	TARGET vpp PRE_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_BINARY_DIR}/external/install/bin/."
+		"${CMAKE_BINARY_DIR}/bin"
+	COMMENT "Copying external binary files")

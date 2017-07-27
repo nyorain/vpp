@@ -77,14 +77,19 @@ ExternalProject_Add(dlg_ep
 	CMAKE_ARGS ${ExternalProjectCMakeArgs})
 
 include_directories("${CMAKE_BINARY_DIR}/external/install/include")
+link_directories("${CMAKE_BINARY_DIR}/external/install/lib")
+
 add_definitions(-DDLG_BASE_PATH="${CMAKE_SOURCE_DIR}/")
 add_definitions(-DDLG_HEADER_ONLY=0)
 add_definitions(-DDLG_DEBUG=${Debug})
 
+install(DIRECTORY "${CMAKE_BINARY_DIR}/external/install/include" DESTINATION .)
+install(DIRECTORY "${CMAKE_BINARY_DIR}/external/install/lib" DESTINATION .)
+install(DIRECTORY "${CMAKE_BINARY_DIR}/external/install/bin" DESTINATION .)
+
 # src/include
 add_subdirectory(include/vpp)
 add_subdirectory(src/vpp)
-
 
 if(Test)
 	enable_testing()

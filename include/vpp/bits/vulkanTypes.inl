@@ -22,7 +22,8 @@ constexpr RawBufferData raw(const T& obj, std::size_t count = 1)
 template<typename C,
 	typename D = decltype(*std::declval<C>().data()),
 	typename = decltype(std::declval<C>().size()),
-	typename = std::enable_if_t<std::is_pod_v<std::remove_reference_t<D>>>>
+	typename = std::enable_if_t<std::is_pod_v<std::remove_reference_t<D>>>,
+	typename = std::enable_if_t<!std::is_pod_v<C>>>
 constexpr RawBufferData raw(const C& container)
 {
 	auto ptr = reinterpret_cast<const uint8_t*>(container.data());
