@@ -11,7 +11,7 @@ option(Debug "Compile in debug mode" on)
 option(Depend "Depend on needed libraries. Development option" on)
 
 option(Codegen "Regenerate c++ vulkan api" off)
-option(ApiVersion "C++ vulkan api version to generate [1-0-20|1-0-40|1-0-latest]" off)
+set(ApiVersion "1-0-20" CACHE STRING "C++ vulkan api version to generate [1-0-20|1-0-40|1-0-latest]")
 
 option(Examples "Build Examples" off)
 option(OneDevice "Enable the one device optimization. Not recommended" off)
