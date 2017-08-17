@@ -78,7 +78,6 @@ std::string to_string(vk::DebugReportObjectTypeEXT type)
 		case vk::DebugReportObjectTypeEXT::commandPool: return "commandPool";
 		case vk::DebugReportObjectTypeEXT::surfaceKHR: return "surfaceKHR";
 		case vk::DebugReportObjectTypeEXT::swapchainKHR: return "swapchainKHR";
-		case vk::DebugReportObjectTypeEXT::debugReport: return "debugReport";
 		default: return "<unknown>";
 	}
 }

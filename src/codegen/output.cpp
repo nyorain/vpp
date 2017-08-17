@@ -722,7 +722,12 @@ void CCOutputGenerator::printStruct(const Struct& type)
 
 		// member declaration
 		std::string init = "";
-		if(member.name == "sType") init = "StructureType::" + nameFirstLower;
+		if(member.name == "sType") {
+			auto name = member.node.attribute("values").as_string();
+			auto sTypeEnum = *registry().findEnum("VkStructureType");
+			init = "StructureType::" + enumName(sTypeEnum, name);
+		}
+
 		structs_ << "\t" << paramName(member);
 		if(!type.isUnion || !unionInit)
 			structs_ << " {" << init << "}";

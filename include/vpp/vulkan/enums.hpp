@@ -84,6 +84,7 @@ enum class StructureType : int32_t{
 	dedicatedAllocationImageCreateInfoNV = 1000026000,
 	dedicatedAllocationBufferCreateInfoNV = 1000026001,
 	dedicatedAllocationMemoryAllocateInfoNV = 1000026002,
+	textureLodGatherFormatPropertiesAMD = 1000041000,
 	renderPassMultiviewCreateInfoKHX = 1000053000,
 	physicalDeviceMultiviewFeaturesKHX = 1000053001,
 	physicalDeviceMultiviewPropertiesKHX = 1000053002,
@@ -118,28 +119,33 @@ enum class StructureType : int32_t{
 	viSurfaceCreateInfoNN = 1000062000,
 	physicalDeviceGroupPropertiesKHX = 1000070000,
 	deviceGroupDeviceCreateInfoKHX = 1000070001,
-	physicalDeviceExternalImageFormatInfoKHX = 1000071000,
-	externalImageFormatPropertiesKHX = 1000071001,
-	physicalDeviceExternalBufferInfoKHX = 1000071002,
-	externalBufferPropertiesKHX = 1000071003,
-	physicalDeviceIDPropertiesKHX = 1000071004,
-	externalMemoryBufferCreateInfoKHX = 1000072000,
-	externalMemoryImageCreateInfoKHX = 1000072001,
-	exportMemoryAllocateInfoKHX = 1000072002,
-	importMemoryWin32HandleInfoKHX = 1000073000,
-	exportMemoryWin32HandleInfoKHX = 1000073001,
-	memoryWin32HandlePropertiesKHX = 1000073002,
-	importMemoryFdInfoKHX = 1000074000,
-	memoryFdPropertiesKHX = 1000074001,
-	win32KeyedMutexAcquireReleaseInfoKHX = 1000075000,
-	physicalDeviceExternalSemaphoreInfoKHX = 1000076000,
-	externalSemaphorePropertiesKHX = 1000076001,
-	exportSemaphoreCreateInfoKHX = 1000077000,
-	importSemaphoreWin32HandleInfoKHX = 1000078000,
-	exportSemaphoreWin32HandleInfoKHX = 1000078001,
-	d3d12FenceSubmitInfoKHX = 1000078002,
-	importSemaphoreFdInfoKHX = 1000079000,
+	physicalDeviceExternalImageFormatInfoKHR = 1000071000,
+	externalImageFormatPropertiesKHR = 1000071001,
+	physicalDeviceExternalBufferInfoKHR = 1000071002,
+	externalBufferPropertiesKHR = 1000071003,
+	physicalDeviceIDPropertiesKHR = 1000071004,
+	externalMemoryBufferCreateInfoKHR = 1000072000,
+	externalMemoryImageCreateInfoKHR = 1000072001,
+	exportMemoryAllocateInfoKHR = 1000072002,
+	importMemoryWin32HandleInfoKHR = 1000073000,
+	exportMemoryWin32HandleInfoKHR = 1000073001,
+	memoryWin32HandlePropertiesKHR = 1000073002,
+	memoryGetWin32HandleInfoKHR = 1000073003,
+	importMemoryFdInfoKHR = 1000074000,
+	memoryFdPropertiesKHR = 1000074001,
+	memoryGetFdInfoKHR = 1000074002,
+	win32KeyedMutexAcquireReleaseInfoKHR = 1000075000,
+	physicalDeviceExternalSemaphoreInfoKHR = 1000076000,
+	externalSemaphorePropertiesKHR = 1000076001,
+	exportSemaphoreCreateInfoKHR = 1000077000,
+	importSemaphoreWin32HandleInfoKHR = 1000078000,
+	exportSemaphoreWin32HandleInfoKHR = 1000078001,
+	d3d12FenceSubmitInfoKHR = 1000078002,
+	semaphoreGetWin32HandleInfoKHR = 1000078003,
+	importSemaphoreFdInfoKHR = 1000079000,
+	semaphoreGetFdInfoKHR = 1000079001,
 	physicalDevicePushDescriptorPropertiesKHR = 1000080000,
+	physicalDevice16bitStorageFeaturesKHR = 1000083000,
 	presentRegionsKHR = 1000084000,
 	descriptorUpdateTemplateCreateInfoKHR = 1000085000,
 	objectTableCreateInfoNVX = 1000086000,
@@ -160,8 +166,35 @@ enum class StructureType : int32_t{
 	physicalDeviceDiscardRectanglePropertiesEXT = 1000099000,
 	pipelineDiscardRectangleStateCreateInfoEXT = 1000099001,
 	hdrMetadataEXT = 1000105000,
+	sharedPresentSurfaceCapabilitiesKHR = 1000111000,
+	physicalDeviceExternalFenceInfoKHR = 1000112000,
+	externalFencePropertiesKHR = 1000112001,
+	exportFenceCreateInfoKHR = 1000113000,
+	importFenceWin32HandleInfoKHR = 1000114000,
+	exportFenceWin32HandleInfoKHR = 1000114001,
+	fenceGetWin32HandleInfoKHR = 1000114002,
+	importFenceFdInfoKHR = 1000115000,
+	fenceGetFdInfoKHR = 1000115001,
+	physicalDeviceSurfaceInfo2KHR = 1000119000,
+	surfaceCapabilities2KHR = 1000119001,
+	surfaceFormat2KHR = 1000119002,
+	physicalDeviceVariablePointerFeaturesKHR = 1000120000,
 	iosSurfaceCreateInfoMVK = 1000122000,
-	macosSurfaceCreateInfoMVK = 1000123000
+	macosSurfaceCreateInfoMVK = 1000123000,
+	memoryDedicatedRequirementsKHR = 1000127000,
+	memoryDedicatedAllocateInfoKHR = 1000127001,
+	physicalDeviceSamplerFilterMinmaxPropertiesEXT = 1000130000,
+	samplerReductionModeCreateInfoEXT = 1000130001,
+	bufferMemoryRequirementsInfo2KHR = 1000146000,
+	imageMemoryRequirementsInfo2KHR = 1000146001,
+	imageSparseMemoryRequirementsInfo2KHR = 1000146002,
+	memoryRequirements2KHR = 1000146003,
+	sparseImageMemoryRequirements2KHR = 1000146004,
+	physicalDeviceBlendOperationAdvancedFeaturesEXT = 1000148000,
+	physicalDeviceBlendOperationAdvancedPropertiesEXT = 1000148001,
+	pipelineColorBlendAdvancedStateCreateInfoEXT = 1000148002,
+	pipelineCoverageToColorStateCreateInfoNV = 1000149000,
+	pipelineCoverageModulationStateCreateInfoNV = 1000152000
 };
 
 enum class SystemAllocationScope : int32_t{
@@ -203,7 +236,7 @@ enum class Result : int32_t{
 	errorValidationFailedEXT = -1000011001,
 	errorInvalidShaderNV = -1000012000,
 	errorOutOfPoolMemoryKHR = -1000069000,
-	errorInvalidExternalHandleKHX = -1000072003
+	errorInvalidExternalHandleKHR = -1000072003
 };
 
 enum class Format : int32_t{
@@ -418,7 +451,8 @@ enum class FormatFeatureBits : int32_t{
 	sampledImageFilterLinear = (1 << 12),
 	sampledImageFilterCubicIMG = (1 << 13),
 	transferSrcKHR = (1 << 14),
-	transferDstKHR = (1 << 15)
+	transferDstKHR = (1 << 15),
+	sampledImageFilterMinmaxEXT = (1 << 16)
 };
 NYTL_FLAG_OPS(FormatFeatureBits)
 
@@ -609,7 +643,8 @@ enum class ImageLayout : int32_t{
 	transferSrcOptimal = 6,
 	transferDstOptimal = 7,
 	preinitialized = 8,
-	presentSrcKHR = 1000001002
+	presentSrcKHR = 1000001002,
+	sharedPresentKHR = 1000111000
 };
 
 enum class ImageViewType : int32_t{
@@ -675,7 +710,8 @@ enum class PrimitiveTopology : int32_t{
 enum class PolygonMode : int32_t{
 	fill = 0,
 	line = 1,
-	point = 2
+	point = 2,
+	fillRectangleNV = 1000153000
 };
 
 enum class CullModeBits : int32_t{
@@ -759,7 +795,53 @@ enum class BlendOp : int32_t{
 	subtract = 1,
 	reverseSubtract = 2,
 	min = 3,
-	max = 4
+	max = 4,
+	zeroEXT = 1000148000,
+	srcEXT = 1000148001,
+	dstEXT = 1000148002,
+	srcOverEXT = 1000148003,
+	dstOverEXT = 1000148004,
+	srcInEXT = 1000148005,
+	dstInEXT = 1000148006,
+	srcOutEXT = 1000148007,
+	dstOutEXT = 1000148008,
+	srcAtopEXT = 1000148009,
+	dstAtopEXT = 1000148010,
+	xorEXT = 1000148011,
+	multiplyEXT = 1000148012,
+	screenEXT = 1000148013,
+	overlayEXT = 1000148014,
+	darkenEXT = 1000148015,
+	lightenEXT = 1000148016,
+	colordodgeEXT = 1000148017,
+	colorburnEXT = 1000148018,
+	hardlightEXT = 1000148019,
+	softlightEXT = 1000148020,
+	differenceEXT = 1000148021,
+	exclusionEXT = 1000148022,
+	invertEXT = 1000148023,
+	invertRgbEXT = 1000148024,
+	lineardodgeEXT = 1000148025,
+	linearburnEXT = 1000148026,
+	vividlightEXT = 1000148027,
+	linearlightEXT = 1000148028,
+	pinlightEXT = 1000148029,
+	hardmixEXT = 1000148030,
+	hslHueEXT = 1000148031,
+	hslSaturationEXT = 1000148032,
+	hslColorEXT = 1000148033,
+	hslLuminosityEXT = 1000148034,
+	plusEXT = 1000148035,
+	plusClampedEXT = 1000148036,
+	plusClampedAlphaEXT = 1000148037,
+	plusDarkerEXT = 1000148038,
+	minusEXT = 1000148039,
+	minusClampedEXT = 1000148040,
+	contrastEXT = 1000148041,
+	invertOvgEXT = 1000148042,
+	redEXT = 1000148043,
+	greenEXT = 1000148044,
+	blueEXT = 1000148045
 };
 
 enum class ColorComponentBits : int32_t{
@@ -882,7 +964,8 @@ enum class AccessBits : int32_t{
 	memoryRead = (1 << 15),
 	memoryWrite = (1 << 16),
 	commandProcessReadNVX = (1 << 17),
-	commandProcessWriteNVX = (1 << 18)
+	commandProcessWriteNVX = (1 << 18),
+	colorAttachmentReadNoncoherentEXT = (1 << 19)
 };
 NYTL_FLAG_OPS(AccessBits)
 
@@ -943,6 +1026,43 @@ enum class SubpassContents : int32_t{
 	secondaryCommandBuffers = 1
 };
 
+enum class ObjectType : int32_t{
+	unknown = 0,
+	instance = 1,
+	physicalDevice = 2,
+	device = 3,
+	queue = 4,
+	semaphore = 5,
+	commandBuffer = 6,
+	fence = 7,
+	deviceMemory = 8,
+	buffer = 9,
+	image = 10,
+	event = 11,
+	queryPool = 12,
+	bufferView = 13,
+	imageView = 14,
+	shaderModule = 15,
+	pipelineCache = 16,
+	pipelineLayout = 17,
+	renderPass = 18,
+	pipeline = 19,
+	descriptorSetLayout = 20,
+	sampler = 21,
+	descriptorPool = 22,
+	descriptorSet = 23,
+	framebuffer = 24,
+	commandPool = 25,
+	surfaceKHR = 1000000000,
+	swapchainKHR = 1000001000,
+	displayKHR = 1000002000,
+	displayModeKHR = 1000002001,
+	debugReportCallbackEXT = 1000011000,
+	descriptorUpdateTemplateKHR = 1000085000,
+	objectTableNVX = 1000086000,
+	indirectCommandsLayoutNVX = 1000086001
+};
+
 
 enum class SurfaceTransformBitsKHR : int32_t{
 	identity = (1 << 0),
@@ -979,14 +1099,17 @@ enum class ColorSpaceKHR : int32_t{
 	hdr10Hlg = 1000104010,
 	adobergbLinear = 1000104011,
 	adobergbNonlinear = 1000104012,
-	passThrough = 1000104013
+	passThrough = 1000104013,
+	extendedSrgbNonlinear = 1000104014
 };
 
 enum class PresentModeKHR : int32_t{
 	immediate = 0,
 	mailbox = 1,
 	fifo = 2,
-	fifoRelaxed = 3
+	fifoRelaxed = 3,
+	sharedDemandRefresh = 1000111000,
+	sharedContinuousRefresh = 1000111001
 };
 
 
@@ -1034,17 +1157,12 @@ enum class DebugReportObjectTypeEXT : int32_t{
 	commandPool = 25,
 	surfaceKHR = 26,
 	swapchainKHR = 27,
-	debugReport = 28,
+	debugReportCallbackEXT = 28,
 	displayKHR = 29,
 	displayModeKHR = 30,
 	objectTableNVX = 31,
 	indirectCommandsLayoutNVX = 32,
 	descriptorUpdateTemplateKHR = 1000085000
-};
-
-enum class DebugReportErrorEXT : int32_t{
-	none = 0,
-	callbackRef = 1
 };
 
 enum class DebugReportBitsEXT : int32_t{
@@ -1102,11 +1220,12 @@ NYTL_FLAG_OPS(DeviceGroupPresentModeBitsKHX)
 
 
 enum class ValidationCheckEXT : int32_t{
-	all = 0
+	all = 0,
+	shaders = 1
 };
 
 
-enum class ExternalMemoryHandleTypeBitsKHX : int32_t{
+enum class ExternalMemoryHandleTypeBitsKHR : int32_t{
 	opaqueFd = (1 << 0),
 	opaqueWin32 = (1 << 1),
 	opaqueWin32Kmt = (1 << 2),
@@ -1115,30 +1234,36 @@ enum class ExternalMemoryHandleTypeBitsKHX : int32_t{
 	d3d12Heap = (1 << 5),
 	d3d12Resource = (1 << 6)
 };
-NYTL_FLAG_OPS(ExternalMemoryHandleTypeBitsKHX)
+NYTL_FLAG_OPS(ExternalMemoryHandleTypeBitsKHR)
 
-enum class ExternalMemoryFeatureBitsKHX : int32_t{
+enum class ExternalMemoryFeatureBitsKHR : int32_t{
 	dedicatedOnly = (1 << 0),
 	exportable = (1 << 1),
 	importable = (1 << 2)
 };
-NYTL_FLAG_OPS(ExternalMemoryFeatureBitsKHX)
+NYTL_FLAG_OPS(ExternalMemoryFeatureBitsKHR)
 
 
-enum class ExternalSemaphoreHandleTypeBitsKHX : int32_t{
+enum class ExternalSemaphoreHandleTypeBitsKHR : int32_t{
 	opaqueFd = (1 << 0),
 	opaqueWin32 = (1 << 1),
 	opaqueWin32Kmt = (1 << 2),
 	d3d12Fence = (1 << 3),
-	fenceFd = (1 << 4)
+	syncFd = (1 << 4)
 };
-NYTL_FLAG_OPS(ExternalSemaphoreHandleTypeBitsKHX)
+NYTL_FLAG_OPS(ExternalSemaphoreHandleTypeBitsKHR)
 
-enum class ExternalSemaphoreFeatureBitsKHX : int32_t{
+enum class ExternalSemaphoreFeatureBitsKHR : int32_t{
 	exportable = (1 << 0),
 	importable = (1 << 1)
 };
-NYTL_FLAG_OPS(ExternalSemaphoreFeatureBitsKHX)
+NYTL_FLAG_OPS(ExternalSemaphoreFeatureBitsKHR)
+
+
+enum class SemaphoreImportBitsKHR : int32_t{
+	temporary = (1 << 0)
+};
+NYTL_FLAG_OPS(SemaphoreImportBitsKHR)
 
 
 enum class DescriptorUpdateTemplateTypeKHR : int32_t{
@@ -1220,6 +1345,49 @@ enum class DiscardRectangleModeEXT : int32_t{
 };
 
 
+enum class ExternalFenceHandleTypeBitsKHR : int32_t{
+	opaqueFd = (1 << 0),
+	opaqueWin32 = (1 << 1),
+	opaqueWin32Kmt = (1 << 2),
+	syncFd = (1 << 3)
+};
+NYTL_FLAG_OPS(ExternalFenceHandleTypeBitsKHR)
+
+enum class ExternalFenceFeatureBitsKHR : int32_t{
+	exportable = (1 << 0),
+	importable = (1 << 1)
+};
+NYTL_FLAG_OPS(ExternalFenceFeatureBitsKHR)
+
+
+enum class FenceImportBitsKHR : int32_t{
+	temporary = (1 << 0)
+};
+NYTL_FLAG_OPS(FenceImportBitsKHR)
+
+
+enum class SamplerReductionModeEXT : int32_t{
+	weightedAverage = 0,
+	min = 1,
+	max = 2
+};
+
+
+enum class BlendOverlapEXT : int32_t{
+	uncorrelated = 0,
+	disjoint = 1,
+	conjoint = 2
+};
+
+
+enum class CoverageModulationModeNV : int32_t{
+	none = 0,
+	rgb = 1,
+	alpha = 2,
+	rgba = 3
+};
+
+
 
 } // namespace vk
 
@@ -1227,24 +1395,17 @@ enum class DiscardRectangleModeEXT : int32_t{
 
 // Copyright (c) 2015-2017 The Khronos Group Inc.
 // 
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and/or associated documentation files (the
-// "Materials"), to deal in the Materials without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Materials, and to
-// permit persons to whom the Materials are furnished to do so, subject to
-// the following conditions:
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 // 
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Materials.
+//     http://www.apache.org/licenses/LICENSE-2.0
 // 
-// THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 // 
 // ------------------------------------------------------------------------
 // 
@@ -1253,6 +1414,7 @@ enum class DiscardRectangleModeEXT : int32_t{
 // machine-readable definition of the API, parameter and member validation
 // language incorporated into the Specification and reference pages, and other
 // material which is registered by Khronos, such as tags used by extension and
-// layer authors. The only authoritative version of vk.xml is the one
-// maintained in the master branch of the Khronos Vulkan GitHub project.
+// layer authors. The authoritative public version of vk.xml is maintained in
+// the master branch of the Khronos Vulkan GitHub project. The authoritative
+// private version is maintained in the 1.0 branch of the member gitlab server.
     
