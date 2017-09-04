@@ -723,9 +723,13 @@ void CCOutputGenerator::printStruct(const Struct& type)
 		// member declaration
 		std::string init = "";
 		if(member.name == "sType") {
+#ifdef VPP_NO_VALUES_STRUCTURE_TYPE
+			init = "StructureType::" + nameFirstLower;
+#else
 			auto name = member.node.attribute("values").as_string();
 			auto sTypeEnum = *registry().findEnum("VkStructureType");
 			init = "StructureType::" + enumName(sTypeEnum, name);
+#endif
 		}
 
 		structs_ << "\t" << paramName(member);

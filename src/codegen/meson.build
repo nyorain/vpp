@@ -9,9 +9,11 @@ codegen_inc = include_directories('.')
 
 defs = []
 if codegen == '1.0.20'
-	defs = '-DVPP_OLD_LENGTH_PARAM=1'
+	defs += '-DVPP_OLD_LENGTH_PARAM=1'
+	defs += '-DVPP_NO_VALUES_STRUCTURE_TYPE=1'
 	spec = 'vk-1-0-20.xml'
 elif codegen == '1.0.40'
+	defs += '-DVPP_NO_VALUES_STRUCTURE_TYPE=1'
 	spec = 'vk-1-0-40.xml'
 elif codegen == 'latest'
 	spec = 'vk-1-0-latest.xml'
