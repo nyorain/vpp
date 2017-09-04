@@ -52,11 +52,11 @@ vpp_dep = declare_dependency(
 # examples, test
 # must come after dependency
 if examples
-	subdir('doc/examples')
+	subdir('docs/examples')
 endif
 
 if tests
-	subdir('doc/tests')
+	subdir('docs/tests')
 endif
 
 # pkgconfig

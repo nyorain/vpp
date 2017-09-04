@@ -198,9 +198,7 @@ vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
 	vk::PipelineLayout layout)
 {
 	// first load the shader modules and create the shader program for our pipeline
-	if(!vpp::fileExists("intro.vert.spv") || !vpp::fileExists("intro.frag.spv"))
-		throw std::runtime_error("Could not find shaders. Make sure to execute from binary dir");
-
+	// if the shaders cannot be found/compiled, this will throw (and end the application)
 	vpp::ShaderModule vertexShader(dev, "intro.vert.spv");
 	vpp::ShaderModule fragmentShader(dev, "intro.frag.spv");
 

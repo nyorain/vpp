@@ -6,7 +6,6 @@
 #include <fstream>
 #include <stdexcept>
 #include <string>
-#include <sys/stat.h>
 
 namespace vpp {
 
@@ -43,13 +42,6 @@ void writeFile(std::string_view filename, nytl::Span<const std::uint8_t> buffer,
 
 	auto data = reinterpret_cast<const char*>(buffer.data());
 	ofs.write(data, buffer.size());
-}
-
-bool fileExists(std::string_view filename)
-{
-	std::string filenamen {filename};
-	struct stat s;
-	return !stat(filenamen.c_str(), &s);
 }
 
 } // namespace vpp

@@ -13,17 +13,17 @@ Points are only partly sorted by priority.
 - procAddr: test if local cache really faster than load it every time?
 - when mapping images in write/retrieve, first make sure they have the correct layout
 	- change it, return command work ptr if needed
-- some general SwapChainRenderer improvements/reworking needed
+- some general SwapchainRenderer improvements/reworking needed
 	- better renderer resetting (all command pools at once, just resize the frameRenderers vector)
 	- remove/totally rework the class? only useful for really basic stuff (and basic stuff
 		can be made easier...)
 	- SwapchainRenderer::init: call record?
 		- if RendererImpl should call it in init, document it!
 	- the concept (kindof) is alright, maybe just add another (more low level) rendering-helper
+		- or rework SwapchainRenderer to always be useful
+			- multisampling etc?
 - cleanups/fixes to the 2-step init concept
 	- what about buffers/images?
-- get rid of vpp::fileExists
-	- probably never what you want to know, test for read/write instead
 
 C++ 17:
 ------
@@ -31,6 +31,7 @@ C++ 17:
 - clean up the Resource::swap mess
 	- base method inheritance
 - use a destroy function for resources that is called from ResourceHandle destrctor
+	- does this really make sense?
 - use "using" declarations in the derived resource classes to make the
 	protected ResourceHandle constructors visisble
 - use std::memory_resource for more efficient host memory allocation
@@ -42,6 +43,7 @@ C++ 17:
 low prio / general / ideas
 --------------------------
 
+- codegen: queueFamilyExternalKhr (i.e. constants of extensions) -> ...KHR
 - config: vpp_debug vs vpp_ndebug rather messy now
 	- configurable from build system?
 - work dependencies

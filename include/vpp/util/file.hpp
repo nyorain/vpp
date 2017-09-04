@@ -23,8 +23,4 @@ std::vector<std::uint8_t> readFile(std::string_view path, bool binary = true);
 /// be opened.
 void writeFile(std::string_view path, nytl::Span<const std::uint8_t> buffer, bool binary = true);
 
-/// Returns whether the file at the given path exists.
-/// Note that this does not check if it can be opened, read or written.
-bool fileExists(std::string_view path);
-
 } // namespace vpp
