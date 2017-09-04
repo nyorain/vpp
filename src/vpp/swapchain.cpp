@@ -10,6 +10,8 @@
 #include <vpp/image.hpp>
 #include <vpp/util/log.hpp>
 
+using namespace dlg::literals;
+
 namespace vpp {
 namespace {
 
@@ -28,7 +30,7 @@ constexpr struct PresentModeRating {
 void onError(DefaultSwapchainSettings::ErrorAction action, const char* field)
 {
 	if(action == DefaultSwapchainSettings::ErrorAction::output)
-		vpp_warn("DefaultSwapchainSettings"_module, "using different {}", field);
+		vpp_warn("DefaultSwapchainSettings"_tag, "using different {}", field);
 
 	static const std::string errorMsg = "vpp::DefaultSwapchainSettings: using different ";
 	if(action == DefaultSwapchainSettings::ErrorAction::throwException)
@@ -76,7 +78,7 @@ vk::SwapchainCreateInfoKHR SwapchainSettings::parse(const vk::SurfaceCapabilitie
 	// manually (using the given size)
 	if(caps.currentExtent.width == 0xFFFFFFFF && caps.currentExtent.height == 0xFFFFFFFF) {
 		ret.imageExtent = size;
-		dlg_check("::SwapchainSettings::parse"_src, {
+		dlg_check_tagged("SwapchainSettings::parse", {
 			if(!size.width || !size.height)
 				vpp_error("Invalid size will be set");
 		});
@@ -165,7 +167,7 @@ vk::SwapchainCreateInfoKHR DefaultSwapchainSettings::parse(const vk::SurfaceCapa
 	// size as in basic implementation
 	if(caps.currentExtent.width == 0xFFFFFFFF && caps.currentExtent.height == 0xFFFFFFFF) {
 		ret.imageExtent = size;
-		dlg_check("::SwapchainSettings::parse"_src, {
+		dlg_check_tagged("SwapchainSettings::parse", {
 			if(!size.width || !size.height) vpp_error("Invalid size will be set.");
 		});
 	} else {

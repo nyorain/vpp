@@ -28,7 +28,6 @@ Points are only partly sorted by priority.
 C++ 17:
 ------
 
-- procAddr.cpp: use shared_mutex
 - clean up the Resource::swap mess
 	- base method inheritance
 - use a destroy function for resources that is called from ResourceHandle destrctor
@@ -37,7 +36,6 @@ C++ 17:
 - use std::memory_resource for more efficient host memory allocation
 	- Device should store a thread-specific memory resource
 	- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
-- threadlocal.hpp: use shared_mutex instead of shared_timed_mutex
 - pmr for performance critical (every-frame) functions.
 
 

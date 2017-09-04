@@ -16,7 +16,7 @@ DeviceMemoryAllocator::DeviceMemoryAllocator(const Device& dev) : Resource(dev)
 
 DeviceMemoryAllocator::~DeviceMemoryAllocator()
 {
-	dlg_check("::DeviceMemoryAllocator::~DeviceMemoryAllocator"_src, {
+	dlg_check_tagged("~DMA", {
 		if(!requirements_.empty())
 			vpp_warn("There are requirements left");
 	});
@@ -44,7 +44,7 @@ void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept
 void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
 	vk::BufferUsageFlags usage, MemoryEntry& entry)
 {
-	dlg_check("::DeviceMemoryAllocator::request(buffer)"_src, {
+	dlg_check_tagged("DMA::request(buffer)", {
 		if(!requestor) vpp_error("buffer is nullHandle");
 		if(!reqs.size) vpp_error("allocation size 0");
 		if(!reqs.memoryTypeBits) vpp_error("no memory type bits");
@@ -80,7 +80,7 @@ void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequir
 void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequirements& reqs,
 	vk::ImageTiling tiling, MemoryEntry& entry)
 {
-	dlg_check("::DeviceMemoryAllocator::request(image)"_src, {
+	dlg_check_tagged("DMA::request(image)", {
 		if(!requestor) vpp_error("image is nullHandle");
 		if(!reqs.size) vpp_error("allocation size 0");
 		if(!reqs.memoryTypeBits) vpp_error("no memory type bits");
@@ -107,7 +107,7 @@ void DeviceMemoryAllocator::request(vk::Image requestor, const vk::MemoryRequire
 void DeviceMemoryAllocator::removeRequest(const MemoryEntry& entry) noexcept
 {
 	auto req = findReq(entry);
-	dlg_check("::DeviceMemoryAllocator::removeRequest"_src, {
+	dlg_check_tagged("DMA::removeRequest", {
 		if(req == requirements_.end()) vpp_error("could not find entry");
 	});
 
@@ -117,7 +117,7 @@ void DeviceMemoryAllocator::removeRequest(const MemoryEntry& entry) noexcept
 void DeviceMemoryAllocator::moveEntry(const MemoryEntry& oldOne, MemoryEntry& newOne) noexcept
 {
 	auto req = findReq(oldOne);
-	dlg_check("::DeviceMemoryAllocator::moveEntry"_src, {
+	dlg_check_tagged("DMA::moveEntry", {
 		if(req == requirements_.end()) vpp_error("could not find old entry");
 		if(newOne.allocated()) vpp_warn("new entry is already allocated");
 		if(newOne.allocator() != this) vpp_warn("new entry has invalid allocator");
@@ -159,7 +159,7 @@ DeviceMemoryAllocator::findReq(const MemoryEntry& entry)
 
 void DeviceMemoryAllocator::allocate()
 {
-	dlg_check(":;DeviceMemoryAllocator::allocate()"_src, {
+	dlg_check_tagged("DMA::allocate", {
 		if(requirements_.empty()) vpp_warn("there are no pending requests");
 	});
 
@@ -183,7 +183,7 @@ void DeviceMemoryAllocator::allocate(const MemoryEntry& entry)
 {
 	auto req = findReq(entry);
 
-	dlg_check("::DeviceMemoryAllocator::allocate(entry)"_src, {
+	dlg_check_tagged("DMA::allocate(entry)", {
 		if(req == requirements_.end()) vpp_error("could not find entry");
 		if(entry.allocated()) vpp_warn("entry already allocated");
 		if(entry.allocator() != this) vpp_warn("invalid entry allocator");
@@ -210,7 +210,7 @@ void DeviceMemoryAllocator::allocate(unsigned int type)
 		if(supportsType(req, type))
 			reqs.push_back(&req);
 
-	dlg_check("::DeviceMemoryAllocator::allocate(type)"_src, {
+	dlg_check_tagged("DMA::allocate(type)", {
 		if(requirements_.empty()) vpp_warn("there are no reqsests for type");
 	});
 
@@ -229,7 +229,7 @@ void DeviceMemoryAllocator::allocate(unsigned int type)
 void DeviceMemoryAllocator::allocate(unsigned int type,
 	nytl::Span<Requirement* const> requirements)
 {
-	dlg_check("::DeviceMemoryAllocator::allocate(type, reqs)"_src, {
+	dlg_check_tagged("DMA::allocate(type, reqs)", {
 		if(requirements.empty()) vpp_warn("empty reqs span passed");
 		if(type > 32) vpp_warn("invalid memory type");
 	});
@@ -299,7 +299,7 @@ DeviceMemoryAllocator::queryTypes()
 	// this function implements an algorithm to choose the best type for each requirement from
 	// its typebits, so that in the end there will be as few allocations as possible needed.
 
-	dlg_check("::DeviceMemoryAllocator::queryTypes"_src, {
+	dlg_check_tagged("DMA::queryTypes", {
 		if(requirements_.empty()) vpp_warn("there are no pending requests");
 	});
 
@@ -415,7 +415,7 @@ AllocationType DeviceMemoryAllocator::toAllocType(RequirementType type) noexcept
 
 unsigned int DeviceMemoryAllocator::findBestType(uint32_t typeBits) const
 {
-	dlg_check("::DeviceMemoryAllocator::findBestType"_src, {
+	dlg_check_tagged("DMA::findBestType", {
 		if(typeBits == 0) vpp_error("typeBits == 0");
 	});
 
@@ -452,7 +452,7 @@ bool DeviceMemoryAllocator::supportsType(const Requirement& req, unsigned int ty
 MemoryEntry::MemoryEntry(DeviceMemory& memory, const Allocation& alloc)
 	: memory_(&memory), allocation_(alloc)
 {
-	dlg_check("::MemoryEntry::MemoryEntry"_src, {
+	dlg_check_tagged("MemoryEntry", {
 		if(alloc.size == 0) vpp_error("Invalid allocation parameter");
 	});
 }

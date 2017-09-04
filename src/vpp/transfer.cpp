@@ -8,6 +8,8 @@
 #include <vpp/util/log.hpp>
 #include <algorithm>
 
+using namespace dlg::literals;
+
 namespace vpp {
 
 //TransferBuffer
@@ -25,7 +27,7 @@ TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t s
 
 TransferManager::TransferBuffer::~TransferBuffer()
 {
-	dlg_check("::TransferBuffer::~TransferBuffer"_src, {
+	dlg_check_tagged("~TransferBuffer", {
 		auto rc = ranges_.size();
 		if(rc > 0) vpp_warn("{} allocations left", rc);
 	})

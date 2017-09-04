@@ -124,7 +124,7 @@ bool DebugCallback::call(const CallbackInfo& info) const noexcept
 			    << "layer: " << info.layer;
 	}
 
-	dlg_source("DebugCallback"_module);
+	dlg_tag("DebugCallback");
 	if(info.flags & vk::DebugReportBitsEXT::error) vpp_error(message.str());
 	else if(info.flags & vk::DebugReportBitsEXT::warning) vpp_warn(message.str());
 	else if(info.flags & vk::DebugReportBitsEXT::information) vpp_info(message.str());

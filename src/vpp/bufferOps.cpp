@@ -13,11 +13,13 @@
 #include <utility> // std::move
 #include <memory> // std::make_unique
 
+using namespace dlg::literals;
+
 namespace vpp {
 
 DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize size)
 {
-	dlg_check("retrive(buffer)"_scope, {
+	dlg_check_tagged("retrive(buffer)", {
 		if(!buf.memoryEntry().allocated()) vpp_error("buffer has no memory");
 	});
 
@@ -84,7 +86,7 @@ BufferUpdate::~BufferUpdate()
 		try {
 			apply()->finish();
 		} catch(const std::exception& error) {
-			vpp_warn("::BufferUpdate::~BufferUpdate"_src, "apply()->finish(): {}", error.what());
+			vpp_warn("~BufferUpdate"_tag, "apply()->finish(): {}", error.what());
 		}
 	}
 }
@@ -119,7 +121,7 @@ void BufferUpdate::align(size_t align, bool update)
 
 void BufferUpdate::operate(const void* ptr, std::size_t size)
 {
-	dlg_check("::BufferUpdate::operate"_src, {
+	dlg_check_tagged("BufferUpdate::operate", {
 		if(!ptr) vpp_error("invalid data ptr");
 	});
 
@@ -132,7 +134,7 @@ void BufferUpdate::operate(const void* ptr, std::size_t size)
 
 void BufferUpdate::checkCopies()
 {
-	dlg_check("::BufferUpdate::checkCopies"_src, {
+	dlg_check_tagged("BufferUpdate::checkCopies", {
 		if(offset_ > buffer().memorySize()) vpp_error("Buffer write overflow");
 	});
 
@@ -152,7 +154,7 @@ std::uint8_t& BufferUpdate::data()
 
 WorkPtr BufferUpdate::apply()
 {
-	dlg_check("::BufferUpdate::apply"_src, {
+	dlg_check_tagged("BufferUpdate::apply", {
 		if(!work_) vpp_error("work is null, was already called");
 		if(offset_ == 0) vpp_warn("offset is 0, no update data");
 	})
@@ -228,7 +230,7 @@ BufferReader::BufferReader(const Device& dev, BufferLayout align,
 void BufferReader::operate(void* ptr, std::size_t size)
 {
 	offset_ = std::max(offset_, nextOffset_);
-	dlg_check("::BufferReader::operate"_src, {
+	dlg_check_tagged("BufferReader::operate", {
 		if(offset_ > data_.size()) vpp_error("buffer read overflow");
 	});
 
