@@ -226,7 +226,7 @@ unsigned int Testing::unitsFailed {};
 Testing::Unit* Testing::currentUnit {};
 std::ostream* Testing::output = &std::cout;
 
-// Utility method used by EXPECT to assure the given expressions are evaluated
+// Utility method used by EXPECT to ensure the given expressions are evaluated
 // exactly once
 template<typename V, typename E>
 void checkExpect(const Testing::FailInfo& info, const V& value, const E& expected)

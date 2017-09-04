@@ -12,7 +12,7 @@ namespace vpp {
 /// Returns the vulkan api function address for the given function name and instance.
 /// Internally uses a map to cache the pointers.
 /// If the pointer is not found, returns nullptr.
-/// Prefer to use the macro versions to assure correct casting.
+/// Prefer to use the macro versions to ensure correct casting.
 /// \param except If this is true, throws an exception if the proc could not be loaded.
 /// Otherwise, if in debug mode, outputs an error message if it could not be found.
 vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name, bool except = true);
@@ -20,7 +20,7 @@ vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name, bool exc
 /// Returns the vulkan api function address for the given function name and device..
 /// Internally uses a map to cache the pointers.
 /// If the pointer is not found, returns nullptr.
-/// Prefer to use the macro versions to assure correct casting.
+/// Prefer to use the macro versions to ensure correct casting.
 /// \param except If this is true, throws an exception if the proc could not be loaded.
 /// Otherwise, if in debug mode, outputs an error message if it could not be found.
 vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name, bool except = true);

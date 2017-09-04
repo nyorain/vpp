@@ -57,7 +57,7 @@ WorkPtr write(const Buffer& buf, nytl::Span<const uint8_t> data)
 BufferUpdate::BufferUpdate(const Buffer& buf, BufferLayout align, bool direct)
 	: BufferOperator(align), buffer_(&buf), direct_(direct)
 {
-	buf.assureMemory();
+	buf.ensureMemory();
 	if(buf.mappable() && !direct) {
 		map_ = buf.memoryMap();
 		work_ = std::make_unique<FinishedWork<void>>();

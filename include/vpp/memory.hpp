@@ -67,7 +67,7 @@ public:
 	/// This function can be useful if the possibility of a given allocation was checked before
 	/// with a call to the allocatable function (than the returned range can safely be allocated)
 	/// with this function. It might also be useful if one wants to manage the memory reservation
-	/// itself externally and can therefore assure that the given range can be allocated.
+	/// itself externally and can therefore ensure that the given range can be allocated.
 	Allocation allocSpecified(size_t offset, size_t size, AllocationType);
 
 	/// Frees the given allocation. Will throw a std::logic_error if the given allocation is not

@@ -93,7 +93,7 @@ The example below creates multiple vulkan memory resources.
 If possible, all of them will automatically be allocated on the same device memory allocation.
 This is possible since creating them won't automatically bind them to memory.
 Only when they are
-used (i.e. vpp::Buffer::assureMemory is called e.g. by filling them), they will
+used (i.e. vpp::Buffer::ensureMemory is called e.g. by filling them), they will
 be bound to memory. This defered two-step initialization idiom will improve
 performance and the needed number of allocations.
 

@@ -83,7 +83,7 @@ class MemoryEntry
 {
 public:
 	virtual ~MemoryEntry();
-	virtual void assureBound(vk::DeviceSize offset = 0, vk::DeviceSize size = 0) = 0;
+	virtual void ensureBound(vk::DeviceSize offset = 0, vk::DeviceSize size = 0) = 0;
 	virtual vk::DeviceSize size() const = 0;
 };
 

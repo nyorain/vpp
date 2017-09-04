@@ -22,7 +22,7 @@ TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t s
 
 	auto bits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
 	buffer_ = Buffer(dev, info, bits);
-	buffer_.assureMemory();
+	buffer_.ensureMemory();
 }
 
 TransferManager::TransferBuffer::~TransferBuffer()
@@ -159,7 +159,7 @@ void TransferManager::optimize()
 int transferQueueFamily(const Device& dev, const Queue** queue)
 {
 	// we do not only query a valid queue family but a valid queue and then chose its queue
-	// family to assure that the device has a queue for the queried queue family
+	// family to ensure that the device has a queue for the queried queue family
 	auto* q = dev.queue(vk::QueueBits::transfer);
 	if(!q) q = dev.queue(vk::QueueBits::graphics);
 	if(!q) q = dev.queue(vk::QueueBits::compute);

@@ -74,7 +74,7 @@ public:
 /// The given additional attachments will be attached around the swapChain attachments,
 /// i.e. if the swapChainAttachment id is 1 and there are additionally 2 static attachments
 /// given the static attachments will have the ids 0 and 2.
-/// One must assure that the given attachments will create a framebuffer that is compatible
+/// One must ensure that the given attachments will create a framebuffer that is compatible
 /// for the given render pass, the class itself wont (and cannnot) perform any checking.
 class SwapchainRenderer : public ResourceReference<SwapchainRenderer> {
 public:

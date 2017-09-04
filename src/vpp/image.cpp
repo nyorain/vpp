@@ -61,7 +61,7 @@ WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,
 	vk::ImageLayout& layout, const vk::Extent3D& extent, const vk::ImageSubresource& subres,
 	const vk::Offset3D& offset, bool allowMap)
 {
-	image.assureMemory();
+	image.ensureMemory();
 	const auto texSize = formatSize(format);
 
 	if(image.mappable() && allowMap) {
@@ -356,7 +356,7 @@ void ViewableImage::init(const vk::ImageViewCreateInfo& info)
 {
 	auto cpy = info;
 
-	image_.assureMemory();
+	image_.ensureMemory();
 	cpy.image = vkImage();
 	imageView_ = vk::createImageView(vkDevice(), cpy);
 }

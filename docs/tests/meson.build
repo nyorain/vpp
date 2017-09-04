@@ -5,5 +5,5 @@ tests = [
 ]
 
 foreach test : tests
-  test(test, executable(test, test + '.cpp', dependencies: vpp_dep))
+  test(test, executable('test_' + test, test + '.cpp', dependencies: vpp_dep))
 endforeach
