@@ -5,6 +5,7 @@ Points are only partly sorted by priority.
 
 - testing!
 	- continue bufferops testing/fixing
+	- test everything using valgrind (with/without layers) to find potential leaks/errors
 - think about swapchain out of date handling (swapchain/swapchainRenderer)
 	- recreate swapchain automatically? how to handle it?
 	- further swapchain improvements: see acquire/present todos
@@ -24,6 +25,9 @@ Points are only partly sorted by priority.
 			- multisampling etc?
 - cleanups/fixes to the 2-step init concept
 	- what about buffers/images?
+		- would it make sense for them to behave the way everything else does?
+			- i.e. Buffer() + create(param) + init(param) OR Buffer(params)
+				- Change the constructor semantics to already initialize the memory
 
 C++ 17:
 ------
@@ -43,6 +47,10 @@ C++ 17:
 low prio / general / ideas
 --------------------------
 
+- vpp: don't output all extensions. Only required (via settings) ones
+- vpp: some way to detect installed vulkan version and automatically generate for it?
+	- should be doable with meson (python vulkan module; get version; download spec; parse it)
+	- Would probably require some spec version testing for codegen (fix issues with ALL spec version...)
 - codegen: queueFamilyExternalKhr (i.e. constants of extensions) -> ...KHR
 - config: vpp_debug vs vpp_ndebug rather messy now
 	- configurable from build system?
