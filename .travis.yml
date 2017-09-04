@@ -28,7 +28,7 @@ arch:
   script:
     - "meson build --buildtype $BUILDTYPE -Dtests=true -Dcodegen=$CODEGEN -Done_device=$ONE_DEVICE"
     - "ninja -C build"
-    - "meson test"
+    - "meson test -C build"
 
 script:
   - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
