@@ -1,4 +1,4 @@
-project('vpp', 'cpp',
+project('vpp', ['c', 'cpp'],
   license: 'BSL',
 	version: '0.1.0',
 	meson_version: '>=0.42',
