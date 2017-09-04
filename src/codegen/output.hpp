@@ -131,8 +131,8 @@ public:
 	void outputAll(const std::string& output);
 	void outputAllHeader(const std::string& output);
 
-	// assures the the given guard is set in guardVar, otherwise prints it to of and sets it
-	void assureGuard(std::ofstream& of, bool& guardVar, const std::string& guard);
+	// ensures the the given guard is set in guardVar, otherwise prints it to of and sets it
+	void ensureGuard(std::ofstream& of, bool& guardVar, const std::string& guard);
 	void endGuard(std::ofstream& of, bool guardVar, const std::string& guard);
 
 protected:

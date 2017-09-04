@@ -60,9 +60,9 @@ queue.mutex().unlock();
 class SparseMemoryEntry : public Resource
 {
 public:
-	///Assures that the given memory resource range is bound to a device memory object.
+	///Ensures that the given memory resource range is bound to a device memory object.
 	///This function will request the needed memory from the associated DeviceMemoryAllocator.
-	WorkPtr assureBound(const Allocation& allocation);
+	WorkPtr ensureBound(const Allocation& allocation);
 
 	WorkPtr bind(const Allocation& allocation, )
 
