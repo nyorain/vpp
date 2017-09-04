@@ -1,7 +1,6 @@
 ///Class that allows to batch together mulitple descriptor set requests to use as few
 ///vulkan DescriptorPools as possible
-class DescriptorAllocator
-{
+class DescriptorAllocator {
 public:
 	///Requests to allocate the needed descriptors for the given set.
 	void request(vpp::DescriptorSet& set);
@@ -22,28 +21,8 @@ struct Initializer
 	WorkManager& workManager;
 };
 
-///Two step initialization
-template<typename T>
-class Initialize
-{
-public:
-	template<typename... T>
-	Initialization(T&&... args)
-	{
-		obj_.create(std::forward<T>(args)...);
-	}
 
-	template<typename... T>
-	T init(T&&... args)
-	{
-		obj_.init(std::forward<T>(args)...);
-		return std::move(obj_);
-	}
-
-protected:
-	T obj_;
-};
-
+// - example -
 //will allocate exactly one memory object for all needed buffers and textures
 //will allocate exactly one descriptor pool for all needed descriptor sets (e.g. material data)
 //will (depending on settings, gpu or cpu bound?) submit exactly one work batch to the gpu.
