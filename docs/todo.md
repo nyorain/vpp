@@ -47,6 +47,12 @@ C++ 17:
 low prio / general / ideas
 --------------------------
 
+- allow to explicity allocate memory on a given memory allocator. 
+  To create large (like over 100 mb) buffers of a memory type we know we will need
+  Also something like an additional allocation strategy? 
+  Allocate more than needed if the user wants it
+- separate header for stuff that requires the generated vulkan headers
+	- don't pull them in in other headers
 - vpp: don't output all extensions. Only required (via settings) ones
 - vpp: some way to detect installed vulkan version and automatically generate for it?
 	- should be doable with meson (python vulkan module; get version; download spec; parse it)
