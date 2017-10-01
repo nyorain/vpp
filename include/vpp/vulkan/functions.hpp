@@ -16,7 +16,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-// static_assert(VK_HEADER_VERSION >=  58, "Vulkan and vpp header incompatibility");
+// static_assert(VK_HEADER_VERSION >=  61, "Vulkan and vpp header incompatibility");
 
 #define VEC_FUNC(T, CT, F, ...) \
 	std::vector<T> ret; \

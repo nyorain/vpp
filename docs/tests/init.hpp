@@ -1,3 +1,5 @@
+#define BUGGED_NO_MAIN
+#include "bugged.hpp"
 #include <vpp/vk.hpp>
 #include <vpp/memory.hpp>
 #include <vpp/device.hpp>
@@ -11,13 +13,10 @@ struct Globals {
 	std::unique_ptr<vpp::Device> device;
 };
 
-Globals initGlobals();
-Globals globals = initGlobals();
+static Globals globals;
 
-Globals initGlobals()
+void initGlobals()
 {
-	Globals ret;
-
 	constexpr const char* iniExtensions[] = {
 		VK_KHR_SURFACE_EXTENSION_NAME,
 		VK_EXT_DEBUG_REPORT_EXTENSION_NAME
@@ -32,9 +31,16 @@ Globals initGlobals()
 	instanceInfo.enabledExtensionCount = sizeof(iniExtensions) / sizeof(iniExtensions[0]);
 	instanceInfo.ppEnabledExtensionNames = iniExtensions;
 
-	ret.instance = {instanceInfo};
-	ret.debugCallback = std::make_unique<vpp::DebugCallback>(ret.instance);
-	ret.device = std::make_unique<vpp::Device>(ret.instance);
+	globals.instance = {instanceInfo};
+	globals.debugCallback = std::make_unique<vpp::DebugCallback>(globals.instance);
+	globals.device = std::make_unique<vpp::Device>(globals.instance);
+}
 
+int main() { 
+	initGlobals();
+	auto ret = bugged::Testing::run(); 
+	globals.device = {};
+	globals.debugCallback = {};
+	globals.instance = {};
 	return ret;
 }

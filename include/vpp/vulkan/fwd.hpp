@@ -529,12 +529,12 @@ using MemoryAllocateFlagsKHX = nytl::Flags<MemoryAllocateBitsKHX>;
 using DeviceGroupPresentModeFlagsKHX = nytl::Flags<DeviceGroupPresentModeBitsKHX>;
 
 struct MemoryAllocateFlagsInfoKHX;
-struct BindBufferMemoryInfoKHX;
-struct BindImageMemoryInfoKHX;
 struct DeviceGroupRenderPassBeginInfoKHX;
 struct DeviceGroupCommandBufferBeginInfoKHX;
 struct DeviceGroupSubmitInfoKHX;
 struct DeviceGroupBindSparseInfoKHX;
+struct BindBufferMemoryDeviceGroupInfoKHX;
+struct BindImageMemoryDeviceGroupInfoKHX;
 struct DeviceGroupPresentCapabilitiesKHX;
 struct ImageSwapchainCreateInfoKHX;
 struct BindImageMemorySwapchainInfoKHX;
@@ -543,14 +543,12 @@ struct DeviceGroupPresentInfoKHX;
 struct DeviceGroupSwapchainCreateInfoKHX;
 
 using PfnGetDeviceGroupPeerMemoryFeaturesKHX = void(*VKAPI_PTR)(Device device, uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, PeerMemoryFeatureFlagsKHX* pPeerMemoryFeatures);
-using PfnBindBufferMemory2KHX = Result(*VKAPI_PTR)(Device device, uint32_t bindInfoCount, const BindBufferMemoryInfoKHX* pBindInfos);
-using PfnBindImageMemory2KHX = Result(*VKAPI_PTR)(Device device, uint32_t bindInfoCount, const BindImageMemoryInfoKHX* pBindInfos);
 using PfnCmdSetDeviceMaskKHX = void(*VKAPI_PTR)(CommandBuffer commandBuffer, uint32_t deviceMask);
+using PfnCmdDispatchBaseKHX = void(*VKAPI_PTR)(CommandBuffer commandBuffer, uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
 using PfnGetDeviceGroupPresentCapabilitiesKHX = Result(*VKAPI_PTR)(Device device, DeviceGroupPresentCapabilitiesKHX* pDeviceGroupPresentCapabilities);
 using PfnGetDeviceGroupSurfacePresentModesKHX = Result(*VKAPI_PTR)(Device device, SurfaceKHR surface, DeviceGroupPresentModeFlagsKHX* pModes);
-using PfnAcquireNextImage2KHX = Result(*VKAPI_PTR)(Device device, const AcquireNextImageInfoKHX* pAcquireInfo, uint32_t* pImageIndex);
-using PfnCmdDispatchBaseKHX = void(*VKAPI_PTR)(CommandBuffer commandBuffer, uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
 using PfnGetPhysicalDevicePresentRectanglesKHX = Result(*VKAPI_PTR)(PhysicalDevice physicalDevice, SurfaceKHR surface, uint32_t* pRectCount, Rect2D* pRects);
+using PfnAcquireNextImage2KHX = Result(*VKAPI_PTR)(Device device, const AcquireNextImageInfoKHX* pAcquireInfo, uint32_t* pImageIndex);
 
 enum class ValidationCheckEXT : int32_t;
 
@@ -823,6 +821,15 @@ struct FenceGetFdInfoKHR;
 using PfnImportFenceFdKHR = Result(*VKAPI_PTR)(Device device, const ImportFenceFdInfoKHR* pImportFenceFdInfo);
 using PfnGetFenceFdKHR = Result(*VKAPI_PTR)(Device device, const FenceGetFdInfoKHR* pGetFdInfo, int* pFd);
 
+enum class PointClippingBehaviorKHR : int32_t;
+enum class TessellationDomainOriginKHR : int32_t;
+
+struct PhysicalDevicePointClippingPropertiesKHR;
+struct InputAttachmentAspectReferenceKHR;
+struct RenderPassInputAttachmentAspectCreateInfoKHR;
+struct ImageViewUsageCreateInfoKHR;
+struct PipelineTessellationDomainOriginStateCreateInfoKHR;
+
 struct PhysicalDeviceSurfaceInfo2KHR;
 struct SurfaceCapabilities2KHR;
 struct SurfaceFormat2KHR;
@@ -860,6 +867,18 @@ enum class SamplerReductionModeEXT : int32_t;
 struct SamplerReductionModeCreateInfoEXT;
 struct PhysicalDeviceSamplerFilterMinmaxPropertiesEXT;
 
+struct SampleLocationEXT;
+struct SampleLocationsInfoEXT;
+struct AttachmentSampleLocationsEXT;
+struct SubpassSampleLocationsEXT;
+struct RenderPassSampleLocationsBeginInfoEXT;
+struct PipelineSampleLocationsStateCreateInfoEXT;
+struct PhysicalDeviceSampleLocationsPropertiesEXT;
+struct MultisamplePropertiesEXT;
+
+using PfnCmdSetSampleLocationsEXT = void(*VKAPI_PTR)(CommandBuffer commandBuffer, const SampleLocationsInfoEXT* pSampleLocationsInfo);
+using PfnGetPhysicalDeviceMultisamplePropertiesEXT = void(*VKAPI_PTR)(PhysicalDevice physicalDevice, SampleCountBits samples, MultisamplePropertiesEXT* pMultisampleProperties);
+
 struct BufferMemoryRequirementsInfo2KHR;
 struct ImageMemoryRequirementsInfo2KHR;
 struct ImageSparseMemoryRequirementsInfo2KHR;
@@ -869,6 +888,8 @@ struct SparseImageMemoryRequirements2KHR;
 using PfnGetImageMemoryRequirements2KHR = void(*VKAPI_PTR)(Device device, const ImageMemoryRequirementsInfo2KHR* pInfo, MemoryRequirements2KHR* pMemoryRequirements);
 using PfnGetBufferMemoryRequirements2KHR = void(*VKAPI_PTR)(Device device, const BufferMemoryRequirementsInfo2KHR* pInfo, MemoryRequirements2KHR* pMemoryRequirements);
 using PfnGetImageSparseMemoryRequirements2KHR = void(*VKAPI_PTR)(Device device, const ImageSparseMemoryRequirementsInfo2KHR* pInfo, uint32_t* pSparseMemoryRequirementCount, SparseImageMemoryRequirements2KHR* pSparseMemoryRequirements);
+
+struct ImageFormatListCreateInfoKHR;
 
 enum class BlendOverlapEXT : int32_t;
 
@@ -885,6 +906,42 @@ enum class CoverageModulationModeNV : int32_t;
 using PipelineCoverageModulationStateCreateFlagsNV = nytl::Flags<DummyEnum>;
 
 struct PipelineCoverageModulationStateCreateInfoNV;
+
+VK_DEFINE_NON_DISPATCHABLE_HANDLE(SamplerYcbcrConversionKHR)
+
+enum class SamplerYcbcrModelConversionKHR : int32_t;
+enum class SamplerYcbcrRangeKHR : int32_t;
+enum class ChromaLocationKHR : int32_t;
+
+struct SamplerYcbcrConversionCreateInfoKHR;
+struct SamplerYcbcrConversionInfoKHR;
+struct BindImagePlaneMemoryInfoKHR;
+struct ImagePlaneMemoryRequirementsInfoKHR;
+struct PhysicalDeviceSamplerYcbcrConversionFeaturesKHR;
+struct SamplerYcbcrConversionImageFormatPropertiesKHR;
+
+using PfnCreateSamplerYcbcrConversionKHR = Result(*VKAPI_PTR)(Device device, const SamplerYcbcrConversionCreateInfoKHR* pCreateInfo, const AllocationCallbacks* pAllocator, SamplerYcbcrConversionKHR* pYcbcrConversion);
+using PfnDestroySamplerYcbcrConversionKHR = void(*VKAPI_PTR)(Device device, SamplerYcbcrConversionKHR ycbcrConversion, const AllocationCallbacks* pAllocator);
+
+struct BindBufferMemoryInfoKHR;
+struct BindImageMemoryInfoKHR;
+
+using PfnBindBufferMemory2KHR = Result(*VKAPI_PTR)(Device device, uint32_t bindInfoCount, const BindBufferMemoryInfoKHR* pBindInfos);
+using PfnBindImageMemory2KHR = Result(*VKAPI_PTR)(Device device, uint32_t bindInfoCount, const BindImageMemoryInfoKHR* pBindInfos);
+
+VK_DEFINE_NON_DISPATCHABLE_HANDLE(ValidationCacheEXT)
+
+enum class ValidationCacheHeaderVersionEXT : int32_t;
+
+using ValidationCacheCreateFlagsEXT = nytl::Flags<DummyEnum>;
+
+struct ValidationCacheCreateInfoEXT;
+struct ShaderModuleValidationCacheCreateInfoEXT;
+
+using PfnCreateValidationCacheEXT = Result(*VKAPI_PTR)(Device device, const ValidationCacheCreateInfoEXT* pCreateInfo, const AllocationCallbacks* pAllocator, ValidationCacheEXT* pValidationCache);
+using PfnDestroyValidationCacheEXT = void(*VKAPI_PTR)(Device device, ValidationCacheEXT validationCache, const AllocationCallbacks* pAllocator);
+using PfnMergeValidationCachesEXT = Result(*VKAPI_PTR)(Device device, ValidationCacheEXT dstCache, uint32_t srcCacheCount, const ValidationCacheEXT* pSrcCaches);
+using PfnGetValidationCacheDataEXT = Result(*VKAPI_PTR)(Device device, ValidationCacheEXT validationCache, size_t* pDataSize, void* pData);
 
 
 } // namespace vk

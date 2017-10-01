@@ -103,16 +103,16 @@ enum class StructureType : int32_t{
 	sparseImageFormatProperties2KHR = 1000059007,
 	physicalDeviceSparseImageFormatInfo2KHR = 1000059008,
 	memoryAllocateFlagsInfoKHX = 1000060000,
-	bindBufferMemoryInfoKHX = 1000060001,
-	bindImageMemoryInfoKHX = 1000060002,
 	deviceGroupRenderPassBeginInfoKHX = 1000060003,
 	deviceGroupCommandBufferBeginInfoKHX = 1000060004,
 	deviceGroupSubmitInfoKHX = 1000060005,
 	deviceGroupBindSparseInfoKHX = 1000060006,
+	acquireNextImageInfoKHX = 1000060010,
+	bindBufferMemoryDeviceGroupInfoKHX = 1000060013,
+	bindImageMemoryDeviceGroupInfoKHX = 1000060014,
 	deviceGroupPresentCapabilitiesKHX = 1000060007,
 	imageSwapchainCreateInfoKHX = 1000060008,
 	bindImageMemorySwapchainInfoKHX = 1000060009,
-	acquireNextImageInfoKHX = 1000060010,
 	deviceGroupPresentInfoKHX = 1000060011,
 	deviceGroupSwapchainCreateInfoKHX = 1000060012,
 	validationFlagsEXT = 1000061000,
@@ -175,6 +175,10 @@ enum class StructureType : int32_t{
 	fenceGetWin32HandleInfoKHR = 1000114002,
 	importFenceFdInfoKHR = 1000115000,
 	fenceGetFdInfoKHR = 1000115001,
+	physicalDevicePointClippingPropertiesKHR = 1000117000,
+	renderPassInputAttachmentAspectCreateInfoKHR = 1000117001,
+	imageViewUsageCreateInfoKHR = 1000117002,
+	pipelineTessellationDomainOriginStateCreateInfoKHR = 1000117003,
 	physicalDeviceSurfaceInfo2KHR = 1000119000,
 	surfaceCapabilities2KHR = 1000119001,
 	surfaceFormat2KHR = 1000119002,
@@ -185,16 +189,32 @@ enum class StructureType : int32_t{
 	memoryDedicatedAllocateInfoKHR = 1000127001,
 	physicalDeviceSamplerFilterMinmaxPropertiesEXT = 1000130000,
 	samplerReductionModeCreateInfoEXT = 1000130001,
+	sampleLocationsInfoEXT = 1000143000,
+	renderPassSampleLocationsBeginInfoEXT = 1000143001,
+	pipelineSampleLocationsStateCreateInfoEXT = 1000143002,
+	physicalDeviceSampleLocationsPropertiesEXT = 1000143003,
+	multisamplePropertiesEXT = 1000143004,
 	bufferMemoryRequirementsInfo2KHR = 1000146000,
 	imageMemoryRequirementsInfo2KHR = 1000146001,
 	imageSparseMemoryRequirementsInfo2KHR = 1000146002,
 	memoryRequirements2KHR = 1000146003,
 	sparseImageMemoryRequirements2KHR = 1000146004,
+	imageFormatListCreateInfoKHR = 1000147000,
 	physicalDeviceBlendOperationAdvancedFeaturesEXT = 1000148000,
 	physicalDeviceBlendOperationAdvancedPropertiesEXT = 1000148001,
 	pipelineColorBlendAdvancedStateCreateInfoEXT = 1000148002,
 	pipelineCoverageToColorStateCreateInfoNV = 1000149000,
-	pipelineCoverageModulationStateCreateInfoNV = 1000152000
+	pipelineCoverageModulationStateCreateInfoNV = 1000152000,
+	samplerYcbcrConversionCreateInfoKHR = 1000156000,
+	samplerYcbcrConversionInfoKHR = 1000156001,
+	bindImagePlaneMemoryInfoKHR = 1000156002,
+	imagePlaneMemoryRequirementsInfoKHR = 1000156003,
+	physicalDeviceSamplerYcbcrConversionFeaturesKHR = 1000156004,
+	samplerYcbcrConversionImageFormatPropertiesKHR = 1000156005,
+	bindBufferMemoryInfoKHR = 1000157000,
+	bindImageMemoryInfoKHR = 1000157001,
+	validationCacheCreateInfoEXT = 1000160000,
+	shaderModuleValidationCacheCreateInfoEXT = 1000160001
 };
 
 enum class SystemAllocationScope : int32_t{
@@ -432,7 +452,41 @@ enum class Format : int32_t{
 	pvrtc12bppSrgbBlockIMG = 1000054004,
 	pvrtc14bppSrgbBlockIMG = 1000054005,
 	pvrtc22bppSrgbBlockIMG = 1000054006,
-	pvrtc24bppSrgbBlockIMG = 1000054007
+	pvrtc24bppSrgbBlockIMG = 1000054007,
+	g8b8g8r8422UnormKHR = 1000156000,
+	b8g8r8g8422UnormKHR = 1000156001,
+	g8B8R83plane420UnormKHR = 1000156002,
+	g8B8r82plane420UnormKHR = 1000156003,
+	g8B8R83plane422UnormKHR = 1000156004,
+	g8B8r82plane422UnormKHR = 1000156005,
+	g8B8R83plane444UnormKHR = 1000156006,
+	r10x6UnormPack16KHR = 1000156007,
+	r10x6g10x6Unorm2pack16KHR = 1000156008,
+	r10x6g10x6b10x6a10x6Unorm4pack16KHR = 1000156009,
+	g10x6b10x6g10x6r10x6422Unorm4pack16KHR = 1000156010,
+	b10x6g10x6r10x6g10x6422Unorm4pack16KHR = 1000156011,
+	g10x6B10x6R10x63plane420Unorm3pack16KHR = 1000156012,
+	g10x6B10x6r10x62plane420Unorm3pack16KHR = 1000156013,
+	g10x6B10x6R10x63plane422Unorm3pack16KHR = 1000156014,
+	g10x6B10x6r10x62plane422Unorm3pack16KHR = 1000156015,
+	g10x6B10x6R10x63plane444Unorm3pack16KHR = 1000156016,
+	r12x4UnormPack16KHR = 1000156017,
+	r12x4g12x4Unorm2pack16KHR = 1000156018,
+	r12x4g12x4b12x4a12x4Unorm4pack16KHR = 1000156019,
+	g12x4b12x4g12x4r12x4422Unorm4pack16KHR = 1000156020,
+	b12x4g12x4r12x4g12x4422Unorm4pack16KHR = 1000156021,
+	g12x4B12x4R12x43plane420Unorm3pack16KHR = 1000156022,
+	g12x4B12x4r12x42plane420Unorm3pack16KHR = 1000156023,
+	g12x4B12x4R12x43plane422Unorm3pack16KHR = 1000156024,
+	g12x4B12x4r12x42plane422Unorm3pack16KHR = 1000156025,
+	g12x4B12x4R12x43plane444Unorm3pack16KHR = 1000156026,
+	g16b16g16r16422UnormKHR = 1000156027,
+	b16g16r16g16422UnormKHR = 1000156028,
+	g16B16R163plane420UnormKHR = 1000156029,
+	g16B16r162plane420UnormKHR = 1000156030,
+	g16B16R163plane422UnormKHR = 1000156031,
+	g16B16r162plane422UnormKHR = 1000156032,
+	g16B16R163plane444UnormKHR = 1000156033
 };
 
 enum class FormatFeatureBits : int32_t{
@@ -452,7 +506,14 @@ enum class FormatFeatureBits : int32_t{
 	sampledImageFilterCubicIMG = (1 << 13),
 	transferSrcKHR = (1 << 14),
 	transferDstKHR = (1 << 15),
-	sampledImageFilterMinmaxEXT = (1 << 16)
+	sampledImageFilterMinmaxEXT = (1 << 16),
+	midpointChromaSamplesKHR = (1 << 17),
+	sampledImageYcbcrConversionLinearFilterKHR = (1 << 18),
+	sampledImageYcbcrConversionSeparateReconstructionFilterKHR = (1 << 19),
+	sampledImageYcbcrConversionChromaReconstructionExplicitKHR = (1 << 20),
+	sampledImageYcbcrConversionChromaReconstructionExplicitForceableKHR = (1 << 21),
+	disjointKHR = (1 << 22),
+	cositedChromaSamplesKHR = (1 << 23)
 };
 NYTL_FLAG_OPS(FormatFeatureBits)
 
@@ -486,7 +547,12 @@ enum class ImageCreateBits : int32_t{
 	mutableFormat = (1 << 3),
 	cubeCompatible = (1 << 4),
 	bindSfrKHX = (1 << 6),
-	e2dArrayCompatibleKHR = (1 << 5)
+	e2dArrayCompatibleKHR = (1 << 5),
+	blockTexelViewCompatibleKHR = (1 << 7),
+	extendedUsageKHR = (1 << 8),
+	sampleLocationsCompatibleDepthEXT = (1 << 12),
+	disjointKHR = (1 << 9),
+	aliasKHR = (1 << 10)
 };
 NYTL_FLAG_OPS(ImageCreateBits)
 
@@ -558,7 +624,10 @@ enum class ImageAspectBits : int32_t{
 	color = (1 << 0),
 	depth = (1 << 1),
 	stencil = (1 << 2),
-	metadata = (1 << 3)
+	metadata = (1 << 3),
+	plane0KHR = (1 << 4),
+	plane1KHR = (1 << 5),
+	plane2KHR = (1 << 6)
 };
 NYTL_FLAG_OPS(ImageAspectBits)
 
@@ -644,7 +713,9 @@ enum class ImageLayout : int32_t{
 	transferDstOptimal = 7,
 	preinitialized = 8,
 	presentSrcKHR = 1000001002,
-	sharedPresentKHR = 1000111000
+	sharedPresentKHR = 1000111000,
+	depthReadOnlyStencilAttachmentOptimalKHR = 1000117000,
+	depthAttachmentStencilReadOnlyOptimalKHR = 1000117001
 };
 
 enum class ImageViewType : int32_t{
@@ -863,7 +934,8 @@ enum class DynamicState : int32_t{
 	stencilWriteMask = 7,
 	stencilReference = 8,
 	viewportWScalingNV = 1000087000,
-	discardRectangleEXT = 1000099000
+	discardRectangleEXT = 1000099000,
+	sampleLocationsEXT = 1000143000
 };
 
 enum class Filter : int32_t{
@@ -1060,7 +1132,9 @@ enum class ObjectType : int32_t{
 	debugReportCallbackEXT = 1000011000,
 	descriptorUpdateTemplateKHR = 1000085000,
 	objectTableNVX = 1000086000,
-	indirectCommandsLayoutNVX = 1000086001
+	indirectCommandsLayoutNVX = 1000086001,
+	samplerYcbcrConversionKHR = 1000156000,
+	validationCacheEXT = 1000160000
 };
 
 
@@ -1162,7 +1236,9 @@ enum class DebugReportObjectTypeEXT : int32_t{
 	displayModeKHR = 30,
 	objectTableNVX = 31,
 	indirectCommandsLayoutNVX = 32,
-	descriptorUpdateTemplateKHR = 1000085000
+	validationCache = 33,
+	descriptorUpdateTemplateKHR = 1000085000,
+	samplerYcbcrConversionKHR = 1000156000
 };
 
 enum class DebugReportBitsEXT : int32_t{
@@ -1366,6 +1442,17 @@ enum class FenceImportBitsKHR : int32_t{
 NYTL_FLAG_OPS(FenceImportBitsKHR)
 
 
+enum class PointClippingBehaviorKHR : int32_t{
+	allClipPlanes = 0,
+	userClipPlanesOnly = 1
+};
+
+enum class TessellationDomainOriginKHR : int32_t{
+	upperLeft = 0,
+	lowerLeft = 1
+};
+
+
 enum class SamplerReductionModeEXT : int32_t{
 	weightedAverage = 0,
 	min = 1,
@@ -1385,6 +1472,30 @@ enum class CoverageModulationModeNV : int32_t{
 	rgb = 1,
 	alpha = 2,
 	rgba = 3
+};
+
+
+enum class SamplerYcbcrModelConversionKHR : int32_t{
+	rgbIDentity = 0,
+	ycbcrIDentity = 1,
+	ycbcr709 = 2,
+	ycbcr601 = 3,
+	ycbcr2020 = 4
+};
+
+enum class SamplerYcbcrRangeKHR : int32_t{
+	ituFull = 0,
+	ituNarrow = 1
+};
+
+enum class ChromaLocationKHR : int32_t{
+	cositedEven = 0,
+	midpoint = 1
+};
+
+
+enum class ValidationCacheHeaderVersionEXT : int32_t{
+	one = 1
 };
 
 
