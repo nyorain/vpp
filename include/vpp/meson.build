@@ -39,7 +39,6 @@ vpp_headers_bits = [
 vpp_headers_util = [
 	'util/allocation.hpp',
 	'util/file.hpp',
-	'util/log.hpp',
 	'util/nonCopyable.hpp',
 	'util/sharedLock.hpp',
 	'util/span.hpp',

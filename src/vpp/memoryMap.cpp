@@ -5,9 +5,7 @@
 #include <vpp/memoryMap.hpp>
 #include <vpp/memory.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/util/log.hpp>
-
-using namespace dlg::literals;
+#include <dlg/dlg.hpp>
 
 namespace vpp {
 
@@ -15,10 +13,10 @@ namespace vpp {
 MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
 	: memory_(&memory), allocation_(alloc)
 {
-	dlg_check_tagged("MemoryMap::MemoryMap", {
+	dlg_checkt(("MemoryMap::MemoryMap"), {
 		if(!(memory.properties() & vk::MemoryPropertyBits::hostVisible))
-			vpp_error("trying to map unmappable memory");
-	})
+			dlg_error("trying to map unmappable memory");
+	});
 
 	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
 }
@@ -28,7 +26,7 @@ MemoryMap::~MemoryMap()
 	try {
 		unmap();
 	} catch(const std::exception& error) {
-		vpp_warn("~MemoryMap"_tag, "unmap(): {}", error.what());
+		dlg_warnt(("~MemoryMap"), "unmap(): {}", error.what());
 	}
 }
 
@@ -72,9 +70,9 @@ const vk::DeviceMemory& MemoryMap::vkMemory() const noexcept
 
 void MemoryMap::flush() const
 {
-	dlg_check_tagged("MemoryMap::flush", {
-		if(coherent()) vpp_warn("Called on coherent memory. Not needed.");
-	})
+	dlg_checkt(("MemoryMap::flush"), {
+		if(coherent()) dlg_warn("Called on coherent memory. Not needed.");
+	});
 
 	auto range = mappedMemoryRange();
 	vk::flushMappedMemoryRanges(vkDevice(), 1, range);
@@ -82,9 +80,9 @@ void MemoryMap::flush() const
 
 void MemoryMap::reload() const
 {
-	dlg_check_tagged("MemoryMap::reload", {
-		if(coherent()) vpp_warn("Called on coherent memory. Not needed.");
-	})
+	dlg_checkt(("MemoryMap::reload"), {
+		if(coherent()) dlg_warn("Called on coherent memory. Not needed.");
+	});
 
 	auto range = mappedMemoryRange();
 	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);
@@ -97,9 +95,9 @@ bool MemoryMap::coherent() const noexcept
 
 void MemoryMap::unmap()
 {
-	dlg_check_tagged("MemoryMap::ummap", {
-		if(views_ > 0) vpp_error("there are still views for this map");
-	})
+	dlg_checkt(("MemoryMap::ummap"), {
+		if(views_ > 0) dlg_error("there are still views for this map");
+	});
 
 	if(memory_ && vkMemory() && ptr() && size())
 		vk::unmapMemory(memory().vkDevice(), vkMemory());
@@ -117,16 +115,16 @@ void MemoryMap::ref() noexcept
 
 void MemoryMap::unref() noexcept
 {
-	dlg_check_tagged("MemoryMap::unref", {
-		if(views_ == 0) vpp_warn("refcount already zero");
-	})
+	dlg_checkt(("MemoryMap::unref"), {
+		if(views_ == 0) dlg_warn("refcount already zero");
+	});
 
 	views_--;
 	if(views_ == 0) {
 		try {
 			unmap();
 		} catch(const std::exception& error) {
-			vpp_warn("MemoryMap::unref"_tag, "unmap: ", error.what());
+			dlg_warnt(("MemoryMap::unref"), "unmap: ", error.what());
 		}
 	}
 }
@@ -135,9 +133,9 @@ void MemoryMap::unref() noexcept
 MemoryMapView::MemoryMapView(MemoryMap& map, const Allocation& allocation)
 	: memoryMap_(&map), allocation_(allocation)
 {
-	dlg_check_tagged("MemoryMapView::MemoryMapView", {
-		if(allocation.size == 0) vpp_error("invalid allocatoin");
-	})
+	dlg_checkt(("MemoryMapView::MemoryMapView"), {
+		if(allocation.size == 0) dlg_error("invalid allocation");
+	});
 
 	memoryMap_->ref();
 }
@@ -163,9 +161,9 @@ vk::MappedMemoryRange MemoryMapView::mappedMemoryRange() const noexcept
 
 void MemoryMapView::flush() const
 {
-	dlg_check_tagged("MemoryMapView::flush", {
-		if(coherent()) vpp_warn("Called on coherent memory. Not needed.");
-	})
+	dlg_checkt(("MemoryMapView::flush"), {
+		if(coherent()) dlg_warn("Called on coherent memory. Not needed.");
+	});
 
 	auto range = mappedMemoryRange();
 	vk::flushMappedMemoryRanges(vkDevice(), 1, range);
@@ -173,9 +171,9 @@ void MemoryMapView::flush() const
 
 void MemoryMapView::reload() const
 {
-	dlg_check_tagged("MemoryMapView::reload", {
-		if(coherent()) vpp_warn("Called on coherent memory. Not needed.");
-	})
+	dlg_checkt(("MemoryMapView::reload"), {
+		if(coherent()) dlg_warn("Called on coherent memory. Not needed.");
+	});
 
 	auto range = mappedMemoryRange();
 	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);

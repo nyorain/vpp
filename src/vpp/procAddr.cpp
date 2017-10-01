@@ -4,15 +4,13 @@
 
 #include <vpp/procAddr.hpp>
 #include <vpp/util/sharedLock.hpp>
-#include <vpp/util/log.hpp>
 #include <vpp/vk.hpp>
+#include <dlg/dlg.hpp>
 
 #include <unordered_map>
 #include <string>
 #include <iostream>
 #include <shared_mutex>
-
-using namespace dlg::literals;
 
 namespace vpp {
 namespace {
@@ -28,7 +26,6 @@ std::shared_mutex deviceMutex;
 }
 
 using namespace std::literals::string_literals;
-using namespace dlg::literals;
 
 vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name, bool except)
 {
@@ -46,7 +43,7 @@ vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name, bool exc
 		auto msg = "vpp::vulkanProc: Failed to load instance proc "s + name;
 		if(except) throw std::runtime_error(msg);
 
-		vpp_warn("vulkanProc"_tag, "Failed to load instance proc {}", name);
+		dlg_warnt(("vulkanProc"), "Failed to load instance proc {}", name);
 		return nullptr;
 	}
 
@@ -75,7 +72,7 @@ vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name, bool except)
 		auto msg = "vpp::vulkanProc: Failed to load device proc "s + name;
 		if(except) throw std::runtime_error(msg);
 
-		vpp_warn("vulkanProc"_tag, "Failed to load device proc {}", name);
+		dlg_warnt(("vulkanProc"), "Failed to load device proc {}", name);
 		return nullptr;
 	}
 

@@ -18,7 +18,7 @@ CommandWork<R>::~CommandWork()
 	try {
 		finish();
 	} catch(const std::exception& error) {
-		vpp_warn(dlg::Tag{"~CommandWork"}, "finish(): {}", error.what());
+		dlg_warnt(("vpp", "~CommandWork"), "finish(): {}", error.what());
 	}
 }
 

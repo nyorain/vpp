@@ -47,9 +47,10 @@ C++ 17:
 low prio / general / ideas
 --------------------------
 
-- allow to explicity allocate memory on a given memory allocator. 
+- generalize TransferBuffer into some shared buffer
+- allow to explicity allocate memory on a given memory allocator.
   To create large (like over 100 mb) buffers of a memory type we know we will need
-  Also something like an additional allocation strategy? 
+  Also something like an additional allocation strategy?
   Allocate more than needed if the user wants it
 - separate header for stuff that requires the generated vulkan headers
 	- don't pull them in in other headers

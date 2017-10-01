@@ -12,8 +12,6 @@
 
 #include <stdexcept>
 
-using namespace dlg::literals;
-
 namespace vpp {
 
 // SwapchainRenderer
@@ -247,7 +245,8 @@ std::unique_ptr<Work<void>> SwapchainRenderer::render(const Queue& present, cons
 			try {
 				finish();
 			} catch(const std::exception& err) {
-				vpp_warn("SwapchainRenderer::render"_tag, "Work::finish: {}", err.what());
+				dlg_warnt(("SwapchainRenderer::render"),
+					"SwapchainRenderer Work::finish: {}", err.what());
 			}
 		}
 

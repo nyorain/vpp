@@ -6,8 +6,8 @@
 #include <vpp/transfer.hpp> // vpp::TransferManager
 #include <vpp/transferWork.hpp> // vpp::transferWork
 #include <vpp/queue.hpp> // vpp::Queue
-#include <vpp/util/log.hpp> // dlg_check
 #include <vpp/vk.hpp>
+#include <dlg/dlg.hpp>
 
 #include <utility> // std::move, std::swap
 #include <cstring> // std::memcpy
@@ -116,9 +116,9 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format for
 	const vk::Extent3D& extent, const vk::ImageSubresource& subres, const vk::Offset3D& offset,
 	bool allowMap)
 {
-	dlg_check_tagged("retrieve(image)", {
-		if(!image.memoryEntry().allocated()) vpp_error("Image has no memory");
-	})
+	dlg_checkt(("retrieve(image)"), {
+		if(!image.memoryEntry().allocated()) dlg_error("Image has no memory");
+	});
 
 	if(image.mappable() && allowMap) {
 		std::vector<std::uint8_t> data(image.memorySize());

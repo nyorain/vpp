@@ -5,10 +5,8 @@
 #include <vpp/transfer.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/util/log.hpp>
+#include <dlg/dlg.hpp>
 #include <algorithm>
-
-using namespace dlg::literals;
 
 namespace vpp {
 
@@ -27,10 +25,11 @@ TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t s
 
 TransferManager::TransferBuffer::~TransferBuffer()
 {
-	dlg_check_tagged("~TransferBuffer", {
+	dlg_checkt("~TransferBuffer", {
 		auto rc = ranges_.size();
-		if(rc > 0) vpp_warn("{} allocations left", rc);
-	})
+		if(rc > 0)
+			dlg_warn("{} allocations left on destruction", rc);
+	});
 }
 
 Allocation TransferManager::TransferBuffer::use(std::size_t size)
