@@ -41,4 +41,5 @@ outputs = [
 vk_headers = custom_target('vk-headers',
 	input: spec,
 	output: 'vk-headers',
+	capture: true,
 	command: [vk_codegen, '@INPUT@', output_dir])
