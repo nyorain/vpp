@@ -48,7 +48,7 @@ template<typename...> using void_t = void;
 /// \module utility
 template<typename... T> void unused(T&&...) {}
 
-/// \brief Can be used to assure that variadic arguments have the same type.
+/// \brief Can be used to ensure that variadic arguments have the same type.
 /// ```cpp
 /// // implementation function that takes a variable number of integers
 /// template<typename... Args>

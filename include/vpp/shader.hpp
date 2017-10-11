@@ -6,8 +6,8 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp> // vpp::ResourceHandle
-#include <vpp/util/stringParam.hpp> // nytl::StringParam
 #include <vpp/util/span.hpp> // nytl::Span
+#include <string_view> // std::string_view
 #include <vector> // std::vector
 
 namespace vpp {
@@ -20,7 +20,7 @@ public:
 
 	/// \throws std::runtime_error if the given file cannot be read or has
 	/// an invalid size.
-	ShaderModule(const Device& dev, nytl::StringParam file);
+	ShaderModule(const Device& dev, std::string_view file);
 	ShaderModule(const Device& dev, nytl::Span<const uint32_t> bytes);
 	~ShaderModule();
 
@@ -80,7 +80,7 @@ protected:
 /// Throws std::runtime_error if the file cannot be read or has an invalid size.
 /// Note that the returned object is a plain handle and must be manually destroyed.
 /// If possible, prefer to use the wrapper class ShaderModule.
-vk::ShaderModule loadShaderModule(vk::Device dev, nytl::StringParam filename);
+vk::ShaderModule loadShaderModule(vk::Device dev, std::string_view filename);
 
 /// Can be used to create a shader module form the raw spirv code.
 /// Note that the returned object is a plain handle and must be manually destroyed.

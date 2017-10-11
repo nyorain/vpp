@@ -6,7 +6,7 @@
 #include <vpp/queue.hpp>
 #include <vpp/sync.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/util/log.hpp>
+#include <dlg/dlg.hpp>
 
 #include <algorithm> // std::remove_if
 
@@ -26,9 +26,9 @@ SubmitManager::SubmitManager(const Device& dev) : Resource(dev)
 
 SubmitManager::~SubmitManager()
 {
-	dlg_check("~SubmitManager", {
+	dlg_checkt(("~SubmitManager"), {
 		if(!pending_.empty())
-			vpp_warn("There are ", pending_.size(), " pending submission left");
+			dlg_warn("There are ", pending_.size(), " pending submission left");
 	});
 }
 
@@ -40,9 +40,9 @@ void SubmitManager::submit()
 
 void SubmitManager::submit(const vpp::Queue& queue)
 {
-	dlg_check("SubmitManager::submit(queue)", {
+	dlg_checkt(("SubmitManager::submit(queue)"), {
 		if(queue.device() != device())
-			vpp_error("invalid queue given");
+			dlg_error("invalid queue given");
 	});
 
 	// lock own mutex and mutex of all queues
@@ -99,9 +99,9 @@ void SubmitManager::add(const vpp::Queue& queue, nytl::Span<const vk::CommandBuf
 void SubmitManager::add(const vpp::Queue& queue, nytl::Span<const vk::CommandBuffer> buffers,
 	const vk::SubmitInfo& info, CommandExecutionState* state)
 {
-	dlg_check("SubmitManager::add", {
+	dlg_checkt(("SubmitManager::add"), {
 		if(queue.device() != device())
-			vpp_error("invalid queue given");
+			dlg_error("invalid queue given");
 	});
 
 	auto submission = Submission {};
@@ -129,9 +129,9 @@ void SubmitManager::submit(const CommandExecutionState& state)
 		if(it != pending_.end()) queue = it->queue;
 	}
 
-	dlg_check("SubmitManager::submit(state)", {
+	dlg_checkt(("SubmitManager::submit(state)"), {
 		if(!queue)
-			vpp_error("::SubmitManager::submit(state)"_src, "could not find given state");
+			dlg_error("could not find given state");
 	});
 
 	submit(*queue);
@@ -144,9 +144,9 @@ void SubmitManager::moveStateObserver(const CommandExecutionState& oldOne,
 	auto pred = [&](const Submission& sub) { return (sub.state == &oldOne); };
 	auto it = std::find_if(pending_.begin(), pending_.end(), pred);
 
-	dlg_check("SubmitManager::moveStateObserver", {
+	dlg_checkt(("SubmitManager::moveStateObserver"), {
 		if(it == pending_.end())
-			vpp_warn("Could not find old state. Probably crashing now");
+			dlg_warn("Could not find old state. Probably crashing now");
 	});
 
 	it->state = &newOne;
@@ -158,9 +158,9 @@ void SubmitManager::removeStateObserver(const CommandExecutionState& state)
 	auto pred = [&](const Submission& sub) { return (sub.state == &state); };
 	auto it = std::find_if(pending_.begin(), pending_.end(), pred);
 
-	dlg_check("SubmitManager::removeStateObserver", {
+	dlg_checkt(("SubmitManager::removeStateObserver"), {
 		if(it == pending_.end())
-			vpp_warn("Could not find command execution state");
+			dlg_warn("Could not find command execution state");
 	});
 
 	pending_.erase(it);
@@ -207,9 +207,9 @@ void CommandExecutionState::submit()
 {
 	if(fence_ || completed_) return;
 
-	dlg_check("CommandExecutionState::submit", {
+	dlg_checkt(("CommandExecutionState::submit"), {
 		if(!submitManager_)
-			vpp_error("::CommandExecutionState::submit"_src, "invalid object");
+			dlg_error("invalid commandExecutionState used");
 	});
 
 	submitManager_->submit(*this);

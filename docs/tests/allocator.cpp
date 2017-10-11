@@ -22,7 +22,7 @@ TEST(memory) {
 		EXPECT(buffer1.memoryEntry().allocated(), false);
 		EXPECT(buffer2.memoryEntry().allocator(), &alloc);
 
-		buffer1.assureMemory();
+		buffer1.ensureMemory();
 		EXPECT(alloc.memories().size(), 1u);
 		EXPECT(alloc.memories()[0] == nullptr, false);
 

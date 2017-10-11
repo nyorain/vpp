@@ -295,7 +295,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		auto it = std::find(fulfilled.constants.cbegin(), fulfilled.constants.cend(), constant);
 		if(it != fulfilled.constants.cend()) continue;
 
-		assureGuard(fwd_, fwdGuard, guard);
+		ensureGuard(fwd_, fwdGuard, guard);
 		auto name = constantName(*constant);
 
 		// NOTE: workaround for predefined constants (true/false)
@@ -331,7 +331,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		auto& handle = static_cast<const Handle&>(type);
 		++count;
 
-		assureGuard(fwd_, fwdGuard, guard);
+		ensureGuard(fwd_, fwdGuard, guard);
 
 		// output handle macro to fwd
 		auto name = typeName(type);
@@ -351,7 +351,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		if(basetype.name == "VkFlags") continue;
 
 		++count;
-		assureGuard(fwd_, fwdGuard, guard);
+		ensureGuard(fwd_, fwdGuard, guard);
 
 		// fwd
 		auto name = typeName(basetype);
@@ -371,8 +371,8 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		auto name = typeName(enumeration);
 
 		++count;
-		assureGuard(fwd_, fwdGuard, guard);
-		assureGuard(enums_, enumGuard, guard);
+		ensureGuard(fwd_, fwdGuard, guard);
+		ensureGuard(enums_, enumGuard, guard);
 
 		fwd_ << "enum class " << name << " : int32_t;\n";
 
@@ -408,7 +408,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		++count;
 
 		auto name = typeName(bitmask);
-		assureGuard(fwd_, fwdGuard, guard);
+		ensureGuard(fwd_, fwdGuard, guard);
 
 		std::string enumName;
 		if(!bitmask.bits) enumName = "DummyEnum";
@@ -429,8 +429,8 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		auto& structure = static_cast<Struct&>(*typeit);
 		++count;
 
-		assureGuard(fwd_, fwdGuard, guard);
-		assureGuard(structs_, structGuard, guard);
+		ensureGuard(fwd_, fwdGuard, guard);
+		ensureGuard(structs_, structGuard, guard);
 		printStruct(structure);
 	}
 
@@ -447,7 +447,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		auto& funcptr = static_cast<FuncPtr&>(*typeit);
 		++count;
 
-		assureGuard(fwd_, fwdGuard, guard);
+		ensureGuard(fwd_, fwdGuard, guard);
 
 		fwd_ << "using " << typeName(funcptr) << " = " << typeName(funcptr.signature.returnType);
 		fwd_ << "(*VKAPI_PTR)(";
@@ -477,7 +477,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		count++;
 
 		auto name = removeVkPrefix(type.name, nullptr);
-		assureGuard(fwd_, fwdGuard, guard);
+		ensureGuard(fwd_, fwdGuard, guard);
 
 		fwd_ << "using Pfn" << name << " = " << typeName(type.signature.returnType);
 		fwd_ << "(*VKAPI_PTR)(";
@@ -503,7 +503,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 		if(it != fulfilled.commands.end()) continue;
 
 		++count;
-		assureGuard(functions_, funcGuard, guard);
+		ensureGuard(functions_, funcGuard, guard);
 		printCmd(*cmdit);
 		// functions_ << "\n"; // insert blank line between seperate function (groups)
 	}
@@ -520,7 +520,7 @@ void CCOutputGenerator::printReqs(Requirements& reqs, const Requirements& fulfil
 	endGuard(enums_, enumGuard, guard);
 }
 
-void CCOutputGenerator::assureGuard(std::ofstream& of, bool& guardVar, const std::string& guard)
+void CCOutputGenerator::ensureGuard(std::ofstream& of, bool& guardVar, const std::string& guard)
 {
 	if(!guardVar) {
 		if(!guard.empty())of << "#ifdef " << guard << "\n\n";
@@ -722,7 +722,16 @@ void CCOutputGenerator::printStruct(const Struct& type)
 
 		// member declaration
 		std::string init = "";
-		if(member.name == "sType") init = "StructureType::" + nameFirstLower;
+		if(member.name == "sType") {
+#ifdef VPP_NO_VALUES_STRUCTURE_TYPE
+			init = "StructureType::" + nameFirstLower;
+#else
+			auto name = member.node.attribute("values").as_string();
+			auto sTypeEnum = *registry().findEnum("VkStructureType");
+			init = "StructureType::" + enumName(sTypeEnum, name);
+#endif
+		}
+
 		structs_ << "\t" << paramName(member);
 		if(!type.isUnion || !unionInit)
 			structs_ << " {" << init << "}";

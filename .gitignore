@@ -1,6 +1,9 @@
 build/
+mbuild/
+subprojects/*/
 .clang_complete
 .build-tools.cson
+*.sublime*
 .vscode
 *.swp
 .tags*

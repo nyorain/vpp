@@ -11,14 +11,15 @@
 #define VPP_VMAJOR @vmajor@
 #define VPP_VMINOR @vminor@
 #define VPP_VPATCH @vpatch@
+#define VPP_VERSION VPP_VMAJOR * 10000u + VPP_VMINOR * 100u + VPP_VPATCH
 
 // If this macro is enabled vpp will only allow one Device instance but nearly all objects
 // will consume one word less memory. For more information see resource.hpp
-#cmakedefine VPP_ONE_DEVICE_OPTIMIZATION
+#mesondefine VPP_ONE_DEVICE_OPTIMIZATION
 
 // If this macro is defined, additional checks will be performed (maybe worse performance)
 #if !defined(VPP_DEBUG) && !defined(VPP_NDEBUG)
- #cmakedefine VPP_DEBUG
+ #define VPP_DEBUG 1
 #endif
 
 // Opposite of VPP_DEBUG

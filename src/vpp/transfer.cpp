@@ -5,7 +5,7 @@
 #include <vpp/transfer.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/util/log.hpp>
+#include <dlg/dlg.hpp>
 #include <algorithm>
 
 namespace vpp {
@@ -20,15 +20,16 @@ TransferManager::TransferBuffer::TransferBuffer(const Device& dev, std::size_t s
 
 	auto bits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
 	buffer_ = Buffer(dev, info, bits);
-	buffer_.assureMemory();
+	buffer_.ensureMemory();
 }
 
 TransferManager::TransferBuffer::~TransferBuffer()
 {
-	dlg_check("~TransferBuffer", {
+	dlg_checkt("~TransferBuffer", {
 		auto rc = ranges_.size();
-		if(rc > 0) vpp_warn("{} allocations left", rc);
-	})
+		if(rc > 0)
+			dlg_warn("{} allocations left on destruction", rc);
+	});
 }
 
 Allocation TransferManager::TransferBuffer::use(std::size_t size)
@@ -157,7 +158,7 @@ void TransferManager::optimize()
 int transferQueueFamily(const Device& dev, const Queue** queue)
 {
 	// we do not only query a valid queue family but a valid queue and then chose its queue
-	// family to assure that the device has a queue for the queried queue family
+	// family to ensure that the device has a queue for the queried queue family
 	auto* q = dev.queue(vk::QueueBits::transfer);
 	if(!q) q = dev.queue(vk::QueueBits::graphics);
 	if(!q) q = dev.queue(vk::QueueBits::compute);

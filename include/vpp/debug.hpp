@@ -38,7 +38,7 @@ public:
 
 public:
 	DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags = defaultFlags());
-	~DebugCallback();
+	virtual ~DebugCallback();
 
 	vk::Instance vkInstance() const { return instance_; }
 	vk::DebugReportCallbackEXT vkCallback() const { return debugCallback_; }

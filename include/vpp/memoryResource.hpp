@@ -7,7 +7,6 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/allocator.hpp>
-#include <vpp/util/log.hpp>
 
 namespace vpp {
 
@@ -20,10 +19,10 @@ class MemoryResource : public ResourceReferenceHandle<MemoryResource<H>, H> {
 public:
 	/// Checks if this memory resource was initialized yet and if not it will be initialized.
 	/// Will be implicitly called on member functions that require it.
-	void assureMemory() const { memoryEntry().allocate(); }
+	void ensureMemory() const { memoryEntry().allocate(); }
 
 	/// Creates a memory map for this memory resource (if there is none) and returns a view to it.
-	/// Will automatically assure that there is memory bound for this resource.
+	/// Will automatically ensure that there is memory bound for this resource.
 	/// In debug mode, throws std::logic_error if the memory it is bound to cannot be mapped.
 	MemoryMapView memoryMap() const;
 
@@ -62,7 +61,7 @@ protected:
 template<typename R>
 MemoryMapView MemoryResource<R>::memoryMap() const
 {
-	assureMemory();
+	ensureMemory();
 	return memoryEntry().map();
 }
 

@@ -4,7 +4,7 @@
 
 #include <vpp/queue.hpp>
 #include <vpp/device.hpp>
-#include <vpp/util/log.hpp>
+#include <dlg/dlg.hpp>
 
 namespace vpp {
 
@@ -32,9 +32,9 @@ QueueLock::QueueLock(const Device& dev, const vpp::Queue& queue)
 	queueMutex_->lock();
 	sharedMutex_.lock_shared();
 
-	dlg_check("QueueLock", {
+	dlg_checkt(("QueueLock"), {
 		if(&queue.device() != &dev)
-			vpp_error("invalid queue/device given, queue does not belong to device");
+			dlg_error("given queue does not belong to given device");
 	});
 }
 

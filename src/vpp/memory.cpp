@@ -4,7 +4,7 @@
 
 #include <vpp/memory.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/util/log.hpp>
+#include <dlg/dlg.hpp>
 
 #include <algorithm> // std::lower_bound
 #include <string> // std::string
@@ -50,7 +50,7 @@ DeviceMemory::DeviceMemory(const Device& dev, uint32_t size, vk::MemoryPropertyF
 
 DeviceMemory::~DeviceMemory()
 {
-	dlg_check("~DeviceMemory", {
+	dlg_checkt(("~DeviceMemory"), {
 		if(!allocations_.empty()) {
 			std::string msg = std::to_string(allocations_.size()) + " allocations left:";
 			for(auto& a : allocations_) {
@@ -58,9 +58,9 @@ DeviceMemory::~DeviceMemory()
 				msg += " " + std::to_string(a.allocation.size);
 			}
 
-			vpp_warn(msg);
+			dlg_warn("{}", msg);
 		}
-	})
+	});
 
 	if(vkHandle()) vk::freeMemory(vkDevice(), vkHandle(), nullptr);
 }
@@ -74,21 +74,21 @@ Allocation DeviceMemory::alloc(size_t size, size_t alignment, AllocationType typ
 
 Allocation DeviceMemory::allocSpecified(size_t offset, size_t size, AllocationType type)
 {
-	dlg_check("DeviceMemory::allocSpecified", {
-		if(size == 0) vpp_error("size is not allowed to be 0");
+	dlg_checkt(("DeviceMemory::allocSpecified"), {
+		if(size == 0) dlg_error("given size is 0");
 		for(auto& alloc : allocations_) {
 			const auto& a = alloc.allocation;
 			const auto& overlapping = (a.offset < offset) != (a.offset + a.size <= offset);
 			const auto& inside = (a.offset >= offset) && (a.offset < offset + size);
 			if(overlapping || inside) {
-				vpp_error("invalid params ", offset, ' ', size, ' ', a.offset, ' ', a.size);
+				dlg_error("invalid params ", offset, ' ', size, ' ', a.offset, ' ', a.size);
 				break;
 			}
 		}
 
 		if(type == AllocationType::none)
-			vpp_error("type is none. Could later cause aliasing");
-	})
+			dlg_error("given type is 'none'. Could later cause aliasing");
+	});
 
 	AllocationEntry allocation = {{offset, size}, type};
 	auto it = std::lower_bound(allocations_.begin(), allocations_.end(), allocation,
@@ -118,11 +118,11 @@ Allocation DeviceMemory::allocatable(size_t size, size_t alignment,
 	// a taken in account (smaller = better) since the new sizes on both sides should be as small as
 	// possible. true?
 
-	dlg_check("DeviceMemory::allocatable", {
-		if(alignment % 2) vpp_error("alignment param ", alignment, "not a power of 2");
-		if(size == 0) vpp_error("size is not allowed to be 0");
-		if(type == AllocationType::none) vpp_error("type is none. Can cause aliasing");
-	})
+	dlg_checkt(("DeviceMemory::allocatable"), {
+		if(alignment % 2) dlg_error("alignment param ", alignment, "not a power of 2");
+		if(size == 0) dlg_error("size is not allowed to be 0");
+		if(type == AllocationType::none) dlg_error("type is none. Can cause aliasing");
+	});
 
 	static constexpr AllocationEntry start = {{0, 0}, AllocationType::none};
 	auto granularity = device().properties().limits.bufferImageGranularity;
@@ -186,7 +186,7 @@ void DeviceMemory::free(const Allocation& alloc)
 		}
 	}
 
-	vpp_warn("::DeviceMemory::free"_src, "could not find the given allocation");
+	dlg_warnt(("DeviceMemory::free"), "could not find the given allocation");
 }
 
 size_t DeviceMemory::largestFreeSegment() const noexcept

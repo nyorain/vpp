@@ -413,7 +413,12 @@ Param RegistryLoader::parseParam(const pugi::xml_node& node)
 	if(nameChild.next_sibling()) {
 		std::string txt;
 		auto sib = nameChild;
-		while((sib = sib.next_sibling())) txt += sib.text().get();
+		while((sib = sib.next_sibling())) {
+			if(std::strcmp(sib.name(), "comment") == 0)
+				break;
+
+			txt += sib.text().get();
+		}
 		// std::string txt = nameChild.next_sibling().text().get();
 		bool bracketOpen = false;
 		while(!txt.empty()) {

@@ -75,7 +75,7 @@ protected:
 	unsigned int highestID_ {};
 	std::vector<unsigned int> ids_;
 	std::unordered_map<std::thread::id, std::unordered_map<unsigned int, T>> objects_;
-	mutable std::shared_timed_mutex mutex_;
+	mutable std::shared_mutex mutex_;
 };
 
 using DynamicStoragePtr = std::unique_ptr<DynamicStorageBase>;
@@ -85,7 +85,7 @@ using DynamicThreadStorage = ThreadStorage<DynamicStoragePtr>;
 template<typename T>
 unsigned int ThreadStorage<T>::add(T** obj)
 {
-	std::lock_guard<std::shared_timed_mutex> lock(mutex_);
+	std::lock_guard lock(mutex_);
 	auto id = ++highestID_;
 	ids_.push_back(id);
 	if(obj) *obj = &objects_[std::this_thread::get_id()][id];
@@ -95,7 +95,7 @@ unsigned int ThreadStorage<T>::add(T** obj)
 template<typename T>
 T* ThreadStorage<T>::get(unsigned int id)
 {
-	SharedLockGuard<std::shared_timed_mutex> lock(mutex_);
+	SharedLockGuard lock(mutex_);
 	if(std::find(ids_.begin(), ids_.end(), id) == ids_.end()) return nullptr;
 	return &objects_[std::this_thread::get_id()][id];
 }
@@ -103,7 +103,7 @@ T* ThreadStorage<T>::get(unsigned int id)
 template<typename T>
 const T* ThreadStorage<T>::get(unsigned int id) const
 {
-	SharedLockGuard<std::shared_timed_mutex> lock(mutex_);
+	SharedLockGuard lock(mutex_);
 	if(std::find(ids_.begin(), ids_.end(), id) == ids_.end()) return nullptr;
 	return &objects_[std::this_thread::get_id()][id];
 }
@@ -111,7 +111,7 @@ const T* ThreadStorage<T>::get(unsigned int id) const
 template<typename T>
 bool ThreadStorage<T>::remove(unsigned int id)
 {
-	std::lock_guard<std::shared_timed_mutex> lock(mutex_);
+	std::lock_guard lock(mutex_);
 	auto it = std::find(ids_.begin(), ids_.end(), id);
 	if(it == ids_.end()) return false;
 	ids_.erase(it);

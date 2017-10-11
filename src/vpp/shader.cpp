@@ -11,11 +11,13 @@
 
 namespace vpp {
 
-vk::ShaderModule loadShaderModule(vk::Device dev, nytl::StringParam filename)
+vk::ShaderModule loadShaderModule(vk::Device dev, std::string_view filename)
 {
 	auto code = readFile(filename, true);
-	if(code.size() % 4)
-		throw std::runtime_error("vpp::loadShaderModule: invalid file size: " + filename.string());
+	if(code.size() % 4) {
+		std::string cpy {filename};
+		throw std::runtime_error("vpp::loadShaderModule: invalid file size: " + cpy);
+	}
 
 	auto ptr = reinterpret_cast<const std::uint32_t*>(code.data());
 	return loadShaderModule(dev, {ptr, code.size() / 4});
@@ -30,7 +32,7 @@ vk::ShaderModule loadShaderModule(vk::Device dev, nytl::Span<const std::uint32_t
 }
 
 // ShaderModule
-ShaderModule::ShaderModule(const Device& dev, nytl::StringParam filename) : ResourceHandle(dev)
+ShaderModule::ShaderModule(const Device& dev, std::string_view filename) : ResourceHandle(dev)
 {
 	handle_ = loadShaderModule(dev, filename);
 }

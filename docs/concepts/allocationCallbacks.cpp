@@ -1,4 +1,6 @@
-//to be inserted into device.cpp
+// to be inserted into device.cpp
+// probably not worth it though, the driver can do this better than we can
+// and the host-side allocator is mainly for debugging (as stated by the spec)
 
 struct VulkanAllocator
 {

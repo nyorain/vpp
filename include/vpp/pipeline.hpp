@@ -8,8 +8,8 @@
 #include <vpp/resource.hpp>
 #include <vpp/shader.hpp>
 #include <vpp/util/span.hpp>
-#include <vpp/util/stringParam.hpp>
 
+#include <string_view>
 #include <vector>
 #include <functional>
 
@@ -47,7 +47,7 @@ public:
 
 	/// Loads the pipeline cache data from a file.
 	/// \exception std::runtime_error if opening or reading the file fails
-	PipelineCache(const Device& dev, nytl::StringParam filename);
+	PipelineCache(const Device& dev, std::string_view filename);
 	~PipelineCache();
 
 	PipelineCache(PipelineCache&& rhs) noexcept { swap(*this, rhs); }
@@ -56,8 +56,8 @@ public:
 
 /// Saves a pipeline cache to the given filename.
 /// \exception std::runtime_error if opening/writing the file fails
-void save(vk::Device dev, vk::PipelineCache cache, nytl::StringParam filename);
-inline void save(const PipelineCache& cache, nytl::StringParam file)
+void save(vk::Device dev, vk::PipelineCache cache, std::string_view filename);
+inline void save(const PipelineCache& cache, std::string_view file)
 	{ save(cache.device(), cache, file); }
 
 // TODO: make this a resourceRef on pipeline layout?

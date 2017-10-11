@@ -4,43 +4,63 @@ Todo list vor vpp
 Points are only partly sorted by priority.
 
 - testing!
+	- continue bufferops testing/fixing
+	- test everything using valgrind (with/without layers) to find potential leaks/errors
 - think about swapchain out of date handling (swapchain/swapchainRenderer)
 	- recreate swapchain automatically? how to handle it?
 	- further swapchain improvements: see acquire/present todos
 		- give appliction possibility to gracefully handle outOfDate errors
 	- some bad bugs at the moment in the combination of swapchainrenderer + swapchain
-- fix bufferOps!
-	- (further) clean up bufferOps.inl
 - procAddr: test if local cache really faster than load it every time?
 - when mapping images in write/retrieve, first make sure they have the correct layout
 	- change it, return command work ptr if needed
-- some general SwapChainRenderer improvements/reworking needed
+- some general SwapchainRenderer improvements/reworking needed
 	- better renderer resetting (all command pools at once, just resize the frameRenderers vector)
+	- remove/totally rework the class? only useful for really basic stuff (and basic stuff
+		can be made easier...)
 	- SwapchainRenderer::init: call record?
 		- if RendererImpl should call it in init, document it!
 	- the concept (kindof) is alright, maybe just add another (more low level) rendering-helper
+		- or rework SwapchainRenderer to always be useful
+			- multisampling etc?
 - cleanups/fixes to the 2-step init concept
 	- what about buffers/images?
+		- would it make sense for them to behave the way everything else does?
+			- i.e. Buffer() + create(param) + init(param) OR Buffer(params)
+				- Change the constructor semantics to already initialize the memory
 
 C++ 17:
 ------
 
-- procAddr.cpp: use shared_mutex
 - clean up the Resource::swap mess
 	- base method inheritance
 - use a destroy function for resources that is called from ResourceHandle destrctor
+	- does this really make sense?
 - use "using" declarations in the derived resource classes to make the
 	protected ResourceHandle constructors visisble
 - use std::memory_resource for more efficient host memory allocation
 	- Device should store a thread-specific memory resource
 	- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
-- threadlocal.hpp: use shared_mutex instead of shared_timed_mutex
 - pmr for performance critical (every-frame) functions.
 
 
 low prio / general / ideas
 --------------------------
 
+- generalize TransferBuffer into some shared buffer
+- allow to explicity allocate memory on a given memory allocator.
+  To create large (like over 100 mb) buffers of a memory type we know we will need
+  Also something like an additional allocation strategy?
+  Allocate more than needed if the user wants it
+- separate header for stuff that requires the generated vulkan headers
+	- don't pull them in in other headers
+- vpp: don't output all extensions. Only required (via settings) ones
+- vpp: some way to detect installed vulkan version and automatically generate for it?
+	- should be doable with meson (python vulkan module; get version; download spec; parse it)
+	- Would probably require some spec version testing for codegen (fix issues with ALL spec version...)
+- codegen: queueFamilyExternalKhr (i.e. constants of extensions) -> ...KHR
+- config: vpp_debug vs vpp_ndebug rather messy now
+	- configurable from build system?
 - work dependencies
 	- make it possible (in some way) for work objects to depend on each other
 	- the work objects itself will figure out how to do it (e.g. by fence or
@@ -72,7 +92,7 @@ low prio / general / ideas
 
 - think about include of nytl headers. Should really the namespace be replaced? header guards?
 	projects using nytl outside of vpp should be able to do so (and use it for vpp calls).
-	[stringParam, range, nonCopyable in utility]
+	[range, nonCopyable in utility]
 	- where (if) to use namespace nytl (fwd.hpp? already in the vk headers?)
 
 - further custom exception? like vpp::QueueError if there is not queue that

@@ -5,7 +5,7 @@
 #include <vpp/debug.hpp>
 #include <vpp/procAddr.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/util/log.hpp>
+#include <dlg/dlg.hpp>
 
 #include <iostream> // std::cerr
 #include <sstream> // std::stringstream
@@ -23,7 +23,7 @@ VKAPI_PTR vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags,
 	void* pUserData)
 {
 	if(!pUserData) {
-		std::cerr << "vpp::debug: DebugCallback called without user data\n";
+		dlg_error("DebugCallback called with nullptr user data");
 		return true;
 	}
 
@@ -78,7 +78,6 @@ std::string to_string(vk::DebugReportObjectTypeEXT type)
 		case vk::DebugReportObjectTypeEXT::commandPool: return "commandPool";
 		case vk::DebugReportObjectTypeEXT::surfaceKHR: return "surfaceKHR";
 		case vk::DebugReportObjectTypeEXT::swapchainKHR: return "swapchainKHR";
-		case vk::DebugReportObjectTypeEXT::debugReport: return "debugReport";
 		default: return "<unknown>";
 	}
 }
@@ -125,12 +124,18 @@ bool DebugCallback::call(const CallbackInfo& info) const noexcept
 			    << "layer: " << info.layer;
 	}
 
-	dlg::SourceGuard sourceGuard("DebugCallback"_module);
-	if(info.flags & vk::DebugReportBitsEXT::error) vpp_error(message.str());
-	else if(info.flags & vk::DebugReportBitsEXT::warning) vpp_warn(message.str());
-	else if(info.flags & vk::DebugReportBitsEXT::information) vpp_info(message.str());
-	else if(info.flags & vk::DebugReportBitsEXT::performanceWarning) vpp_info(message.str());
-	else if(info.flags & vk::DebugReportBitsEXT::debug) vpp_debug(message.str());
+	dlg_tags("DebugCallback");
+	if(info.flags & vk::DebugReportBitsEXT::error) {
+		dlg_error("{}", message.str());
+	} else if(info.flags & vk::DebugReportBitsEXT::warning) {
+		dlg_warn("{}", message.str());
+	} else if(info.flags & vk::DebugReportBitsEXT::information) {
+		dlg_info("{}", message.str());
+	} else if(info.flags & vk::DebugReportBitsEXT::performanceWarning) {
+		dlg_info("{}", message.str());
+	} else if(info.flags & vk::DebugReportBitsEXT::debug) {
+		dlg_debug("{}", message.str());
+	}
 
 	return info.flags == vk::DebugReportBitsEXT::error;
 }

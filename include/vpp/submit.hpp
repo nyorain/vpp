@@ -18,7 +18,7 @@ namespace vpp {
 /// (e.g. there should always only be one thread calling vkQueueSubmit no matter on which queue).
 /// This class manages these submissions and also batches mulitple command buffers together.
 /// There is always only one SubmitManager for a vulkan device and if vkQueueSumit is called
-/// maually, it must be assured that no other thread calls this function or uses the submitManager
+/// maually, it must be ensured that no other thread calls this function or uses the submitManager
 /// for the same device at the same time.
 /// See also the Queue class for more on queue and submission synchronization.
 class SubmitManager : public Resource {
@@ -33,7 +33,7 @@ public:
 	/// Adds a given vulkan submit info for exection of a commandBuffer on the given queue.
 	/// Note that this function does not directly submits the given info.
 	/// All pointers in the vk::SubmitInfo must remain valid until the submission gets
-	/// submitted to the device (which can be assured by using an passed CommandExecutionState
+	/// submitted to the device (which can be ensured by using an passed CommandExecutionState
 	/// or calling submit on this SubmitManager).
 	void add(const vpp::Queue&, nytl::Span<const vk::CommandBuffer>, CommandExecutionState* = {});
 	void add(const vpp::Queue&, nytl::Span<const vk::CommandBuffer>,

@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include <vpp/util/stringParam.hpp> // nytl::StringParam
-
+#include <vpp/util/span.hpp> // nytl::Span
 #include <vector> // std::vector
 #include <cstdint> // std::uint8_t
+#include <string_view> // std::string_view
 
 namespace vpp {
 
@@ -15,16 +15,12 @@ namespace vpp {
 /// \param binary Specifies whether the file should be read in binary mode.
 /// \throws std::runtime_error If the given file path does not exist or cannot
 /// be opened.
-std::vector<std::uint8_t> readFile(nytl::StringParam path, bool binary = true);
+std::vector<std::uint8_t> readFile(std::string_view path, bool binary = true);
 
 /// Writes the given buffer into the file at the given path.
 /// \param binary Specifies whether the file should be written in binary mode.
 /// \throws std::runtime_error If the given file path does not exist or cannot
 /// be opened.
-void writeFile(nytl::StringParam path, nytl::Span<const std::uint8_t> buffer, bool binary = true);
-
-/// Returns whether the file at the given path exists.
-/// Note that this does not check if it can be opened, read or written.
-bool fileExists(nytl::StringParam path);
+void writeFile(std::string_view path, nytl::Span<const std::uint8_t> buffer, bool binary = true);
 
 } // namespace vpp
