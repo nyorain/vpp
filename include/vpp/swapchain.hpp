@@ -6,8 +6,6 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
-#include <vpp/vulkan/enums.hpp>
-#include <vpp/vulkan/structs.hpp>
 #include <vpp/util/span.hpp>
 
 #include <vector>
@@ -60,15 +58,15 @@ public:
 	};
 
 public:
-	mutable vk::Format prefFormat = vk::Format::r8g8b8a8Unorm;
-	mutable vk::PresentModeKHR prefPresentMode = vk::PresentModeKHR::mailbox;
-	mutable vk::CompositeAlphaBitsKHR prefAlpha = vk::CompositeAlphaBitsKHR::opaque;
-	mutable vk::SurfaceTransformBitsKHR prefTransform = vk::SurfaceTransformBitsKHR::identity;
-	mutable vk::ImageUsageFlags prefUsage = {};
-
-	ErrorAction errorAction;
+	mutable vk::Format prefFormat; // = vk::Format::r8g8b8a8Unorm;
+	mutable vk::PresentModeKHR prefPresentMode; // = vk::PresentModeKHR::mailbox;
+	mutable vk::CompositeAlphaBitsKHR prefAlpha; // = vk::CompositeAlphaBitsKHR::opaque;
+	mutable vk::SurfaceTransformBitsKHR prefTransform; // = vk::SurfaceTransformBitsKHR::identity;
+	mutable vk::ImageUsageFlags prefUsage; // = {};
+	ErrorAction errorAction; // = ErrorAction::none
 
 public:
+	DefaultSwapchainSettings();
 	vk::SwapchainCreateInfoKHR parse(const vk::SurfaceCapabilitiesKHR& caps,
 		nytl::Span<const vk::PresentModeKHR> modes,
 		nytl::Span<const vk::SurfaceFormatKHR> formats,
@@ -98,7 +96,7 @@ public:
 	/// a surface size (e.g. wayland backend). Usually the swapChain will have the same size
 	/// as the underlaying native surface, then the size parameter is ignored.
 	Swapchain(const Device& device, vk::SurfaceKHR surface,
-		const vk::Extent2D& size = {}, const SwapchainSettings& = {});
+		const vk::Extent2D& size, const SwapchainSettings& = {});
 
 	/// Transfers ownership of the given swapChain handle to the created object.
 	Swapchain(const Device& dev, vk::SwapchainKHR swapChain, vk::SurfaceKHR surface,
@@ -116,7 +114,7 @@ public:
 	/// Note that the size parameter is only used when the backend does not provide a fixed
 	/// surface size. Otherwise the swapchain will simply be resized to the current surface
 	/// size and the given size parameter is ignored.
-	void resize(const vk::Extent2D& size = {}, const SwapchainSettings& = {});
+	void resize(const vk::Extent2D& size, const SwapchainSettings& = {});
 
 	/// Acquires the next swapchain image (i.e. the next render buffer).
 	/// \param sem Semaphore to be signaled when acquiring is complete or nullHandle.

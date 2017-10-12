@@ -39,6 +39,14 @@ void onError(DefaultSwapchainSettings::ErrorAction action, const char* field)
 
 
 // SwapchainSettings
+DefaultSwapchainSettings::DefaultSwapchainSettings() :
+	prefFormat(vk::Format::r8g8b8a8Unorm),
+	prefPresentMode(vk::PresentModeKHR::mailbox),
+	prefAlpha(vk::CompositeAlphaBitsKHR::opaque),
+	prefTransform(vk::SurfaceTransformBitsKHR::identity),
+	prefUsage(),
+	errorAction(ErrorAction::none) {}
+
 const SwapchainSettings& SwapchainSettings::instance()
 {
 	static SwapchainSettings ret;
