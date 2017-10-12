@@ -63,16 +63,19 @@ void DeviceMemoryAllocator::request(vk::Buffer requestor, const vk::MemoryRequir
 
 	// apply additional device limits alignments
 	auto align = device().properties().limits.minUniformBufferOffsetAlignment;
-	if(usage & vk::BufferUsageBits::uniformBuffer && align > 0)
+	if(usage & vk::BufferUsageBits::uniformBuffer && align > 0) {
 		req.alignment = vpp::align(req.alignment, align);
+	}
 
 	align = device().properties().limits.minTexelBufferOffsetAlignment;
-	if(usage & vk::BufferUsageBits::uniformTexelBuffer && align > 0)
+	if(usage & vk::BufferUsageBits::uniformTexelBuffer && align > 0) {
 		req.alignment = vpp::align(req.alignment, align);
+	}
 
 	align = device().properties().limits.minStorageBufferOffsetAlignment;
-	if(usage & vk::BufferUsageBits::storageBuffer && align > 0)
+	if(usage & vk::BufferUsageBits::storageBuffer && align > 0) {
 		req.alignment = vpp::align(req.alignment, align);
+	}
 
 	requirements_.push_back(req);
 }
@@ -294,7 +297,9 @@ std::unordered_map<unsigned int, std::vector<DeviceMemoryAllocator::Requirement*
 DeviceMemoryAllocator::queryTypes()
 {
 	// XXX: probably one of the places where a custom host allocator would really speed things up
-	// XXX: probably this can be done in an easier way. This algorithm is rather complex
+	// XXX: this implementation does not always return the best result, but its
+	//  complexity is quadratic (in the number of requirements) and the 
+	//  problem is NP-complete.
 
 	// this function implements an algorithm to choose the best type for each requirement from
 	// its typebits, so that in the end there will be as few allocations as possible needed.

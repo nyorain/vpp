@@ -24,7 +24,7 @@ public:
 	PipelineLayout() = default;
 	PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info);
 	PipelineLayout(const Device& dev,
-		nytl::Span<const std::reference_wrapper<DescriptorSetLayout>> layouts,
+		nytl::Span<const vk::DescriptorSetLayout> layouts,
 		nytl::Span<const vk::PushConstantRange> ranges);
 	~PipelineLayout();
 
@@ -33,7 +33,7 @@ public:
 };
 
 /// RAII vulkan pipeline cache wrapper.
-/// A pipeline cache can be used to increase pipeline compilation time.
+/// A pipeline cache can be used to decrease pipeline compilation time.
 /// The application can save driver-specific cache data from created pipelines to disk
 /// and then load them during the next execution and pass them to the pipeline constructor
 /// which will decrease pipeline build time.

@@ -17,17 +17,12 @@ PipelineLayout::PipelineLayout(const Device& dev, const vk::PipelineLayoutCreate
 }
 
 PipelineLayout::PipelineLayout(const Device& dev,
-	nytl::Span<const std::reference_wrapper<DescriptorSetLayout>> layouts,
+	nytl::Span<const vk::DescriptorSetLayout> layouts,
 	nytl::Span<const vk::PushConstantRange> ranges) : ResourceHandle(dev)
 {
-	std::vector<vk::DescriptorSetLayout> vklayouts;
-	vklayouts.reserve(layouts.size());
-
-	for(auto& layout : layouts) vklayouts.push_back(layout.get());
-
 	vk::PipelineLayoutCreateInfo info;
-	info.setLayoutCount = vklayouts.size();
-	info.pSetLayouts = vklayouts.data();
+	info.setLayoutCount = layouts.size();
+	info.pSetLayouts = layouts.data();
 	info.pushConstantRangeCount = ranges.size();
 	info.pPushConstantRanges = ranges.data();
 
@@ -36,7 +31,9 @@ PipelineLayout::PipelineLayout(const Device& dev,
 
 PipelineLayout::~PipelineLayout()
 {
-	if(vkHandle()) vk::destroyPipelineLayout(device(), vkHandle());
+	if(vkHandle()) {
+		vk::destroyPipelineLayout(device(), vkHandle());
+	}
 }
 
 // PipelineCache
@@ -60,7 +57,9 @@ PipelineCache::PipelineCache(const Device& dev, std::string_view filename)
 
 PipelineCache::~PipelineCache()
 {
-	if(vkHandle()) vk::destroyPipelineCache(device(), vkHandle());
+	if(vkHandle()) {
+		vk::destroyPipelineCache(device(), vkHandle());
+	}
 }
 
 void save(vk::Device dev, vk::PipelineCache cache, std::string_view filename)
@@ -72,8 +71,9 @@ void save(vk::Device dev, vk::PipelineCache cache, std::string_view filename)
 // Pipeline
 Pipeline::~Pipeline()
 {
-	if(vkHandle())
+	if(vkHandle()) {
 		vk::destroyPipeline(device(), vkHandle());
+	}
 }
 
 } // namespace vpp

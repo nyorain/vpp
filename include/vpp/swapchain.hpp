@@ -75,6 +75,7 @@ public:
 		const vk::Extent2D& size) const override;
 };
 
+// TODO: RenderBuffer really needed? maybe abstract it in renderer
 // TODO: valid usage checking for acquire commands. Handle acquire:out_of_date?
 /// Represents Vulkan swap chain and associated images/framebuffers.
 class Swapchain : public ResourceHandle<vk::SwapchainKHR> {

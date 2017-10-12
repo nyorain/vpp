@@ -6,6 +6,9 @@ Points are only partly sorted by priority.
 - testing!
 	- continue bufferops testing/fixing
 	- test everything using valgrind (with/without layers) to find potential leaks/errors
+- clean up usage of dlg
+	- check can often be replaced with assert
+- make codestyle consistent everywhere
 - think about swapchain out of date handling (swapchain/swapchainRenderer)
 	- recreate swapchain automatically? how to handle it?
 	- further swapchain improvements: see acquire/present todos
@@ -23,6 +26,9 @@ Points are only partly sorted by priority.
 	- the concept (kindof) is alright, maybe just add another (more low level) rendering-helper
 		- or rework SwapchainRenderer to always be useful
 			- multisampling etc?
+	- see renderer.hpp in concepts, rework SwapchainRenderer
+		- the default RendererInterface implementation together with Renderer
+		  should offer a comparable interace
 - cleanups/fixes to the 2-step init concept
 	- what about buffers/images?
 		- would it make sense for them to behave the way everything else does?
