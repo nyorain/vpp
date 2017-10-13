@@ -42,12 +42,14 @@ public:
 	PipelineCache() = default;
 	PipelineCache(const Device& dev);
 
+	/// Loads the pipeline cache data from a file.
+	/// If expect is true and the file cannot be read, throws a
+	/// std::runtime_error, otherwise just starts with an empty cache.
+	PipelineCache(const Device&, std::string_view file, bool expect = false);
+
 	/// Creates the pipeline cache with the given initial data.
 	PipelineCache(const Device& dev, nytl::Span<const std::uint8_t> data);
 
-	/// Loads the pipeline cache data from a file.
-	/// \exception std::runtime_error if opening or reading the file fails
-	PipelineCache(const Device& dev, std::string_view filename);
 	~PipelineCache();
 
 	PipelineCache(PipelineCache&& rhs) noexcept { swap(*this, rhs); }

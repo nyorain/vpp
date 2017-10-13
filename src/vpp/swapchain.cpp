@@ -13,152 +13,95 @@
 namespace vpp {
 namespace {
 
-// might not be the best rating
-constexpr struct PresentModeRating {
-	vk::PresentModeKHR mode;
-	unsigned int rating;
-} presentModeRatings[] = {
-	{vk::PresentModeKHR::immediate, 1},
-	{vk::PresentModeKHR::fifoRelaxed, 2},
-	{vk::PresentModeKHR::fifo, 3},
-	{vk::PresentModeKHR::mailbox, 4}
-};
-
 // performc the specifid error action for DefaultSwapchainSettings
-void onError(DefaultSwapchainSettings::ErrorAction action, const char* field)
+void onError(SwapchainPreferences::ErrorAction action, const char* field)
 {
-	if(action == DefaultSwapchainSettings::ErrorAction::output)
-		dlg_warnt(("DefaultSwapchainSettings"), "using different {}", field);
-
-	static const std::string errorMsg = "vpp::DefaultSwapchainSettings: using different ";
-	if(action == DefaultSwapchainSettings::ErrorAction::throwException)
-		throw std::runtime_error(errorMsg + field);
+	if(action == SwapchainPreferences::ErrorAction::output) {
+		dlg_warnt(("swapchain"), "using different {}", field);
+	} else if(action == SwapchainPreferences::ErrorAction::exception) {
+		throw std::runtime_error("vpp::swapchainCreateInfo: "
+			"could not use " + std::string(field));
+	}
 }
 
 } // anonymous util namespace
 
+// CreatInfo
+SwapchainPreferences::SwapchainPreferences() : 
+	format(vk::Format::r8g8b8a8Unorm),
+	presentMode(vk::PresentModeKHR::mailbox),
+	alpha(vk::CompositeAlphaBitsKHR::opaque),
+	transform(vk::SurfaceTransformBitsKHR::identity),
+	usage(vk::ImageUsageBits::colorAttachment) {}
 
-// SwapchainSettings
-DefaultSwapchainSettings::DefaultSwapchainSettings() :
-	prefFormat(vk::Format::r8g8b8a8Unorm),
-	prefPresentMode(vk::PresentModeKHR::mailbox),
-	prefAlpha(vk::CompositeAlphaBitsKHR::opaque),
-	prefTransform(vk::SurfaceTransformBitsKHR::identity),
-	prefUsage() {}
-
-const SwapchainSettings& SwapchainSettings::instance()
+vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
+	vk::SurfaceKHR surface, const vk::Extent2D& size, 
+	const SwapchainPreferences& prefs)
 {
-	static SwapchainSettings ret;
-	return ret;
-}
+	// query information
+	VPP_LOAD_PROC(dev.vkInstance(), GetPhysicalDeviceSurfacePresentModesKHR);
+	VPP_LOAD_PROC(dev.vkInstance(), GetPhysicalDeviceSurfaceFormatsKHR);
+	VPP_LOAD_PROC(dev.vkInstance(), GetPhysicalDeviceSurfaceCapabilitiesKHR);
 
-vk::SwapchainCreateInfoKHR SwapchainSettings::parse(const vk::SurfaceCapabilitiesKHR& caps,
-	nytl::Span<const vk::PresentModeKHR> modes,
-	nytl::Span<const vk::SurfaceFormatKHR> formats,
-	const vk::Extent2D& size) const
-{
+	auto phdev = dev.vkPhysicalDevice();
+
+	// query formats
+	uint32_t count;
+	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev,
+		surface, &count, nullptr));
+	if(!count) {
+		throw std::runtime_error("vpp::swapchainCreateInfo: "
+			"could not get any formats");
+	}
+
+	std::vector<vk::SurfaceFormatKHR> formats(count);
+	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev,
+		surface, &count, formats.data()));
+
+	// present modes
+	count = 0u;
+	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev,
+		surface, &count, nullptr));
+	if(!count) {
+		throw std::runtime_error("vpp::swapchainCreateInfo: "
+			"could not get any present modes");
+	}
+
+	std::vector<vk::PresentModeKHR> modes(count);
+	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev,
+		surface, &count, modes.data()));
+
+	// caps
+	vk::SurfaceCapabilitiesKHR surfCaps;
+	VPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev,
+		surface, &surfCaps));
+
+
+	// parse createInfo
 	vk::SwapchainCreateInfoKHR ret;
 
 	// choose present mode
 	ret.presentMode = modes[0];
-	auto best = 0u;
 	for(auto& mode : modes) {
-		for(auto rating : presentModeRatings) {
-			if(mode == rating.mode && rating.rating > best) {
-				ret.presentMode = mode;
-				best = rating.rating;
-			}
-		}
-	}
-
-	// format
-	// if there is no preferred format from surface, we use rgba32
-	ret.imageFormat = formats[0].format;
-	ret.imageColorSpace = formats[0].colorSpace;
-	if(formats.size() == 1 && formats[0].format == vk::Format::undefined) {
-		ret.imageFormat = vk::Format::r8g8b8a8Unorm;
-	}
-
-	// size
-	// if the size is equal the zero the size has to be chosen
-	// manually (using the given size)
-	auto& curr = caps.currentExtent;
-	if(curr.width == 0xFFFFFFFF && curr.height == 0xFFFFFFFF) {
-		const auto& min = caps.minImageExtent;
-		const auto& max = caps.minImageExtent;
-		ret.imageExtent.width = std::clamp(size.width, min.width, max.width);
-		ret.imageExtent.height = std::clamp(size.height, min.height, max.height);
-	} else {
-		ret.imageExtent = caps.currentExtent;
-	}
-
-	// number of images to create
-	ret.minImageCount = caps.minImageCount + 1;
-	if((caps.maxImageCount > 0) && (ret.minImageCount > caps.maxImageCount))
-		ret.minImageCount = caps.maxImageCount;
-
-	// transform, prefer identity
-	ret.preTransform = caps.currentTransform;
-	if(caps.supportedTransforms & vk::SurfaceTransformBitsKHR::identity)
-		ret.preTransform = vk::SurfaceTransformBitsKHR::identity;
-
-	// alpha, prefer inherit
-	auto supAlpha = caps.supportedCompositeAlpha;
-	ret.compositeAlpha = vk::CompositeAlphaBitsKHR::opaque;
-	if(supAlpha & vk::CompositeAlphaBitsKHR::inherit) {
-		ret.compositeAlpha = vk::CompositeAlphaBitsKHR::inherit;
-	} else if(supAlpha & vk::CompositeAlphaBitsKHR::postMultiplied) {
-		ret.compositeAlpha = vk::CompositeAlphaBitsKHR::postMultiplied;
-	} else if(supAlpha & vk::CompositeAlphaBitsKHR::preMultiplied) {
-		ret.compositeAlpha = vk::CompositeAlphaBitsKHR::preMultiplied;
-	}
-
-	// createInfo
-	ret.imageUsage = vk::ImageUsageBits::colorAttachment;
-	ret.imageArrayLayers = 1;
-	ret.queueFamilyIndexCount = 0;
-	ret.clipped = true;
-	return ret;
-}
-
-// DefaultSwapchainSettings
-vk::SwapchainCreateInfoKHR DefaultSwapchainSettings::parse(const vk::SurfaceCapabilitiesKHR& caps,
-	nytl::Span<const vk::PresentModeKHR> modes,
-	nytl::Span<const vk::SurfaceFormatKHR> formats,
-	const vk::Extent2D& size) const
-{
-	vk::SwapchainCreateInfoKHR ret;
-
-	// choose present mode
-	ret.presentMode = modes[0];
-	auto best = 0u;
-	for(auto& mode : modes) {
-		if(mode == prefPresentMode) {
+		if(mode == prefs.presentMode) {
 			ret.presentMode = mode;
 			break;
 		}
-
-		for(auto rating : presentModeRatings) {
-			if(mode == rating.mode && rating.rating > best) {
-				ret.presentMode = mode;
-				best = rating.rating;
-			}
-		}
 	}
 
-	if(ret.presentMode != prefPresentMode) onError(errorAction, "presentMode");
-	prefPresentMode = ret.presentMode;
+	if(ret.presentMode != prefs.presentMode) {
+		onError(prefs.errorAction, "presentMode");
+	}
 
 	// format
 	ret.imageFormat = formats[0].format;
 	ret.imageColorSpace = formats[0].colorSpace;
 
 	if(formats.size() == 1 && formats[0].format == vk::Format::undefined) {
-		ret.imageFormat = prefFormat;
+		ret.imageFormat = prefs.format;
 	} else {
 		for(auto& format : formats) {
-			if(format.format == prefFormat)
-			{
+			if(format.format == prefs.format) {
 				ret.imageFormat = format.format;
 				ret.imageColorSpace = format.colorSpace;
 				break;
@@ -168,74 +111,84 @@ vk::SwapchainCreateInfoKHR DefaultSwapchainSettings::parse(const vk::SurfaceCapa
 			}
 		}
 
-		if(ret.imageFormat != prefFormat) onError(errorAction, "format");
-		prefFormat = ret.imageFormat;
+		if(ret.imageFormat != prefs.format) {
+			onError(prefs.errorAction, "format");
+		}
 	}
 
 	// size as in basic implementation
-	auto& curr = caps.currentExtent;
-	if(curr.width == 0xFFFFFFFF && curr.height == 0xFFFFFFFF) {
-		const auto& min = caps.minImageExtent;
-		const auto& max = caps.minImageExtent;
+	auto& curr = surfCaps.currentExtent;
+	bool choose = curr.width == 0xFFFFFFFF && curr.height == 0xFFFFFFFF;
+	if(!prefs.preferCurrentExtent || choose) {
+		const auto& min = surfCaps.minImageExtent;
+		const auto& max = surfCaps.minImageExtent;
 		ret.imageExtent.width = std::clamp(size.width, min.width, max.width);
 		ret.imageExtent.height = std::clamp(size.height, min.height, max.height);
-	} else {
-		ret.imageExtent = caps.currentExtent;
+	} else if(prefs.preferCurrentExtent) {
+		ret.imageExtent = surfCaps.currentExtent;
 	}
 
+	// TODO: configurable?
 	// number of images
-	ret.minImageCount = caps.minImageCount + 1;
-	if((caps.maxImageCount > 0) && (ret.minImageCount > caps.maxImageCount))
-		ret.minImageCount = caps.maxImageCount;
+	count = std::max<unsigned int>(surfCaps.minImageCount + 1, 3u);
+	if(surfCaps.maxImageCount > 0) {
+		count = std::min<unsigned int>(surfCaps.maxImageCount, count);
+	}
+	ret.minImageCount = count;
 
 	// transform
-	ret.preTransform = caps.currentTransform;
-	if(caps.supportedTransforms & prefTransform)
-		ret.preTransform = prefTransform;
-	else if(caps.supportedTransforms & vk::SurfaceTransformBitsKHR::identity)
+	ret.preTransform = surfCaps.currentTransform;
+	auto supTrans = surfCaps.supportedTransforms;
+	if(supTrans & prefs.transform) {
+		ret.preTransform = prefs.transform; 
+	} else if(supTrans & vk::SurfaceTransformBitsKHR::identity) {
 		ret.preTransform = vk::SurfaceTransformBitsKHR::identity;
+	}
 
-	if(ret.preTransform != prefTransform) onError(errorAction, "transform");
-	prefTransform = ret.preTransform;
+	if(ret.preTransform != prefs.transform) {
+		onError(prefs.errorAction, "transform");
+	}
 
 	// alpha
-	ret.compositeAlpha = vk::CompositeAlphaBitsKHR::opaque;
-	if(caps.supportedCompositeAlpha & prefAlpha) {
-		ret.compositeAlpha = prefAlpha;
-	} else if(caps.supportedCompositeAlpha & vk::CompositeAlphaBitsKHR::inherit) {
-		ret.compositeAlpha = vk::CompositeAlphaBitsKHR::inherit;
+	auto supAlpha = surfCaps.supportedCompositeAlpha;
+	if(supAlpha & prefs.alpha) {
+		ret.compositeAlpha = prefs.alpha;
+	} else {
+		for(auto i : {0, 3, 2, 1}) {
+			if(supAlpha & (1u << i)) {
+				ret.compositeAlpha = 
+					static_cast<vk::CompositeAlphaBitsKHR>(1u << i);
+				break;
+			}
+		}
 	}
 
-	if(ret.compositeAlpha != prefAlpha) {
-		onError(errorAction, "alpha");
+	if(ret.compositeAlpha != prefs.alpha) {
+		onError(prefs.errorAction, "alpha");
 	}
-	
-	prefAlpha = ret.compositeAlpha;
 
 	// usage
-	auto usage = prefUsage & caps.supportedUsageFlags;
-	if(prefUsage != usage) {
-		onError(errorAction, "imageUsage");
+	auto usage = prefs.usage & surfCaps.supportedUsageFlags;
+	if(prefs.usage != usage) {
+		onError(prefs.errorAction, "imageUsage");
 	}
-	ret.imageUsage = vk::ImageUsageBits::colorAttachment | usage;
-	prefUsage = ret.imageUsage;
+	ret.imageUsage = usage;
 
-	// TODO: make configurable?
 	ret.imageArrayLayers = 1;
 	ret.queueFamilyIndexCount = 0;
 	ret.clipped = true;
+	ret.surface = surface;
 
 	return ret;
 }
 
 
 // Swapchain
-Swapchain::Swapchain(const Device& dev, vk::SurfaceKHR surface, 
-	vk::Extent2D& size, const SwapchainSettings& settings,
-	std::vector<std::pair<vk::Image, ImageView>>* views)
-		: ResourceHandle(dev)
+Swapchain::Swapchain(const Device& dev, const vk::SwapchainCreateInfoKHR& info)
+	: ResourceHandle(dev)
 {
-	resize(surface, size, settings, views);
+	VPP_LOAD_PROC(dev, CreateSwapchainKHR);
+	VPP_CALL(pfCreateSwapchainKHR(device(), &info, nullptr, &handle_));
 }
 
 Swapchain::Swapchain(const Device& dev, vk::SwapchainKHR swapChain) 
@@ -264,92 +217,34 @@ std::vector<vk::Image> Swapchain::images() const
 	return imgs;
 }
 
-void Swapchain::resize(vk::SurfaceKHR surface, vk::Extent2D& size, 
-	const SwapchainSettings& settings,
-	std::vector<std::pair<vk::Image, ImageView>>* views)
+void Swapchain::resize(const vk::Extent2D& size, 
+	vk::SwapchainCreateInfoKHR& info)
 {
-	dlg_assert(surface);
-	dlg_assert(size.width > 0 && size.height > 0);
+	dlg_assert(info.surface);
 
-	VPP_LOAD_PROC(vkDevice(), CreateSwapchainKHR);
-	VPP_LOAD_PROC(vkDevice(), DestroySwapchainKHR);
-	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfacePresentModesKHR);
-	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceFormatsKHR);
 	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceCapabilitiesKHR);
+	VPP_LOAD_PROC(device(), DestroySwapchainKHR);
+	VPP_LOAD_PROC(device(), CreateSwapchainKHR);
 
-	// (re)create swapChain
-	// use the oldSwapchain in the createInfo for resource reusing
-	auto oldSwapchain = vkHandle();
-
-	// query formats
-	uint32_t count;
-	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(),
-		surface, &count, nullptr));
-	if(!count) {
-		throw std::runtime_error("vpp::Swapchain::resize: "
-			"could not get any formats");
-	}
-
-	std::vector<vk::SurfaceFormatKHR> formats(count);
-	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(),
-		surface, &count, formats.data()));
-
-	// present modes
-	count = 0u;
-	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(), 
-		surface, &count, nullptr));
-	if(!count) {
-		throw std::runtime_error("vpp::Swapchain::resize: "
-			"could not get any present modes");
-	}
-
-	std::vector<vk::PresentModeKHR> presentModes(count);
-	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(),
-		surface, &count, presentModes.data()));
-
-	// caps
 	vk::SurfaceCapabilitiesKHR surfCaps;
-	VPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(), 
-		surface, &surfCaps));
+	VPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(),
+		info.surface, &surfCaps));
 
-	auto createInfo = settings.parse(surfCaps, presentModes, formats, size);
-	createInfo.surface = surface;
-	createInfo.oldSwapchain = vkHandle();
-	VPP_CALL(pfCreateSwapchainKHR(device(), &createInfo, nullptr, &handle_));
-
-	size.width = createInfo.imageExtent.width;
-	size.height = createInfo.imageExtent.height;
-
-	if(oldSwapchain) {
-		pfDestroySwapchainKHR(device(), oldSwapchain, nullptr);
-		oldSwapchain = {};
+	auto& curr = surfCaps.currentExtent;
+	if(curr.width == 0xFFFFFFFF && curr.height == 0xFFFFFFFF) {
+		const auto& min = surfCaps.minImageExtent;
+		const auto& max = surfCaps.minImageExtent;
+		info.imageExtent.width = std::clamp(size.width, min.width, max.width);
+		info.imageExtent.height = std::clamp(size.height, min.height, max.height);
+	} else {
+		info.imageExtent = surfCaps.currentExtent;
 	}
 
-	if(views) {
-		auto imgs = images();
-		views->reserve(views->size() + imgs.size());
+	info.oldSwapchain = vkHandle();
+	VPP_CALL(pfCreateSwapchainKHR(device(), &info, nullptr, &handle_));
 
-		static const vk::ComponentMapping components{
-			vk::ComponentSwizzle::r,
-			vk::ComponentSwizzle::g,
-			vk::ComponentSwizzle::b,
-			vk::ComponentSwizzle::a
-		};
-
-		static const vk::ImageSubresourceRange range {
-			vk::ImageAspectBits::color, 1, 1
-		};
-
-		vk::ImageViewCreateInfo viewInfo {};
-		viewInfo.format = createInfo.imageFormat;
-		viewInfo.subresourceRange = range;
-		viewInfo.viewType = vk::ImageViewType::e2d;
-		viewInfo.components = components;
-
-		for(auto& img : imgs) {
-			viewInfo.image = img;
-			views->push_back({img, ImageView {device(), viewInfo}});
-		}
+	if(info.oldSwapchain) {
+		pfDestroySwapchainKHR(device(), info.oldSwapchain, nullptr);
 	}
 }
 

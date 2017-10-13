@@ -15,15 +15,12 @@
 
 namespace vpp {
 
-// TODO: move constructor for exisiting swapchain (with views/format)
-//  + release method (that move-returns it)?
-
 /// Simple default implementation for rendering onto a surface.
 /// Abstract class, one has to implement the framebuffer initialization
 /// as well as the command buffer recording.
 /// See the DefaultRenderer class for a simple framebuffer helper.
 /// Internally uses a swapchain.
-class Renderer : public Resource {
+class Renderer : public ResourceReference<Renderer> {
 public:
 	/// When to record command buffers.
 	enum class RecordMode {
@@ -53,11 +50,11 @@ public:
 	/// resized (or e.g. when render returned outOfDate or suboptimal).
 	/// Will set the size parameter to the actually used size (but
 	/// must be filled with an expected size which might be used).
-	void resize(vk::Extent2D& size, const vpp::SwapchainSettings& = {});
+	void resize(const vk::Extent2D& size, vk::SwapchainCreateInfoKHR&);
 
 	/// Invalidates all recorded command buffers.
 	/// Only if the record mode is RecordMode::all all command buffers
-	/// are re-recorded.
+	/// are re-recorded before this function returns.
 	void invalidate();
 
 	/// Renders one frame. Sets the fence parameter to the fence
@@ -83,24 +80,31 @@ public:
 
 	const auto& swapchain() const { return swapchain_; }
 	auto recordMode() const { return mode_; }
+	const auto& resourceRef() const { return swapchain_; }
 
 protected:
 	/// Initializes the Renderer into invalid state.
-	/// This is the same state it will have after being moved from.
-	/// No methods must be called on it.
+	/// One must call init before any other function can be called.
+	/// Has no initializing constructor since the init
+	/// function requires the virtual functions.
 	Renderer() = default;
+
+	Renderer(Renderer&&) noexcept = default;
+	Renderer& operator=(Renderer&&) noexcept = default;
 
 	/// Creates and initializes the Renderer.
 	/// Only records command buffers if record is passed as true.
 	/// If no rendering queue is given, will choose any queue from
 	/// the associated device with graphics bit set.
 	/// The real size of the swapchain will be returned in size.
-	Renderer(vk::SurfaceKHR, vk::Extent2D& size, const Queue& present, 
-		const Queue* render = {}, const vpp::SwapchainSettings& = {},
+	/// Will also record all command buffers (if the record mode
+	/// is RecrodMode::all).
+	void init(const vk::SwapchainCreateInfoKHR&,
+		const Queue& present, const Queue* render = {},
 		RecordMode = RecordMode::all);
 
-	Renderer(Renderer&&) noexcept = default;
-	Renderer& operator=(Renderer&&) noexcept = default;
+	/// (Re-)creates the render buffers.
+	void createBuffers(const vk::Extent2D& size, vk::Format swapchainFormat);
 
 	// - abstract interface -
 	/// Records into the given RenderBuffer.
@@ -115,7 +119,6 @@ protected:
 	virtual void initBuffers(const vk::Extent2D&, nytl::Span<RenderBuffer>) = 0;
 
 protected:
-	vk::SurfaceKHR surface_ {};
 	Swapchain swapchain_ {};
 	const Queue* present_ {};
 	const Queue* render_ {};
@@ -134,11 +137,11 @@ protected:
 /// The record method is still abstract.
 class DefaultRenderer : public Renderer {
 protected:
-	/// Like the Renderer constructor but additionally needs the
+	/// Like the Renderer::init but additionally stores the
 	/// renderPass to create the framebuffers for.
-	DefaultRenderer(vk::SurfaceKHR, vk::Extent2D& size, 
-		const Queue& present, const Queue* render = {}, 
-		const vpp::SwapchainSettings& = {}, RecordMode = RecordMode::all);
+	void init(vk::RenderPass, const vk::SwapchainCreateInfoKHR&,
+		const Queue& present, const Queue* render = {},
+		RecordMode = RecordMode::all);
 
 	/// Overrides the default init method with a call to the init function
 	/// below (without additional attachments). You have to override in
@@ -160,6 +163,8 @@ protected:
 	// imageView, we use a span and guarantee to leave it unchanged (
 	// after the call finishes?)
 
+	const auto& renderPass() const { return renderPass_; }
+
 protected:
 	vk::RenderPass renderPass_ {};
 };
@@ -175,27 +180,37 @@ protected:
 //  create any semaphores or fences. But this costs extra calls
 //  to getFenceStats/resetFences. Not sure if worth it
 
+// TODO: probably better implementation:
+//  have exactly one (always unsignaled) acquire semaphore
+//  which will be used to acquire an image and then be swapped
+//  with the renderBuffers acquire semaphore (every render buffer
+//  needs one). Gets rid of fence + vector (and gets rid
+//  of current validation layers bug)
+
 namespace vpp {
 
-Renderer::Renderer(vk::SurfaceKHR surface, vk::Extent2D& size, 
-	const Queue& present, const Queue* render, 
-	const vpp::SwapchainSettings& scs, RecordMode mode) :
-		Resource(present.device()), surface_(surface), present_(&present), 
-		render_(render), mode_(mode)
+void Renderer::init(const vk::SwapchainCreateInfoKHR& scInfo,
+	const Queue& present, const Queue* render, const RecordMode mode)
 {
-	if(!render_) {
+	swapchain_ = {present.device(), scInfo};
+	present_ = &present;
+	mode_ = mode;
+
+	if(!render) {
 		render_ = device().queue(vk::QueueBits::graphics);
 		if(!render_) {
 			throw std::runtime_error("Renderer: device has no graphcis queue");
 		}
 	} else {
+		render_ = render;
 		dlg_assert(&device() == &render_->device());
 	}
 
 	dlg_assert(&device() == &present_->device());
 	commandPool_ = {device(), render_->family()};
-	acquireSyncs_.push_back({device(), device()});
-	resize(size, scs);
+
+	createBuffers(scInfo.imageExtent, scInfo.imageFormat);
+	invalidate();
 }
 
 void Renderer::invalidate()
@@ -214,21 +229,10 @@ void Renderer::invalidate()
 	}
 }
 
-void Renderer::resize(vk::Extent2D& size, 
-	const vpp::SwapchainSettings& settings)
+void Renderer::createBuffers(const vk::Extent2D& size, vk::Format format)
 {
-	dlg_assert(swapchain_);
-	dlg_assert(commandPool_);
-
-	// invalidate old image views
-	for(auto& buf : renderBuffers_) {
-		buf.imageView = {};
-		buf.valid = false;
-	}
-
-	std::vector<std::pair<vk::Image, ImageView>> views;
-	swapchain_.resize(surface_, size, settings, &views);
-	auto newCount = views.size();
+	auto images = swapchain().images();
+	auto newCount = images.size();
 
 	std::vector<vk::CommandBuffer> cmdBufs;
 	if(newCount > renderBuffers_.size()) {
@@ -248,6 +252,23 @@ void Renderer::resize(vk::Extent2D& size,
 		cmdBufs.clear();
 	}
 
+	static const vk::ComponentMapping components{
+		vk::ComponentSwizzle::r,
+		vk::ComponentSwizzle::g,
+		vk::ComponentSwizzle::b,
+		vk::ComponentSwizzle::a
+	};
+
+	static const vk::ImageSubresourceRange range {
+		vk::ImageAspectBits::color, 0, 1, 0, 1
+	};
+
+	vk::ImageViewCreateInfo viewInfo {};
+	viewInfo.format = format;
+	viewInfo.subresourceRange = range;
+	viewInfo.viewType = vk::ImageViewType::e2d;
+	viewInfo.components = components;
+
 	renderBuffers_.resize(newCount);
 	for(auto i = 0u; i < newCount; ++i) {
 		auto& buf = renderBuffers_[i];
@@ -263,10 +284,28 @@ void Renderer::resize(vk::Extent2D& size,
 			buf.id = i;
 		}
 
+		buf.image = viewInfo.image = images[i];
+		buf.imageView = {device(), viewInfo};
 		buf.valid = false;
 	}
 
 	initBuffers(size, renderBuffers_);
+}
+
+void Renderer::resize(const vk::Extent2D& size, 
+	vk::SwapchainCreateInfoKHR& info)
+{
+	dlg_assert(swapchain_);
+	dlg_assert(commandPool_);
+
+	// invalidate old image views
+	for(auto& buf : renderBuffers_) {
+		buf.imageView = {};
+		buf.valid = false;
+	}
+
+	swapchain_.resize(size, info);
+	createBuffers(info.imageExtent, info.imageFormat);
 	invalidate();
 }
 
@@ -298,7 +337,7 @@ vk::Result Renderer::render(vk::Fence& fence)
 	dlg_assert(id < renderBuffers_.size());
 	auto& buf = renderBuffers_[id];
 	if(!buf.valid || mode_ == RecordMode::always) {
-		dlg_assert(mode_ != RecordMode::all);
+		dlg_assertl(dlg_level_debug, mode_ != RecordMode::all);
 		record(buf);
 		buf.valid = true;
 	}
@@ -315,6 +354,8 @@ vk::Result Renderer::render(vk::Fence& fence)
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &buf.commandBuffer;
 
+	vk::resetFences(device(), {buf.fence});
+
 	// NOTE: integrate with submit manager?
 	{
 		QueueLock lock(device());
@@ -322,7 +363,6 @@ vk::Result Renderer::render(vk::Fence& fence)
 	}
 
 	fence = buf.fence;	
-
 	return swapchain().present(*present_, id, buf.semaphore);
 }
 
@@ -330,12 +370,14 @@ vk::Result Renderer::renderBlock()
 {
 	vk::Fence fence;
 	auto res = render(fence);
-	if(res != vk::Result::success) {
-		return res;
-	}
-
 	vk::waitForFences(device(), {fence}, true, UINT64_MAX);
-	return vk::Result::success;
+	vk::resetFences(device(), {fence}); // TODO: remove
+
+	// TODO: remove. Workaround for bug in validation layers (#1225 i guess)
+	//  should not be needed anymore with reworked acquire sync handling
+	auto state = vk::getFenceStatus(device(), acquireSyncs_.front().second);
+
+	return res;
 }
 
 void Renderer::recordMode(RecordMode nm)
@@ -354,11 +396,12 @@ void Renderer::recordMode(RecordMode nm)
 }
 
 // DefaultRenderer
-DefaultRenderer::DefaultRenderer(vk::RenderPass rp, vk::SurfaceKHR s, 
-	vk::Extent2D& size, const Queue& present, const Queue* render, 
-	const vpp::SwapchainSettings& scs, RecordMode mode)
-		: Renderer(s, size, present, render, scs, mode), renderPass_(rp)
+void DefaultRenderer::init(vk::RenderPass rp, 
+	const vk::SwapchainCreateInfoKHR& scInfo, const Queue& present, 
+	const Queue* render, RecordMode mode)
 {
+	renderPass_ = rp;
+	Renderer::init(scInfo, present, render, mode);
 }
 
 void DefaultRenderer::initBuffers(const vk::Extent2D& size, 

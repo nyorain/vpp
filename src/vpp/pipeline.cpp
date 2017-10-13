@@ -6,6 +6,7 @@
 #include <vpp/descriptor.hpp>
 #include <vpp/vk.hpp>
 #include <vpp/util/file.hpp>
+#include <dlg/dlg.hpp>
 
 namespace vpp {
 
@@ -48,10 +49,19 @@ PipelineCache::PipelineCache(const Device& dev, nytl::Span<const std::uint8_t> d
 	handle_ = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
 }
 
-PipelineCache::PipelineCache(const Device& dev, std::string_view filename)
-	: ResourceHandle(dev)
+PipelineCache::PipelineCache(const Device& dev, std::string_view filename,
+	bool expect) : ResourceHandle(dev)
 {
-	auto data = readFile(filename);
+	std::vector<std::uint8_t> data;
+	try {
+		data = readFile(filename);
+	} catch(const std::exception& err) {
+		dlg_info("PipelineCache: {}", err.what());
+		if(expect) {
+			throw;
+		}
+	}
+
 	handle_ = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
 }
 
