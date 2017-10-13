@@ -30,6 +30,7 @@ class WorkBase;
 
 class Buffer;
 class Image;
+class ImageView;
 class Surface;
 class Swapchain;
 class ShaderProgram;

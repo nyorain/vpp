@@ -58,12 +58,13 @@ public:
 	};
 
 public:
+	ErrorAction errorAction {};
+
 	mutable vk::Format prefFormat; // = vk::Format::r8g8b8a8Unorm;
 	mutable vk::PresentModeKHR prefPresentMode; // = vk::PresentModeKHR::mailbox;
 	mutable vk::CompositeAlphaBitsKHR prefAlpha; // = vk::CompositeAlphaBitsKHR::opaque;
 	mutable vk::SurfaceTransformBitsKHR prefTransform; // = vk::SurfaceTransformBitsKHR::identity;
 	mutable vk::ImageUsageFlags prefUsage; // = {};
-	ErrorAction errorAction; // = ErrorAction::none
 
 public:
 	DefaultSwapchainSettings();
@@ -73,87 +74,56 @@ public:
 		const vk::Extent2D& size) const override;
 };
 
-// TODO: RenderBuffer really needed? maybe abstract it in renderer
-// TODO: valid usage checking for acquire commands. Handle acquire:out_of_date?
-/// Represents Vulkan swap chain and associated images/framebuffers.
+/// Swapchain wrapper that (together with SwapchainSettings and its
+/// implementations) manages surface property querying and swapchain setup.
+/// Does not remember/store any additional information about itself.
 class Swapchain : public ResourceHandle<vk::SwapchainKHR> {
-public:
-	struct RenderBuffer {
-		vk::Image image;
-		vk::ImageView imageView;
-	};
-
-	struct CreateInfo {
-		vk::Format preferredFormat;
-		vk::PresentModeKHR preferredPresentMode;
-	};
-
 public:
 	Swapchain() = default;
 
 	/// Constructs the swap chain for a given vulkan surface.
 	/// Note that the given size is only used if the backend does not provide
-	/// a surface size (e.g. wayland backend). Usually the swapChain will have the same size
-	/// as the underlaying native surface, then the size parameter is ignored.
+	/// a surface size (e.g. wayland backend).
+	/// The real size of the swapchain will be returned in size, might
+	/// differ from the passed one (but a valid value must be passed).
+	/// If the given views vector pointer is not nullptr, will retrieve
+	/// the new swapchains images, create imageViews and push them into it.
 	Swapchain(const Device& device, vk::SurfaceKHR surface,
-		const vk::Extent2D& size, const SwapchainSettings& = {});
+		vk::Extent2D& size, const SwapchainSettings& = {},
+		std::vector<std::pair<vk::Image, ImageView>>* views = {});
 
 	/// Transfers ownership of the given swapChain handle to the created object.
-	Swapchain(const Device& dev, vk::SwapchainKHR swapChain, vk::SurfaceKHR surface,
-		const vk::Extent2D& size, vk::Format format);
-
+	Swapchain(const Device& dev, vk::SwapchainKHR swapchain);
 	~Swapchain();
 
 	Swapchain(Swapchain&& rhs) noexcept { swap(*this, rhs); }
 	Swapchain& operator=(Swapchain&& rhs) noexcept { swap(*this, rhs); return *this; }
 
-	/// Resizes the swapchain to the given size. Should be called if the native window of the
-	/// underlying surface handle changes it size to make sure the swapchain fills the
-	/// whole window. Will invalidate all images and imageViews retrieved before the resize.
-	/// Will invalidate the previous vk::SwapchainKHR handle.
-	/// Note that the size parameter is only used when the backend does not provide a fixed
-	/// surface size. Otherwise the swapchain will simply be resized to the current surface
-	/// size and the given size parameter is ignored.
-	void resize(const vk::Extent2D& size, const SwapchainSettings& = {});
+	/// Resizes the swapchain to the given size. 
+	/// Should be called if the native window of the underlying surface 
+	/// handle changes it size to make sure the swapchain fills the
+	/// whole window.
+	/// Will destroy the previous vk::SwapchainKHR handle.
+	/// The real size of the swapchain will be returned in size, might
+	/// differ from the passed one (but a valid value must be passed).
+	/// If the given views vector pointer is not nullptr, will retrieve
+	/// the new swapchains images, create imageViews and push them into it.
+	/// Can be called on an invalid (empty, default-constructed or moved-from)
+	/// swapchain handle to initialize it.
+	void resize(vk::SurfaceKHR, vk::Extent2D& size, 
+		const SwapchainSettings& = {},
+		std::vector<std::pair<vk::Image, ImageView>>* views = {});
 
-	/// Acquires the next swapchain image (i.e. the next render buffer).
-	/// \param sem Semaphore to be signaled when acquiring is complete or nullHandle.
-	/// \param fence Fence to be signaled when acquiring is complete or nullHandle.
-	/// \param id Will be set to the id of the newly acquired image.
-	/// \return The result returned by vkAcquireImageKHR. The caller has to handle
-	/// results like outOfDate or suboptimal and can decide if to recreate (resize()) the
-	/// swapChain. There will not be any check performed on the result.
-	vk::Result acquire(unsigned int& id, vk::Semaphore sem = {}, vk::Fence fence = {}) const;
+	/// Wrapper for vkAcquireNextImageKHR, will simply forward the result.
+	vk::Result acquire(std::uint32_t& id, vk::Semaphore sem,
+		vk::Fence fence = {}, std::uint64_t timeout = ~0u) const;
 
-	/// Queues commands to present the image with the given id on the given queue.
-	/// Will temporarily acquire ownership over the given queue.
-	/// \param wait The semaphore to wait on before presenting (usually signaled at the end
-	/// of all rendering commands for this image). Can be nullHandle.
-	/// \return The result returned by vkQueuePresentKHR. The caller has to handle
-	/// results like outOfDate or suboptimal and can decide if to recreate (resize()) the
-	/// swapChain. There will not be any check performed on the result.
-	vk::Result present(const Queue& queue, unsigned int image, vk::Semaphore wait = {}) const;
+	/// Wrapper for vkQueuePresentKHR, will simply forward the result.
+	vk::Result present(const Queue& queue, unsigned int image, 
+		vk::Semaphore wait = {}) const;
 
-	const vk::SurfaceKHR& vkSurface() const { return surface_; }
-
-	vk::Format format() const { return format_; }
-	vk::Extent2D size() const;
-	const std::vector<RenderBuffer>& renderBuffers() const { return buffers_; }
-
-	friend void swap(Swapchain& a, Swapchain& b) noexcept;
-
-protected:
-	void destroyBuffers();
-	void createBuffers();
-
-protected:
-	vk::SurfaceKHR surface_ {};
-	std::vector<RenderBuffer> buffers_;
-
-	//not needed to store these parameters. just done for convenience. reasonable?
-	unsigned int width_ = 0;
-	unsigned int height_ = 0;
-	vk::Format format_;
+	/// Wrapper around vkGetSwapchainImagesKHR
+	std::vector<vk::Image> images() const;
 };
 
 } // namespace vpp

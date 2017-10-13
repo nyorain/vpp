@@ -44,8 +44,7 @@ DefaultSwapchainSettings::DefaultSwapchainSettings() :
 	prefPresentMode(vk::PresentModeKHR::mailbox),
 	prefAlpha(vk::CompositeAlphaBitsKHR::opaque),
 	prefTransform(vk::SurfaceTransformBitsKHR::identity),
-	prefUsage(),
-	errorAction(ErrorAction::none) {}
+	prefUsage() {}
 
 const SwapchainSettings& SwapchainSettings::instance()
 {
@@ -76,18 +75,19 @@ vk::SwapchainCreateInfoKHR SwapchainSettings::parse(const vk::SurfaceCapabilitie
 	// if there is no preferred format from surface, we use rgba32
 	ret.imageFormat = formats[0].format;
 	ret.imageColorSpace = formats[0].colorSpace;
-	if(formats.size() == 1 && formats[0].format == vk::Format::undefined)
+	if(formats.size() == 1 && formats[0].format == vk::Format::undefined) {
 		ret.imageFormat = vk::Format::r8g8b8a8Unorm;
+	}
 
 	// size
 	// if the size is equal the zero the size has to be chosen
 	// manually (using the given size)
-	if(caps.currentExtent.width == 0xFFFFFFFF && caps.currentExtent.height == 0xFFFFFFFF) {
-		ret.imageExtent = size;
-		dlg_checkt(("SwapchainSettings::parse"), {
-			if(!size.width || !size.height)
-				dlg_error("Invalid swapchain size will be set");
-		});
+	auto& curr = caps.currentExtent;
+	if(curr.width == 0xFFFFFFFF && curr.height == 0xFFFFFFFF) {
+		const auto& min = caps.minImageExtent;
+		const auto& max = caps.minImageExtent;
+		ret.imageExtent.width = std::clamp(size.width, min.width, max.width);
+		ret.imageExtent.height = std::clamp(size.height, min.height, max.height);
 	} else {
 		ret.imageExtent = caps.currentExtent;
 	}
@@ -103,13 +103,15 @@ vk::SwapchainCreateInfoKHR SwapchainSettings::parse(const vk::SurfaceCapabilitie
 		ret.preTransform = vk::SurfaceTransformBitsKHR::identity;
 
 	// alpha, prefer inherit
+	auto supAlpha = caps.supportedCompositeAlpha;
 	ret.compositeAlpha = vk::CompositeAlphaBitsKHR::opaque;
-	if(caps.supportedCompositeAlpha & vk::CompositeAlphaBitsKHR::inherit)
+	if(supAlpha & vk::CompositeAlphaBitsKHR::inherit) {
 		ret.compositeAlpha = vk::CompositeAlphaBitsKHR::inherit;
-	else if(caps.supportedCompositeAlpha & vk::CompositeAlphaBitsKHR::postMultiplied)
+	} else if(supAlpha & vk::CompositeAlphaBitsKHR::postMultiplied) {
 		ret.compositeAlpha = vk::CompositeAlphaBitsKHR::postMultiplied;
-	else if(caps.supportedCompositeAlpha & vk::CompositeAlphaBitsKHR::preMultiplied)
+	} else if(supAlpha & vk::CompositeAlphaBitsKHR::preMultiplied) {
 		ret.compositeAlpha = vk::CompositeAlphaBitsKHR::preMultiplied;
+	}
 
 	// createInfo
 	ret.imageUsage = vk::ImageUsageBits::colorAttachment;
@@ -171,12 +173,12 @@ vk::SwapchainCreateInfoKHR DefaultSwapchainSettings::parse(const vk::SurfaceCapa
 	}
 
 	// size as in basic implementation
-	if(caps.currentExtent.width == 0xFFFFFFFF && caps.currentExtent.height == 0xFFFFFFFF) {
-		ret.imageExtent = size;
-		dlg_checkt(("SwapchainSettings::parse"), {
-			if(!size.width || !size.height)
-				dlg_error("Invalid swapchain size will be set.");
-		});
+	auto& curr = caps.currentExtent;
+	if(curr.width == 0xFFFFFFFF && curr.height == 0xFFFFFFFF) {
+		const auto& min = caps.minImageExtent;
+		const auto& max = caps.minImageExtent;
+		ret.imageExtent.width = std::clamp(size.width, min.width, max.width);
+		ret.imageExtent.height = std::clamp(size.height, min.height, max.height);
 	} else {
 		ret.imageExtent = caps.currentExtent;
 	}
@@ -198,12 +200,16 @@ vk::SwapchainCreateInfoKHR DefaultSwapchainSettings::parse(const vk::SurfaceCapa
 
 	// alpha
 	ret.compositeAlpha = vk::CompositeAlphaBitsKHR::opaque;
-	if(caps.supportedCompositeAlpha & prefAlpha)
+	if(caps.supportedCompositeAlpha & prefAlpha) {
 		ret.compositeAlpha = prefAlpha;
-	else if(caps.supportedCompositeAlpha & vk::CompositeAlphaBitsKHR::inherit)
+	} else if(caps.supportedCompositeAlpha & vk::CompositeAlphaBitsKHR::inherit) {
 		ret.compositeAlpha = vk::CompositeAlphaBitsKHR::inherit;
+	}
 
-	if(ret.compositeAlpha != prefAlpha) onError(errorAction, "alpha");
+	if(ret.compositeAlpha != prefAlpha) {
+		onError(errorAction, "alpha");
+	}
+	
 	prefAlpha = ret.compositeAlpha;
 
 	// createInfo
@@ -216,43 +222,42 @@ vk::SwapchainCreateInfoKHR DefaultSwapchainSettings::parse(const vk::SurfaceCapa
 }
 
 
-
 // Swapchain
-Swapchain::Swapchain(const Device& dev, vk::SurfaceKHR surface, const vk::Extent2D& size,
-	const SwapchainSettings& settings) : ResourceHandle(dev), surface_(surface)
+Swapchain::Swapchain(const Device& dev, vk::SurfaceKHR surface, 
+	vk::Extent2D& size, const SwapchainSettings& settings,
+	std::vector<std::pair<vk::Image, ImageView>>* views)
+		: ResourceHandle(dev)
 {
-	resize(size, settings);
+	resize(surface, size, settings, views);
 }
 
-Swapchain::Swapchain(const Device& dev, vk::SwapchainKHR swapChain, vk::SurfaceKHR surface,
-	const vk::Extent2D& size, vk::Format format) : ResourceHandle(dev, swapChain),
-		surface_(surface), width_(size.width), height_(size.height), format_(format)
+Swapchain::Swapchain(const Device& dev, vk::SwapchainKHR swapChain) 
+	: ResourceHandle(dev, swapChain)
 {
-	createBuffers();
 }
 
 Swapchain::~Swapchain()
 {
-	destroyBuffers();
-	if(!vkHandle()) return;
-
-	VPP_LOAD_PROC(device(), DestroySwapchainKHR);
-	pfDestroySwapchainKHR(device(), vkHandle(), nullptr);
+	if(vkHandle()) {
+		VPP_LOAD_PROC(device(), DestroySwapchainKHR);
+		pfDestroySwapchainKHR(device(), vkHandle(), nullptr);
+	}
 }
 
-void swap(Swapchain& a, Swapchain& b) noexcept
+std::vector<vk::Image> Swapchain::images() const
 {
-	using std::swap;
-	using RH = ResourceHandle<vk::SwapchainKHR>;
+	VPP_LOAD_PROC(vkDevice(), GetSwapchainImagesKHR);
 
-	swap(static_cast<RH&>(a), static_cast<RH&>(b));
-	swap(a.surface_, b.surface_);
-	swap(a.buffers_, b.buffers_);
-	swap(a.width_, b.width_);
-	swap(a.height_, b.height_);
-	swap(a.format_, b.format_);
+	std::uint32_t c;
+	VPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &c, nullptr));
+
+	std::vector<vk::Image> imgs(c);
+	VPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &c, imgs.data()));
+
+	return imgs;
 }
 
+/*
 void Swapchain::createBuffers()
 {
 	VPP_LOAD_PROC(vkDevice(), GetSwapchainImagesKHR);
@@ -290,79 +295,103 @@ void Swapchain::createBuffers()
 		buffers_.push_back({img, view});
 	}
 }
+*/
 
-void Swapchain::destroyBuffers()
+void Swapchain::resize(vk::SurfaceKHR surface, vk::Extent2D& size, 
+	const SwapchainSettings& settings,
+	std::vector<std::pair<vk::Image, ImageView>>* views)
 {
-	for(auto& buf : buffers_) vk::destroyImageView(vkDevice(), buf.imageView, nullptr);
-	buffers_.clear();
-}
+	dlg_assert(surface);
+	dlg_assert(size.width > 0 && size.height > 0);
 
-void Swapchain::resize(const vk::Extent2D& size, const SwapchainSettings& settings)
-{
 	VPP_LOAD_PROC(vkDevice(), CreateSwapchainKHR);
 	VPP_LOAD_PROC(vkDevice(), DestroySwapchainKHR);
 	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfacePresentModesKHR);
 	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceFormatsKHR);
 	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceCapabilitiesKHR);
 
-	// destory just the buffers, not the swapchain (if there is any)
-	destroyBuffers();
-
 	// (re)create swapChain
-	// if there is already a swapChain it will be passed as the old swapchain parameter
+	// use the oldSwapchain in the createInfo for resource reusing
 	auto oldSwapchain = vkHandle();
 
 	// query formats
 	uint32_t count;
 	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(),
-		vkSurface(), &count, nullptr));
-	if(!count)
-		throw std::runtime_error("vpp::Swapchain::resize: could not get any formats");
+		surface, &count, nullptr));
+	if(!count) {
+		throw std::runtime_error("vpp::Swapchain::resize: "
+			"could not get any formats");
+	}
 
 	std::vector<vk::SurfaceFormatKHR> formats(count);
 	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice(),
-		vkSurface(), &count, formats.data()));
+		surface, &count, formats.data()));
 
 	// present modes
-	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(), vkSurface(),
-		&count, nullptr));
-	if(!count)
-		throw std::runtime_error("vpp::Swapchain::resize: could not get any present modes");
+	count = 0u;
+	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(), 
+		surface, &count, nullptr));
+	if(!count) {
+		throw std::runtime_error("vpp::Swapchain::resize: "
+			"could not get any present modes");
+	}
 
 	std::vector<vk::PresentModeKHR> presentModes(count);
 	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicalDevice(),
-		vkSurface(), &count, presentModes.data()));
+		surface, &count, presentModes.data()));
 
 	// caps
 	vk::SurfaceCapabilitiesKHR surfCaps;
-	VPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(), vkSurface(), &surfCaps));
+	VPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(), 
+		surface, &surfCaps));
 
-	// create info from seperate function since it requires a lot of querying
 	auto createInfo = settings.parse(surfCaps, presentModes, formats, size);
-	createInfo.surface = vkSurface();
+	createInfo.surface = surface;
 	createInfo.oldSwapchain = vkHandle();
 	VPP_CALL(pfCreateSwapchainKHR(device(), &createInfo, nullptr, &handle_));
 
-	format_ = createInfo.imageFormat;
-	width_ = createInfo.imageExtent.width;
-	height_ = createInfo.imageExtent.height;
+	size.width = createInfo.imageExtent.width;
+	size.height = createInfo.imageExtent.height;
 
 	if(oldSwapchain) {
 		pfDestroySwapchainKHR(device(), oldSwapchain, nullptr);
 		oldSwapchain = {};
 	}
 
-	createBuffers();
+	if(views) {
+		auto imgs = images();
+		views->reserve(views->size() + imgs.size());
+
+		static const vk::ComponentMapping components{
+			vk::ComponentSwizzle::r,
+			vk::ComponentSwizzle::g,
+			vk::ComponentSwizzle::b,
+			vk::ComponentSwizzle::a
+		};
+
+		static const vk::ImageSubresourceRange range {
+			vk::ImageAspectBits::color, 1, 1
+		};
+
+		vk::ImageViewCreateInfo viewInfo {};
+		viewInfo.format = createInfo.imageFormat;
+		viewInfo.subresourceRange = range;
+		viewInfo.viewType = vk::ImageViewType::e2d;
+		viewInfo.components = components;
+
+		for(auto& img : imgs) {
+			viewInfo.image = img;
+			views->push_back({img, ImageView {device(), viewInfo}});
+		}
+	}
 }
 
-vk::Result Swapchain::acquire(unsigned int& id, vk::Semaphore sem, vk::Fence fence) const
+vk::Result Swapchain::acquire(unsigned int& id, vk::Semaphore sem, 
+	vk::Fence fence, std::uint64_t timeout) const
 {
-	// TODO: handle out of date, correct sync, timeout... (?)
 	VPP_LOAD_PROC(vkDevice(), AcquireNextImageKHR);
-
-	std::uint32_t id32;
-	auto ret = pfAcquireNextImageKHR(device(), vkHandle(), UINT64_MAX, sem, fence, &id32);
-	id = id32;
+	auto ret = pfAcquireNextImageKHR(device(), vkHandle(), timeout, 
+		sem, fence, &id);
 
 	return ret;
 }
@@ -385,11 +414,6 @@ vk::Result Swapchain::present(const Queue& queue, std::uint32_t currentBuffer,
 	QueueLock(device(), queue);
 	auto ret = pfQueuePresentKHR(queue, &presentInfo);
 	return ret;
-}
-
-vk::Extent2D Swapchain::size() const
-{
-	return {width_, height_};
 }
 
 } // namespace vpp

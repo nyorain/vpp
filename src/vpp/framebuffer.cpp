@@ -24,6 +24,14 @@ Framebuffer::Framebuffer(const Device& dev, const vk::Extent2D& size, vk::Frameb
 
 }
 
+Framebuffer::Framebuffer(const Device& dev, const vk::FramebufferCreateInfo& info)
+	: ResourceHandle(dev)
+{
+	width_ = info.width;
+	height_ = info.height;
+	handle_ = vk::createFramebuffer(dev, info);
+}
+
 Framebuffer::~Framebuffer()
 {
 	if(vkHandle()) vk::destroyFramebuffer(vkDevice(), vkHandle(), nullptr);

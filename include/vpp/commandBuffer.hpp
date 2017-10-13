@@ -27,6 +27,9 @@ public:
 	CommandPool(const Device& dev, uint32_t qfam, vk::CommandPoolCreateFlags flags = {});
 	~CommandPool();
 
+	CommandPool(CommandPool&& lhs) noexcept { swap(*this, lhs); }
+	CommandPool& operator=(CommandPool lhs) noexcept { swap(*this, lhs); return *this; }
+
 	CommandBuffer allocate(vk::CommandBufferLevel lvl = vk::CommandBufferLevel::primary);
 	std::vector<CommandBuffer> allocate(size_t count,
 		vk::CommandBufferLevel = vk::CommandBufferLevel::primary);
@@ -44,22 +47,23 @@ protected:
 /// RAII vulkan CommandBuffer wrapper.
 /// Note that the CommandBuffer must not be in use by any device when it is destructed.
 /// Keeps a reference to the CommandPool it was allocated from.
-class CommandBuffer : public ResourceReferenceHandle<CommandBuffer, vk::CommandBuffer> {
+class CommandBuffer : public ResourceHandle<vk::CommandBuffer> {
 public:
 	CommandBuffer() = default;
-	CommandBuffer(vk::CommandBuffer buffer, const CommandPool& pool);
+	CommandBuffer(const CommandPool&); // primary level
+	CommandBuffer(const CommandPool&, vk::CommandBufferLevel);
+	CommandBuffer(const CommandPool&, vk::CommandBuffer);
+	CommandBuffer(const Device&, vk::CommandPool, vk::CommandBuffer);
 	~CommandBuffer();
 
 	CommandBuffer(CommandBuffer&& lhs) noexcept { swap(*this, lhs); }
 	CommandBuffer& operator=(CommandBuffer lhs) noexcept { swap(*this, lhs); return *this; }
 
-	const CommandPool& commandPool() const { return *commandPool_; }
-	const CommandPool& resourceRef() const { return *commandPool_; }
-
+	const vk::CommandPool& commandPool() const { return commandPool_; }
 	friend void swap(CommandBuffer& a, CommandBuffer& b) noexcept;
 
 protected:
-	const CommandPool* commandPool_ {};
+	vk::CommandPool commandPool_;
 };
 
 /// Able to efficiently provide commandBuffer of all types for all threads by holding an internal

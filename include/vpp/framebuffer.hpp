@@ -11,6 +11,11 @@
 
 namespace vpp {
 
+// TODO: tsi at its worst. Rework it.
+// Maybe simple Framebuffer raii class and then an additional class
+// that knows (and maybe owns) its attachments?
+// use attachment variant like in renderer
+
 /// Vulkan Framebuffer consisting of multiple image attachments.
 /// Can be initialized with two step initialization.
 /// Stores its own size and is able to create and manage its own attachments but does
@@ -25,6 +30,7 @@ public:
 	Framebuffer(const Device&, vk::RenderPass, const vk::Extent2D& size,
 		const AttachmentsInfo& attachments, const ExtAttachments& externalAttachments = {});
 	Framebuffer(const Device&, const vk::Extent2D& size, vk::Framebuffer);
+	Framebuffer(const Device&, const vk::FramebufferCreateInfo& info);
 	~Framebuffer();
 
 	Framebuffer(Framebuffer&& rhs) noexcept { swap(*this, rhs); }

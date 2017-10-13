@@ -3,6 +3,8 @@ Todo list vor vpp
 
 Points are only partly sorted by priority.
 
+- clean up the Resource::swap mess
+	- base method inheritance
 - testing!
 	- continue bufferops testing/fixing
 	- test everything using valgrind (with/without layers) to find potential leaks/errors
@@ -35,19 +37,11 @@ Points are only partly sorted by priority.
 			- i.e. Buffer() + create(param) + init(param) OR Buffer(params)
 				- Change the constructor semantics to already initialize the memory
 
-C++ 17:
-------
-
-- clean up the Resource::swap mess
-	- base method inheritance
-- use a destroy function for resources that is called from ResourceHandle destrctor
-	- does this really make sense?
 - use "using" declarations in the derived resource classes to make the
 	protected ResourceHandle constructors visisble
-- use std::memory_resource for more efficient host memory allocation
-	- Device should store a thread-specific memory resource
-	- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
 - pmr for performance critical (every-frame) functions.
+	- Device to store a thread-specific memory resource?
+	- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
 
 
 low prio / general / ideas
