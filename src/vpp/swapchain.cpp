@@ -212,8 +212,15 @@ vk::SwapchainCreateInfoKHR DefaultSwapchainSettings::parse(const vk::SurfaceCapa
 	
 	prefAlpha = ret.compositeAlpha;
 
-	// createInfo
-	ret.imageUsage = vk::ImageUsageBits::colorAttachment | prefUsage;
+	// usage
+	auto usage = prefUsage & caps.supportedUsageFlags;
+	if(prefUsage != usage) {
+		onError(errorAction, "imageUsage");
+	}
+	ret.imageUsage = vk::ImageUsageBits::colorAttachment | usage;
+	prefUsage = ret.imageUsage;
+
+	// TODO: make configurable?
 	ret.imageArrayLayers = 1;
 	ret.queueFamilyIndexCount = 0;
 	ret.clipped = true;
@@ -256,46 +263,6 @@ std::vector<vk::Image> Swapchain::images() const
 
 	return imgs;
 }
-
-/*
-void Swapchain::createBuffers()
-{
-	VPP_LOAD_PROC(vkDevice(), GetSwapchainImagesKHR);
-
-	// get swapchain images
-	std::uint32_t cnt;
-	VPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &cnt, nullptr));
-
-	std::vector<vk::Image> imgs(cnt);
-	VPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &cnt, imgs.data()));
-
-	// create imageviews and insert buffers
-	buffers_.reserve(cnt);
-	for(auto& img : imgs) {
-		vk::ComponentMapping components{
-			vk::ComponentSwizzle::r,
-			vk::ComponentSwizzle::g,
-			vk::ComponentSwizzle::b,
-			vk::ComponentSwizzle::a
-		};
-
-		vk::ImageSubresourceRange range{};
-		range.aspectMask = vk::ImageAspectBits::color;
-		range.levelCount = 1;
-		range.layerCount = 1;
-
-		vk::ImageViewCreateInfo info{};
-		info.format = format_;
-		info.subresourceRange = range;
-		info.viewType = vk::ImageViewType::e2d;
-		info.components = components;
-		info.image = img;
-
-		auto view = vk::createImageView(device(), info);
-		buffers_.push_back({img, view});
-	}
-}
-*/
 
 void Swapchain::resize(vk::SurfaceKHR surface, vk::Extent2D& size, 
 	const SwapchainSettings& settings,

@@ -1,0 +1,4 @@
+[wrap-git]
+directory=ny
+url=https://github.com/nyorain/ny.git
+revision=master

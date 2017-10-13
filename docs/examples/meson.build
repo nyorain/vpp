@@ -1,0 +1,1 @@
+dep_ny = dependency('ny', fallback: ['ny', 'ny_dep'])

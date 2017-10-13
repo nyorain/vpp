@@ -10,6 +10,8 @@ Points are only partly sorted by priority.
 	- test everything using valgrind (with/without layers) to find potential leaks/errors
 - clean up usage of dlg
 	- check can often be replaced with assert
+- clean up usage of nytl
+	- just include it as subproject
 - make codestyle consistent everywhere
 - think about swapchain out of date handling (swapchain/swapchainRenderer)
 	- recreate swapchain automatically? how to handle it?

@@ -14,6 +14,11 @@
 
 namespace vpp {
 
+// TODO: don't query surface formats/caps on every swapchain recreate.
+// cache them somewhere, maybe make SwapchainSettings not const
+// and note that always the same object should be used (and cache 
+// the settings there).
+
 /// SwapchainSettings is a virtual base class that can be used to implement a settings
 /// chose mechanism for Swapchain creation. An extra virtual class is needed instead of a
 /// struct because there a various settings and their availability must be queried.
@@ -86,10 +91,12 @@ public:
 	/// a surface size (e.g. wayland backend).
 	/// The real size of the swapchain will be returned in size, might
 	/// differ from the passed one (but a valid value must be passed).
+	/// If the given format pointer is non nullptr, returns the format of
+	/// the created swapchain into it.
 	/// If the given views vector pointer is not nullptr, will retrieve
 	/// the new swapchains images, create imageViews and push them into it.
 	Swapchain(const Device& device, vk::SurfaceKHR surface,
-		vk::Extent2D& size, const SwapchainSettings& = {},
+		vk::Extent2D& size, const SwapchainSettings& = {}, vk::Format* = {},
 		std::vector<std::pair<vk::Image, ImageView>>* views = {});
 
 	/// Transfers ownership of the given swapChain handle to the created object.
@@ -106,12 +113,14 @@ public:
 	/// Will destroy the previous vk::SwapchainKHR handle.
 	/// The real size of the swapchain will be returned in size, might
 	/// differ from the passed one (but a valid value must be passed).
+	/// If the given format pointer is non nullptr, returns the format of
+	/// the created swapchain into it.
 	/// If the given views vector pointer is not nullptr, will retrieve
 	/// the new swapchains images, create imageViews and push them into it.
 	/// Can be called on an invalid (empty, default-constructed or moved-from)
 	/// swapchain handle to initialize it.
 	void resize(vk::SurfaceKHR, vk::Extent2D& size, 
-		const SwapchainSettings& = {},
+		const SwapchainSettings& = {}, vk::Format* = {},
 		std::vector<std::pair<vk::Image, ImageView>>* views = {});
 
 	/// Wrapper for vkAcquireNextImageKHR, will simply forward the result.

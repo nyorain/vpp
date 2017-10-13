@@ -15,6 +15,9 @@
 
 namespace vpp {
 
+// TODO: move constructor for exisiting swapchain (with views/format)
+//  + release method (that move-returns it)?
+
 /// Simple default implementation for rendering onto a surface.
 /// Abstract class, one has to implement the framebuffer initialization
 /// as well as the command buffer recording.
@@ -109,7 +112,7 @@ protected:
 	/// Should initialize all internal information required for rendering, 
 	/// such as framebuffers. Will be called everytime the swapchain
 	/// was recreated and therefore size and/or image views have changed.
-	virtual void init(const vk::Extent2D&, nytl::Span<RenderBuffer>) = 0;
+	virtual void initBuffers(const vk::Extent2D&, nytl::Span<RenderBuffer>) = 0;
 
 protected:
 	vk::SurfaceKHR surface_ {};
@@ -133,7 +136,7 @@ class DefaultRenderer : public Renderer {
 protected:
 	/// Like the Renderer constructor but additionally needs the
 	/// renderPass to create the framebuffers for.
-	DefaultRenderer(vk::RenderPass, vk::SurfaceKHR, vk::Extent2D& size, 
+	DefaultRenderer(vk::SurfaceKHR, vk::Extent2D& size, 
 		const Queue& present, const Queue* render = {}, 
 		const vpp::SwapchainSettings& = {}, RecordMode = RecordMode::all);
 
@@ -141,9 +144,7 @@ protected:
 	/// below (without additional attachments). You have to override in
 	/// when you want to use additional attachments and then assure in 
 	/// every call that the attachments have the correct dimensions.
-	void init(const vk::Extent2D& sz, nytl::Span<RenderBuffer> bufs) override {
-		init(sz, bufs, {});
-	}
+	void initBuffers(const vk::Extent2D&, nytl::Span<RenderBuffer>) override;
 
 	/// Initializes the framebuffers in the given renderbuffers with
 	/// the given attachments and the swapchain attachment.
@@ -152,7 +153,7 @@ protected:
 	/// exactly one nullHandle image view will replace it with the
 	/// renderBuffer's swapchain imageView.
 	/// Passing more than one nullHandle imageView is undefined behvaiour.
-	void init(const vk::Extent2D&, nytl::Span<RenderBuffer>,
+	void initBuffers(const vk::Extent2D&, nytl::Span<RenderBuffer>,
 		std::vector<vk::ImageView> attachments);
 
 	// TODO: don't use a vector above. Maybe there MUST be a nullHandle
@@ -265,7 +266,7 @@ void Renderer::resize(vk::Extent2D& size,
 		buf.valid = false;
 	}
 
-	init(size, renderBuffers_);
+	initBuffers(size, renderBuffers_);
 	invalidate();
 }
 
@@ -360,7 +361,13 @@ DefaultRenderer::DefaultRenderer(vk::RenderPass rp, vk::SurfaceKHR s,
 {
 }
 
-void DefaultRenderer::init(const vk::Extent2D& size, 
+void DefaultRenderer::initBuffers(const vk::Extent2D& size, 
+	nytl::Span<RenderBuffer> buffers)
+{
+	initBuffers(size, buffers, {});
+}
+
+void DefaultRenderer::initBuffers(const vk::Extent2D& size, 
 	nytl::Span<RenderBuffer> bufs, std::vector<vk::ImageView> attachments)
 {
 	auto scPos = -1;

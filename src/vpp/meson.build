@@ -5,7 +5,7 @@ vpp_sources = [
 	'device.cpp',
 	'descriptor.cpp',
 	'procAddr.cpp',
-	'renderer.cpp',
+	# 'renderer.cpp',
 	'memory.cpp',
 	'memoryMap.cpp',
 	'shader.cpp',
