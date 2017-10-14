@@ -121,7 +121,7 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 	bool choose = curr.width == 0xFFFFFFFF && curr.height == 0xFFFFFFFF;
 	if(!prefs.preferCurrentExtent || choose) {
 		const auto& min = surfCaps.minImageExtent;
-		const auto& max = surfCaps.minImageExtent;
+		const auto& max = surfCaps.maxImageExtent;
 		ret.imageExtent.width = std::clamp(size.width, min.width, max.width);
 		ret.imageExtent.height = std::clamp(size.height, min.height, max.height);
 	} else if(prefs.preferCurrentExtent) {
@@ -233,7 +233,7 @@ void Swapchain::resize(const vk::Extent2D& size,
 	auto& curr = surfCaps.currentExtent;
 	if(curr.width == 0xFFFFFFFF && curr.height == 0xFFFFFFFF) {
 		const auto& min = surfCaps.minImageExtent;
-		const auto& max = surfCaps.minImageExtent;
+		const auto& max = surfCaps.maxImageExtent;
 		info.imageExtent.width = std::clamp(size.width, min.width, max.width);
 		info.imageExtent.height = std::clamp(size.height, min.height, max.height);
 	} else {

@@ -5,185 +5,199 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/resource.hpp>
-#include <vpp/framebuffer.hpp>
-#include <vpp/renderPass.hpp>
 #include <vpp/image.hpp>
-
-#include <memory>
-#include <vector>
+#include <vpp/queue.hpp>
+#include <vpp/framebuffer.hpp>
+#include <vpp/sync.hpp>
+#include <vpp/swapchain.hpp>
+#include <functional>
+#include <variant>
 
 namespace vpp {
 
-/// Abstract Interface for building renderers.
-/// Will be passed to a SwapchainRenderer constructor to record the prebaked commandBuffers.
-/// Has several optional callbacks that will be called each frame.
-/// The two callbacks every implementation must implement are build are clearValues.
-class RendererBuilder {
-public:
-	using AdditionalSemaphores = std::vector<std::pair<vk::Semaphore, vk::PipelineStageBits>>;
+/// Fence that knows if it has been used.
+/// Will wait on destruction if it has been used.
+class TrackedFence : public Fence {
+public:	
+	bool used {};
 
 public:
-	virtual ~RendererBuilder() = default;
-
-	/// This function is called to record the render commands into the given renderpass instance.
-	/// It should record render commands for everything that should be rendered to the
-	/// passed command buffer (can be retrieved from the render instance).
-	/// \param id The id of the current render buffer.
-	virtual void build(unsigned int id, const RenderPassInstance& ini) = 0;
-
-	/// Should return the clearValues for all framebuffer attachments.
-	/// The size of the returned vector must match the number of attachments each framebuffer
-	/// has.
-	/// \param id The id of the current render buffer.
-	virtual std::vector<vk::ClearValue> clearValues(unsigned int id) = 0;
-
-	/// This function will be called once by the SwapchainRenderer, after it was constructed
-	/// and before it will use any other builder functions.
-	/// Can be used to initialize any renderer-dependent variables.
-	virtual void init(SwapchainRenderer&) {};
-
-	/// Will be called to record additional command buffer commands before rendering.
-	virtual void beforeRender(vk::CommandBuffer) {};
-
-	/// Will be called to record additional command buffer commands after rendering.
-	virtual void afterRender(vk::CommandBuffer) {};
-
-	// TODO: make this function not return something allocated on the heap
-
-	/// Will be called everytime the commands for a frame are submitted to the device.
-	/// The the RendererBuilder then has the possibilty to queue e.g. additional command buffers
-	/// and return a semaphores for that should be waited before beginning
-	/// with the rendering commands.
-	virtual AdditionalSemaphores submit(unsigned int) { return {}; }
-
-	/// This function is called before every frame and allows the builder to execute/queue
-	/// additional operations or to re-record the command buffer for the given id.
-	/// It is called exactly before the command buffer for the given id is queued for submission.
-	virtual void frame(unsigned int) {};
+	using Fence::Fence;
+	TrackedFence(TrackedFence&&) noexcept = default;
+	TrackedFence& operator=(TrackedFence&&) noexcept = default;
+	~TrackedFence();
 };
 
-/// Capable of rendering on a Swapchain.
-/// CreateInfo::swapChainAttachment defines the id of the attachment the swap chain
-/// color image should be used for.
-/// Additional attachments can either be chosen to be static, dynamic or external.
-/// Static attachments mean that there is only one viewable image for all framebuffers, that is
-/// what one would usually use for things like e.g. depth buffers.
-/// For dynamic attachments, every framebuffer gets its own viewable image as attachment.
-/// External attachments are just imageViews provided by the user of this class.
-/// The given additional attachments will be attached around the swapChain attachments,
-/// i.e. if the swapChainAttachment id is 1 and there are additionally 2 static attachments
-/// given the static attachments will have the ids 0 and 2.
-/// One must ensure that the given attachments will create a framebuffer that is compatible
-/// for the given render pass, the class itself wont (and cannnot) perform any checking.
-class SwapchainRenderer : public ResourceReference<SwapchainRenderer> {
+/// Simple default implementation for rendering onto a surface.
+/// Abstract class, one has to implement the framebuffer initialization
+/// as well as the command buffer recording.
+/// See the DefaultRenderer class for a simple framebuffer helper.
+/// Internally uses a swapchain.
+/// Remember that the Renderer destructor will destroy all commandbuffers
+/// and fences so it must be assured that no submission is left unfinished.
+class Renderer : public ResourceReference<Renderer> {
 public:
-	struct AttachmentInfo {
-		// will be used to create static/dynamic attachments
-		ViewableImage::CreateInfo createInfo;
-
-		// specifies whether it is a dynamic or static attachment.
-		// Each framebuffer (for the different swapChain attachments) has its own dyanmic attachments
-		// while static attachments are shared among them
-		bool dynamic = false;
-
-		// if valid all other members will be ignored and this will be used as some additional
-		// external attachment. Note that it must have at least the size of the swapChain
-		vk::ImageView external = {};
+	/// When to record command buffers.
+	enum class RecordMode {
+		all, /// Re-records all command buffer when invalidated, default
+		onDemand, /// Records command buffers when needed
+		always /// Records the needed commandBuffer every frame (even if valid)
 	};
 
-	/// The CreateInfo struct holds all information that is needed for construction a
-	/// SwapchainRenderer. It allows to define additional attachments of different types.
-	struct CreateInfo {
-		vk::RenderPass renderPass; // the render pass to use for the rendering
-		unsigned int queueFamily; // the queue family for graphical operations
-		std::vector<AttachmentInfo> attachments; // additional attachments
-		unsigned int swapChainAttachment = 0; // id of the swapChain attachment in the fbs
-
-		// Those parameters are used to make resizing (i.e. recreating) more efficient in
-		// terms of memory allocation
-		unsigned int maxWidth = 1920;
-		unsigned int maxHeight = 1080;
-	};
-
-	/// The RenderBuffer class hold a framebuffer for each swapChain image as well a
-	/// commandBuffer with the last recoreded commands for this framebuffer.
-	/// It is necessary to create a commandBuffer for each framebuffer since at the
-	/// beginning of a render pass one has to specify the framebuffer he wants to
-	/// draw into and one has to create multiple framebuffers for the different
-	/// swapChain color images.
+	/// All required information to rendering onto one buffer of
+	/// the swapchain.
 	struct RenderBuffer {
+		bool valid {};
+		unsigned int id {};
+		vk::Image image {};
+		vk::CommandBuffer commandBuffer {};
+		ImageView imageView;
 		Framebuffer framebuffer;
-		CommandBuffer commandBuffer;
+		Semaphore semaphore;
+		TrackedFence fence;
 	};
 
-	/// Convinience typedef for the rendering work and presentation work.
-	using RenderWork = std::unique_ptr<Work<void>>;
-
-	/// Typedef for the renderer builder implementation.
-	using RenderImpl = std::unique_ptr<RendererBuilder>;
-
 public:
-	SwapchainRenderer() = default;
-	SwapchainRenderer(const Swapchain& swapChain, const CreateInfo& info, RenderImpl builder);
-	~SwapchainRenderer();
+	/// This will automatically finish all pending render calls.
+	/// But derived should ensure that they (e.g. in their destructor)
+	/// are not destroying any rendering resources.
+	virtual ~Renderer() = default;
 
-	SwapchainRenderer(SwapchainRenderer&& lhs) noexcept { swap(*this, lhs); }
-	SwapchainRenderer& operator=(SwapchainRenderer lhs) noexcept { swap(*this, lhs); return *this; }
+	/// Resizes the internal swapchain and recreates the render
+	/// buffers. Should be called when the underlaying surface was
+	/// resized (or e.g. when render returned outOfDate or suboptimal).
+	/// Will set the size parameter to the actually used size (but
+	/// must be filled with an expected size which might be used).
+	/// Must not be called while a render call is left unfinished.
+	void resize(const vk::Extent2D& size, vk::SwapchainCreateInfoKHR&);
 
-	/// Creates all static attachments and all framebuffers.
-	void create(const Swapchain& swapChain, const CreateInfo& info);
+	/// Invalidates all recorded command buffers.
+	/// Only if the record mode is RecordMode::all all command buffers
+	/// are re-recorded before this function returns, so with this record
+	/// mode the function must not be called while a render call
+	/// is left unfinished.
+	void invalidate();
 
-	/// Initialized all attachments and creates the vulkan framebuffers.
-	void init(RenderImpl builder);
+	/// Renders one frame. If fence is not nullptr, sets the fence parameter to 
+	/// the fence signaling the end of the frame if vk::Result is success.
+	/// Otherwise returns the ocurred redner error (which might be non-critical
+	/// e.g. a suboptimal swapchain, will not render then nontheless).
+	/// It is allowed to call this function again before the fence completes
+	/// (at least if your frame- and commandbuffers allow it). Until the
+	/// fence is signaled, no rendering resources must be invalidated.
+	/// This means calls to e.g. resize in this time will trigger
+	/// undefined behaviour.
+	/// Unless you will assure submission finish in some other way (e.g.
+	/// calling this->wait(), vk{Device,Queue}WaitIdle) you want to
+	/// receive the fence and make sure all submissions are finished
+	/// before destroying rendering resources (used buffer/pipelines or
+	/// calling resize).
+	/// This function might block for quite some time nontheless when acquiring
+	/// the next image or waiting for the last execution on this
+	/// render buffer to finish.
+	vk::Result render(vk::Fence* = {});
 
-	/// Renders one frame and returns after that. May block (waiting for the next present image)
-	/// depending on the settings of the given swapChain.
-	/// The queue paramters are optional. If they are nullptr, a queue will automatically be selected.
-	/// \param presentQueue The queue to submit the present commands to.
-	/// \param graphicsQueue The queue to submit the graphics commands to.
-	/// Will choose just some queue with graphics flags from the device if nullptr.
-	/// \exception std::logic_error If a valid present or graphics queue cannot be found or if
-	/// the family of the grahpics queue is not compatible with the recorded command buffers.
-	/// \return A Work pointer that can be used to track the state or wait for the rendering
-	/// to finish.
-	RenderWork render(const Queue& present, const Queue* graphics = nullptr);
+	/// Renders one frame and waits for all frame operations to finish.
+	/// Returns any ocurred rendering error (which might be non-critical
+	/// e.g. a suboptimal swapchain, will not render then nontheless).
+	vk::Result renderBlock();
 
-	/// Renders one frame and waits until all rendering operations are finished.
-	/// The queue paramters are optional. If they are nullptr, a queue will automatically be selected.
-	/// \param presentQueue The queue to submit the present commands to.
-	/// \param graphicsQueue The queue to submit the graphics commands to.
-	/// Will choose just some queue with graphics flags from the device if nullptr.
-	/// \exception std::logic_error If a valid present or graphics queue cannot be found or if
-	/// the family of the grahpics queue is not compatible with the recorded command buffers.
-	void renderBlock(const Queue& present, const Queue* graphics = nullptr);
+	/// Changes the record mode.
+	/// Does not invalidate any currently recorded command buffers
+	/// but if records all invalid command buffers RecordMode is set to all,
+	/// so when there are invalid command buffers and this is called with 
+	/// RecordMode::all, there must be no unfinished render calls.
+	void recordMode(RecordMode);
 
-	/// Calls the builder to build the commandBuffer with the given id.
-	/// \param id The id of the render buffer to (re)record. If it is -1, all buffers will be recorded.
-	void record(int id = -1);
+	/// Waits for all pending rendering operations from this
+	/// renderer to finish.
+	void wait();
 
-	/// Recreates the renderer in an efficient manner.
-	/// This must be called when e.g. the associated swapchain was recreated (resized).
-	void recreate();
-
-	const Swapchain& swapChain() const { return *swapChain_; }
-	const std::vector<RenderBuffer>& renderBuffers() const { return renderBuffers_; }
-	const std::vector<ViewableImage>& staticAttachments() const { return staticAttachments_; }
-
-	vk::RenderPass vkRenderPass() const { return info_.renderPass; }
-	unsigned int renderQueueFamily() const { return info_.queueFamily; }
-	unsigned int swapChainAttachment() const { return info_.swapChainAttachment; }
-	const std::vector<AttachmentInfo>& attachmentInfos() const { return info_.attachments; }
-
-	const Swapchain& resourceRef() const { return *swapChain_; }
-	friend void swap(SwapchainRenderer& a, SwapchainRenderer& b) noexcept;
+	const auto& swapchain() const { return swapchain_; }
+	auto recordMode() const { return mode_; }
+	const auto& resourceRef() const { return swapchain_; }
 
 protected:
-	const Swapchain* swapChain_ = nullptr;
-	RenderImpl renderImpl_ = nullptr;
+	/// Initializes the Renderer into invalid state.
+	/// One must call init before any other function can be called.
+	/// Has no initializing constructor since the init
+	/// function requires the virtual functions.
+	Renderer() = default;
+
+	Renderer(Renderer&&) noexcept = default;
+	Renderer& operator=(Renderer&&) noexcept = default;
+
+	/// Creates and initializes the Renderer.
+	/// Only records command buffers if record is passed as true.
+	/// If no rendering queue is given, will choose any queue from
+	/// the associated device with graphics bit set.
+	/// The real size of the swapchain will be returned in size.
+	/// Will also record all command buffers (if the record mode
+	/// is RecrodMode::all).
+	void init(const vk::SwapchainCreateInfoKHR&,
+		const Queue& present, const Queue* render = {},
+		RecordMode = RecordMode::all);
+
+	/// (Re-)creates the render buffers.
+	void createBuffers(const vk::Extent2D& size, vk::Format swapchainFormat);
+
+	// - abstract interface -
+	/// Records into the given RenderBuffer.
+	/// Should use the render buffers framebuffer which is guaranteed
+	/// to be a framebuffer returned by createFramebuffer. It is 
+	/// also guaranteed that initFramebuffers was called since then.
+	virtual void record(const RenderBuffer&) = 0;
+
+	/// Should initialize all internal information required for rendering, 
+	/// such as framebuffers. Will be called everytime the swapchain
+	/// was recreated and therefore size and/or image views have changed.
+	virtual void initBuffers(const vk::Extent2D&, nytl::Span<RenderBuffer>) = 0;
+
+protected:
+	Swapchain swapchain_ {};
+	const Queue* present_ {};
+	const Queue* render_ {};
+	CommandPool commandPool_;
 	std::vector<RenderBuffer> renderBuffers_;
-	std::vector<ViewableImage> staticAttachments_;
-	CreateInfo info_;
+	vpp::Semaphore acquireSemaphore_;
+	RecordMode mode_ {RecordMode::all};
+};
+
+/// Simple default framebuffer handling Renderer implementation.
+/// Just initializes the framebuffers with the swapchain color attachments.
+/// Derived classes can also add additional attachments that will be added
+/// to the framebuffer (but then should also make sure they have the right
+/// size every time init is called - usually by overriding it and calling
+/// the Base default implementation).
+/// The record method is still abstract.
+class DefaultRenderer : public Renderer {
+protected:
+	/// Like the Renderer::init but additionally stores the
+	/// renderPass to create the framebuffers for.
+	void init(vk::RenderPass, const vk::SwapchainCreateInfoKHR&,
+		const Queue& present, const Queue* render = {},
+		RecordMode = RecordMode::all);
+
+	/// Overrides the default init method with a call to the init function
+	/// below (without additional attachments). You have to override in
+	/// when you want to use additional attachments and then assure in 
+	/// every call that the attachments have the correct dimensions.
+	void initBuffers(const vk::Extent2D&, nytl::Span<RenderBuffer>) override;
+
+	/// Initializes the framebuffers in the given renderbuffers with
+	/// the given attachments and the swapchain attachment.
+	/// If all given attachments are not nullHandle, will add the swapchain
+	/// image view as last framebuffer attachment, otherwise if there is
+	/// exactly one nullHandle image view will replace it with the
+	/// renderBuffer's swapchain imageView.
+	/// Passing more than one nullHandle imageView is undefined behvaiour.
+	void initBuffers(const vk::Extent2D&, nytl::Span<RenderBuffer>,
+		std::vector<vk::ImageView> attachments);
+
+	const auto& renderPass() const { return renderPass_; }
+
+protected:
+	vk::RenderPass renderPass_ {};
 };
 
 } // namespace vpp

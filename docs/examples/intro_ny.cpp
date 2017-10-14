@@ -1,4 +1,21 @@
-#include <vpp/renderer2.hpp> // vpp::DefaultRenderer
+// Basic example on how to use ny.
+// We are using here the highest abstraction/utility vpp has to offer,
+// vpp::DefaultRenderer (see vpp/renderer.hpp).
+// We use the ny window library (working on windows, unix (wayland and x11)
+// and android).
+// We already have pre-processed (compiled, parsed as headers) shaders,
+// using glslangValidator and bintoheader (see data/*.h).
+
+// Pretty much all ny code was taken from the basic example (except
+// the vulkan surface creation):
+// 	- d: try to toggle server decorations
+//	- f: toggle fullscreen
+//	- m: toggle maximized state
+// 	- i: iconize (minimize) the window
+//	- n: reset to normal toplevel state
+//	- Escape: close the window
+
+#include <vpp/renderer.hpp> // vpp::DefaultRenderer
 #include <vpp/pipeline.hpp> // vpp::GraphicsPipeline
 #include <vpp/instance.hpp> // vpp::Instance
 #include <vpp/debug.hpp> // vpp::DebugCallback
@@ -22,82 +39,41 @@
 
 #include <nytl/vecOps.hpp> // print nytl::Vec
 #include <cstring> // std::memset
+#include <set>
 
 // shader
 #include "data/intro.frag.h"
 #include "data/intro.vert.h"
 
-// Pretty much all ny code was taken from the basic example (except
-// the vulkan surface creation):
-// 	- d: try to toggle server decorations
-//	- f: toggle fullscreen
-//	- m: toggle maximized state
-// 	- i: iconize (minimize) the window
-//	- n: reset to normal toplevel state
-//	- Escape: close the window
-
 vpp::RenderPass createRenderPass(const vpp::Device&, vk::Format);
 vpp::Pipeline createGraphicsPipeline(const vpp::Device&, vk::RenderPass, 
 	vk::PipelineLayout);
 
-// TODO: move impl to below main
+// vpp::Renderer implementation (using DefaultRenderer since we
+// don't need special framebuffer stuff).
+// Pretty much only initializes the pipeline, implements an easier resize
+// function for the window listener and implements the command buffer
+// recodring.
 class MyRenderer : public vpp::DefaultRenderer {
 public:
-	MyRenderer(vk::RenderPass rp, vk::SwapchainCreateInfoKHR& scInfo,
-		const vpp::Queue& present) : scInfo_(scInfo)
-	{
-		// pipeline
-		auto& dev = present.device();
-		pipelineLayout_ = {dev, {}};
-		pipeline_ = createGraphicsPipeline(dev, rp, pipelineLayout_);
+	MyRenderer(vk::RenderPass, vk::SwapchainCreateInfoKHR&,
+		const vpp::Queue& present);
 
-		init(rp, scInfo, present);
-	}
-
-	void resize(nytl::Vec2ui size) 
-	{
-		vpp::DefaultRenderer::resize({size[0], size[1]}, scInfo_);
-	}
+	void resize(nytl::Vec2ui size);
+	void record(const RenderBuffer& buf) override;
 
 protected:
-	void record(const RenderBuffer& buf) override {
-		static const auto clearValue = vk::ClearValue {{0.f, 0.f, 0.f, 1.f}};
-		const auto width = scInfo_.imageExtent.width;
-		const auto height = scInfo_.imageExtent.height;
-
-		auto cmdBuf = buf.commandBuffer;
-		vk::beginCommandBuffer(cmdBuf, {});
-		vk::cmdBeginRenderPass(cmdBuf, {
-			renderPass(),
-			buf.framebuffer,
-			{0u, 0u, width, height},
-			1,
-			&clearValue
-		}, {});
-
-		vk::Viewport vp {0.f, 0.f, (float) width, (float) height, 0.f, 1.f};
-		vk::cmdSetViewport(cmdBuf, 0, 1, vp);
-		vk::cmdSetScissor(cmdBuf, 0, 1, {0, 0, width, height});
-
-		vk::cmdBindPipeline(cmdBuf, vk::PipelineBindPoint::graphics, pipeline_);
-		// vk::cmdBindVertexBuffers(cmdBuffer, 0, {vertexBuffer}, {0});
-		vk::cmdDraw(cmdBuf, 3, 1, 0, 0);
-
-		vk::cmdEndRenderPass(cmdBuf);
-		vk::endCommandBuffer(cmdBuf);
-	}
-
 	vpp::PipelineLayout pipelineLayout_;
 	vpp::Pipeline pipeline_;
 	vk::SwapchainCreateInfoKHR& scInfo_;
 };
 
-
+// ny::WindowListener implementation
 class MyWindowListener : public ny::WindowListener {
 public:
 	ny::AppContext* appContext;
 	ny::WindowContext* windowContext;
-	ny::ToplevelState toplevelState;
+	ny::ToplevelState toplevelState {ny::ToplevelState::normal};
 	MyRenderer* renderer;
 	nytl::Vec2ui windowSize {800u, 500u};
 	bool* run;
@@ -169,6 +145,7 @@ int main(int, char**)
 	// swapchain info and renderpass
 	// here we could try to use vsync or alpha/transform settings
 	auto scInfo = vpp::swapchainCreateInfo(device, vkSurface, {800u, 500u});
+	dlg_info("size: {}, {}", scInfo.imageExtent.width, scInfo.imageExtent.height);
 	auto renderPass = createRenderPass(device, scInfo.imageFormat);
 
 	// our renderer
@@ -188,16 +165,208 @@ int main(int, char**)
 	// rather in a gui application (e.g. CAD app or high performance ui).
 	dlg_info("Entering main loop");
 	while(run && ac->waitEvents());
+	
+	// The loop below would be a typical game main loop.
+	// Note however that we currently also handle draw events which
+	// a game would usually not do (since it draws all the time anyways).
 
-	/*
-	while(run && ac->pollEvents()) {
-		renderer.renderBlock();
-	}
-	*/
-
+	// while(run && ac->pollEvents()) {
+	// 	renderer.renderBlock(); // or just render without blocking
+	// }
+	
+	vk::deviceWaitIdle(device);
 	dlg_info("Returning from main with grace");
 }
 
+// MyRenderer
+MyRenderer::MyRenderer(vk::RenderPass rp, vk::SwapchainCreateInfoKHR& scInfo,
+	const vpp::Queue& present) : scInfo_(scInfo)
+{
+	// pipeline
+	auto& dev = present.device();
+	pipelineLayout_ = {dev, {}};
+	pipeline_ = createGraphicsPipeline(dev, rp, pipelineLayout_);
+
+	init(rp, scInfo, present);
+}
+
+void MyRenderer::resize(nytl::Vec2ui size) 
+{
+	vpp::DefaultRenderer::resize({size[0], size[1]}, scInfo_);
+}
+
+void MyRenderer::record(const RenderBuffer& buf) {
+	static const auto clearValue = vk::ClearValue {{0.f, 0.f, 0.f, 1.f}};
+	const auto width = scInfo_.imageExtent.width;
+	const auto height = scInfo_.imageExtent.height;
+
+	auto cmdBuf = buf.commandBuffer;
+	vk::beginCommandBuffer(cmdBuf, {});
+	vk::cmdBeginRenderPass(cmdBuf, {
+		renderPass(),
+		buf.framebuffer,
+		{0u, 0u, width, height},
+		1,
+		&clearValue
+	}, {});
+
+	vk::Viewport vp {0.f, 0.f, (float) width, (float) height, 0.f, 1.f};
+	vk::cmdSetViewport(cmdBuf, 0, 1, vp);
+	vk::cmdSetScissor(cmdBuf, 0, 1, {0, 0, width, height});
+
+	vk::cmdBindPipeline(cmdBuf, vk::PipelineBindPoint::graphics, pipeline_);
+	// vk::cmdBindVertexBuffers(cmdBuffer, 0, {vertexBuffer}, {0});
+	vk::cmdDraw(cmdBuf, 3, 1, 0, 0);
+
+	vk::cmdEndRenderPass(cmdBuf);
+	vk::endCommandBuffer(cmdBuf);
+}
+
+// MyWindowListener
+void MyWindowListener::draw(const ny::DrawEvent&)
+{
+	if(!renderer) { // should not happen
+		dlg_warn("draw: no renderer");
+		return;
+	}
+
+	dlg_info("drawing the window");
+
+	auto res = renderer->renderBlock();
+	if(res != vk::Result::success) {
+		dlg_warn("swapchain out of date");
+		windowContext->refresh();
+	}
+}
+
+void MyWindowListener::key(const ny::KeyEvent& keyEvent)
+{
+	std::string name = "<unknown>";
+	if(appContext->keyboardContext()) {
+		auto utf8 = appContext->keyboardContext()->utf8(keyEvent.keycode);
+		if(!utf8.empty() && !ny::specialKey(keyEvent.keycode)) name = utf8;
+		else name = "<unprintable>";
+	}
+
+	auto utf8 = (keyEvent.utf8.empty() || ny::specialKey(keyEvent.keycode)) ?
+		"<unprintable>" : keyEvent.utf8;
+	dlg_info("Key {} with keycode ({}: {}) {}, generating: {} {}", name,
+		(unsigned int) keyEvent.keycode, ny::name(keyEvent.keycode),
+		keyEvent.pressed ? "pressed" : "released", utf8,
+		keyEvent.repeat ? "(repeated)" : "");
+
+	if(keyEvent.pressed) {
+		auto keycode = keyEvent.keycode;
+		if(keycode == ny::Keycode::f) {
+			dlg_info("Toggling fullscreen");
+			if(toplevelState != ny::ToplevelState::fullscreen) {
+				windowContext->fullscreen();
+				toplevelState = ny::ToplevelState::fullscreen;
+			} else {
+				windowContext->normalState();
+				toplevelState = ny::ToplevelState::normal;
+			}
+		} else if(keycode == ny::Keycode::n) {
+			dlg_info("Resetting window to normal state");
+			toplevelState = ny::ToplevelState::normal;
+			windowContext->normalState();
+		} else if(keycode == ny::Keycode::escape) {
+			dlg_info("Closing window and exiting");
+			*run = false;
+		} else if(keycode == ny::Keycode::m) {
+			dlg_info("Toggle window maximize");
+			if(toplevelState != ny::ToplevelState::maximized) {
+				windowContext->maximize();
+				toplevelState = ny::ToplevelState::maximized;
+			} else {
+				windowContext->normalState();
+				toplevelState = ny::ToplevelState::normal;
+			}
+		} else if(keycode == ny::Keycode::i) {
+			dlg_info("Minimizing window");
+			toplevelState = ny::ToplevelState::minimized;
+			windowContext->minimize();
+		} else if(keycode == ny::Keycode::d) {
+			dlg_info("Trying to toggle decorations");
+			windowContext->customDecorated(!windowContext->customDecorated());
+			windowContext->refresh();
+		}
+	}
+}
+
+void MyWindowListener::close(const ny::CloseEvent&)
+{
+	dlg_info("Window was closed by server side. Exiting");
+	*run = false;
+}
+
+void MyWindowListener::mouseButton(const ny::MouseButtonEvent& event)
+{
+	dlg_info("mouseButton {} {} at {}", ny::mouseButtonName(event.button),
+		event.pressed ? "pressed" : "released", event.position);
+	if(event.pressed && event.button == ny::MouseButton::left) {
+		if(toplevelState != ny::ToplevelState::normal ||
+			event.position[0] < 0 || event.position[1] < 0 ||
+			static_cast<unsigned int>(event.position[0]) > windowSize[0] ||
+			static_cast<unsigned int>(event.position[1]) > windowSize[1])
+				return;
+
+		ny::WindowEdges resizeEdges = ny::WindowEdge::none;
+		if(event.position[0] < 100) {
+			resizeEdges |= ny::WindowEdge::left;
+		} else if(static_cast<unsigned int>(event.position[0]) > windowSize[0] - 100) {
+			resizeEdges |= ny::WindowEdge::right;
+		}
+
+		if(event.position[1] < 100) {
+			resizeEdges |= ny::WindowEdge::top;
+		} else if(static_cast<unsigned int>(event.position[1]) > windowSize[1] - 100) {
+			resizeEdges |= ny::WindowEdge::bottom;
+		}
+
+		auto caps = windowContext->capabilities();
+		if(resizeEdges != ny::WindowEdge::none && caps & ny::WindowCapability::beginResize) {
+			dlg_info("Starting to resize window");
+			windowContext->beginResize(event.eventData, resizeEdges);
+		} else if(caps & ny::WindowCapability::beginMove) {
+			dlg_info("Starting to move window");
+			windowContext->beginMove(event.eventData);
+		}
+	}
+}
+
+void MyWindowListener::focus(const ny::FocusEvent& ev)
+{
+	dlg_info("focus: {}", ev.gained);
+}
+
+void MyWindowListener::state(const ny::StateEvent& stateEvent)
+{
+	dlg_info("window state changed: {}", (int) stateEvent.state);
+	toplevelState = stateEvent.state;
+}
+
+void MyWindowListener::resize(const ny::SizeEvent& sizeEvent)
+{
+	dlg_info("window resized to {}", sizeEvent.size);
+	windowSize = sizeEvent.size;
+
+	// a woraround but should be valid per spec
+	vk::deviceWaitIdle(renderer->device());
+	renderer->resize(sizeEvent.size);
+}
+
+void MyWindowListener::surfaceCreated(const ny::SurfaceCreatedEvent& surfaceEvent)
+{
+	// TODO
+}
+
+void MyWindowListener::surfaceDestroyed(const ny::SurfaceDestroyedEvent&)
+{
+	// TODO
+}
+
+// utility
 vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
 	vk::PipelineLayout layout)
 {
@@ -326,145 +495,4 @@ vpp::RenderPass createRenderPass(const vpp::Device& dev, vk::Format format)
 	renderPassInfo.pSubpasses = &subpass;
 
 	return {dev, renderPassInfo};
-}
-
-void MyWindowListener::draw(const ny::DrawEvent&)
-{
-	if(!renderer) { // should not happen
-		dlg_warn("draw: no renderer");
-		return;
-	}
-
-	dlg_info("drawing the window");
-
-	// TODO: correctly handle result (e.g. outOfDate)
-	auto res = renderer->renderBlock();
-	if(res != vk::Result::success) {
-		dlg_warn("swapchain out of date");
-		windowContext->refresh(); // TODO: needed?
-	}
-}
-
-void MyWindowListener::key(const ny::KeyEvent& keyEvent)
-{
-	std::string name = "<unknown>";
-	if(appContext->keyboardContext()) {
-		auto utf8 = appContext->keyboardContext()->utf8(keyEvent.keycode);
-		if(!utf8.empty() && !ny::specialKey(keyEvent.keycode)) name = utf8;
-		else name = "<unprintable>";
-	}
-
-	auto utf8 = (keyEvent.utf8.empty() || ny::specialKey(keyEvent.keycode)) ?
-		"<unprintable>" : keyEvent.utf8;
-	dlg_info("Key {} with keycode ({}: {}) {}, generating: {} {}", name,
-		(unsigned int) keyEvent.keycode, ny::name(keyEvent.keycode),
-		keyEvent.pressed ? "pressed" : "released", utf8,
-		keyEvent.repeat ? "(repeated)" : "");
-
-	if(keyEvent.pressed) {
-		auto keycode = keyEvent.keycode;
-		if(keycode == ny::Keycode::f) {
-			dlg_info("Toggling fullscreen");
-			if(toplevelState != ny::ToplevelState::fullscreen) {
-				windowContext->fullscreen();
-				toplevelState = ny::ToplevelState::fullscreen;
-			} else {
-				windowContext->normalState();
-				toplevelState = ny::ToplevelState::normal;
-			}
-		} else if(keycode == ny::Keycode::n) {
-			dlg_info("Resetting window to normal state");
-			toplevelState = ny::ToplevelState::normal;
-			windowContext->normalState();
-		} else if(keycode == ny::Keycode::escape) {
-			dlg_info("Closing window and exiting");
-			*run = false;
-		} else if(keycode == ny::Keycode::m) {
-			dlg_info("Toggle window maximize");
-			if(toplevelState != ny::ToplevelState::maximized) {
-				windowContext->maximize();
-				toplevelState = ny::ToplevelState::maximized;
-			} else {
-				windowContext->normalState();
-				toplevelState = ny::ToplevelState::normal;
-			}
-		} else if(keycode == ny::Keycode::i) {
-			dlg_info("Minimizing window");
-			toplevelState = ny::ToplevelState::minimized;
-			windowContext->minimize();
-		} else if(keycode == ny::Keycode::d) {
-			dlg_info("Trying to toggle decorations");
-			windowContext->customDecorated(!windowContext->customDecorated());
-			windowContext->refresh();
-		}
-	}
-}
-
-void MyWindowListener::close(const ny::CloseEvent&)
-{
-	dlg_info("Window was closed by server side. Exiting");
-	*run = false;
-}
-
-void MyWindowListener::mouseButton(const ny::MouseButtonEvent& event)
-{
-	dlg_info("mouseButton {} {} at {}", ny::mouseButtonName(event.button),
-		event.pressed ? "pressed" : "released", event.position);
-	if(event.pressed && event.button == ny::MouseButton::left) {
-		if(toplevelState != ny::ToplevelState::normal ||
-			event.position[0] < 0 || event.position[1] < 0 ||
-			static_cast<unsigned int>(event.position[0]) > windowSize[0] ||
-			static_cast<unsigned int>(event.position[1]) > windowSize[1])
-				return;
-
-		ny::WindowEdges resizeEdges = ny::WindowEdge::none;
-		if(event.position[0] < 100) {
-			resizeEdges |= ny::WindowEdge::left;
-		} else if(static_cast<unsigned int>(event.position[0]) > windowSize[0] - 100) {
-			resizeEdges |= ny::WindowEdge::right;
-		}
-
-		if(event.position[1] < 100) {
-			resizeEdges |= ny::WindowEdge::top;
-		} else if(static_cast<unsigned int>(event.position[1]) > windowSize[1] - 100) {
-			resizeEdges |= ny::WindowEdge::bottom;
-		}
-
-		auto caps = windowContext->capabilities();
-		if(resizeEdges != ny::WindowEdge::none && caps & ny::WindowCapability::beginResize) {
-			dlg_info("Starting to resize window");
-			windowContext->beginResize(event.eventData, resizeEdges);
-		} else if(caps & ny::WindowCapability::beginMove) {
-			dlg_info("Starting to move window");
-			windowContext->beginMove(event.eventData);
-		}
-	}
-}
-
-void MyWindowListener::focus(const ny::FocusEvent& ev)
-{
-	dlg_info("focus: {}", ev.gained);
-}
-
-void MyWindowListener::state(const ny::StateEvent& stateEvent)
-{
-	dlg_info("window state changed: {}", (int) stateEvent.state);
-	toplevelState = stateEvent.state;
-}
-
-void MyWindowListener::resize(const ny::SizeEvent& sizeEvent)
-{
-	dlg_info("window resized to {}", sizeEvent.size);
-	windowSize = sizeEvent.size;
-	renderer->resize(sizeEvent.size);
-}
-
-void MyWindowListener::surfaceCreated(const ny::SurfaceCreatedEvent& surfaceEvent)
-{
-	// TODO
-}
-
-void MyWindowListener::surfaceDestroyed(const ny::SurfaceDestroyedEvent&)
-{
-	// TODO
 }

@@ -17,8 +17,9 @@ Fence::Fence(const Device& dev, const vk::FenceCreateInfo& info) : ResourceHandl
 
 Fence::~Fence()
 {
-	if(vkHandle())
+	if(vkHandle()) {
 		vk::destroyFence(device(), vkHandle());
+	}
 }
 
 // Semaphore
@@ -31,8 +32,9 @@ Semaphore::Semaphore(const Device& dev, const vk::SemaphoreCreateInfo& info) : R
 
 Semaphore::~Semaphore()
 {
-	if(vkHandle())
+	if(vkHandle()) {
 		vk::destroySemaphore(device(), vkHandle());
+	}
 }
 
 // Event
@@ -45,8 +47,9 @@ Event::Event(const Device& dev, const vk::EventCreateInfo& info) : ResourceHandl
 
 Event::~Event()
 {
-	if(vkHandle())
+	if(vkHandle()) {
 		vk::destroyEvent(device(), vkHandle());
+	}
 }
 
 } // namespace vpp

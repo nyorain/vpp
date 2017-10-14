@@ -1,61 +1,44 @@
 Todo list vor vpp
 =================
 
-Points are only partly sorted by priority.
-
-- clean up the Resource::swap mess
-	- base method inheritance
 - testing!
 	- continue bufferops testing/fixing
 	- test everything using valgrind (with/without layers) to find potential leaks/errors
+	- test & fix image upload (layout) bug
 - clean up usage of dlg
 	- check can often be replaced with assert
 - clean up usage of nytl
-	- just include it as subproject
+	- just include it as subproject?
 - make codestyle consistent everywhere
-- think about swapchain out of date handling (swapchain/swapchainRenderer)
-	- recreate swapchain automatically? how to handle it?
-	- further swapchain improvements: see acquire/present todos
-		- give appliction possibility to gracefully handle outOfDate errors
-	- some bad bugs at the moment in the combination of swapchainrenderer + swapchain
 - procAddr: test if local cache really faster than load it every time?
 - when mapping images in write/retrieve, first make sure they have the correct layout
-	- change it, return command work ptr if needed
-- some general SwapchainRenderer improvements/reworking needed
-	- better renderer resetting (all command pools at once, just resize the frameRenderers vector)
-	- remove/totally rework the class? only useful for really basic stuff (and basic stuff
-		can be made easier...)
-	- SwapchainRenderer::init: call record?
-		- if RendererImpl should call it in init, document it!
-	- the concept (kindof) is alright, maybe just add another (more low level) rendering-helper
-		- or rework SwapchainRenderer to always be useful
-			- multisampling etc?
-	- see renderer.hpp in concepts, rework SwapchainRenderer
-		- the default RendererInterface implementation together with Renderer
-		  should offer a comparable interace
+	- change it, return command work ptr if needed?
 - cleanups/fixes to the 2-step init concept
 	- what about buffers/images?
 		- would it make sense for them to behave the way everything else does?
 			- i.e. Buffer() + create(param) + init(param) OR Buffer(params)
 				- Change the constructor semantics to already initialize the memory
-
-- use "using" declarations in the derived resource classes to make the
-	protected ResourceHandle constructors visisble
-- pmr for performance critical (every-frame) functions.
-	- Device to store a thread-specific memory resource?
-	- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
+- separate header for stuff that requires the generated vulkan headers
+	- don't pull them in in other headers
+- release
 
 
 low prio / general / ideas
 --------------------------
 
+- add TrackedDescriptor* from kyo
+	- also DescriptorAllocate
+- use using declarations in the derived resource classes to make the
+	protected ResourceHandle constructors visisble
+- pmr for performance critical functions.
+	- Device to store a thread-specific memory resource?
+	- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
+- is there a better way for the Resource::swap mess?
 - generalize TransferBuffer into some shared buffer
 - allow to explicity allocate memory on a given memory allocator.
   To create large (like over 100 mb) buffers of a memory type we know we will need
   Also something like an additional allocation strategy?
   Allocate more than needed if the user wants it
-- separate header for stuff that requires the generated vulkan headers
-	- don't pull them in in other headers
 - vpp: don't output all extensions. Only required (via settings) ones
 - vpp: some way to detect installed vulkan version and automatically generate for it?
 	- should be doable with meson (python vulkan module; get version; download spec; parse it)

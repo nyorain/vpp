@@ -67,7 +67,7 @@ public:
 
 	/// Wrapper for vkAcquireNextImageKHR, will simply forward the result.
 	vk::Result acquire(std::uint32_t& id, vk::Semaphore sem,
-		vk::Fence fence = {}, std::uint64_t timeout = ~0u) const;
+		vk::Fence fence = {}, std::uint64_t timeout = UINT64_MAX) const;
 
 	/// Wrapper for vkQueuePresentKHR, will simply forward the result.
 	vk::Result present(const Queue& queue, unsigned int image, 
