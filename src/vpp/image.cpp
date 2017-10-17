@@ -98,9 +98,13 @@ WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,
 
 		vk::beginCommandBuffer(cmdBuffer, {});
 
+		// TODO: srcStage?
 		// change layout if needed
 		if(layout != vk::ImageLayout::transferDstOptimal && layout != vk::ImageLayout::general) {
-			changeLayoutCommand(cmdBuffer, image, layout, vk::ImageLayout::transferDstOptimal,
+			constexpr auto srcStage = vk::PipelineStageBits::allCommands;
+			changeLayoutCommand(cmdBuffer, image, layout, srcStage,
+				vk::ImageLayout::transferDstOptimal,
+				vk::PipelineStageBits::transfer,
 				{subres.aspectMask, subres.mipLevel, 1, subres.arrayLayer, 1});
 			layout = vk::ImageLayout::transferDstOptimal;
 		}
@@ -119,6 +123,8 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format for
 	dlg_checkt(("retrieve(image)"), {
 		if(!image.memoryEntry().allocated()) dlg_error("Image has no memory");
 	});
+
+	// TODO: the memory size of the image has NO value for us
 
 	if(image.mappable() && allowMap) {
 		std::vector<std::uint8_t> data(image.memorySize());
@@ -140,6 +146,9 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format for
 
 		return std::make_unique<StoredDataWork>(std::move(data));
 	} else {
+		// TODO: wrong size? if we e.g. only want to retrieve a sub-image
+		// something like byteSize in fill, but actually use it!
+
 		const Queue* queue;
 		auto qFam = transferQueueFamily(image.device(), &queue);
 		auto cmdBuffer = image.device().commandProvider().get(qFam);
@@ -147,9 +156,13 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format for
 
 		vk::beginCommandBuffer(cmdBuffer, {});
 
-		//change layout if needed
+		// TODO: src stage?
+		// change layout if needed
 		if(layout != vk::ImageLayout::transferSrcOptimal && layout != vk::ImageLayout::general) {
-			changeLayoutCommand(cmdBuffer, image, layout, vk::ImageLayout::transferSrcOptimal,
+			constexpr auto srcStage = vk::PipelineStageBits::allCommands;
+			changeLayoutCommand(cmdBuffer, image, layout, srcStage,
+				vk::ImageLayout::transferSrcOptimal,
+				vk::PipelineStageBits::transfer,
 				{subres.aspectMask, subres.mipLevel, 1, subres.arrayLayer, 1});
 			layout = vk::ImageLayout::transferSrcOptimal;
 		}
@@ -167,38 +180,48 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format for
 	}
 }
 
-//free utility functions
-void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::Image img, vk::ImageLayout ol,
-	vk::ImageLayout nl, const vk::ImageSubresourceRange& range)
+// TODO!
+// free utility functions
+void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::Image img, 
+	vk::ImageLayout oldLayout, vk::PipelineStageFlags srcStage,
+	vk::ImageLayout newLayout, vk::PipelineStageFlags dstStage,
+	const vk::ImageSubresourceRange& range)
 {
 	vk::ImageMemoryBarrier barrier;
-	barrier.oldLayout = ol;
-	barrier.newLayout = nl;
+	barrier.oldLayout = oldLayout;
+	barrier.newLayout = newLayout;
 	barrier.image = img;
 	barrier.subresourceRange = range;
 
-	switch(ol) {
+	switch(oldLayout) {
 		case vk::ImageLayout::undefined:
-			barrier.srcAccessMask = {}; break;
+			barrier.srcAccessMask = {}; 
+			break;
 		case vk::ImageLayout::preinitialized:
-			barrier.srcAccessMask = vk::AccessBits::hostWrite; break;
+			barrier.srcAccessMask = vk::AccessBits::hostWrite; 
+			break;
 		case vk::ImageLayout::colorAttachmentOptimal:
-			barrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite; break;
+			barrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite; 
+			break;
 		case vk::ImageLayout::depthStencilAttachmentOptimal:
-			barrier.srcAccessMask = vk::AccessBits::depthStencilAttachmentWrite; break;
+			barrier.srcAccessMask = vk::AccessBits::depthStencilAttachmentWrite; 
+			break;
 		case vk::ImageLayout::transferSrcOptimal:
-			barrier.srcAccessMask = vk::AccessBits::transferRead; break;
+			barrier.srcAccessMask = vk::AccessBits::transferRead; 
+			break;
 		case vk::ImageLayout::transferDstOptimal:
-			barrier.srcAccessMask = vk::AccessBits::transferWrite; break;
+			barrier.srcAccessMask = vk::AccessBits::transferWrite; 
+			break;
 		case vk::ImageLayout::shaderReadOnlyOptimal:
-			barrier.srcAccessMask = vk::AccessBits::shaderRead; break;
+			barrier.srcAccessMask = vk::AccessBits::shaderRead; 
+			break;
 		default:
 			break;
 	}
 
-	switch(nl) {
+	switch(newLayout) {
 		case vk::ImageLayout::transferDstOptimal:
-			barrier.dstAccessMask = vk::AccessBits::transferWrite; break;
+			barrier.dstAccessMask = vk::AccessBits::transferWrite; 
 			break;
 		case vk::ImageLayout::transferSrcOptimal:
 			barrier.srcAccessMask |= vk::AccessBits::transferRead;
@@ -212,27 +235,32 @@ void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::Image img, vk::ImageLa
 			barrier.dstAccessMask |= vk::AccessBits::depthStencilAttachmentWrite;
 			break;
 		case vk::ImageLayout::shaderReadOnlyOptimal:
-			if(!barrier.srcAccessMask)
-				barrier.srcAccessMask = vk::AccessBits::hostWrite | vk::AccessBits::transferWrite;
+			if(!barrier.srcAccessMask) {
+				barrier.srcAccessMask = vk::AccessBits::hostWrite | 
+					vk::AccessBits::transferWrite;
+			}
 			barrier.dstAccessMask = vk::AccessBits::shaderRead;
 			break;
 		default:
 			break;
 	}
 
-	const auto stage = vk::PipelineStageBits::topOfPipe;
-	vk::cmdPipelineBarrier(cmdBuffer, stage, stage, {}, {}, {}, {barrier});
+	vk::cmdPipelineBarrier(cmdBuffer, srcStage, dstStage, {}, {}, {}, {barrier});
 }
 
-WorkPtr changeLayout(const Device& dev, vk::Image img, vk::ImageLayout ol, vk::ImageLayout nl,
+WorkPtr  changeLayout(const Device& dev, vk::Image img,
+	vk::ImageLayout oldLayout, vk::PipelineStageFlags srcStage,
+	vk::ImageLayout newLayout, vk::PipelineStageFlags dstStage,
 	const vk::ImageSubresourceRange& range)
 {
+
 	const Queue* queue;
 	auto qFam = transferQueueFamily(dev, &queue);
 
 	auto cmdBuffer = dev.commandProvider().get(qFam);
 	vk::beginCommandBuffer(cmdBuffer, {});
-	changeLayoutCommand(cmdBuffer, img, ol, nl, range);
+	changeLayoutCommand(cmdBuffer, img, oldLayout, srcStage,
+		newLayout, dstStage, range);
 	vk::endCommandBuffer(cmdBuffer);
 
 	return std::make_unique<CommandWork<void>>(std::move(cmdBuffer), *queue);

@@ -108,7 +108,7 @@ DebugCallback::~DebugCallback()
 
 bool DebugCallback::call(const CallbackInfo& info) const noexcept
 {
-	static constexpr bool verbose = false;
+	static constexpr bool verbose = true;
 	// we use a stringstream here because the callback might be called from multiple threads
 	// and debug messages should not interfer with each other
 

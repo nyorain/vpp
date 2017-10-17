@@ -28,7 +28,7 @@ SubmitManager::~SubmitManager()
 {
 	dlg_checkt(("~SubmitManager"), {
 		if(!pending_.empty())
-			dlg_warn("There are ", pending_.size(), " pending submission left");
+			dlg_warn("There are {} pending submission left", pending_.size());
 	});
 }
 

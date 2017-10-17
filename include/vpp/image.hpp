@@ -50,6 +50,10 @@ unsigned int formatSize(vk::Format);
 /// \sa formatSize, formatSizeBits
 vk::Extent2D blockSize(vk::Format);
 
+// TODO: functions implicitly assume things. Can probably be done in a
+// better interface
+// TODO: default stage masks? 
+
 /// Fills the given image with data.
 /// There are two different methods for filling an image: memoryMap and transfer.
 /// MemoryMap is used if the image is mappable and the allowMap param is true, otherwise
@@ -115,29 +119,29 @@ DataWorkPtr retrieve(const Image& image,
 /// Records the command for changing the layout of the given image into the
 /// given CommandBuffer.
 /// The given CommandBuffer must be in recording state
-void changeLayoutCommand(vk::CommandBuffer,
-	vk::Image,
-	vk::ImageLayout oldLayout,
-	vk::ImageLayout newLayout,
+void changeLayoutCommand(vk::CommandBuffer, vk::Image, 
+	vk::ImageLayout oldLayout, vk::PipelineStageFlags srcStage,
+	vk::ImageLayout newLayout, vk::PipelineStageFlags dstStage,
 	const vk::ImageSubresourceRange&);
 
 /// Changes the layout of a given image and returns the associated work ptr.
-WorkPtr changeLayout(const Device&,
-	vk::Image,
-	vk::ImageLayout oldLayout,
-	vk::ImageLayout newLayout,
+WorkPtr  changeLayout(const Device&, vk::Image, 
+	vk::ImageLayout oldLayout, vk::PipelineStageFlags srcStage,
+	vk::ImageLayout newLayout, vk::PipelineStageFlags dstStage,
 	const vk::ImageSubresourceRange&);
 
-/// Changes the layout of a given image and returns the associated work ptr.
-inline WorkPtr changeLayout(const Image& img,
-	vk::ImageLayout oldLayout,
-	vk::ImageLayout newLayout,
+inline WorkPtr changeLayout(const vpp::Image& img,
+	vk::ImageLayout oldLayout, vk::PipelineStageFlags srcStage,
+	vk::ImageLayout newLayout, vk::PipelineStageFlags dstStage,
 	const vk::ImageSubresourceRange& range)
-{ return changeLayout(img.device(), img, oldLayout, newLayout, range); }
+{ 
+	return changeLayout(img.device(), img, 
+		oldLayout, srcStage,
+		newLayout, dstStage, range); 
+}
 
 /// RAII wrapper around a vulkan image view.
-class ImageView : public ResourceHandle<vk::ImageView>
-{
+class ImageView : public ResourceHandle<vk::ImageView> {
 public:
 	ImageView() = default;
 	ImageView(const Device& dev, const vk::ImageViewCreateInfo& info);
@@ -148,6 +152,7 @@ public:
 	ImageView& operator=(ImageView lhs) noexcept { swap(*this, lhs); return *this; }
 };
 
+// TODO: default functions really bad. Also don't inlucde structs.hpp
 /// Combines a vulkan image and an imageView for it.
 /// Can be e.g. used for textures or framebuffer attachments.
 class ViewableImage : public ResourceReference<ViewableImage> {

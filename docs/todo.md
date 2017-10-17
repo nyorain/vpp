@@ -5,6 +5,10 @@ Todo list vor vpp
 	- continue bufferops testing/fixing
 	- test everything using valgrind (with/without layers) to find potential leaks/errors
 	- test & fix image upload (layout) bug
+- fix image fill/retrieve
+	- data size bug (maybe in transferbuffer already)
+	- take into account that image does not only have its data in memory
+		- couldn't the same be the case for buffer?
 - clean up usage of dlg
 	- check can often be replaced with assert
 - clean up usage of nytl
@@ -20,12 +24,14 @@ Todo list vor vpp
 				- Change the constructor semantics to already initialize the memory
 - separate header for stuff that requires the generated vulkan headers
 	- don't pull them in in other headers
-- release
+- release next version
 
 
 low prio / general / ideas
 --------------------------
 
+- is size value in MemoryEntry really needed?
+	- rather work with some id's or something?
 - add TrackedDescriptor* from kyo
 	- also DescriptorAllocate
 - use using declarations in the derived resource classes to make the

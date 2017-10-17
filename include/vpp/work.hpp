@@ -134,6 +134,8 @@ public:
 	WorkManager(WorkManager&& other) = default;
 	WorkManager& operator=(WorkManager&& other) = default;
 
+	// TODO: return submitted object? templated add function?
+	
 	/// Transfers ownership of the given work objects to the WorkManager.
 	/// The WorkManager will add them to the internal list of work to be done.
 	void add(std::unique_ptr<WorkBase>&& work);
