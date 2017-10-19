@@ -19,6 +19,9 @@ namespace vpp {
 /// This class is not threadsafe.
 class MemoryMap : public ResourceReference<MemoryMap> {
 public:
+	using Allocation = BasicAllocation<vk::DeviceSize>;
+
+public:
 	/// Assures that the range given by allocation is included in the map.
 	/// Might remap the mapped range.
 	void remap(const Allocation& allocation);
@@ -76,6 +79,9 @@ protected:
 /// Objects are always retrieved by a DeviceMemory object.
 /// This class is not threadsafe.
 class MemoryMapView : public ResourceReference<MemoryMapView> {
+public:
+	using Allocation = BasicAllocation<vk::DeviceSize>;
+
 public:
 	MemoryMapView() noexcept = default;
 	~MemoryMapView();

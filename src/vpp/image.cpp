@@ -57,6 +57,7 @@ Image::~Image()
 	if(vkHandle()) vk::destroyImage(device(), vkHandle());
 }
 
+// TODO: pipeline barriers? at least document theyre needed?
 WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,
 	vk::ImageLayout& layout, const vk::Extent3D& extent, const vk::ImageSubresource& subres,
 	const vk::Offset3D& offset, bool allowMap)
@@ -81,7 +82,10 @@ WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,
 			}
 		}
 
-		if(!map.coherent()) map.flush();
+		if(!map.coherent()) {
+			map.flush();
+		}
+
 		return std::make_unique<FinishedWork<void>>();
 	} else {
 		const auto byteSize = texSize * extent.width * extent.height * extent.depth;
@@ -124,21 +128,22 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format for
 		if(!image.memoryEntry().allocated()) dlg_error("Image has no memory");
 	});
 
-	// TODO: the memory size of the image has NO value for us
+	const auto texSize = formatSize(format);
+	const auto byteSize = texSize * extent.width * extent.height * extent.depth;
 
 	if(image.mappable() && allowMap) {
-		std::vector<std::uint8_t> data(image.memorySize());
+		std::vector<std::uint8_t> data(byteSize);
 		auto map = image.memoryMap();
 
-		//baiscally the size of the format in bytes. Can be computed from the given size/extent.
-		const auto texelSize = formatSize(format);
+		// baiscally the size of the format in bytes. 
+		// Can be computed from the given size/extent.
 		auto subresLayout = vk::getImageSubresourceLayout(image.device(), image, subres);
 
 		auto depth = extent.depth ? extent.depth : 1;
 		auto doffset = 0u; // dataOffset
 		for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
 			for(unsigned int h = offset.y; h < offset.y + extent.height; ++h) {
-				auto ioffset = imageAddress(subresLayout, texelSize, 0, h, d, subres.arrayLayer);
+				auto ioffset = imageAddress(subresLayout, texSize, 0, h, d, subres.arrayLayer);
 				std::memcpy(data.data() + doffset, map.ptr() + ioffset, extent.width);
 				doffset += extent.width;
 			}
@@ -146,13 +151,10 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format for
 
 		return std::make_unique<StoredDataWork>(std::move(data));
 	} else {
-		// TODO: wrong size? if we e.g. only want to retrieve a sub-image
-		// something like byteSize in fill, but actually use it!
-
 		const Queue* queue;
 		auto qFam = transferQueueFamily(image.device(), &queue);
 		auto cmdBuffer = image.device().commandProvider().get(qFam);
-		auto downloadBuffer = image.device().transferManager().buffer(image.memorySize());
+		auto downloadBuffer = image.device().transferManager().buffer(byteSize);
 
 		vk::beginCommandBuffer(cmdBuffer, {});
 
@@ -175,8 +177,9 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format for
 		vk::cmdCopyImageToBuffer(cmdBuffer, image, layout, downloadBuffer.buffer(), {region});
 		vk::endCommandBuffer(cmdBuffer);
 
-		return std::make_unique<DownloadWork>(std::move(cmdBuffer), *queue,
+		auto ret = std::make_unique<DownloadWork>(std::move(cmdBuffer), *queue,
 			std::move(downloadBuffer));
+		return ret;
 	}
 }
 

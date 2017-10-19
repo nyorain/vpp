@@ -38,15 +38,22 @@ Allocation TransferManager::TransferBuffer::use(std::size_t size)
 	auto old = start;
 
 	for(auto it = ranges_.begin(); it != ranges_.end(); ++it) {
-		if(it->offset - old.end() > size) {
+		if(it->offset - old.end() >= size) {
 			Allocation range = {old.end(), size};
 
-			//inserts the tested range before the higher range, if there is any
+			// inserts the tested range before the higher range, if there is any
 			ranges_.insert(it, range);
 			return range;
 		}
 
 		old = *it;
+	}
+
+	// last
+	if(buffer_.memorySize() - old.end() >= size) {
+		Allocation range = {old.end(), size};
+		ranges_.push_back(range);
+		return range;
 	}
 
 	return {};
@@ -100,12 +107,16 @@ TransferRange TransferManager::buffer(std::size_t size)
 	std::lock_guard<std::mutex> guard(mutex_);
 	for(auto& buffp : buffers_) {
 		auto alloc = buffp->use(size);
-		if(alloc.size > 0) return BufferRange(*buffp, alloc);
+		if(alloc.size > 0) {
+			return BufferRange(*buffp, alloc);
+		}
 	}
 
 	// allocate a new buffer
 	buffers_.emplace_back(new TransferBuffer(device(), size, mutex_));
-	return BufferRange(*buffers_.back(), buffers_.back()->use(size));
+	auto alloc = buffers_.back()->use(size);
+	dlg_assert(alloc.size == size);
+	return BufferRange(*buffers_.back(), alloc);
 }
 
 std::size_t TransferManager::totalSize() const

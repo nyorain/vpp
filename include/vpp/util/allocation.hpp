@@ -10,17 +10,29 @@
 namespace vpp {
 
 /// Utility struct that represents an allocated range (offset + size).
-struct Allocation {
-	std::size_t offset {0};
-	std::size_t size {0};
+template<typename Size>
+struct BasicAllocation {
+	Size offset {0};
+	Size size {0};
 
-	std::size_t end() const { return offset + size; }
+	Size end() const { return offset + size; }
 };
+
+template<typename Size>
+bool operator==(const BasicAllocation<Size>& a, const BasicAllocation<Size>& b) {
+	return a.offset == b.offset && a.size == b.size;
+}
+
+template<typename Size>
+bool operator!=(const BasicAllocation<Size>& a, const BasicAllocation<Size>& b) {
+	return a.offset != b.offset || a.size != b.size;
+}
 
 /// Aligns an offset to the given alignment.
 /// An alignment of 0 zero will not change the offset.
 /// An offset of 0 is treated as aligned with every possible alignment.
-template<typename A, typename B> constexpr auto align(A offset, B alignment)
+template<typename A, typename B> 
+constexpr auto align(A offset, B alignment)
 {
 	if(offset == 0 || alignment == 0)
 		return offset;

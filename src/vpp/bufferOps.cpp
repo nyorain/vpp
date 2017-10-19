@@ -26,7 +26,7 @@ DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize si
 
 	// retrieve by mapping if possible
 	if(buf.mappable()) {
-		return std::make_unique<MappableDownloadWork>(buf.memoryMap());
+		return std::make_unique<MappableDownloadWork>(buf.memoryMap(offset, size));
 	} else {
 		//use transfer buffer
 		const Queue* queue;

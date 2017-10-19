@@ -23,8 +23,8 @@ public:
 
 	/// Creates a memory map for this memory resource (if there is none) and returns a view to it.
 	/// Will automatically ensure that there is memory bound for this resource.
-	/// In debug mode, throws std::logic_error if the memory it is bound to cannot be mapped.
-	MemoryMapView memoryMap() const;
+	MemoryMapView memoryMap(vk::DeviceSize offset = 0, 
+		vk::DeviceSize size = vk::wholeSize) const;
 
 	/// Returns whether the resource was allocated on hostVisible (mappable) memory.
 	/// If the there was not yet memory allocated for this resource, false is returned.
@@ -59,10 +59,11 @@ protected:
 
 // - implementation -
 template<typename R>
-MemoryMapView MemoryResource<R>::memoryMap() const
+MemoryMapView MemoryResource<R>::memoryMap(vk::DeviceSize offset,
+	vk::DeviceSize size) const
 {
 	ensureMemory();
-	return memoryEntry().map();
+	return memoryEntry().map(offset, size);
 }
 
 template<typename R>

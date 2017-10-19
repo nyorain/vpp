@@ -13,6 +13,7 @@
 #include <memory> // std::unique_ptr
 #include <vector> // std::vector
 #include <unordered_map> // std::unordered_map
+#include <deque> // std::deque
 
 namespace vpp {
 
@@ -24,12 +25,12 @@ namespace vpp {
 /// The api is nonetheless exposed publicly.
 class DeviceMemoryAllocator : public Resource {
 public:
-	DeviceMemoryAllocator() noexcept = default;
+	DeviceMemoryAllocator() = default;
 	DeviceMemoryAllocator(const Device& dev);
 	~DeviceMemoryAllocator();
 
-	DeviceMemoryAllocator(DeviceMemoryAllocator&& other) noexcept;
-	DeviceMemoryAllocator& operator=(DeviceMemoryAllocator other) noexcept;
+	DeviceMemoryAllocator(DeviceMemoryAllocator&&) noexcept;
+	DeviceMemoryAllocator& operator=(DeviceMemoryAllocator) noexcept;
 
 	/// Requests memory for the given buffer and stores a (pending) reference to it into
 	/// the given MemoryEntry.
@@ -38,8 +39,8 @@ public:
 	/// type bits) by the caller.
 	/// \param usage The usage flags the buffer was created with and is used for.
 	/// Needed to satisfy certain alignment and padding requirements
-	void request(vk::Buffer requestor, const vk::MemoryRequirements& reqs,
-		vk::BufferUsageFlags usage, MemoryEntry& entry);
+	void request(vk::Buffer requestor, const vk::MemoryRequirements&,
+		vk::BufferUsageFlags, MemoryEntry&);
 
 	/// Requests memory for the given vulkan image and stores a (pending) reference to it into
 	/// the given MemoryEntry.
@@ -48,20 +49,20 @@ public:
 	/// type bits) by the caller.
 	/// \param tiling The ImageTiling for the given image.
 	/// Needed to satisfy certain alignment and padding requirements
-	void request(vk::Image requestor, const vk::MemoryRequirements& reqs, vk::ImageTiling tiling,
-		MemoryEntry& entry);
+	void request(vk::Image requestor, const vk::MemoryRequirements&, 
+		vk::ImageTiling, MemoryEntry&);
 
 	/// Removes the pending memory request for the given entry.
 	/// Will have no effect if the old entry is not found other than outputting
 	/// a warning if in debug mode.
-	void removeRequest(const MemoryEntry& entry) noexcept;
+	void removeRequest(const MemoryEntry&) noexcept;
 
 	/// This function will be called when a stored entry is moved.
 	/// Will remove the old entry and associate the new one with its request.
 	/// More efficient than removing the old entry and creating a new one.
 	/// Will have no effect if the old entry is not found other than outputting
 	/// a warning if in debug mode.
-	void moveEntry(const MemoryEntry& oldOne, MemoryEntry& newOne) noexcept;
+	void moveEntry(const MemoryEntry& olde, MemoryEntry& newe) noexcept;
 
 	/// Allocates and associated device memory for all pending requests.
 	/// This will finish all pending memory requests.
@@ -73,11 +74,14 @@ public:
 	/// memory request since it might be more efficient overall.
 	/// Will have no effect if the old entry is not found other than outputting
 	/// a warning if in debug mode.
-	void allocate(const MemoryEntry& entry);
+	void allocate(const MemoryEntry&);
 
 	/// Returns all memories that this allocator manages.
-	std::vector<DeviceMemory*> memories() const;
-	friend void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept;
+	const auto& memories() const { return memories_; }
+	static void swap(DeviceMemoryAllocator&, DeviceMemoryAllocator&) noexcept;
+	friend void swap(DeviceMemoryAllocator& a, DeviceMemoryAllocator& b) noexcept {
+		DeviceMemoryAllocator::swap(a, b);
+	}
 
 protected:
 	/// The type of a request/requirement.
@@ -97,7 +101,7 @@ protected:
 		vk::DeviceSize size {};
 		vk::DeviceSize alignment {};
 		std::uint32_t memoryTypes {};
-		MemoryEntry* entry {};
+		std::reference_wrapper<MemoryEntry> entry;
 		union {
 			vk::Buffer buffer;
 			vk::Image image;
@@ -122,7 +126,7 @@ protected:
 
 protected:
 	Requirements requirements_; // list of pending requests
-	std::vector<std::unique_ptr<DeviceMemory>> memories_; // list of owned memory objects
+	std::deque<DeviceMemory> memories_; // list of owned memory objects
 };
 
 /// Represents an entry on a vulkan device memory which will be dynamically and asynchronously
@@ -135,6 +139,9 @@ protected:
 /// unregister the pending memory request from the DeviceMemoryAllocator.
 class MemoryEntry : public ResourceReference<MemoryEntry> {
 public:
+	using Allocation = DeviceMemory::Allocation;
+
+public:
 	MemoryEntry() = default;
 	MemoryEntry(DeviceMemory& memory, const Allocation& alloc);
 	~MemoryEntry();
@@ -143,9 +150,9 @@ public:
 	MemoryEntry& operator=(MemoryEntry&& other) noexcept;
 
 	/// Will try to map the Memory and return a view to the location where this entry is placed.
-	/// In debug, throws std::logic_error if it is not bound to memory or the memory
-	/// cannot be mapped.
-	MemoryMapView map() const;
+	/// The MemoryEntry must be bound to memory.
+	MemoryMapView map(vk::DeviceSize offset = 0, 
+		vk::DeviceSize size = vk::wholeSize) const;
 
 	/// Returns whether this entry has an associated memory allocation, i.e. if it is currently
 	/// in a bound state.
@@ -157,13 +164,13 @@ public:
 	/// if it has no associated DeviceMemoryAllocator.
 	void allocate() const { if(!allocated()) allocator_->allocate(*this); }
 
-	DeviceMemory* memory() const noexcept { return allocated() ? memory_ : nullptr; }
-	DeviceMemoryAllocator* allocator() const noexcept { return allocated() ? nullptr : allocator_; }
-	size_t offset() const noexcept { return allocation_.offset; }
-	size_t size() const noexcept { return allocation_.size; }
+	auto* memory() const noexcept { return allocated() ? memory_ : nullptr; }
+	auto* allocator() const noexcept { return allocated() ? nullptr : allocator_; }
+	auto offset() const noexcept { return allocation_.offset; }
+	auto size() const noexcept { return allocation_.size; }
 	const Allocation& allocation() const noexcept { return allocation_; }
 
-	Resource& resourceRef() const noexcept { if(allocated()) return *memory_; return *allocator_; }
+	Resource& resourceRef() const noexcept;
 
 protected:
 	friend class DeviceMemoryAllocator;

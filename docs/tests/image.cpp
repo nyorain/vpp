@@ -54,9 +54,6 @@ TEST(image) {
 	layout2 = vk::ImageLayout::transferSrcOptimal;
 	mgr.finish();
 
-	EXPECT(img1.memorySize(), size.width * size.height * 4u);
-	EXPECT(img2.memorySize(), size.width * size.height * 1u);
-
 	auto dataWork1 = vpp::retrieve(img1, layout1, 
 		vk::Format::b8g8r8a8Unorm, size,
 		{vk::ImageAspectBits::color, 0, 0}, {}, false);
@@ -72,7 +69,6 @@ TEST(image) {
 	EXPECT((unsigned int) data1[2], 0x02u);
 	EXPECT((unsigned int) data1[3], 0x03u);
 	for(auto i = 4u; i < data1.size(); ++i) {
-		dlg_info("{}", i);
 		EXPECT((unsigned int) data1[i], 0xffu);
 	}
 

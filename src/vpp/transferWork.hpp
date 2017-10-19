@@ -38,8 +38,10 @@ public:
 	virtual nytl::Span<const uint8_t> data() override
 	{
 		finish();
-		downloadWork_ = retrieve(transferRange_.buffer());
-		return downloadWork_->data();
+		downloadWork_ = retrieve(transferRange_.buffer(), 
+			transferRange_.offset(), transferRange_.size());
+		auto data = downloadWork_->data();
+		return data;
 	}
 
 protected:

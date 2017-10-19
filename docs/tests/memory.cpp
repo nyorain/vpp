@@ -3,7 +3,9 @@
 
 TEST(memory) {
 	auto size = 1024u;
-	vpp::DeviceMemory memory(*globals.device, size, vk::MemoryPropertyBits::hostVisible);
+	auto& dev = *globals.device;
+	auto bits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
+	vpp::DeviceMemory memory(dev, {size, bits});
 
 	EXPECT(memory.mappable(), true);
 	EXPECT(memory.mapped(), nullptr);
@@ -22,8 +24,8 @@ TEST(memory) {
 	EXPECT(memory.totalFree(), size - allocSize);
 	EXPECT(memory.allocations().size(), 1u);
 
-	ERROR(memory.alloc(allocSize, 32, vpp::AllocationType::linear), std::runtime_error);
-	ERROR(memory.alloc(100, 1024, vpp::AllocationType::linear), std::runtime_error);
+	EXPECT(memory.alloc(allocSize, 32, vpp::AllocationType::linear).size, 0u);
+	EXPECT(memory.alloc(100, 1024, vpp::AllocationType::linear).size, 0u);
 	EXPECT(memory.allocatable(5, 512, vpp::AllocationType::optimal).size, 0u);
 	EXPECT(memory.allocatable(500, 0, vpp::AllocationType::optimal).size, 0u);
 
@@ -32,9 +34,8 @@ TEST(memory) {
 	EXPECT(alloc2.offset, 600u);
 	EXPECT(alloc2.size, allocSize);
 
-	auto check2 = memory.allocSpecified(alloc2.offset, alloc2.size, vpp::AllocationType::linear);
-	EXPECT(check2.offset, alloc2.offset);
-	EXPECT(check2.size, alloc2.size);
+	memory.allocSpecified({alloc2.offset, alloc2.size}, 
+		vpp::AllocationType::linear);
 
 	EXPECT(memory.largestFreeSegment(), 0u);
 	EXPECT(memory.totalFree(), 0u);
@@ -55,7 +56,10 @@ TEST(memory) {
 
 TEST(map) {
 	auto size = 1024u;
-	vpp::DeviceMemory memory(*globals.device, size, vk::MemoryPropertyBits::hostVisible);
+	auto& dev = *globals.device;
+	auto bits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
+	vpp::DeviceMemory memory(dev, {size, bits});
+	
 	EXPECT(memory.mappable(), true);
 	auto map = memory.map({0u, 1024u});
 	EXPECT(map.offset(), 0u);

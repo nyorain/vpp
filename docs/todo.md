@@ -5,6 +5,8 @@ Todo list vor vpp
 	- continue bufferops testing/fixing
 	- test everything using valgrind (with/without layers) to find potential leaks/errors
 	- test & fix image upload (layout) bug
+	- test memorymap + view (extend memoryMap test in memory.cpp)
+		- maybe buggy for multiple views (when remapped)
 - fix image fill/retrieve
 	- data size bug (maybe in transferbuffer already)
 	- take into account that image does not only have its data in memory
@@ -25,11 +27,29 @@ Todo list vor vpp
 - separate header for stuff that requires the generated vulkan headers
 	- don't pull them in in other headers
 - release next version
-
+- possibility to allocate buffers/images on custom
+	- vpp::memory objects
+	- allocators (e.g. not threadlocal or sth.)
+	- in a custom way (e.g. with sparse bindings)
+	- maybe make vpp::Buffer just the RAII buffer wrapper and extend it
+		in vpp::MemoryBuffer or sth like that
+- clean up TransferManager
+	- maybe rework into SharedBuffer?
+- utility for checking device limits
+	- differentiate: assumptions and tests/checks
+	- also make sure they are valid in vpp
+		- minMemoryMapAlignment
+		- optimalBufferCopyOffsetAlignment/optimalBufferCopyRowPitchAlignment
+	- valid formats? (-> ViewableImage Creatinfo rework)
+		- also see vulkanspec required format support
 
 low prio / general / ideas
 --------------------------
 
+- improve memory/buffer allocation algorithm
+- support for sparse stuff. Without making non-sparse buffers/images more expensive
+- good idea to make everything threadlocal by default? hidden costs
+	- we synchronize things that might not need it, implicit
 - is size value in MemoryEntry really needed?
 	- rather work with some id's or something?
 - add TrackedDescriptor* from kyo
