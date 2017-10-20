@@ -28,7 +28,7 @@ TEST(memory) {
 
 		EXPECT(buffer2.memoryEntry().allocated(), true);
 		EXPECT(buffer3.memoryEntry().allocated(), true);
-		EXPECT(buffer3.memoryEntry().memory(), alloc.memories()[0]);
+		EXPECT(buffer3.memoryEntry().memory(), &alloc.memories()[0]);
 
 		EXPECT(buffer1.memorySize(), 1024u);
 		EXPECT(buffer2.memorySize(), 1024u);
@@ -38,8 +38,9 @@ TEST(memory) {
 
 	EXPECT(alloc.memories().size(), 1u);
 
-	// XXX: might fail due to alignment requirements etc (allocater allocated larger memory)
-	EXPECT(alloc.memories()[0]->totalFree(), 1024u * 5);
+	// XXX: might fail due to alignment requirements etc (allocater 
+	// allocated larger memory)
+	EXPECT(alloc.memories()[0].totalFree(), 1024u * 5);
 
 	// make sure same memory is used again
 	{
@@ -51,6 +52,6 @@ TEST(memory) {
 		buffer1.memoryEntry().allocate();
 
 		EXPECT(alloc.memories().size(), 1u);
-		EXPECT(alloc.memories()[0]->totalFree(), 1024u * 4);
+		EXPECT(alloc.memories()[0].totalFree(), 1024u * 4);
 	}
 }

@@ -4,8 +4,8 @@
 TEST(memory) {
 	auto size = 1024u;
 	auto& dev = *globals.device;
-	auto bits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
-	vpp::DeviceMemory memory(dev, {size, bits});
+	auto type = dev.memoryType(vk::MemoryPropertyBits::hostVisible);
+	vpp::DeviceMemory memory(dev, {size, type});
 
 	EXPECT(memory.mappable(), true);
 	EXPECT(memory.mapped(), nullptr);
@@ -57,8 +57,8 @@ TEST(memory) {
 TEST(map) {
 	auto size = 1024u;
 	auto& dev = *globals.device;
-	auto bits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
-	vpp::DeviceMemory memory(dev, {size, bits});
+	auto type = dev.memoryType(vk::MemoryPropertyBits::hostVisible);
+	vpp::DeviceMemory memory(dev, {size, type});
 	
 	EXPECT(memory.mappable(), true);
 	auto map = memory.map({0u, 1024u});

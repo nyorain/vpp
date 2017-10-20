@@ -1,4 +1,6 @@
 #include <vpp/sharedBuffer.hpp>
+#include <vpp/queue.hpp>
+#include <vpp/vulkan/structs.hpp>
 #include <dlg/dlg.hpp>
 #include <algorithm>
 
@@ -114,7 +116,7 @@ BufferRange BufferAllocator::alloc(vk::DeviceSize size,
 	for(auto& buf : buffers_) {
 		auto* mem = buf.buffer.memoryEntry().memory();
 		dlg_assert(mem);
-		if(buf.usage & usage != usage || !(memBits & mem->type())) {
+		if((buf.usage & usage) != usage || !(memBits & mem->type())) {
 			continue;
 		}
 
@@ -124,33 +126,71 @@ BufferRange BufferAllocator::alloc(vk::DeviceSize size,
 		}
 	}
 
+	// TODO: algorithm can probably be optimized, don't be greedy
 	// allocate a new buffer
 	// gather all matching buffer information
-	TODO
 	vk::BufferCreateInfo createInfo;
+	createInfo.size = size;
+	createInfo.usage = usage;
 
-	/*
-	buffers_.emplace_back(new TransferBuffer(device(), size, mutex_));
-	auto alloc = buffers_.back()->use(size);
+	for(auto& req : reqs_) {
+		auto mem = memBits & req.memBits;
+		if(mem) {
+			createInfo.usage |= req.usage;
+			createInfo.size += req.size;
+			memBits = mem;
+		}
+	}
+
+	buffers_.emplace_back(device(), createInfo, memBits);
+	auto alloc = buffers_.back().buffer.alloc(size);
 	dlg_assert(alloc.size == size);
-	return BufferRange(*buffers_.back(), alloc);
-	*/
+	return BufferRange(buffers_.back().buffer, alloc);
 }
 
 BufferRange BufferAllocator::alloc(vk::DeviceSize size, 
 	vk::BufferUsageFlags usage, vk::MemoryPropertyFlags memProps)
 {
-	alloc(size, usage, device().memoryTypeBits(memProps));
+	return alloc(size, usage, device().memoryTypeBits(memProps));
 }
 
 void BufferAllocator::optimize()
 {
-
+	dlg_warn("TODO: BufferAllocator::optimize");
 }
 
 void BufferAllocator::shrink()
 {
+	dlg_warn("TODO: BufferAllocator::shrink");
+}
 
+BufferAllocator::Buffer::Buffer(const Device& dev, 
+	const vk::BufferCreateInfo& info, unsigned int mbits) :
+		buffer(dev, info, mbits), usage(info.usage)
+{
+}
+
+// utility
+int transferQueueFamily(const Device& dev, const Queue** queue)
+{
+	// we do not only query a valid queue family but a valid queue and then chose its queue
+	// family to ensure that the device has a queue for the queried queue family
+	auto* q = dev.queue(vk::QueueBits::transfer);
+	if(!q) {
+		q = dev.queue(vk::QueueBits::graphics);
+	} 
+	if(!q) {
+		q = dev.queue(vk::QueueBits::compute);
+	}
+	if(!q) {
+		return -1;
+	}
+
+	if(queue) {
+		*queue = q;
+	}
+
+	return q->family();
 }
 
 } // namespace vpp

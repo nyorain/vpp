@@ -3,7 +3,6 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/image.hpp>
-#include <vpp/transfer.hpp> // vpp::TransferManager
 #include <vpp/transferWork.hpp> // vpp::transferWork
 #include <vpp/queue.hpp> // vpp::Queue
 #include <vpp/vk.hpp>
@@ -92,8 +91,15 @@ WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,
 		const Queue* queue;
 		auto qFam = transferQueueFamily(image.device(), &queue);
 		auto cmdBuffer = image.device().commandProvider().get(qFam);
-		auto uploadBuffer = image.device().transferManager().buffer(byteSize);
-		fill140(uploadBuffer.buffer(), raw(data, byteSize));
+		auto memBits = image.device().memoryTypeBits(
+			vk::MemoryPropertyBits::hostVisible);
+		auto uploadBuffer = image.device().bufferAllocator().alloc(byteSize,
+			vk::BufferUsageBits::transferSrc, memBits);
+
+		{
+			auto map = 	uploadBuffer.buffer().memoryMap();
+			std::memcpy(map.ptr(), &data, byteSize);
+		}
 
 		vk::BufferImageCopy region;
 		region.imageOffset = offset;
@@ -154,7 +160,10 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format for
 		const Queue* queue;
 		auto qFam = transferQueueFamily(image.device(), &queue);
 		auto cmdBuffer = image.device().commandProvider().get(qFam);
-		auto downloadBuffer = image.device().transferManager().buffer(byteSize);
+		auto memBits = image.device().memoryTypeBits(
+			vk::MemoryPropertyBits::hostVisible);
+		auto downloadBuffer = image.device().bufferAllocator().alloc(byteSize,
+			vk::BufferUsageBits::transferSrc, memBits);
 
 		vk::beginCommandBuffer(cmdBuffer, {});
 

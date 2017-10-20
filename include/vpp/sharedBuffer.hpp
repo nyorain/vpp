@@ -93,7 +93,12 @@ protected:
 /// transfer buffers or small buffers like ubos.
 class BufferAllocator : public vpp::Resource {
 public:
+	BufferAllocator() = default;
 	BufferAllocator(const Device& dev);
+	~BufferAllocator() = default;
+
+	BufferAllocator(BufferAllocator&&) = default;
+	BufferAllocator& operator=(BufferAllocator&&) = default;
 
 	/// Reserves the given requirements.
 	/// The next time alloc is called, these are initialized additionally.
@@ -129,6 +134,8 @@ protected:
 	};
 
 	struct Buffer {
+		Buffer(const Device&, const vk::BufferCreateInfo&, unsigned int mbits);
+
 		SharedBuffer buffer;
 		vk::BufferUsageFlags usage;
 	};
@@ -136,5 +143,14 @@ protected:
 	std::deque<Buffer> buffers_;
 	std::vector<Requirement> reqs_;
 };
+
+/// Returns a queue family that supports graphics, compute or transfer operations 
+/// and can therefore be used for transfer operations.
+/// Guarantees that there exists at least one queue for the given device with 
+/// the returned queue family.
+/// Returns -1 if there is no such family, although there usually should be.
+/// If queue if not nullptr, will store a pointer to a queue of the returned 
+/// family into it.
+int transferQueueFamily(const Device& dev, const Queue** queue);
 
 } // namespace vpp

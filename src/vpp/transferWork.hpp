@@ -6,7 +6,7 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/work.hpp>
-#include <vpp/transfer.hpp>
+#include <vpp/sharedBuffer.hpp>
 #include <vpp/bufferOps.hpp>
 #include <vpp/memoryResource.hpp>
 
@@ -15,18 +15,20 @@
 
 namespace vpp {
 
-/// Utility template base class for all transfer work implementations using a TransferRange.
+/// Utility template base class for all transfer work implementations using 
+/// a shared BufferRange for uploading/downloading.
 template<typename T>
 class TransferWork : public CommandWork<T> {
 public:
-	TransferWork(CommandBuffer&& cmdBuf, const vpp::Queue& queue, TransferRange&& range)
-		: CommandWork<T>(std::move(cmdBuf), queue), transferRange_(std::move(range)) {}
+	TransferWork(CommandBuffer&& cmdBuf, const vpp::Queue& queue, 
+		BufferRange&& range) : CommandWork<T>(std::move(cmdBuf), queue), 
+			bufferRange_(std::move(range)) {}
 
-	TransferRange& transferRange() { return transferRange_; }
-	const TransferRange& transferRange() const { return transferRange_; }
+	BufferRange& bufferRange() { return bufferRange_; }
+	const BufferRange& bufferRange() const { return bufferRange_; }
 
 protected:
-	TransferRange transferRange_;
+	BufferRange bufferRange_;
 };
 
 /// Download work implementation.
@@ -35,11 +37,10 @@ protected:
 class DownloadWork : public TransferWork<nytl::Span<const uint8_t>> {
 public:
 	using TransferWork::TransferWork;
-	virtual nytl::Span<const uint8_t> data() override
-	{
+	nytl::Span<const uint8_t> data() override {
 		finish();
-		downloadWork_ = retrieve(transferRange_.buffer(), 
-			transferRange_.offset(), transferRange_.size());
+		downloadWork_ = retrieve(bufferRange_.buffer(), 
+			bufferRange_.offset(), bufferRange_.size());
 		auto data = downloadWork_->data();
 		return data;
 	}
@@ -53,9 +54,9 @@ protected:
 class MappableDownloadWork : public FinishedWork<nytl::Span<const uint8_t>> {
 public:
 	MappableDownloadWork(MemoryMapView&& view) : map_(std::move(view)) {}
-
-	virtual nytl::Span<const uint8_t> data() override { return {map_.ptr(), map_.size()}; }
-	MemoryMapView& memoryMapView() { return map_; }
+	nytl::Span<const uint8_t> data() override { 
+		return {map_.ptr(), map_.size()}; 
+	}
 
 protected:
 	MemoryMapView map_;
@@ -66,7 +67,7 @@ protected:
 class StoredDataWork : public FinishedWork<nytl::Span<const std::uint8_t>> {
 public:
 	StoredDataWork(std::vector<uint8_t>&& data) : data_(std::move(data)) {}
-	virtual nytl::Span<const std::uint8_t> data() override { return data_; }
+	nytl::Span<const std::uint8_t> data() override { return data_; }
 
 protected:
 	std::vector<std::uint8_t> data_;

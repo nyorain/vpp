@@ -19,11 +19,11 @@ vpp_sources = [
 	'renderer.cpp',
 	'resource.cpp',
 	'shader.cpp',
+	'sharedBuffer.cpp',
 	'submit.cpp',
 	'surface.cpp',
 	'swapchain.cpp',
 	'sync.cpp',
-	'transfer.cpp',
 	'work.cpp',
 	'util/file.cpp']
 

@@ -67,7 +67,9 @@ class DeviceMemoryProvider;
 class HostMemoryProvider;
 class SubmitManager;
 class WorkManager;
-class TransferManager;
+class SharedBuffer;
+class BufferRange;
+class BufferAllocator;
 
 template<typename T>
 class ThreadStorage;

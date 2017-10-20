@@ -7,12 +7,18 @@ Todo list vor vpp
 	- test & fix image upload (layout) bug
 	- test memorymap + view (extend memoryMap test in memory.cpp)
 		- maybe buggy for multiple views (when remapped)
+- improve meson
+	- use install_subdir over install headers
+- cache hostVisible/deviceLocal bits in device?
+- retrieve/fill function for BufferRange?
+	- or at least support offsets e.g. in fill140?
 - fix image fill/retrieve
 	- data size bug (maybe in transferbuffer already)
 	- take into account that image does not only have its data in memory
 		- couldn't the same be the case for buffer?
 - clean up usage of dlg
 	- check can often be replaced with assert
+- use std::byte instead of std::uint8_t (e.g. fill/retrieve)
 - clean up usage of nytl
 	- just include it as subproject?
 - make codestyle consistent everywhere

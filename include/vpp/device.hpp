@@ -150,9 +150,9 @@ public:
 	/// \sa SubmitManager
 	SubmitManager& submitManager() const;
 
-	/// Return the default transferManager for this device.
-	/// \sa TransferManager
-	TransferManager& transferManager() const;
+	/// Returns the BufferAllocator for this device and the calling thread.
+	/// \sa BufferAllocator
+	BufferAllocator& bufferAllocator() const;
 
 	/// Returns a deviceMemory allocator for this device and the calling thread.
 	/// \sa DeviceMemoryAllocator

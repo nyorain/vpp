@@ -85,9 +85,9 @@ void DeviceMemory::allocSpecified(Allocation a, AllocationType type)
 	auto it = std::lower_bound(allocations_.begin(), allocations_.end(), allocation,
 		[](auto& a, auto& b){ return a.allocation.offset < b.allocation.offset; });
 
-	dlg_assertm(it == allocations_.begin() || (it - 1)->allocation.end() > offset,
+	dlg_assertm(it == allocations_.begin() || (it - 1)->allocation.end() <= offset,
 		"Overlapping allocSpecified (before allocation)");
-	dlg_assertm(it == allocations_.end() || it->allocation.offset > a.end(), 
+	dlg_assertm(it == allocations_.end() || it->allocation.offset >= a.end(), 
 		"Overlapping allocSpecified (after allocation)");
 
 	allocations_.insert(it, allocation);

@@ -4,7 +4,6 @@
 
 #include <vpp/bufferOps.hpp>
 #include <vpp/transferWork.hpp>
-#include <vpp/transfer.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
@@ -17,12 +16,11 @@ namespace vpp {
 
 DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize size)
 {
-	dlg_checkt(("retrive(buffer)"), {
-		if(!buf.memoryEntry().allocated())
-			dlg_error("trying to retrieve buffer without memory");
-	});
+	dlg_assertm(buf.memoryEntry().allocated(), "receiving unbound buffer");
 
-	if(size == vk::wholeSize) size = buf.memoryEntry().size() - offset;
+	if(size == vk::wholeSize) {
+		size = buf.memoryEntry().size() - offset;
+	}
 
 	// retrieve by mapping if possible
 	if(buf.mappable()) {
@@ -32,7 +30,10 @@ DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize si
 		const Queue* queue;
 		auto qFam = transferQueueFamily(buf.device(), &queue);
 		auto cmdBuffer = buf.device().commandProvider().get(qFam);
-		auto downloadBuffer = buf.device().transferManager().buffer(size);
+		auto memBits = buf.device().memoryTypeBits(
+			vk::MemoryPropertyBits::hostVisible);
+		auto downloadBuffer = buf.device().bufferAllocator().alloc(size,
+			vk::BufferUsageBits::transferSrc, memBits);
 
 		vk::BufferCopy region {offset, 0, size};
 
@@ -71,7 +72,12 @@ BufferUpdate::BufferUpdate(const Buffer& buf, BufferLayout align, bool direct)
 			data_.resize(buf.memorySize());
 			work_ = std::make_unique<CommandWork<void>>(std::move(cmdBuffer), *queue);
 		} else {
-			auto uploadBuffer = device().transferManager().buffer(buf.memorySize());
+			// TODO: maybe don't allocate this now? maybe only a small part
+			// of the buffer is updated...
+			auto memBits = buf.device().memoryTypeBits(
+				vk::MemoryPropertyBits::hostVisible);
+			auto uploadBuffer = device().bufferAllocator().alloc(
+				buf.memorySize(), vk::BufferUsageBits::transferSrc, memBits);
 			map_ = uploadBuffer.buffer().memoryMap();
 			work_ = std::make_unique<UploadWork>(std::move(cmdBuffer), *queue,
 				std::move(uploadBuffer));
@@ -174,11 +180,12 @@ WorkPtr BufferUpdate::apply()
 	} else if(!buffer().mappable()) {
 		auto uploadWork = static_cast<UploadWork*>(work_.get());
 		auto& cmdBuf = uploadWork->commandBuffer();
-		auto& transferRange = uploadWork->transferRange();
+		auto& transferRange = uploadWork->bufferRange();
 
 		vk::beginCommandBuffer(cmdBuf, {});
-		for(auto& update : copies_)
+		for(auto& update : copies_) {
 			vk::cmdCopyBuffer(cmdBuf, transferRange.buffer(), buffer(), {update});
+		}
 		vk::endCommandBuffer(cmdBuf);
 	}
 

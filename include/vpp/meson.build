@@ -22,11 +22,11 @@ vpp_headers = [
 	'renderPass.hpp',
 	'resource.hpp',
 	'shader.hpp',
+	'sharedBuffer.hpp',
 	'submit.hpp',
 	'surface.hpp',
 	'swapchain.hpp',
 	'sync.hpp',
-	'transfer.hpp',
 	'vk.hpp',
 	'vpp.hpp',
 	'work.hpp']

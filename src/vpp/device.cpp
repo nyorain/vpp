@@ -7,7 +7,7 @@
 #include <vpp/queue.hpp>
 #include <vpp/commandBuffer.hpp>
 #include <vpp/submit.hpp>
-#include <vpp/transfer.hpp>
+#include <vpp/sharedBuffer.hpp>
 #include <vpp/physicalDevice.hpp>
 #include <vpp/util/threadStorage.hpp>
 
@@ -20,6 +20,7 @@ namespace vpp {
 struct Device::Impl {
 	DynamicThreadStorage tls;
 	unsigned int tlsDeviceAllocatorID {};
+	unsigned int tlsBufferAllocatorID {};
 
 	vk::PhysicalDeviceProperties physicalDeviceProperties;
 	vk::PhysicalDeviceMemoryProperties memoryProperties;
@@ -33,9 +34,8 @@ struct Device::Impl {
 struct Device::Provider {
 	CommandProvider command;
 	SubmitManager submit;
-	TransferManager transfer;
 
-	Provider(const Device& dev) : command(dev), submit(dev), transfer(dev) {}
+	Provider(const Device& dev) : command(dev), submit(dev) {}
 };
 
 // used so the Queue destructor can be made not public and Device a friend.
@@ -316,6 +316,19 @@ unsigned int Device::memoryTypeBits(vk::MemoryPropertyFlags mflags, unsigned int
 	return typeBits;
 }
 
+BufferAllocator& Device::bufferAllocator() const
+{
+	auto ptr = impl_->tls.get(impl_->tlsBufferAllocatorID); // DynamicStoragePtr*
+	if(!ptr->get()) {
+		auto storage = new ValueStorage<BufferAllocator>();
+		storage->value = {*this};
+		ptr->reset(storage);
+		return storage->value;
+	}
+
+	return static_cast<ValueStorage<BufferAllocator>*>(ptr->get())->value;
+}
+
 DeviceMemoryAllocator& Device::deviceAllocator() const
 {
 	auto ptr = impl_->tls.get(impl_->tlsDeviceAllocatorID); // DynamicStoragePtr*
@@ -342,11 +355,6 @@ CommandProvider& Device::commandProvider() const
 SubmitManager& Device::submitManager() const
 {
 	return provider_->submit;
-}
-
-TransferManager& Device::transferManager() const
-{
-	return provider_->transfer;
 }
 
 std::shared_timed_mutex& Device::sharedQueueMutex() const
