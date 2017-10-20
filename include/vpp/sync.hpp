@@ -19,7 +19,10 @@ public:
 	~Fence();
 
 	Fence(Fence&& rhs) noexcept { swap(*this, rhs); }
-	Fence& operator=(Fence rhs) noexcept { swap(*this, rhs); return *this; }
+	Fence& operator=(Fence rhs) noexcept { 
+		swap(*this, rhs); 
+		return *this; 
+	}
 };
 
 /// RAII semaphore wrapper
@@ -32,7 +35,10 @@ public:
 	~Semaphore();
 
 	Semaphore(Semaphore&& rhs) noexcept { swap(*this, rhs); }
-	Semaphore& operator=(Semaphore rhs) noexcept { swap(*this, rhs); return *this; }
+	Semaphore& operator=(Semaphore rhs) noexcept { 
+		swap(*this, rhs); 
+		return *this; 
+	}
 };
 
 /// RAII event wrapper
@@ -45,7 +51,10 @@ public:
 	~Event();
 
 	Event(Event&& rhs) noexcept { swap(*this, rhs); }
-	Event& operator=(Event rhs) noexcept { swap(*this, rhs); return *this; }
+	Event& operator=(Event rhs) noexcept { 
+		swap(*this, rhs); 
+		return *this; 
+	}
 };
 
 } // namespace vpp

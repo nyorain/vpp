@@ -105,3 +105,51 @@ protected:
 
 class MemoryAllocator;
 class SparseMemoryAllocator : public MemoryAllocator;
+
+
+// attempt #2
+// sparse header
+// TODO
+struct OpaqueMemoryBind {
+	DeviceMemory* memory;
+	Allocation allocation;
+	vk::DeviceSize resourceOffset;
+};
+
+template<typename Extent3D>
+struct ImageMemoryBindT {
+	MemoryEntry entry;
+	Extent3D offset;
+	Extent3D size;
+};
+using ImageMemoryBind = ImageMemoryBindT<vk::Extent3D>;
+
+class SparseOpaqueMemoryEntry {
+protected:
+	std::vector<OpaqueMemoryBind> binds_;
+};
+
+class SparseImageMemoryEntry {
+protected:
+	std::vector<std::variant<OpaqueMemoryBind, ImageMemoryBind>> binds_;
+};
+
+class SparseImage : public vpp::ImageHandle {
+public:
+
+protected:
+	SparseImageMemoryEntry entry_;
+};
+
+class SparseOpaqueImage : public vpp::ImageHandle {
+public:
+protected:	
+	SparseOpaqueMemoryEntry entry_;
+};
+
+class SparseBuffer : public vpp::BufferHandle {
+public:
+
+protected:
+	SparseOpaqueMemoryEntry entry_;
+};

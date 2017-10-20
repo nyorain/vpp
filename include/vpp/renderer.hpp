@@ -10,6 +10,7 @@
 #include <vpp/framebuffer.hpp>
 #include <vpp/sync.hpp>
 #include <vpp/swapchain.hpp>
+#include <vpp/commandBuffer.hpp>
 #include <functional>
 #include <variant>
 
@@ -86,7 +87,7 @@ public:
 	/// (at least if your frame- and commandbuffers allow it). Until the
 	/// fence is signaled, no rendering resources must be invalidated.
 	/// This means calls to e.g. resize in this time will trigger
-	/// undefined behaviour.
+	/// undefined behavior.
 	/// Unless you will assure submission finish in some other way (e.g.
 	/// calling this->wait(), vk{Device,Queue}WaitIdle) you want to
 	/// receive the fence and make sure all submissions are finished
@@ -190,7 +191,7 @@ protected:
 	/// image view as last framebuffer attachment, otherwise if there is
 	/// exactly one nullHandle image view will replace it with the
 	/// renderBuffer's swapchain imageView.
-	/// Passing more than one nullHandle imageView is undefined behvaiour.
+	/// Passing more than one nullHandle imageView is undefined behavior.
 	void initBuffers(const vk::Extent2D&, nytl::Span<RenderBuffer>,
 		std::vector<vk::ImageView> attachments);
 

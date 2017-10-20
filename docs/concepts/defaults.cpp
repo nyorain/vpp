@@ -14,7 +14,7 @@ struct ImageUseCase {
 	vk::ImageTiling tiling;
 	vk::ImageUsageFlags usage;
 	vk::SampleCountFlags samples;
-	vk::Extent3D size; // max size relevant
+	vk::Extent3D size; // only max size relevant
 };
 
 /// Information about a buffer to be created.
@@ -23,7 +23,7 @@ struct BufferUseCase {
 	BufferUseCase(const vk::BufferCreateInfo&);
 
 	vk::BufferUsageFlags flags;
-	vk::DeviceSize size; // max size relevant
+	vk::DeviceSize size; // only max size relevant
 };
 
 /// Returns whether the given format is valid for the given use
@@ -78,3 +78,93 @@ struct ViewableImageCreateInfo {
 };
 
 } // namespace vpp
+
+
+// TODO
+/*
+// static infos
+// TODO: better defaults!
+ViewableImage::CreateInfo ViewableImage::defaultColor2D()
+{
+	return {
+		{
+			{},
+			vk::ImageType::e2d,
+			vk::Format::b8g8r8a8Unorm,
+			{},
+			1, 1,
+			vk::SampleCountBits::e1,
+			vk::ImageTiling::optimal,
+			vk::ImageUsageBits::colorAttachment | vk::ImageUsageBits::inputAttachment,
+			vk::SharingMode::exclusive,
+			0, nullptr, vk::ImageLayout::undefined
+		},
+		{
+			{}, {},
+			vk::ImageViewType::e2d,
+			vk::Format::b8g8r8a8Unorm,
+			{},
+			{
+				vk::ImageAspectBits::color,
+				0, 1, 0, 1
+			}
+		}
+	};
+}
+
+ViewableImage::CreateInfo ViewableImage::defaultDepth2D()
+{
+	return {
+		{
+			{},
+			vk::ImageType::e2d,
+			vk::Format::d32Sfloat,
+			{},
+			1, 1,
+			vk::SampleCountBits::e1,
+			vk::ImageTiling::optimal,
+			vk::ImageUsageBits::depthStencilAttachment,
+			vk::SharingMode::exclusive,
+			0, nullptr, vk::ImageLayout::undefined
+		},
+		{
+			{}, {},
+			vk::ImageViewType::e2d,
+			vk::Format::d32Sfloat,
+			{},
+			{
+				vk::ImageAspectBits::depth,
+				0, 1, 0, 1
+			}
+		}
+	};
+}
+
+ViewableImage::CreateInfo ViewableImage::defaultDepthStencil2D()
+{
+	return {
+		{
+			{},
+			vk::ImageType::e2d,
+			vk::Format::d16UnormS8Uint,
+			{},
+			1, 1,
+			vk::SampleCountBits::e1,
+			vk::ImageTiling::optimal,
+			vk::ImageUsageBits::depthStencilAttachment,
+			vk::SharingMode::exclusive,
+			0, nullptr, vk::ImageLayout::undefined
+		},
+		{
+			{}, {},
+			vk::ImageViewType::e2d,
+			vk::Format::d16UnormS8Uint,
+			{},
+			{
+				vk::ImageAspectBits::depth | vk::ImageAspectBits::stencil,
+				0, 1, 0, 1
+			}
+		}
+	};
+}
+*/

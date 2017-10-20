@@ -20,21 +20,23 @@ public:
 	/// Return the queueFamily of this queue
 	unsigned int family() const noexcept { return family_; }
 
-	/// Returns the id of this queue which is unique under all queues with the same family.
-	/// E.g. if there are two queues of family A and one queue of family B, the queues of family
-	/// A wiill have the ids {0, 1} while the queue of family B will have the id 0.
+	/// Returns the id of this queue which is unique under all queues with the 
+	/// same family. E.g. if there are two queues of family A and one queue of 
+	/// family B, the queues of family A wiill have the ids {0, 1} while the 
+	/// queue of family B will have the id 0.
 	/// Gives every Queue object (for one device) a unique identification if used
 	/// together with the family.
 	unsigned int id() const noexcept { return id_; }
 
 	/// Returns the properties of the queue family of this queue.
-	const vk::QueueFamilyProperties& properties() const noexcept { return *properties_; }
+	const auto& properties() const noexcept { return *properties_; }
 
-	/// The queue must be locked before performing any operations (such as presenting or sparse
-	/// binding) on the queue.
-	/// Note that locking the queues mutex is not enough for submitting command buffers
-	/// to the queue, since while submitting, no operation on any other queue is allowed.
-	/// Prefer to use the vpp::QueueManager class over using the plain mutex.
+	/// The queue must be locked before performing any operations 
+	/// (such as presenting or sparse binding) on the queue.
+	/// Note that locking the queues mutex is not enough for submitting 
+	/// command buffers to the queue, since while submitting, no operation 
+	/// on any other queue is allowed.
+	/// Prefer to use the vpp::QueueLock class over using the plain mutex.
 	std::mutex& mutex() const noexcept { return mutex_; }
 
 	vk::Queue vkHandle() const noexcept { return queue_; }
@@ -66,7 +68,7 @@ struct QueueLock : public nytl::NonMovable {
 
 private:
 	std::mutex* queueMutex_ {};
-	std::shared_timed_mutex& sharedMutex_;
+	std::shared_mutex& sharedMutex_;
 };
 
 } // namespace vpp

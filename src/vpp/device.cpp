@@ -28,7 +28,7 @@ struct Device::Impl {
 	std::vector<vk::QueueFamilyProperties> qFamilyProperties;
 	std::vector<std::unique_ptr<Queue, Device::QueueDeleter>> queues;
 	std::vector<const Queue*> queuesVec; // cache vector for queues() function
-	std::shared_timed_mutex sharedQueueMutex;
+	std::shared_mutex sharedQueueMutex;
 };
 
 struct Device::Provider {
@@ -365,7 +365,7 @@ SubmitManager& Device::submitManager() const
 	return provider_->submit;
 }
 
-std::shared_timed_mutex& Device::sharedQueueMutex() const
+std::shared_mutex& Device::sharedQueueMutex() const
 {
 	return impl_->sharedQueueMutex;
 }

@@ -9,21 +9,96 @@
 
 namespace vpp {
 
-/// Representing a vulkan buffer on a device.
-/// Can be filled and read, and stores a handle to the memory location it is allocated on (or
-/// the allocator that will take care of its allocation).
-/// Does not store additional information such as buffer usage type or memory layout, this
-/// must be handled by the application for best performance.
-class Buffer : public MemoryResource<vk::Buffer> {
+/// RAII vk::Buffer wrapper.
+/// Does not handle any additional functionality
+class BufferHandle : public ResourceHandle<vk::Buffer> {
+public:
+	BufferHandle() = default;
+	BufferHandle(const Device&, const vk::BufferCreateInfo&);
+	BufferHandle(const Device&, vk::Buffer);
+	~BufferHandle();
+
+	BufferHandle(BufferHandle&& rhs) noexcept { swap(*this, rhs); }
+	auto& operator=(BufferHandle rhs) noexcept { 
+		swap(*this, rhs); 
+		return *this; 
+	}
+};
+
+/// Combines Buffer and MemoryResource, i.e. a buffer that knows
+/// its bound memory. Does not support sparse memory bindings.
+class Buffer : public BufferHandle, public MemoryResource {
 public:
 	Buffer() = default;
-	Buffer(const Device&, const vk::BufferCreateInfo&, unsigned int memoryTypesBits = ~0u);
-	Buffer(const Device&, vk::Buffer, vk::BufferUsageFlags, unsigned int memoryTypeBits = ~0u);
-	Buffer(vk::Buffer buffer, MemoryEntry&& entry);
-	~Buffer();
 
-	Buffer(Buffer&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(Buffer rhs) noexcept { swap(*this, rhs); return *this; }
+	/// The various types of constructors:
+	/// - Transfer ownership vs create
+	///   * (1,3,5,7): BufferCreateInfo parameter: create a new buffer
+	///   * (2,4,6,8): vk::Buffer parameter: transfer ownerhip of existent buffer
+	///     Note that for (2,5,7), the buffer must not already be bound to memory
+	/// - Allocate mechanism. You can either use/pass
+	///   * (1,2): using a DeviceMemoryAllocator, if none is given using
+	///     the default threadlocal allocator of the given device.
+	///     Guarantees that the memory is allocated on a memory type
+	///     contained in memBits (e.g. to assure it's allocated
+	///     on hostVisible memory).
+	///   * (3,4): a valid (non-empty) MemoryEntry: Will pass ownership
+	///     of the memory entry, must be associated with the buffer.
+	///     Only the constructor that newly creates the buffer will bind the 
+	///     memory to the buffer. Both constructors will make sure
+	///     that the memory entry is allocated (and not pending).
+	///     The custom MemoryEntry object could e.g. be created from
+	///     a custom DeviceMemory object.
+	/// - Deferred? See the vpp doc for deferred initialization
+	///   * (1-6) bind the buffer immediately to memory. For (1,2) this
+	///     means to immediately allocate memory, which might result
+	///     in a vkAllocateMemory call
+	///   * (7,8) does not bind the buffer to memory, only when
+	///     ensureMemory is called. Already issues a reserving request
+	///     to the DeviceMemoryAllocator, might result in less
+	///     memory allocations made if multiple resources are created deferred.
+	/// For constructors that receive an already existent Buffer but
+	/// allocate and bind the memory for you, you have to pass the buffers
+	/// usage flags to allow the constructor to choose a valid buffer
+	/// alignment.
+	Buffer(const Device&, const vk::BufferCreateInfo&, 
+		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+	Buffer(const Device&, vk::Buffer, vk::BufferUsageFlags,
+		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+
+	Buffer(const Device&, vk::Buffer, MemoryEntry&&);
+	Buffer(const Device&, const vk::BufferCreateInfo&, MemoryEntry&&);
+
+	/// Creates the buffer without any bound memory.
+	/// You have to call the ensureMemory function later on to
+	/// make sure memory is bound to the buffer.
+	Buffer(DeferTag, const Device&, const vk::BufferCreateInfo&, 
+		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+	Buffer(DeferTag, const Device&, vk::Buffer, vk::BufferUsageFlags,
+		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+
+	Buffer(Buffer&& rhs) noexcept = default;
+	Buffer& operator=(Buffer&& rhs) noexcept = default;
+
+	/// To be called when the buffer was initialized with
+	/// a deferred constructor. Will make sure the buffer
+	/// has bound memory.
+	void init() { ensureMemory(); }
+};
+
+/// RAII wrapper around a vulkan buffer view.
+class BufferView : public ResourceHandle<vk::BufferView> {
+public:
+	BufferView() = default;
+	BufferView(const Device&, const vk::BufferViewCreateInfo&);
+	BufferView(const Device&, vk::BufferView);
+	~BufferView();
+
+	BufferView(BufferView&& rhs) noexcept { swap(*this, rhs); }
+	BufferView& operator=(BufferView rhs) noexcept { 
+		swap(*this, rhs); 
+		return *this; 
+	}
 };
 
 } // namespace vpp

@@ -86,7 +86,7 @@ public:
 	/// the given range can be allocated (like e.g. the first allocation).
 	void allocSpecified(Allocation, AllocationType);
 
-	/// Frees the given allocation. Undefined behvaiour if the
+	/// Frees the given allocation. Undefined behavior if the
 	/// allocation is invalid (i.e. not allocated on this Memory).
 	void free(const Allocation& alloc);
 
@@ -103,7 +103,7 @@ public:
 		AllocationType) const;
 
 	/// Maps the specified memory range.
-	/// Undefined behvaiour if the memory is not mappable, the caller must
+	/// Undefined behavior if the memory is not mappable, the caller must
 	/// check this using mappable()
 	MemoryMapView map(const Allocation& allocation);
 

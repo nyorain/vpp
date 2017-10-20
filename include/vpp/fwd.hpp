@@ -25,6 +25,12 @@ using std::int64_t;
 
 using std::size_t;
 
+/// Tag that initializes resources in a deferred way.
+/// Usually better for performance but you have to call an additional
+/// function when you use them.
+struct DeferTag {};
+constexpr DeferTag defer {};
+
 class Resource;
 class WorkBase;
 
@@ -70,6 +76,8 @@ class WorkManager;
 class SharedBuffer;
 class BufferRange;
 class BufferAllocator;
+
+struct ViewableImageCreateInfo;
 
 template<typename T>
 class ThreadStorage;

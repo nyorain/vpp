@@ -39,7 +39,7 @@ public:
 	/// is not enough free space left.
 	Allocation alloc(vk::DeviceSize size);
 
-	/// Frees the given allocation. Undefined behvaiour if the
+	/// Frees the given allocation. Undefined behavior if the
 	/// allocation is invalid (i.e. not allocated on this SharedBuffer).
 	void free(const Allocation&);
 	const auto& allocations() const { return allocations_; }

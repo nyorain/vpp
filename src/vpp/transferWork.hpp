@@ -31,6 +31,7 @@ protected:
 	BufferRange bufferRange_;
 };
 
+// TODO
 /// Download work implementation.
 /// Can be used to download data from a bufferor image using a
 /// TransferManager.

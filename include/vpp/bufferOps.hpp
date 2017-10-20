@@ -14,6 +14,43 @@
 
 namespace vpp {
 
+// TODO
+/*
+/// Fills the given buffer with the given data by mapping it.
+/// The buffer must be bound to hostVisible memory.
+/// The buffer must not be in use (you probably have to use barriers).
+/// 'offset + data.size()' must not exceed the buffers size.
+void fillMap(const Buffer&, nytl::Span<const std::byte> data,
+	vk::DeviceSize offset = 0u);
+
+/// Retrieves the contents of the given image by mapping it.
+/// The buffer must be bound to hostVisible memory.
+/// The buffer must not be in use (you probably have to use barriers).
+/// 'offset + size' must not exceed the buffers size.
+/// If size is wholeSize, will retrieve the whole buffer.
+nytl::Span<std::byte> retrieveMap(const Image&, 
+	vk::DeviceSize offset = 0u, vk::DeviceSize size = vk::wholeSize);
+*/
+
+/// Fills the given buffer by using a temporary staging buffer and then
+/// copying the contents. The buffer must have been created with
+/// the transferDst usage bit
+/// The buffer must not be in use (you probably have to use barriers).
+/// You have to ensure that from offset, data.size() bytes can be written.
+void fillCopy(const Buffer&, nytl::Span<std::byte> data,
+	vk::DeviceSize offset = 0u);
+
+/// Retrieves the contents of the given buffer by copying in into a staging
+/// buffer. The image must have been created with the transferSrc usage and 
+/// must be in transferDstOptimal or general layout. 
+/// The image must not be in use.
+/// The returned data will be tightly packed.
+void retrieveCopy(DownloadWork& work, const Image&, vk::Format format,
+	const vk::Extent3D& size, const vk::ImageSubresource&, 
+	const vk::Offset3D& offset = {});
+
+
+
 /// Vulkan shader data types.
 /// Defines all possible types that can be passed as buffer update paramter.
 /// See bits/vulkanTypes.inl for more information.

@@ -4,38 +4,95 @@
 
 #include <vpp/buffer.hpp>
 #include <vpp/vk.hpp>
+#include <dlg/dlg.hpp>
+
 #include <utility> // std::move
 
 namespace vpp {
 
-Buffer::Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
-	unsigned int memoryTypeBits)
+// BufferHandle
+BufferHandle::BufferHandle(const Device& dev, const vk::BufferCreateInfo& info) :
+	ResourceHandle(dev, vk::createBuffer(dev, info))
 {
-	handle_ = buffer;
-	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
+}
 
-	reqs.memoryTypeBits &= memoryTypeBits;
+BufferHandle::BufferHandle(const Device& dev, vk::Buffer buf) :
+	ResourceHandle(dev, buf)	
+{
+}
+
+BufferHandle::~BufferHandle()
+{
+	if(vkHandle()) {
+		vk::destroyBuffer(device(), vkHandle());
+	}
+}
+
+// Buffer
+Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info,
+	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
+		Buffer(dev, vk::createBuffer(dev, info), info.usage, memBits, alloc)
+{
+}
+
+Buffer::Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
+	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
+		Buffer(defer, dev, buffer, usage, memBits, alloc)
+{
+	ensureMemory();
+}
+
+Buffer::Buffer(const Device& dev, vk::Buffer buffer, MemoryEntry&& entry) : 
+	BufferHandle(dev, buffer), MemoryResource(std::move(entry))
+{
+	ensureMemory();
+}
+
+Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, 
+	MemoryEntry&& entry) : 
+		Buffer(dev, vk::createBuffer(dev, info), std::move(entry))
+{
+}
+
+Buffer::Buffer(DeferTag, const Device& dev, vk::Buffer buffer, 
+	vk::BufferUsageFlags usage, unsigned int memBits, 
+	vpp::DeviceMemoryAllocator* alloc) :
+		BufferHandle(dev, buffer)
+{
+	dlg_assert(buffer);
+	dlg_assert(memBits);
+
+	alloc = alloc ? alloc : &dev.deviceAllocator();
+	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
+	reqs.memoryTypeBits &= memBits;
+	dlg_assertm(reqs.memoryTypeBits, "Buffer: No memory type bits left");
+	dlg_assert(reqs.size > 0);
+
 	dev.deviceAllocator().request(vkHandle(), reqs, usage, memoryEntry_);
 }
 
-Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, unsigned int memoryTypeBits)
+Buffer::Buffer(DeferTag, const Device& dev, const vk::BufferCreateInfo& info,
+	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
+		Buffer(defer, dev, vk::createBuffer(dev, info), info.usage, memBits, alloc)
 {
-	handle_ = vk::createBuffer(dev, info);
-	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
-
-	reqs.memoryTypeBits &= memoryTypeBits;
-	dev.deviceAllocator().request(vkHandle(), reqs, info.usage, memoryEntry_);
 }
 
-Buffer::Buffer(vk::Buffer buffer, MemoryEntry&& entry)
+// BufferView
+BufferView::BufferView(const Device& dev, const vk::BufferViewCreateInfo& info) :
+	BufferView(dev, vk::createBufferView(dev, info))
 {
-	handle_ = buffer;
-	memoryEntry_ = std::move(entry);
 }
 
-Buffer::~Buffer()
+BufferView::BufferView(const Device& dev, vk::BufferView view) :
+	ResourceHandle(dev, view)
 {
-	if(vkHandle()) vk::destroyBuffer(device(), vkHandle());
+}
+
+BufferView::~BufferView()
+{
+	if(vkHandle()) {
+		vk::destroyBufferView(device(), vkHandle());
+	}
 }
 
 } // namespace vpp

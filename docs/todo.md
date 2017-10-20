@@ -7,6 +7,9 @@ Todo list vor vpp
 	- test & fix image upload (layout) bug
 	- test memorymap + view (extend memoryMap test in memory.cpp)
 		- maybe buggy for multiple views (when remapped)
+	- add test case which instanciates every class at least once
+		- to check for simple/trivial impl things
+	- QueueSubmitter
 - improve meson
 	- use install_subdir over install headers
 - cache hostVisible/deviceLocal bits in device?
@@ -32,7 +35,7 @@ Todo list vor vpp
 				- Change the constructor semantics to already initialize the memory
 - separate header for stuff that requires the generated vulkan headers
 	- don't pull them in in other headers
-- release next version
+- deprecate memoryResource::memorySize?
 - possibility to allocate buffers/images on custom
 	- vpp::memory objects
 	- allocators (e.g. not threadlocal or sth.)
@@ -45,13 +48,21 @@ Todo list vor vpp
 	- differentiate: assumptions and tests/checks
 	- also make sure they are valid in vpp
 		- minMemoryMapAlignment
+		- memoryMap: help with nonCoherentAtom size
+			- problem with sharedBuffer...
 		- optimalBufferCopyOffsetAlignment/optimalBufferCopyRowPitchAlignment
 	- valid formats? (-> ViewableImage Creatinfo rework)
 		- also see vulkanspec required format support
+- use defaults concept
+	- implement for ViewableImage (constructor)
+- release next version
 
 low prio / general / ideas
 --------------------------
 
+- rather use 'operator const Handle&()' for resources (also device/queue)?
+	- also: make conversion explicit? any possible problems with having them
+	  implicit?
 - improve memory/buffer allocation algorithm
 - support for sparse stuff. Without making non-sparse buffers/images more expensive
 - good idea to make everything threadlocal by default? hidden costs

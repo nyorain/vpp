@@ -167,7 +167,7 @@ public:
 	/// Should not be used directly, but rather using a QueueLock object.
 	/// Used for queue operation synchronization.
 	/// \sa QueueManager
-	std::shared_timed_mutex& sharedQueueMutex() const;
+	std::shared_mutex& sharedQueueMutex() const;
 
 	vk::Instance vkInstance() const { return instance_; }
 	vk::PhysicalDevice vkPhysicalDevice() const { return physicalDevice_; }

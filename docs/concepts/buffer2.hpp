@@ -30,101 +30,34 @@ class MemoryResource {
 public:
 	MemoryResource() = default;
 
+	MemoryResource(MemoryResource&& rhs) noexcept = default;
+	MemoryResource& operator=(MemoryResource&& rhs) noexcept = default;
+
+	/// Checks if this memory resource was initialized yet and if not it 
+	/// will be initialized.
 	void ensureMemory();
+
+	/// Returns whether this resource is bound to hostVisible memory.
 	bool mappable() const;
-	MemoryMapView memoryMap() const;
+
+	/// Creates/Updates the memoryMap of the memory this resource is
+	/// bound to and returns a view. Must be bound to hostVisible memory,
+	/// i.e. mappable() must be true.
+	MemoryMapView memoryMap(vk::DeviceSize offset = 0u, 
+		vk::DeviceSize size = vk::wholeSize) const;
+
+	/// Returns the size this resource takes up in memory.
+	/// Note that this might differ from the real size of the resource
+	/// (e.g. buffer or image data size) due to metadata.
 	vk::DeviceSize memorySize() const;
 	const MemoryEntry& memoryEntry() const;
-
-	MemoryResource(MemoryResource&& rhs) noexcept;
-	MemoryResource& operator=(MemoryResource rhs) noexcept;
 
 protected:
 	MemoryEntry memoryEntry_;
 };
 
 // buffer header
-/// RAII vk::Buffer wrapper.
-/// Does not handle any additional functionality
-class BufferHandle : public ResourceHandle<vk::Buffer> {
-public:
-	BufferHandle() = default;
-	BufferHandle(const Device&, const vk::BufferCreateInfo&);
-	BufferHandle(const Device&, vk::Buffer);
-	~BufferHandle();
 
-	BufferHandle(BufferHandle&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(BufferHandle rhs) noexcept { 
-		swap(*this, rhs); 
-		return *this; 
-	}
-};
-
-/// Combines Buffer and MemoryResource, i.e. a buffer that knows
-/// its bound memory. Does not support sparse memory bindings.
-class Buffer : public BufferHandle, public MemoryResource {
-public:
-	Buffer() = default;
-
-	/// The various types of constructors:
-	/// - Transfer ownership vs create
-	///   * (1,3,5,7): BufferCreateInfo parameter: create a new buffer
-	///   * (2,4,6,8): vk::Buffer parameter: transfer ownerhip of existent buffer
-	/// - Allocate mechanism. You can either use/pass
-	///   * (1,2): using a DeviceMemoryAllocator, if none is given using
-	///     the default threadlocal allocator of the given device.
-	///     Guarantees that the memory is allocated on a memory type
-	///     contained in memBits (e.g. to assure it's allocated
-	///     on hostVisible memory).
-	///   * (3,4): a valid (non-empty) MemoryEntry: Will pass ownership
-	///     of the memory entry, must be associated with the buffer.
-	///     Only the constructor that newly creates the buffer will bind the 
-	///     memory to the buffer. Both constructors will make sure
-	///     that the memory entry is allocated (and not pending).
-	///   * (5,6): use a custom DeviceMemory object. The memory MUST
-	///     have enough free space, will throw otherwise. You might
-	///     consider using the memoryEntry constructor in this case
-	///     (since you probably have to check for a possible allocation range 
-	///     anyways).
-	/// - Deferred? See the vpp doc for deferred initialization
-	///   * (1-6) bind the buffer immediately to memory. For (1,2) this
-	///     means to immediately allocate memory, which might result
-	///     in a vkAllocateMemory call
-	///   * (7,8) does not bind the buffer to memory, only when
-	///     ensureMemory is called. Already issues a reserving request
-	///     to the DeviceMemoryAllocator, might result in less
-	///     memory allocations made if multiple resources are created deferred.
-	/// For constructors that receive an already existent Buffer but
-	/// allocate and bind the memory for you, you have to pass the buffers
-	/// usage flags to allow the constructor to choose a valid buffer
-	/// alignment.
-	Buffer(const Device&, const vk::BufferCreateInfo&, 
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	Buffer(const Device&, vk::Buffer, vk::BufferUsageFlags,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-
-	Buffer(const Device&, vk::Buffer, const MemoryEntry&);
-	Buffer(const Device&, const vk::BufferCreateInfo&, const MemoryEntry&);
-
-	Buffer(const Device&, const vk::BufferCreateInfo&, vpp::DeviceMemory&);
-	Buffer(const Device&, vk::Buffer, vpp::DeviceMemory&);
-
-	/// Creates the buffer without any bound memory.
-	/// You have to call the ensureMemory function later on to
-	/// make sure memory is bound to the buffer.
-	Buffer(DeferredTag, const Device&, const vk::BufferCreateInfo&, 
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	Buffer(DeferredTag, const Device&, vk::Buffer, vk::BufferUsageFlags,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-
-	Buffer(Buffer&& rhs) noexcept = default;
-	Buffer& operator=(Buffer&& rhs) noexcept = default;
-
-	/// To be called when the buffer was initialized with
-	/// a deferred constructor. Will make sure the buffer
-	/// has bound memory.
-	void init() { ensureMemory(); }
-};
 
 // image header
 /// RAII vk::Image wrapper.
@@ -268,53 +201,6 @@ public:
 protected:
 	Image image_;
 	ImageView imageView_;
-};
-
-
-// sparse header
-// TODO
-struct OpaqueMemoryBind {
-	DeviceMemory* memory;
-	Allocation allocation;
-	vk::DeviceSize resourceOffset;
-};
-
-template<typename Extent3D>
-struct ImageMemoryBindT {
-	MemoryEntry entry;
-	Extent3D offset;
-	Extent3D size;
-};
-using ImageMemoryBind = ImageMemoryBindT<vk::Extent3D>;
-
-class SparseOpaqueMemoryEntry {
-protected:
-	std::vector<OpaqueMemoryBind> binds_;
-};
-
-class SparseImageMemoryEntry {
-protected:
-	std::vector<std::variant<OpaqueMemoryBind, ImageMemoryBind>> binds_;
-};
-
-class SparseImage : public vpp::ImageHandle {
-public:
-
-protected:
-	SparseImageMemoryEntry entry_;
-};
-
-class SparseOpaqueImage : public vpp::ImageHandle {
-public:
-protected:	
-	SparseOpaqueMemoryEntry entry_;
-};
-
-class SparseBuffer : public vpp::BufferHandle {
-public:
-
-protected:
-	SparseOpaqueMemoryEntry entry_;
 };
 
 } // namespace vpp
