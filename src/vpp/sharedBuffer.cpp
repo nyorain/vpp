@@ -143,6 +143,7 @@ BufferRange BufferAllocator::alloc(vk::DeviceSize size,
 	}
 
 	buffers_.emplace_back(device(), createInfo, memBits);
+	buffers_.back().buffer.ensureMemory(); // TODO
 	auto alloc = buffers_.back().buffer.alloc(size);
 	dlg_assert(alloc.size == size);
 	return BufferRange(buffers_.back().buffer, alloc);

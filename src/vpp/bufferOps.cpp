@@ -33,7 +33,7 @@ DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset, vk::DeviceSize si
 		auto memBits = buf.device().memoryTypeBits(
 			vk::MemoryPropertyBits::hostVisible);
 		auto downloadBuffer = buf.device().bufferAllocator().alloc(size,
-			vk::BufferUsageBits::transferSrc, memBits);
+			vk::BufferUsageBits::transferDst, memBits);
 
 		vk::BufferCopy region {offset, 0, size};
 

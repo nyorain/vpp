@@ -163,7 +163,7 @@ DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format for
 		auto memBits = image.device().memoryTypeBits(
 			vk::MemoryPropertyBits::hostVisible);
 		auto downloadBuffer = image.device().bufferAllocator().alloc(byteSize,
-			vk::BufferUsageBits::transferSrc, memBits);
+			vk::BufferUsageBits::transferDst, memBits);
 
 		vk::beginCommandBuffer(cmdBuffer, {});
 

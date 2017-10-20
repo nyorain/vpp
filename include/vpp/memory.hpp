@@ -108,8 +108,9 @@ public:
 	MemoryMapView map(const Allocation& allocation);
 
 	/// Returns the the biggest (continuously) allocatable block.
-	/// This does not mean that an allocation of this size can be made, since there are also
-	/// alignment or granularity requirements which will effectively "shrink" this block.
+	/// This does not mean that an allocation of this size can be made, 
+	/// since there are also alignment or granularity requirements which 
+	/// will effectively "shrink" this block.
 	vk::DeviceSize largestFreeSegment() const noexcept;
 
 	/// Returns the total amount of free bytes.

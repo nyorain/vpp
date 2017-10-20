@@ -94,14 +94,16 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev,
 		physicalDevice_ = choose(phdevs);
 	}
 
-	if(!physicalDevice_)
+	if(!physicalDevice_) {
 		throw std::runtime_error("vpp::Device: could not find physical device");
+	}
 
 	// query gfx compute queue
 	auto queueFlags = vk::QueueBits::compute | vk::QueueBits::graphics;
 	int gfxCompQueueFam = findQueueFamily(vkPhysicalDevice(), queueFlags);
-	if(gfxCompQueueFam == -1)
+	if(gfxCompQueueFam == -1) {
 		throw std::runtime_error("vpp::Device: unable to find gfx/comp queue family");
+	}
 
 	// init device and queue create info
 	float priorities[1] = {0.0};
@@ -116,8 +118,9 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev,
 
 	// create the device
 	device_ = vk::createDevice(vkPhysicalDevice(), devInfo);
-	if(!device_)
+	if(!device_) {
 		throw std::runtime_error("vpp::Device: device creation failed");
+	}
 
 	// retrieve the queues and init the device
 	init({{vk::getDeviceQueue(vkDevice(), gfxCompQueueFam, 0), gfxCompQueueFam}});
@@ -129,8 +132,9 @@ Device::Device(vk::Instance ini, vk::SurfaceKHR surface, const Queue*& present,
 	// find a physical device
 	auto phdevs = vk::enumeratePhysicalDevices(vkInstance());
 	auto phdev = choose(phdevs, vkInstance(), surface);
-	if(!phdev)
+	if(!phdev) {
 		throw std::runtime_error("vpp::Device: could not find a valid physical device");
+	}
 
 	physicalDevice_ = phdev;
 
@@ -186,8 +190,9 @@ Device::Device(vk::Instance ini, vk::SurfaceKHR surface, const Queue*& present,
 	devInfo.pQueueCreateInfos = queueInfos;
 
 	device_ = vk::createDevice(vkPhysicalDevice(), devInfo);
-	if(!device_)
+	if(!device_) {
 		throw std::runtime_error("vpp::Device: device creation failed");
+	}
 
 	// retrieve the queues and init the device
 	std::vector<std::pair<vk::Queue, unsigned int>> queuePairs;
@@ -215,7 +220,9 @@ Device::~Device()
 	provider_.reset();
 	impl_.reset();
 
-	if(vkDevice()) vk::destroyDevice(device_, nullptr);
+	if(vkDevice()) {
+		vk::destroyDevice(device_, nullptr);
+	}
 }
 
 void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
@@ -239,6 +246,7 @@ void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
 
 	// init thread local storage and providers
 	impl_->tlsDeviceAllocatorID = impl_->tls.add();
+	impl_->tlsBufferAllocatorID = impl_->tls.add();
 	provider_ = std::make_unique<Provider>(*this);
 }
 
