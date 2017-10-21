@@ -4,7 +4,7 @@
 
 #include <vpp/sharedBuffer.hpp>
 #include <vpp/queue.hpp>
-#include <vpp/vulkan/structs.hpp>
+#include <vkpp/structs.hpp>
 #include <dlg/dlg.hpp>
 #include <algorithm>
 

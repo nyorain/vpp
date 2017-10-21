@@ -47,7 +47,7 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 
 	// query formats
 	uint32_t count;
-	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev,
+	VKPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev,
 		surface, &count, nullptr));
 	if(!count) {
 		throw std::runtime_error("vpp::swapchainCreateInfo: "
@@ -55,12 +55,12 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 	}
 
 	std::vector<vk::SurfaceFormatKHR> formats(count);
-	VPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev,
+	VKPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev,
 		surface, &count, formats.data()));
 
 	// present modes
 	count = 0u;
-	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev,
+	VKPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev,
 		surface, &count, nullptr));
 	if(!count) {
 		throw std::runtime_error("vpp::swapchainCreateInfo: "
@@ -68,12 +68,12 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 	}
 
 	std::vector<vk::PresentModeKHR> modes(count);
-	VPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev,
+	VKPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev,
 		surface, &count, modes.data()));
 
 	// caps
 	vk::SurfaceCapabilitiesKHR surfCaps;
-	VPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev,
+	VKPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev,
 		surface, &surfCaps));
 
 
@@ -188,7 +188,7 @@ Swapchain::Swapchain(const Device& dev, const vk::SwapchainCreateInfoKHR& info)
 	: ResourceHandle(dev)
 {
 	VPP_LOAD_PROC(dev, CreateSwapchainKHR);
-	VPP_CALL(pfCreateSwapchainKHR(device(), &info, nullptr, &handle_));
+	VKPP_CALL(pfCreateSwapchainKHR(device(), &info, nullptr, &handle_));
 }
 
 Swapchain::Swapchain(const Device& dev, vk::SwapchainKHR swapChain) 
@@ -209,10 +209,10 @@ std::vector<vk::Image> Swapchain::images() const
 	VPP_LOAD_PROC(vkDevice(), GetSwapchainImagesKHR);
 
 	std::uint32_t c;
-	VPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &c, nullptr));
+	VKPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &c, nullptr));
 
 	std::vector<vk::Image> imgs(c);
-	VPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &c, imgs.data()));
+	VKPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &c, imgs.data()));
 
 	return imgs;
 }
@@ -227,7 +227,7 @@ void Swapchain::resize(const vk::Extent2D& size,
 	VPP_LOAD_PROC(device(), CreateSwapchainKHR);
 
 	vk::SurfaceCapabilitiesKHR surfCaps;
-	VPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(),
+	VKPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(),
 		info.surface, &surfCaps));
 
 	auto& curr = surfCaps.currentExtent;
@@ -241,7 +241,7 @@ void Swapchain::resize(const vk::Extent2D& size,
 	}
 
 	info.oldSwapchain = vkHandle();
-	VPP_CALL(pfCreateSwapchainKHR(device(), &info, nullptr, &handle_));
+	VKPP_CALL(pfCreateSwapchainKHR(device(), &info, nullptr, &handle_));
 
 	if(info.oldSwapchain) {
 		pfDestroySwapchainKHR(device(), info.oldSwapchain, nullptr);

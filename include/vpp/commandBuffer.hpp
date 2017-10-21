@@ -7,7 +7,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/util/nonCopyable.hpp>
-#include <vpp/vulkan/enums.hpp>
+#include <vkpp/enums.hpp>
 
 #include <vector> // std::vector
 #include <functional> // std::function

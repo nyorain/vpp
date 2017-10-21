@@ -1,0 +1,4 @@
+[wrap-git]
+directory=vkpp
+url=https://github.com/nyorain/vkpp.git
+revision=master

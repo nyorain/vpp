@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <vpp/vulkan/fwd.hpp>
+#include <vkpp/fwd.hpp>
 #include <vpp/config.hpp>
 
 #include <cstdint> // std::uint8_t

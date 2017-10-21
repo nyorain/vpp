@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/vulkan/span.hpp>
+#include <vkpp/span.hpp>
 
 namespace vpp
 {

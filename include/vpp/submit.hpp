@@ -7,7 +7,7 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/sync.hpp>
-#include <vpp/vulkan/span.hpp>
+#include <vpp/util/span.hpp>
 
 #include <deque>
 #include <vector>

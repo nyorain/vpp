@@ -102,7 +102,7 @@ int findQueueFamily(vk::PhysicalDevice phdev, vk::Instance instance, vk::Surface
 		if((queueProps[i].queueFlags & flags) != flags) continue;
 
 		vk::Bool32 ret;
-		VPP_CALL(pfGetPhysicalDeviceSurfaceSupportKHR(phdev, i, surface, &ret));
+		VKPP_CALL(pfGetPhysicalDeviceSurfaceSupportKHR(phdev, i, surface, &ret));
 		if(!ret) continue;
 
 		if(optimize == OptimizeQueueFamily::none) return i;

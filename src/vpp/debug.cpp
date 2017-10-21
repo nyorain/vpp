@@ -97,13 +97,14 @@ DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flag
 {
 	VPP_LOAD_PROC(vkInstance(), CreateDebugReportCallbackEXT);
 	vk::DebugReportCallbackCreateInfoEXT createInfo(flags, &defaultMessageCallback, this);
-	VPP_CALL(pfCreateDebugReportCallbackEXT(vkInstance(), &createInfo, nullptr, &debugCallback_));
+	VKPP_CALL(pfCreateDebugReportCallbackEXT(vkInstance(), &createInfo, nullptr, &debugCallback_));
 }
 
 DebugCallback::~DebugCallback()
 {
-	if(vkCallback())
+	if(vkCallback()) {
 		VPP_PROC(vkInstance(), DestroyDebugReportCallbackEXT)(vkInstance(), vkCallback(), nullptr);
+	}
 }
 
 bool DebugCallback::call(const CallbackInfo& info) const noexcept

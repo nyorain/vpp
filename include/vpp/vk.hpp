@@ -1,3 +1,3 @@
 #pragma once
 
-#include <vpp/vulkan/vulkan.hpp>
+#include <vkpp/vulkan.hpp>

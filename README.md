@@ -8,10 +8,6 @@ Does not aim to be a full-sized graphics engine, but rather focuses on
 providing some useful features that make programming vulkan applications in
 C++ more convenient and less repetitive while not introducing unreasonable overhead.
 
-Includes a C++ code generator for the vulkan api which focuses on typesafety and less typing
-while still being more explicit as well as it tries to not introduce a huge compile time overhead.
-There should be no runtime overhead using the generated C++ vulkan api.
-
 At the moment, vpp is still in an alpha state, its first unstable release
 is __[v0.1-alpha](https://github.com/nyorain/vpp/releases)__
 
