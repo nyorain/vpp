@@ -146,9 +146,8 @@ public:
 	/// \sa CommandProvider
 	CommandProvider& commandProvider() const;
 
-	/// Returns the submit manager for this device.
-	/// \sa SubmitManager
-	SubmitManager& submitManager() const;
+	/// Default threadlocal queue submitter for a graphical queue.
+	QueueSubmitter& queueSubmitter() const;
 
 	/// Returns the BufferAllocator for this device and the calling thread.
 	/// \sa BufferAllocator

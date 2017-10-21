@@ -1,5 +1,5 @@
-#include "bugged.hpp"
 #include "init.hpp"
+#include "bugged.hpp"
 #include <vpp/buffer.hpp>
 #include <vpp/bufferOps.hpp>
 #include <vector>
@@ -146,13 +146,12 @@ TEST(write_read) {
 	vpp::Buffer buf(*globals.device, bufInfo, bits);
 
 	// write to it
-	vpp::BufferUpdate writer(buf, vpp::BufferLayout::std140);
+	vpp::MappedBufferWriter writer(buf.memoryMap(), vpp::BufferLayout::std140);
 	writer.add(1.f);
 	writer.add(Vec2f{2.f, 3.f});
 	writer.add(4.);
 	writer.add(Vec3f{5.f, 6.f, 7.f});
 	writer.add(8);
-	writer.apply();
 
 	// validate contents manually
 	{
@@ -179,7 +178,7 @@ TEST(write_read) {
 	Vec3f r567;
 	int r8;
 
-	vpp::read140(buf, r1, r23, r4, r567, r8);
+	vpp::readMap140(buf, r1, r23, r4, r567, r8);
 
 	EXPECT(r1, 1.f);
 	EXPECT(r23, (Vec2f{2.f, 3.f}));

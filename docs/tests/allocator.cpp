@@ -13,18 +13,17 @@ TEST(memory) {
 		vk::BufferCreateInfo bufInfo;
 		bufInfo.size = 1024;
 		bufInfo.usage = vk::BufferUsageBits::storageBuffer;
-		auto buffer = vpp::Buffer(dev, bufInfo);
-		vpp::Buffer buffer1(dev, bufInfo);
-		vpp::Buffer buffer2(dev, bufInfo);
-		vpp::Buffer buffer3(dev, bufInfo);
-		vpp::Buffer buffer4(dev, bufInfo);
+		auto buffer = vpp::Buffer(vpp::defer, dev, bufInfo);
+		vpp::Buffer buffer1(vpp::defer, dev, bufInfo);
+		vpp::Buffer buffer2(vpp::defer, dev, bufInfo);
+		vpp::Buffer buffer3(vpp::defer, dev, bufInfo);
+		vpp::Buffer buffer4(vpp::defer, dev, bufInfo);
 		EXPECT(alloc.memories().empty(), true);
 		EXPECT(buffer1.memoryEntry().allocated(), false);
 		EXPECT(buffer2.memoryEntry().allocator(), &alloc);
 
-		buffer1.ensureMemory();
+		buffer1.init();
 		EXPECT(alloc.memories().size(), 1u);
-		EXPECT(alloc.memories()[0] == nullptr, false);
 
 		EXPECT(buffer2.memoryEntry().allocated(), true);
 		EXPECT(buffer3.memoryEntry().allocated(), true);
@@ -48,10 +47,13 @@ TEST(memory) {
 		bufInfo.size = 1024;
 		bufInfo.usage = vk::BufferUsageBits::storageBuffer;
 		auto buffer = vpp::Buffer(dev, bufInfo);
-		vpp::Buffer buffer1(dev, bufInfo);
-		buffer1.memoryEntry().allocate();
-
 		EXPECT(alloc.memories().size(), 1u);
 		EXPECT(alloc.memories()[0].totalFree(), 1024u * 4);
+
+		vpp::Buffer buffer1(vpp::defer, dev, bufInfo);
+		EXPECT(alloc.memories()[0].totalFree(), 1024u * 4);
+
+		buffer1.init();
+		EXPECT(alloc.memories()[0].totalFree(), 1024u * 3);
 	}
 }

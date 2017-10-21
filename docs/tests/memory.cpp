@@ -4,7 +4,7 @@
 TEST(memory) {
 	auto size = 1024u;
 	auto& dev = *globals.device;
-	auto type = dev.memoryType(vk::MemoryPropertyBits::hostVisible);
+	uint32_t type = dev.memoryType(vk::MemoryPropertyBits::hostVisible);
 	vpp::DeviceMemory memory(dev, {size, type});
 
 	EXPECT(memory.mappable(), true);
@@ -57,7 +57,7 @@ TEST(memory) {
 TEST(map) {
 	auto size = 1024u;
 	auto& dev = *globals.device;
-	auto type = dev.memoryType(vk::MemoryPropertyBits::hostVisible);
+	uint32_t type = dev.memoryType(vk::MemoryPropertyBits::hostVisible);
 	vpp::DeviceMemory memory(dev, {size, type});
 	
 	EXPECT(memory.mappable(), true);

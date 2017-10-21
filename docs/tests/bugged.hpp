@@ -65,7 +65,7 @@ struct Printable {
 	}
 };
 
-/// Default printable specialization for types that can itself
+/// Default printable specialization for types that can be printed
 template<typename T>
 struct Printable<T, void_t<decltype(std::declval<std::ostream&>() << std::declval<T>())>> {
 	static const T& call(const T& obj) { return obj; }

@@ -5,62 +5,73 @@
 #pragma once
 
 template<typename R>
-CommandWork<R>::CommandWork(CommandBuffer&& cmd, const vpp::Queue& queue)
-	: cmdBuffer_(std::move(cmd))
+CommandWork<R>::CommandWork(QueueSubmitter& submitter, CommandBuffer&& cmd) :
+	cmdBuffer_(std::move(cmd))
 {
-	cmdBuffer_.device().submitManager().add(queue, {cmdBuffer_}, &executionState_);
-	state_ = WorkBase::State::pending;
+	init(submitter, {{}, {}, {}, 1, &cmdBuffer_.vkHandle(), {}, {}});
+}
+
+template<typename R>
+CommandWork<R>::CommandWork(QueueSubmitter& submitter, 
+	const vk::SubmitInfo& info, CommandBuffer&& cmd) :
+		cmdBuffer_(std::move(cmd))
+{
+	init(submitter, info);
 }
 
 template<typename R>
 CommandWork<R>::~CommandWork()
 {
-	try {
-		finish();
-	} catch(const std::exception& error) {
-		dlg_warnt(("vpp", "~CommandWork"), "finish(): {}", error.what());
-	}
+	tryFinish(*this, "~CommandWork");
+}
+
+template<typename R>
+void CommandWork<R>::init(QueueSubmitter& submitter, const vk::SubmitInfo& info)
+{
+	submitter_ = &submitter;
+	submitID_ = submitter.add(info);
+	state_ = WorkBase::State::pending;
 }
 
 template<typename R>
 void CommandWork<R>::submit()
 {
-	if(Work<R>::submitted()) return;
+	// dlg_assert(state_ != WorkBase::State::none);
+	// dlg_assert(submitter_ && submitID_);
 
-	executionState_.submit();
+	submitter_->submit(submitID_);
 	state_ = WorkBase::State::submitted;
 }
 
 template<typename R>
 void CommandWork<R>::wait()
 {
-	if(Work<R>::executed()) return;
+	// dlg_assert(state_ != WorkBase::State::none);
+	// dlg_assert(submitter_ && submitID_);
 
-	submit();
-	executionState_.wait();
-	state_ = WorkBase::State::executed;
-}
-
-template<typename R>
-void CommandWork<R>::finish()
-{
-	if(Work<R>::finished()) return;
-
-	wait();
+	submitter_->wait(submitID_); // will automatically submit if needed
 	cmdBuffer_ = {}; // free the commandBuffer it is no longer needed
-
-	state_ = WorkBase::State::finished;
+	state_ = WorkBase::State::executed;
 }
 
 template<typename R>
 WorkBase::State CommandWork<R>::state()
 {
-	// update state
-	if(state_ == WorkBase::State::pending && executionState_.submitted())
-		state_ = WorkBase::State::submitted;
+	if(state_ == WorkBase::State::none) {
+		return state_;
+	}
 
-	if(state_ == WorkBase::State::submitted && executionState_.completed())
+	// query state
+	// dlg_assert(submitID_);
+	// dlg_assert(submitter_);
+
+	if(state_ == WorkBase::State::pending && submitter_->submitted(submitID_)) {
+		state_ = WorkBase::State::submitted;
+	}
+
+	if(state_ == WorkBase::State::submitted && submitter_->completed(submitID_)) {
 		state_ = WorkBase::State::executed;
+	}
 
 	return state_;
 }

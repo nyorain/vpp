@@ -8,7 +8,6 @@
 #include <vpp/submit.hpp>
 #include <vpp/commandBuffer.hpp>
 #include <vpp/util/span.hpp>
-#include <dlg/dlg.hpp>
 
 #include <memory> // std::unique_ptr
 #include <stdexcept> // std::exception
@@ -28,7 +27,7 @@ namespace vpp {
 class WorkBase {
 public:
 	enum class State {
-		none, // invalid state
+		none, // invalid state, e.g. default constructed or moved from
 		pending, // was not yet submitted but queued
 		submitted, // was submitted, gpu is (or will be) working on it
 		executed, // finished execution, finish operation not done yet
@@ -38,10 +37,23 @@ public:
 public:
 	virtual ~WorkBase() = default;
 
-	virtual void submit() = 0; // will not wait for completion of the work
-	virtual void wait() = 0; // waits until the work if completed
-	virtual void finish() = 0; // will block until the work has completed and finish it
-	virtual State state() = 0; // returns the current state of the work
+	// Submits the work but will not wait for completion of the work
+	// Has no effect if work was already submitted.
+	// Must not be called in invalid state.
+	virtual void submit() = 0; 
+
+	// Submits the work if needed and waits until it is completed.
+	// Must not be called in invalid state.
+	virtual void wait() = 0; 
+
+	// Will wait for the work to finish and may then execute post-wait 
+	// finishing operation like receiving data.
+	// Must not be called in invalid state.
+	virtual void finish() { wait(); }
+
+	// Returns the current state of the work.
+	// Might query it every time this function is called.
+	virtual State state() = 0;
 
 	bool pending() { return state() == State::pending; }
 	bool submitted() { return static_cast<unsigned int>(state()) > 1; }
@@ -72,9 +84,9 @@ public:
 /// This class should be preferred over using WorkBase directly
 template<> class Work<void> : public WorkBase {};
 
-// Convinience typedefs
+// Convenience typedefs
 using WorkPtr = std::unique_ptr<Work<void>>;
-using DataWorkPtr = std::unique_ptr<Work<nytl::Span<const uint8_t>>>;
+using DataWorkPtr = std::unique_ptr<Work<nytl::Span<const std::byte>>>;
 
 /// Work implementation that can be used (for void or derived from for other types) to signal that
 /// there is no work to be done. This may be used e.g. in cases where functions might require
@@ -102,22 +114,24 @@ template<typename R>
 class CommandWork : public Work<R> {
 public:
 	CommandWork() = default;
-	CommandWork(CommandBuffer&&, const vpp::Queue&);
+	CommandWork(QueueSubmitter&, CommandBuffer&&);
+	CommandWork(QueueSubmitter&, const vk::SubmitInfo&, CommandBuffer&& = {});
 	~CommandWork();
 
+	CommandWork(CommandWork&&) noexcept = default;
+	CommandWork& operator=(CommandWork&&) noexcept = default;
+
 	virtual void submit() override;
-	virtual void finish() override;
 	virtual void wait() override;
 	virtual WorkBase::State state() override;
 
-	CommandBuffer& commandBuffer() { return cmdBuffer_; }
-	const CommandBuffer& commandBuffer() const { return cmdBuffer_; }
-	CommandExecutionState& executionState() { return executionState_; }
-	const CommandExecutionState& executionState() const { return executionState_; }
+protected:
+	void init(QueueSubmitter&, const vk::SubmitInfo& info);
 
 protected:
 	CommandBuffer cmdBuffer_;
-	CommandExecutionState executionState_;
+	QueueSubmitter* submitter_ {};
+	uint64_t submitID_ {};
 	WorkBase::State state_ {WorkBase::State::none};
 };
 
@@ -134,13 +148,18 @@ public:
 	WorkManager(WorkManager&& other) = default;
 	WorkManager& operator=(WorkManager&& other) = default;
 
-	// TODO: return submitted object? templated add function?
-	
 	/// Transfers ownership of the given work objects to the WorkManager.
 	/// The WorkManager will add them to the internal list of work to be done.
-	void add(std::unique_ptr<WorkBase>&& work);
+	void addImpl(std::unique_ptr<WorkBase>&& work);
 	void add(std::vector<std::unique_ptr<WorkBase>>&& work);
 	void add(WorkManager&& works);
+
+	template<typename W>
+	W& add(std::unique_ptr<W>&& work) {
+		auto& ret = *work;
+		addImpl(std::move(work));
+		return ret;
+	}
 
 	/// Assures that all owned work objects are submitted.
 	void submit();
@@ -152,6 +171,11 @@ public:
 protected:
 	std::vector<std::unique_ptr<WorkBase>> todo_;
 };
+
+// Utility
+/// Tries to finishes the given work but catches all exception.
+/// Will output the caught exception. Returns whether an exception ocurred.
+bool tryFinish(WorkBase& work, const char* msg = "") noexcept;
 
 // CommandWork implementation
 #include <vpp/bits/work.inl>

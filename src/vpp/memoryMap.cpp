@@ -179,7 +179,7 @@ void MemoryMapView::reload() const
 	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);
 }
 
-uint8_t* MemoryMapView::ptr() const noexcept
+std::byte* MemoryMapView::ptr() const noexcept
 {
 	return memoryMap().ptr() + allocation().offset - memoryMap().offset();
 }

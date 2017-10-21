@@ -9,6 +9,33 @@
 #include <vpp/allocator.hpp>
 #include <variant>
 
+// TODO
+
+/// Fills the given buffer with the given argument in the given layout.
+/// Uses a temporary staging buffer, so the passed buffer has to be
+/// created with the transferDst bit set. The buffer must not be 
+/// in use (you will probably need a pipeline barrier).
+/// Unlike writeStaging, this will not allocate a staging buffer with the
+/// full size as the passed buffer, but first write
+/*
+template<typename... T>
+void fillCopyStage(CommandWork<void>& work, const Buffer& buf, 
+	BufferLayout layout, const T&... args)
+{
+	DirectBufferWriter writer(buf, layout);
+	writer.add(args...);
+	auto cmdBuf = buf.device().commandProvider().get(1); // TODO
+	vk::beginCommandBuffer(cmdBuf, {});
+	for(auto& copy : writer.copies()) {
+		vk::cmdUpdateBuffer(cmdBuf, buf, copy.dstOffset, copy.size,
+			&writer.data()[copy.srcOffset]);
+	}
+
+	vk::endCommandBuffer(cmdBuf);
+	work = {std::move(cmdBuf), buf.device().queueSubmitter()};
+}
+*/
+
 namespace vpp {
 
 // to fwd

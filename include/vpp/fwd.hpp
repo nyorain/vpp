@@ -60,27 +60,29 @@ class Event;
 class Instance;
 class Device;
 class Queue;
-class RendererBuilder;
-class SwapchainRenderer;
+class Renderer;
+class DefaultRenderer;
 class DeviceMemoryAllocator;
 class MemoryEntry;
 class ViewableImage;
-class RenderPassInstance;
-class CommandExecutionState;
 
 class CommandProvider;
 class DeviceMemoryProvider;
 class HostMemoryProvider;
-class SubmitManager;
 class WorkManager;
 class SharedBuffer;
 class BufferRange;
 class BufferAllocator;
+class QueueSubmitter;
 
 struct ViewableImageCreateInfo;
 
-template<typename T>
-class ThreadStorage;
+template<typename T> class CommandWork;
+template<typename T> class TransferWork;
+class DownloadWork;
+class UploadWork;
+
+template<typename T> class ThreadStorage;
 struct DynamicStorageBase;
 
 } // namespace vpp

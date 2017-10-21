@@ -34,8 +34,9 @@ bool operator!=(const BasicAllocation<Size>& a, const BasicAllocation<Size>& b) 
 template<typename A, typename B> 
 constexpr auto align(A offset, B alignment)
 {
-	if(offset == 0 || alignment == 0)
+	if(offset == 0 || alignment == 0) {
 		return offset;
+	}
 
 	auto rest = offset % alignment;
 	return rest ? offset + (alignment - rest) : offset;

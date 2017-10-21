@@ -4,31 +4,20 @@
 
 #pragma once
 
-using RawBufferData = nytl::Span<const uint8_t>;
+using RawBufferData = nytl::Span<const std::byte>;
 
-/// Can be used to easily construct raw buffer wrappers around data to fill a buffer
-/// \requires The given obj (or array of objects) must have pod type, otherwise
-/// they cannot be converted to raw memory.
-template<typename T,
-	typename = std::enable_if_t<!std::is_pointer_v<T>>,
-	typename = std::enable_if_t<std::is_pod_v<T>>>
-constexpr RawBufferData raw(const T& obj, std::size_t count = 1)
-{
-	auto ptr = reinterpret_cast<const uint8_t*>(&obj);
-	return {ptr, count * sizeof(T)};
-}
-
-/// Converts a given container of pod values into a raw data buffer.
-template<typename C,
-	typename D = decltype(*std::declval<C>().data()),
-	typename = decltype(std::declval<C>().size()),
-	typename = std::enable_if_t<std::is_pod_v<std::remove_reference_t<D>>>,
-	typename = std::enable_if_t<!std::is_pod_v<C>>>
-constexpr RawBufferData raw(const C& container)
-{
-	auto ptr = reinterpret_cast<const uint8_t*>(container.data());
-	return {ptr, container.size() * sizeof(std::remove_reference_t<D>)};
-}
+/// Vulkan shader data types.
+/// Defines all possible types that can be passed as buffer update paramter.
+/// See bits/vulkanTypes.inl for more information.
+enum class ShaderType {
+	none, // used for objects like containers
+	buffer, // used for raw data buffers that shall be plain copied
+	scalar, // scalar like float or int, VulkanType has "size64" bool member
+	vec, // VulkanType has "dimension" "size64" members
+	mat, // VulkanType has "major" "minor" "transpose" "size64" members
+	structure, // VulkanType has "member" tuples with member pointers and a bool "align"
+	custom // Vulkan type holds "impl" type that will be called instead. See BufferApplier
+};
 
 /// The VulkanType template can be specialized for custom types to make vpp::BufferUpdate
 /// able to align them correctly.
@@ -105,3 +94,27 @@ template<> struct VulkanType<uint32_t> : public VulkanTypeScalar32 {};
 template<> struct VulkanType<int32_t> : public VulkanTypeScalar32 {};
 template<> struct VulkanType<double> : public VulkanTypeScalar64 {};
 template<> struct VulkanType<RawBufferData> : public VulkanTypeBuffer {};
+
+/// Can be used to easily construct raw buffer wrappers around data to fill a buffer
+/// \requires The given obj (or array of objects) must have pod type, otherwise
+/// they cannot be converted to raw memory.
+template<typename T,
+	typename = std::enable_if_t<!std::is_pointer_v<T>>,
+	typename = std::enable_if_t<std::is_pod_v<T>>>
+constexpr RawBufferData raw(const T& obj, std::size_t count = 1)
+{
+	auto ptr = reinterpret_cast<const std::byte*>(&obj);
+	return {ptr, count * sizeof(T)};
+}
+
+/// Converts a given container of pod values into a raw data buffer.
+template<typename C,
+	typename D = decltype(*std::declval<C>().data()),
+	typename = decltype(std::declval<C>().size()),
+	typename = std::enable_if_t<std::is_pod_v<std::remove_reference_t<D>>>,
+	typename = std::enable_if_t<!std::is_pod_v<C>>>
+constexpr RawBufferData raw(const C& container)
+{
+	auto ptr = reinterpret_cast<const std::byte*>(container.data());
+	return {ptr, container.size() * sizeof(std::remove_reference_t<D>)};
+}

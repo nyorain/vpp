@@ -139,8 +139,9 @@ std::vector<CommandBuffer> CommandProvider::get(uint32_t family, unsigned int co
 {
 	using Storage = ValueStorage<std::deque<CommandPool>>;
 	auto ptr = device().threadStorage().get(tlsID_);
-	if(!ptr->get())
+	if(!ptr->get()) {
 		ptr->reset(new Storage());
+	}
 
 	auto& pools = static_cast<Storage*>(ptr->get())->value;
 	for(auto& pool : pools) {

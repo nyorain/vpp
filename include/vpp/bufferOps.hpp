@@ -8,61 +8,13 @@
 #include <vpp/buffer.hpp>
 #include <vpp/work.hpp>
 #include <vpp/memoryMap.hpp>
+#include <vpp/sharedBuffer.hpp>
+#include <vpp/transferWork.hpp>
 #include <vpp/util/span.hpp>
 #include <vpp/util/allocation.hpp>
 #include <vpp/util/tmp.hpp>
 
 namespace vpp {
-
-// TODO
-/*
-/// Fills the given buffer with the given data by mapping it.
-/// The buffer must be bound to hostVisible memory.
-/// The buffer must not be in use (you probably have to use barriers).
-/// 'offset + data.size()' must not exceed the buffers size.
-void fillMap(const Buffer&, nytl::Span<const std::byte> data,
-	vk::DeviceSize offset = 0u);
-
-/// Retrieves the contents of the given image by mapping it.
-/// The buffer must be bound to hostVisible memory.
-/// The buffer must not be in use (you probably have to use barriers).
-/// 'offset + size' must not exceed the buffers size.
-/// If size is wholeSize, will retrieve the whole buffer.
-nytl::Span<std::byte> retrieveMap(const Image&, 
-	vk::DeviceSize offset = 0u, vk::DeviceSize size = vk::wholeSize);
-*/
-
-/// Fills the given buffer by using a temporary staging buffer and then
-/// copying the contents. The buffer must have been created with
-/// the transferDst usage bit
-/// The buffer must not be in use (you probably have to use barriers).
-/// You have to ensure that from offset, data.size() bytes can be written.
-void fillCopy(const Buffer&, nytl::Span<std::byte> data,
-	vk::DeviceSize offset = 0u);
-
-/// Retrieves the contents of the given buffer by copying in into a staging
-/// buffer. The image must have been created with the transferSrc usage and 
-/// must be in transferDstOptimal or general layout. 
-/// The image must not be in use.
-/// The returned data will be tightly packed.
-void retrieveCopy(DownloadWork& work, const Image&, vk::Format format,
-	const vk::Extent3D& size, const vk::ImageSubresource&, 
-	const vk::Offset3D& offset = {});
-
-
-
-/// Vulkan shader data types.
-/// Defines all possible types that can be passed as buffer update paramter.
-/// See bits/vulkanTypes.inl for more information.
-enum class ShaderType {
-	none, // used for objects like containers
-	buffer, // used for raw data buffers that shall be plain copied
-	scalar, // scalar like float or int, VulkanType has "size64" bool member
-	vec, // VulkanType has "dimension" "size64" members
-	mat, // VulkanType has "major" "minor" "transpose" "size64" members
-	structure, // VulkanType has "member" tuples with member pointers and a bool "align"
-	custom // Vulkan type holds "impl" type that will be called instead. See BufferApplier
-};
 
 /// Specifies the different buffer alignment methods.
 /// For the differences, read https://www.opengl.org/wiki/Interface_Block_(GLSL)#Memory_layout.
@@ -79,140 +31,99 @@ enum class BufferLayout {
 template<typename B>
 class BufferOperator {
 public:
-	constexpr BufferOperator(BufferLayout align) : align_(align) {}
+	constexpr BufferOperator(BufferLayout align) : layout_(align) {}
 	~BufferOperator() = default;
 
-	/// Will operator on the given object. The type of the given object must have
-	/// a specialization for the VulkanType template struct that carriers information about
-	/// the corresponding shader variable type of the object to align it correctly.
-	/// The given object can also be a container/array of such types.
-	/// If one wants the operator to just use raw data it can use vpp::raw for
-	/// an object which will wrap it into a temporary RawBuffer object that can also be operated
-	/// on without any alignment or offsets.
-	template<typename T>
-	void addSingle(T&& obj);
-
 	/// Utility function that calls addSingle for all ob the given objects.
+	/// Usually this is all you need.
 	template<typename... T>
 	void add(T&&... obj);
 
+	/// Will operator on the given object. 
+	/// The type of the given object must have a specialization for the 
+	/// VulkanType template struct that carriers information about
+	/// the corresponding shader variable type of the object to align it correctly.
+	/// The given object can also be a container/array of such types.
+	/// If one wants the operator to just use raw data it can use vpp::raw for
+	/// an object which will wrap it into a temporary RawBuffer object that 
+	/// can also be operated on without any alignment or offsets.
+	template<typename T>
+	void addSingle(T&& obj);
+
 	/// Returns the current offset on the buffer.
-	constexpr std::size_t offset() const noexcept { return offset_; }
+	constexpr auto offset() const noexcept { return offset_; }
 
 	/// Sets the nextOffset value to which offset will be set before operating on the
 	/// next data. Will not be applied if there is no further data to operate on.
-	constexpr void nextOffset(size_t noffset) noexcept { nextOffset_ = noffset; }
+	constexpr void nextOffset(vk::DeviceSize o) noexcept { nextOffset_ = o; }
 
 	/// Sets the align that offset should have before operating on the next data.
 	/// Will not be applied if there is no further data to operate on.
-	constexpr void nextOffsetAlign(size_t algn) noexcept { nextOffset_ = align(offset_, algn); }
+	constexpr void nextOffsetAlign(vk::DeviceSize algn) noexcept { 
+		nextOffset_ = ::vpp::align(offset_, algn); 
+	}
 
-	constexpr BufferLayout alignType() const noexcept { return align_; }
-	constexpr bool std140() const noexcept { return align_ == BufferLayout::std140; }
-	constexpr bool std430()const noexcept { return align_ == BufferLayout::std430; }
+	/// Assures that the current position on the buffer meets the given 
+	/// alignment requirements. If it does not, it will be changed to the next 
+	/// value fulfilling the requirement.
+	constexpr void align(vk::DeviceSize algn, bool update = true) { 
+		auto delta = ::vpp::align(offset_, algn) - offset_;
+		static_cast<B&>(*this).offset(delta, update);
+	}
+
+	constexpr BufferLayout layout() const noexcept { return layout_; }
+
+	constexpr bool std140() const noexcept { 
+		return layout_ == BufferLayout::std140; 
+	}
+	constexpr bool std430() const noexcept { 
+		return layout_ == BufferLayout::std430; 
+	}
+
+	// Expected to exist in B:
+	// void operate(const void* ptr, vk::DeviceSize size);
+	// void offset(vk::DeviceSize, bool update = true);
 
 protected:
-	BufferLayout align_;
-	size_t offset_ {};
-	size_t nextOffset_ {}; // structs or arrays may have offset requirement for next member.
+	BufferLayout layout_;
+	vk::DeviceSize offset_ {};
+
+	// structs/arrays may have offset requirement for next written data.
+	vk::DeviceSize nextOffset_ {}; 
 };
 
-/// This class can be used to update/write the contents of a buffer.
-/// It will automatically align the data as specified but can also be used to just upload/write
-/// raw data to the buffer. Can also be used to specify custom offsets or alignment for the data.
-class BufferUpdate : public BufferOperator<BufferUpdate>, public ResourceReference<BufferUpdate> {
-public:
-	/// The given align type will influence the applied alignments.
-	/// \param direct Specifies if direct updates should be preferred.
-	/// Using direct update usually only makes sense for small updates.
-	/// \exception std::runtime_error if the device has no queue that supports graphics/compute or
-	/// transfer operations and the buffer is not mappable.
-	/// \sa BufferAlign
-	BufferUpdate(const Buffer&, BufferLayout, bool direct = false);
 
-	/// Calls apply and waits for the work to finish if apply was not called during
-	/// the lifetime of this object.
-	~BufferUpdate();
-
-	/// Writes the stored data to the buffer.
-	/// Returns a Work implemention that can be used to execute or defer the update.
-	/// After this call, the BufferUpdate object should no longer be used in any way.
-	WorkPtr apply();
-
-	/// Writes size bytes from ptr to the buffer.
-	/// Undefined behaviour if ptr does not point to at least size bytes.
-	void operate(const void* ptr, size_t size);
-
-	/// Offsets the current position on the buffer by size bytes. If update is true, it will
-	/// override the bytes with zero, otherwise they will not be changed.
-	void offset(size_t size, bool update = true);
-
-	/// Assures that the current position on the buffer meets the given alignment requirements.
-	/// If it does not, it will be changed to the next value fulfilling the requirement.
-	void align(size_t align, bool update = true);
-
-	void alignUniform() noexcept;
-	void alignStorage() noexcept;
-	void alignTexel() noexcept;
-
-	/// Returns the internal offset, i.e. the position on the internal stored data.
-	/// This value is usually not from any interest, See BufferOperator::offset for
-	/// the current offset on the buffer data.
-	std::size_t internalOffset() const noexcept { return internalOffset_; }
-	const Buffer& buffer() const noexcept { return *buffer_; }
-
-	using BufferOperator::offset;
-	using BufferOperator::alignType;
-	using BufferOperator::std140;
-	using BufferOperator::std430;
-
-	const Buffer& resourceRef() const { return *buffer_; }
-
-protected:
-	void checkCopies();
-	uint8_t& data();
-
-protected:
-	const Buffer* buffer_ {};
-	WorkPtr work_ {};
-
-	MemoryMapView map_ {}; // for mapping (buffer/transfer)
-	std::vector<uint8_t> data_; // for direct copying
-	std::vector<vk::BufferCopy> copies_; // for copy (direct/transfer)
-	size_t internalOffset_ {}; // offset for internal data
-
-	bool direct_ {};
-};
-
-/// Token used to explicit construct a BufferSizer without device only
-/// for compile-time computation.
-struct ConstexprBufferSizer {};
-constexpr ConstexprBufferSizer constexprBufferSizer;
-
-/// Can be used to calculate the size that would be needed to fit certain objects with certain
-/// alignments on a buffer.
+// -- size api --
+/// Can be used to calculate the size that would be needed to fit certain 
+/// objects with certain alignments on a buffer.
 /// Alternative name: BufferSizeCalculator
 class BufferSizer : public BufferOperator<BufferSizer>, public Resource {
 public:
+	/// Token used to explicit construct a BufferSizer without device only
+	/// for compile-time computation.
+	struct CompileTimeTag {};
+	static constexpr CompileTimeTag compileTime {};
+
+public:
 	/// Constructs a compile-time instance of BufferSizer.
-	/// Cannot be used for dynamic alignment requirements like uniform, storage or texel.
-	constexpr BufferSizer(ConstexprBufferSizer, BufferLayout layout) : BufferOperator(layout) {}
+	/// Cannot be used for dynamic alignment requirements (e.g. uniform offset).
+	constexpr BufferSizer(CompileTimeTag, BufferLayout l) : 
+		BufferOperator(l) {}
 
 	/// Constructs a runtime instance of a BufferSizer.
-	/// Can be used for dynamic alignment requirements like uniform, storage or texel.
-	BufferSizer(const Device& dev, BufferLayout align) : BufferOperator(align), Resource(dev) {}
+	/// Can be used for dynamic alignment requirements like uniform, 
+	/// storage or texel.
+	BufferSizer(const Device&, BufferLayout);
 	~BufferSizer() = default;
 
 	using BufferOperator::add;
 	template<typename... T> constexpr void add();
 
-	constexpr void operate(const void*, std::size_t size);
-
-	constexpr void offset(std::size_t size) { offset_ += size; }
-	constexpr void align(std::size_t align) { offset_ = vpp::align(offset_, align); }
+	constexpr void operate(const void*, vk::DeviceSize size);
+	constexpr void offset(vk::DeviceSize size, bool = false) { offset_ += size; }
 
 	using BufferOperator::offset;
-	using BufferOperator::alignType;
+	using BufferOperator::layout;
 	using BufferOperator::std140;
 	using BufferOperator::std430;
 
@@ -221,114 +132,13 @@ public:
 	void alignTexel() noexcept;
 };
 
-/// Class that can be used to read raw data into objects using the coorect alignment.
-/// It is constructed with raw data and then can be used to read them into
-/// the passed objects using the BufferOperator api.
-class BufferReader : public BufferOperator<BufferReader>, public Resource {
-public:
-	/// Constructs the BuffeReader to read from the given data.
-	/// \param data The raw data usually retrieved from the buffer to read.
-	BufferReader(const Device& dev, BufferLayout align, nytl::Span<const uint8_t> data);
-	~BufferReader() = default;
-
-	void operate(void* ptr, std::size_t size);
-
-	void offset(std::size_t size) { align(0); offset_ += size; }
-	void align(size_t algn) { offset_ = vpp::align(offset_, algn); }
-
-	using BufferOperator::offset;
-	using BufferOperator::alignType;
-	using BufferOperator::std140;
-	using BufferOperator::std430;
-
-	void alignUniform() noexcept;
-	void alignStorage() noexcept;
-	void alignTexel() noexcept;
-
-protected:
-	nytl::Span<const uint8_t> data_;
-};
-
-/// Fills the buffer with the given data.
-/// Does this either by memory mapping the buffer or by copying it via command buffer.
-/// Expects that buffer was created fillable, so either the buffer is memory mappable or
-/// it is allowed to copy data into it and the device was created with a matching queue.
-/// Note that this operation may be asnyc, therefore a work unique ptr is returned.
-/// If multiple (device local) buffers are to fill it brings usually huge performace gains
-/// to first call fill() on them all and then make sure that the needed work finishes.
-/// \param buf The Buffer to fill.
-/// \param align Specifies the align of the data to update (either std140 or std430).
-/// \param args The arguments to fill the buffer with. Notice that this function is just a
-/// utility wrapper around the BufferUpdate class (which may be used for more detailed updates)
-/// and therefore expects all given arguments to have a specialization for the VulkanType
-/// template which is used to specify their matching shader type.
-/// If raw (un- or custom-aligned) data should be written into the buffer, the vpp::raw() function
-/// can be used.
-/// The given arguments must only be valid until this function finishes, i.e. they can go out
-/// of scope before the returned work is finished.
-/// \sa BufferUpdate
-/// \sa ShaderType
-/// \sa fill140
-/// \sa fill430
-template<typename... T>
-WorkPtr fill(const Buffer& buf, BufferLayout align, const T&... args)
-{
-	BufferUpdate update(buf, align);
-	update.add(args...);
-	return update.apply();
-}
-
-/// Just copies the given raw data into the given buffer.
-/// The buffer is expected to have at least the size of the given data.
-/// \sa fill
-WorkPtr write(const Buffer& buf, nytl::Span<const uint8_t> data);
-
-/// Utilty shortcut for filling the buffer with data using the std140 layout.
-/// \sa fill
-/// \sa BufferUpdate
-template<typename... T> WorkPtr fill140(const Buffer& buf, const T&... args)
-	{ return fill(buf, BufferLayout::std140, args...); }
-
-/// Utilty shortcut for filling the buffer with data using the std430 layout.
-/// \sa fill
-/// \sa BufferUpdate
-template<typename... T> WorkPtr fill430(const Buffer& buf, const T&... args)
-	{ return fill(buf, BufferLayout::std430, args...); }
-
-/// Retrives the data stored in the buffer.
-/// \param size The size of the range to retrive. If size is vk::wholeSize (default) the range
-/// from offset until the end of the buffer will be retrieved.
-/// \return A Work ptr that is able to retrive an array of std::uint8_t values storing the data.
-DataWorkPtr retrieve(const Buffer& buf, vk::DeviceSize offset = 0,
-	vk::DeviceSize size = vk::wholeSize);
-
-/// Reads the data stored in the given buffer aligned into the given objects.
-/// Note that the given objects MUST remain valid until the work finishes.
-/// You can basically pass all argument types that you can pass to the fill command.
-/// Internally just uses a combination of a retrieve work operation and the reads the
-/// retrieved data into the given arguments using the BufferReader class.
-/// \sa BufferReader
-template<typename... T>
-WorkPtr read(const Buffer& buf, BufferLayout align, T&... args);
-
-/// Reads the given buffer into the given objects using the std140 layout.
-/// \sa read
-/// \sa BufferReader
-template<typename... T> WorkPtr read140(const Buffer& buf, T&... args)
-	{ return read(buf, BufferLayout::std140, args...); }
-
-/// Reads the given buffer into the given objects using the std430 layout.
-/// \sa read
-/// \sa BufferReader
-template<typename... T> WorkPtr read430(const Buffer& buf, T&... args)
-	{ return read(buf, BufferLayout::std430, args...); }
-
-/// Calculates the size a vulkan buffer must have to be able to store all the given objects.
+/// Calculates the size a vulkan buffer must have to be able to store all 
+/// the given objects.
 /// \sa BufferSizer
 template<typename... T>
-std::size_t neededBufferSize(BufferLayout align, const T&... args)
+vk::DeviceSize neededBufferSize(BufferLayout align, const T&... args)
 {
-	BufferSizer sizer(constexprBufferSizer, align);
+	BufferSizer sizer(BufferSizer::compileTime, align);
 	sizer.add(args...);
 	return sizer.offset();
 }
@@ -339,32 +149,374 @@ std::size_t neededBufferSize(BufferLayout align, const T&... args)
 /// ShaerType::custom with a non-constexpr size implementation.
 /// \sa BufferSizer
 template<typename... T>
-constexpr std::size_t neededBufferSize(BufferLayout align)
+constexpr vk::DeviceSize neededBufferSize(BufferLayout align)
 {
-	BufferSizer sizer(constexprBufferSizer, align);
+	BufferSizer sizer(BufferSizer::compileTime, align);
 	sizer.add<T...>();
 	return sizer.offset();
 }
 
-/// Calcualtes the size a vulkan buffer must have to be able to store all the given objects using
-/// the std140 layout.
-/// \sa neededBufferSize
-/// \sa BufferSizer
-template<typename... T> std::size_t neededBufferSize140(const T&... args)
-	{ return neededBufferSize(BufferLayout::std140, args...); }
+template<typename... T> vk::DeviceSize neededBufferSize140(const T&... args) { 
+	return neededBufferSize(BufferLayout::std140, args...); 
+}
 
-template<typename... T> constexpr std::size_t neededBufferSize140()
-	{ return neededBufferSize<T...>(BufferLayout::std140); }
+template<typename... T> constexpr vk::DeviceSize neededBufferSize140() { 
+	return neededBufferSize<T...>(BufferLayout::std140); 
+}
 
-/// Calcualtes the size a vulkan buffer must have to be able to store all the given objects using
-/// the std430 layout.
-/// \sa neededBufferSize
-/// \sa BufferSizer
-template<typename... T> std::size_t neededBufferSize430(const T&... args)
-	{ return neededBufferSize(BufferLayout::std430, args...); }
+template<typename... T> vk::DeviceSize neededBufferSize430(const T&... args) { 
+	return neededBufferSize(BufferLayout::std430, args...); 
+}
 
-template<typename... T> constexpr std::size_t neededBufferSize430()
-	{ return neededBufferSize<T...>(BufferLayout::std430); }
+template<typename... T> constexpr vk::DeviceSize neededBufferSize430() { 
+	return neededBufferSize<T...>(BufferLayout::std430); 
+}
+
+// -- write api --
+/// Can be used to write aligned data to a mapped buffer.
+class MappedBufferWriter : 
+	public BufferOperator<MappedBufferWriter>,
+	public ResourceReference<MappedBufferWriter> {
+public:
+	MappedBufferWriter(MemoryMapView&& view, BufferLayout, 
+		bool staging = false);
+
+	/// Writes size bytes from ptr to the buffer.
+	/// Undefined behaviour if ptr does not point to at least size bytes
+	/// or this write extends the range of the memory map.
+	void operate(const void* ptr, vk::DeviceSize size);
+
+	/// Offsets the current position on the buffer by size bytes. 
+	/// If update is true, it will override the bytes with zero, otherwise they 
+	/// will not be changed.
+	void offset(vk::DeviceSize size, bool update = true);
+
+	void alignUniform() noexcept;
+	void alignStorage() noexcept;
+	void alignTexel() noexcept;
+
+	auto& regions() noexcept { return regions_; }
+	const auto& regions() const noexcept { return regions_; }
+
+	const auto& resourceRef() const { return view_; }
+
+protected:
+	MemoryMapView view_;
+	vk::DeviceSize viewOffset_ {};
+	bool tight_ {};
+	std::vector<vk::BufferCopy> regions_; // regions written
+};
+
+/// Can be used to write aligned data into raw memory, can
+/// then be used to perform a direct update command.
+class DirectBufferWriter : 
+	public BufferOperator<DirectBufferWriter>,
+	public ResourceReference<DirectBufferWriter> {
+public:
+	DirectBufferWriter(const Buffer& buf, BufferLayout);
+
+	/// Writes size bytes from ptr to the buffer.
+	/// Undefined behaviour if ptr does not point to at least size bytes
+	/// or this write extends the range of the memory map.
+	void operate(const void* ptr, vk::DeviceSize size);
+
+	/// Offsets the current position on the buffer by size bytes. 
+	/// If update is true, it will override the bytes with zero, otherwise they 
+	/// will not be changed.
+	void offset(vk::DeviceSize size, bool update = true);
+
+	void alignUniform() noexcept;
+	void alignStorage() noexcept;
+	void alignTexel() noexcept;
+
+	const auto& data() const noexcept { return data_; }
+	const auto& copies() const noexcept { return copies_; }
+
+	const auto& resourceRef() const { return buffer_; }
+
+protected:
+	const Buffer& buffer_;
+	std::vector<std::byte> data_;
+	std::vector<vk::BufferCopy> copies_; // regions to copy
+};
+
+namespace detail {
+
+UploadWork apply(const Buffer&, BufferRange&& stage, 
+	nytl::Span<const vk::BufferCopy>, QueueSubmitter&);
+CommandWork<void> apply(const Buffer&, const DirectBufferWriter&, 
+	QueueSubmitter&);
+CommandBuffer copyCmdBuf(QueueSubmitter&, const Buffer& buffer,
+	const BufferRange& stage, vk::DeviceSize offset, vk::DeviceSize size);
+
+} // namespace detail
+
+/// Uses a MappedBufferWriter to directly write the mappable buffer.
+/// Undefined behavior if the buffer is not mappable.
+/// The buffer must not be in use (you will probably need a pipeline barrier).
+template<typename... T>
+void writeMap(const Buffer& buf, BufferLayout layout, const T&... args) 
+{
+	MappedBufferWriter writer(buf.memoryMap(), layout);
+	writer.add(args...);
+}
+
+template<typename... T>
+void writeMap(const BufferRange& buf, BufferLayout layout, const T&... args) 
+{
+	MappedBufferWriter writer(buf.memoryMap(), layout);
+	writer.add(args...);
+}
+
+template<typename B, typename... T>
+void writeMap140(const B& buf, const T&... args) 
+{
+	MappedBufferWriter writer(buf.memoryMap(), BufferLayout::std140);
+	writer.add(args...);
+}
+
+template<typename B, typename... T>
+void writeMap430(const B& buf, const T&... args) 
+{
+	MappedBufferWriter writer(buf.memoryMap(), BufferLayout::std430);
+	writer.add(args...);
+}
+
+/// Uses a staging buffer to write the given arguments with the
+/// given layout into the given buffer. Will connect the uploadWork
+/// to the given QueueSubmitter.
+/// Note that the buffer must have been created with the transferDst
+/// usage bit set. The buffer must not be in use (you will probably need 
+/// a pipeline barrier).
+/// The work must be finished before any resources are destroyed.
+/// The passed arguments to write are not needed after the call returns.
+template<typename... T>
+UploadWork writeStaging(QueueSubmitter& qs, vk::DeviceSize offset, 
+	const Buffer& buf, BufferLayout layout, const T&... args)
+{
+	auto size = neededBufferSize(layout, args...);
+	auto stage = buf.device().bufferAllocator().alloc(size,
+		vk::BufferUsageBits::transferSrc, 
+		vk::MemoryPropertyBits::hostVisible);
+	MappedBufferWriter writer(stage.memoryMap(), layout, true);
+	writer.offset(offset, false);
+	writer.add(args...);
+	return detail::apply(buf, std::move(stage), writer.regions(), qs);
+}
+
+template<typename... T>
+auto writeStaging(QueueSubmitter& qs, const Buffer& buf, 
+	BufferLayout layout, const T&... args) {
+	return writeStaging(qs, 0u, buf, layout, args...);
+}
+
+template<typename... T>
+auto writeStaging(QueueSubmitter& qs, const BufferRange& buf, 
+	BufferLayout layout, const T&... args) {
+	return writeStaging(qs, buf.offset(), buf, layout, args...);
+}
+
+template<typename B, typename... T>
+auto writeStaging(const B& buf, BufferLayout layout, const T&... args) {
+	return writeStaging(buf.device().queueSubmitter(), buf, layout, args...);
+}
+
+template<typename B, typename... T>
+auto writeStaging140(const B& buf, const T&... args) {
+	return writeStaging(buf.device().queueSubmitter(), buf, 
+		BufferLayout::std140, args...);
+}
+
+template<typename B, typename... T>
+auto writeStaging430(const B& buf, const T&... args) {
+	return writeStaging(buf.device().queueSubmitter(), buf, 
+		BufferLayout::std430, args...);
+}
+
+/// Uses vk::cmdUpdateBuffer to update the given buffer directly with
+/// the given arguments and layout. Should only be used (and only
+/// works) for small updates, i.e. if the update size is smaller
+/// than 2^16 bytes. The buffer must have been created with the transferDst
+/// usage bit set. The buffer must not be in use (you will probably need 
+/// a pipeline barrier).
+/// The work must be finished before any resources are destroyed.
+/// The passed arguments to write are not needed after the call returns.
+template<typename... T>
+CommandWork<void> writeDirect(QueueSubmitter& qs, vk::DeviceSize offset, 
+	const Buffer& buf, BufferLayout layout, const T&... args)
+{
+	DirectBufferWriter writer(buf, layout);
+	writer.offset(offset, false);
+	writer.add(args...);
+	return detail::apply(buf, writer, qs);
+}
+
+template<typename... T>
+auto writeDirect(QueueSubmitter& qs, const Buffer& buf, 
+	BufferLayout layout, const T&... args)
+{
+	return writeDirect(qs, 0u, buf, layout, args...);
+}
+
+template<typename... T>
+auto writeDirect(QueueSubmitter& qs, const BufferRange& buf, 
+	BufferLayout layout, const T&... args)
+{
+	return writeDirect(qs, buf.offset(), buf, layout, args...);
+}
+
+template<typename B, typename... T>
+auto writeDirect(const B& buf, BufferLayout layout, const T&... args) {
+	return writeDirect(buf.device().queueSubmitter(), buf, layout, args...);
+}
+
+template<typename B, typename... T>
+auto writeDirect140(const B& buf, const T&... args) {
+	return writeDirect(buf.device().queueSubmitter(), buf, 
+		BufferLayout::std140, args...);
+}
+
+template<typename B, typename... T>
+auto writeDirect430(const B& buf, const T&... args) {
+	return writeDirect(buf.device().queueSubmitter(), buf, 
+		BufferLayout::std430, args...);
+}
+
+/// Class that can be used to read raw data into objects using the coorect alignment.
+/// It is constructed with raw data and then can be used to read them into
+/// the passed objects using the BufferOperator api.
+class BufferReader : public BufferOperator<BufferReader>, public Resource {
+public:
+	/// Constructs the BuffeReader to read from the given data.
+	/// \param data The raw data usually retrieved from the buffer to read.
+	BufferReader(const Device&, BufferLayout, nytl::Span<const std::byte> data);
+	~BufferReader() = default;
+
+	void operate(void* ptr, vk::DeviceSize size);
+	void offset(vk::DeviceSize size, bool = false) { offset_ += size; }
+
+	using BufferOperator::offset;
+	using BufferOperator::layout;
+	using BufferOperator::std140;
+	using BufferOperator::std430;
+
+	void alignUniform() noexcept;
+	void alignStorage() noexcept;
+	void alignTexel() noexcept;
+
+protected:
+	nytl::Span<const std::byte> data_;
+};
+
+/// Reads the given buffer using the given layout into the given arguments
+/// by mapping it. Undefined behvaior if the buffer is not mappable.
+/// The buffer must not be in use (you will probably need a pipeline barrier).
+/// If the given arguments don't match the data of the buffer you will
+/// probably get garbage.
+template<typename... T>
+void readMap(const Buffer& buf, BufferLayout layout, T&... args) {
+	auto map = buf.memoryMap();
+	BufferReader reader(buf.device(), layout, {map.ptr(), map.size()});
+	reader.add(args...);
+}
+
+template<typename... T>
+void readMap(const BufferRange& buf, BufferLayout layout, T&... args) {
+	auto map = buf.memoryMap();
+	BufferReader reader(buf.device(), layout, {map.ptr(), map.size()});
+	reader.add(args...);
+}
+
+template<typename B, typename... T>
+void readMap140(const B& buf, T&... args) {
+	return readMap(buf, BufferLayout::std140, args...);
+}
+
+template<typename B, typename... T>
+void readMap430(const B& buf, T&... args) {
+	return readMap(buf, BufferLayout::std430, args...);
+}
+
+/// Reads the given buffer using the given layout into the given arguments
+/// by retrieving it from a temporary staging buffer.
+/// The buffer must not be in use (you will probably need a pipeline barrier).
+/// The buffer must have been created with the transferSrc usage bit set.
+/// You have to assure that all resources (inclusive the passed argument
+/// references) stay valid until the work is finished, then the data
+/// was written into the referenced arguments.
+/// If the given arguments don't match the data of the buffer you will
+/// probably get garbage.
+template<typename... T>
+WorkPtr readStaging(QueueSubmitter& qs, vk::DeviceSize offset, 
+	const Buffer& buf, BufferLayout layout, T&... args)
+{
+	auto size = neededBufferSize(layout, args...);
+	auto stage = buf.device().bufferAllocator().alloc(size,
+		vk::BufferUsageBits::transferDst,
+		vk::MemoryPropertyBits::hostVisible);
+	auto cmdBuf = detail::copyCmdBuf(qs, buf, stage, offset, size);
+
+	class WorkImpl : public CommandWork<void> {
+	public:
+		WorkImpl(QueueSubmitter& qs, CommandBuffer&& cmdBuf, BufferRange&& stage, 
+			BufferLayout layout, vk::DeviceSize offset, T&... xargs) :
+				CommandWork(qs, std::move(cmdBuf)), stage_(std::move(stage)),
+				layout_(layout), offset_(offset), args_(xargs...)
+		{
+		}
+
+		~WorkImpl() {
+			tryFinish(*this, "readStaging");
+		}
+
+		void finish() override {
+			CommandWork::finish();
+			auto map = stage_.memoryMap();
+			BufferReader reader(stage_.device(), layout_, map.cspan());
+			reader.offset(offset_, false);
+			std::apply([&](auto&... args){ reader.add(args...); }, args_);
+		}
+
+		BufferRange stage_;
+		BufferLayout layout_;
+		vk::DeviceSize offset_;
+		std::tuple<T&...> args_;
+	};
+
+	return std::make_unique<WorkImpl>(qs, std::move(cmdBuf), std::move(stage),
+		layout, offset, args...);
+}
+
+template<typename... T>
+auto readStaging(QueueSubmitter& qs, const Buffer& buf, 
+	BufferLayout layout, T&... args) 
+{
+	readStaging(qs, buf, 0u, layout, args...);
+}
+
+template<typename... T>
+auto readStaging(QueueSubmitter& qs, const BufferRange& buf, 
+	BufferLayout layout, T&... args) 
+{
+	readStaging(qs, buf, buf.offset(), layout, args...);
+}
+
+template<typename B, typename... T>
+auto readStaging(const B& buf, BufferLayout layout, T&... args) {
+	readStaging(buf.device().queueSubmitter(), buf, layout, args...);
+}
+
+template<typename B, typename... T>
+auto readStaging140(const B& buf, T&... args) {
+	readStaging(buf.device().queueSubmitter(), buf, 
+		BufferLayout::std140, args...);
+}
+
+template<typename B, typename... T>
+auto readStaging430(const B& buf, T&... args) {
+	readStaging(buf.device().queueSubmitter(), buf, 
+		BufferLayout::std430, args...);
+}
 
 /// Implementation of buffer operations and vukan types
 #include <vpp/bits/vulkanTypes.inl>

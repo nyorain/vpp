@@ -9,18 +9,15 @@
 #include <dlg/dlg.hpp>
 
 namespace vpp {
-namespace {
 
-// TODO: expose public
 /// Returns the memory address for an image for the given parameters.
-vk::DeviceSize imageAddress(const vk::SubresourceLayout& layout, unsigned int texelSize,
-	unsigned int x, unsigned int y, unsigned int z, unsigned int layer)
+vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout, 
+	unsigned int texelSize, unsigned int x, unsigned int y, unsigned int z, 
+	unsigned int layer)
 {
 	return layer * layout.arrayPitch + z * layout.depthPitch + y * layout.rowPitch +
 		x * texelSize + layout.offset;
 }
-
-} // anonymous util namespace
 
 // TODO: pipeline barriers? at least document theyre needed?
 WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,

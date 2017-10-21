@@ -28,6 +28,10 @@ struct DynamicStorageBase {
 /// given type.
 template<typename T>
 struct ValueStorage : public DynamicStorageBase {
+	template<typename... Args>
+	ValueStorage(Args&&... args) :
+		value(std::forward<Args>(args)...) {}
+
 	T value;
 };
 

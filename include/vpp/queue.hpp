@@ -6,6 +6,7 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
+#include <vpp/submit.hpp>
 #include <vpp/util/nonCopyable.hpp> // nytl::NonCopyable
 
 #include <mutex> // std::mutex

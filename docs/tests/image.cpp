@@ -1,6 +1,7 @@
 #include "init.hpp"
 #include "bugged.hpp"
 #include <vpp/image.hpp>
+#include <vpp/imageOps.hpp>
 
 TEST(image) {
 	auto& dev = *globals.device;

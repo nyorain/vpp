@@ -48,7 +48,7 @@ inline const char* name(Result result)
 	}
 }
 
-/// Default exception class that will be thrown when a thow-checked vulkan function fails.
+/// Default exception class that will be thrown when a throw-checked vulkan function fails.
 /// This exception will carry the return vulkan result code.
 class VulkanError : public std::runtime_error {
 public:
@@ -56,6 +56,7 @@ public:
 	const Result error {};
 };
 
+/*
 /// std::error_category implementation for vulkan result codes.
 class VulkanErrorCategory : public std::error_category {
 public:
@@ -65,6 +66,7 @@ public:
 		return ::vk::name(static_cast<vk::Result>(code));
 	}
 };
+*/
 
 namespace error {
 
@@ -90,6 +92,7 @@ inline vk::Result checkResultThrow(vk::Result result, const char* function, cons
 } //namespace error
 } //namespace vk
 
+/*
 /// Specialize error code/condition type traits for the vulkan result codes.
 /// This makes it possible to use them directly as error codes.
 namespace std {
@@ -103,6 +106,7 @@ struct is_error_condition_enum<vk::Result>
 	: public true_type {};
 
 } // namespace std
+*/
 
 // Macro for querying a descriptive current function name.
 #if defined(__GNUC__) || defined(__clang__)

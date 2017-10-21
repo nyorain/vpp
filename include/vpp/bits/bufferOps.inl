@@ -313,7 +313,7 @@ struct BufferApplier<VT, ShaderType::none> {
 	}
 };
 
-} //namespace detail
+} // namespace detail
 
 template<typename B> template<typename T>
 void BufferOperator<B>::addSingle(T&& obj)
@@ -337,47 +337,4 @@ constexpr void BufferSizer::add()
 constexpr void BufferSizer::operate(const void*, std::size_t size)
 {
 	offset_ = std::max(nextOffset_, offset_) + size;
-}
-
-template<typename... T> WorkPtr read(const Buffer& buf, BufferLayout align, T&... args)
-{
-	/// WorkImpl that will store references to the given args and write the buffer data into
-	/// it once it was retrieved
-	struct WorkImpl : public Work<void> {
-		WorkImpl(const Buffer& buf, BufferLayout align, T&... args)
-			: buffer_(buf), retrieveWork_(retrieve(buf)), align_(align), args_(args...) {}
-		~WorkImpl()
-		{
-			try {
-				finish();
-			} catch(const std::exception& err) {
-				dlg_warnt(("vpp"), "read(buffer)::~WorkImpl: finish: ", err.what());
-			}
-		}
-
-		void submit() override { retrieveWork_->submit(); }
-		void wait() override { retrieveWork_->wait(); }
-		State state() override
-		{
-			if(!retrieveWork_) return WorkBase::State::finished;
-			auto state = retrieveWork_->state();
-			return (state == WorkBase::State::finished) ? WorkBase::State::executed : state;
-		}
-		void finish() override
-		{
-			if(!retrieveWork_) return;
-
-			retrieveWork_->finish();
-			BufferReader reader(buffer_.device(), align_, retrieveWork_->data());
-			std::apply([&](auto&... args){ reader.add(args...); }, args_); //std::apply c++17
-			retrieveWork_.reset();
-		}
-
-		const Buffer& buffer_;
-		DataWorkPtr retrieveWork_;
-		BufferLayout align_;
-		std::tuple<T&...> args_;
-	};
-
-	return std::make_unique<WorkImpl>(buf, align, args...);
 }

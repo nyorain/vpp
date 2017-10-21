@@ -21,6 +21,13 @@ namespace vpp {
 // - parameter for preseving the layout, i.e. changing its back to the
 //   original value if it has to be chagned
 
+/// Returns the memory address for an image texel.
+/// Does not support compressed image formats.
+/// \param texelSize the size (in bytes) of one texel.
+/// Can e.g. be obtained from formatSize (with the images format).
+vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout, 
+	unsigned int texelSize, unsigned int x, unsigned int y, unsigned int z = 0, 
+	unsigned int layer = 0);
 
 /// Returns the size of the given format in bits.
 /// E.g. vk::Format::r8g8b8a8* will return 32, since it has 4 * 8 = 32 bits

@@ -2,7 +2,9 @@ tests = [
   'allocator',
   'copy',
   'memory',
-  'image',
+  'bufferOps',
+ # 'image',
+  'submit'
 ]
 
 foreach test : tests

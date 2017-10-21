@@ -9,41 +9,24 @@ Todo list vor vpp
 		- maybe buggy for multiple views (when remapped)
 	- add test case which instanciates every class at least once
 		- to check for simple/trivial impl things
-	- QueueSubmitter
+	- test all bufferOps (ranges, different upload mechanisms)
+
 - improve meson
 	- use install_subdir over install headers
-- cache hostVisible/deviceLocal bits in device?
-- retrieve/fill function for BufferRange?
-	- or at least support offsets e.g. in fill140?
-- fix image fill/retrieve
-	- data size bug (maybe in transferbuffer already)
-	- take into account that image does not only have its data in memory
-		- couldn't the same be the case for buffer?
+	- fix codegen
+		- remove codegen/pre (just bundle it fixed with vpp/include)
+		- generate code only in(to) build dir, fix random build race errors
+
+- fix imageOps (fill/retrieve)
+- bufferOps: add raw fill/retrieve calls
+- deprecate memoryResource::memorySize?
+
 - clean up usage of dlg
 	- check can often be replaced with assert
-- use std::byte instead of std::uint8_t (e.g. fill/retrieve)
 - clean up usage of nytl
 	- just include it as subproject?
 - make codestyle consistent everywhere
-- procAddr: test if local cache really faster than load it every time?
-- when mapping images in write/retrieve, first make sure they have the correct layout
-	- change it, return command work ptr if needed?
-- cleanups/fixes to the 2-step init concept
-	- what about buffers/images?
-		- would it make sense for them to behave the way everything else does?
-			- i.e. Buffer() + create(param) + init(param) OR Buffer(params)
-				- Change the constructor semantics to already initialize the memory
-- separate header for stuff that requires the generated vulkan headers
-	- don't pull them in in other headers
-- deprecate memoryResource::memorySize?
-- possibility to allocate buffers/images on custom
-	- vpp::memory objects
-	- allocators (e.g. not threadlocal or sth.)
-	- in a custom way (e.g. with sparse bindings)
-	- maybe make vpp::Buffer just the RAII buffer wrapper and extend it
-		in vpp::MemoryBuffer or sth like that
-- clean up TransferManager
-	- maybe rework into SharedBuffer?
+
 - utility for checking device limits
 	- differentiate: assumptions and tests/checks
 	- also make sure they are valid in vpp
@@ -55,11 +38,26 @@ Todo list vor vpp
 		- also see vulkanspec required format support
 - use defaults concept
 	- implement for ViewableImage (constructor)
+- separate header for stuff that requires the generated vulkan headers
+	- don't pull them in in other headers
+	- (-> defaults)
+- fix/cleanup debugCallback
+	- make verbose in print function member option?
+- make CommandProvider thread-specific as well
+
 - release next version
 
 low prio / general / ideas
 --------------------------
 
+- example vulkanType impl for nytl and glm
+- maybe expose BufferOperator as independent header?
+	- especially BufferSizer, constexpr neededBufferSize
+		- maybe even useful in gl
+- procAddr: test if local cache really faster than load it every time?
+- add sync methods to retrieve/fill/transferWork utility
+	- semaphore for submitting work
+- cache hostVisible/deviceLocal bits in device?
 - rather use 'operator const Handle&()' for resources (also device/queue)?
 	- also: make conversion explicit? any possible problems with having them
 	  implicit?

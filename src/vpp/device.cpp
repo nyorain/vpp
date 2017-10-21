@@ -21,6 +21,7 @@ struct Device::Impl {
 	DynamicThreadStorage tls;
 	unsigned int tlsDeviceAllocatorID {};
 	unsigned int tlsBufferAllocatorID {};
+	unsigned int tlsQueueSubmitterID {};
 
 	vk::PhysicalDeviceProperties physicalDeviceProperties;
 	vk::PhysicalDeviceMemoryProperties memoryProperties;
@@ -33,9 +34,7 @@ struct Device::Impl {
 
 struct Device::Provider {
 	CommandProvider command;
-	SubmitManager submit;
-
-	Provider(const Device& dev) : command(dev), submit(dev) {}
+	Provider(const Device& dev) : command(dev) {}
 };
 
 // used so the Queue destructor can be made not public and Device a friend.
@@ -247,6 +246,8 @@ void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
 	// init thread local storage and providers
 	impl_->tlsDeviceAllocatorID = impl_->tls.add();
 	impl_->tlsBufferAllocatorID = impl_->tls.add();
+	impl_->tlsQueueSubmitterID = impl_->tls.add();
+
 	provider_ = std::make_unique<Provider>(*this);
 }
 
@@ -360,9 +361,16 @@ CommandProvider& Device::commandProvider() const
 	return provider_->command;
 }
 
-SubmitManager& Device::submitManager() const
+QueueSubmitter& Device::queueSubmitter() const
 {
-	return provider_->submit;
+	auto ptr = impl_->tls.get(impl_->tlsQueueSubmitterID); // DynamicStoragePtr*
+	if(!ptr->get()) {
+		auto storage = new ValueStorage<QueueSubmitter>(*queue(vk::QueueBits::graphics));
+		ptr->reset(storage);
+		return storage->value;
+	}
+
+	return static_cast<ValueStorage<QueueSubmitter>*>(ptr->get())->value;
 }
 
 std::shared_mutex& Device::sharedQueueMutex() const

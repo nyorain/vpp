@@ -11,6 +11,7 @@ vpp_sources = [
 	'instance.cpp',
 	'memory.cpp',
 	'memoryMap.cpp',
+	'memoryResource.cpp',
 	'physicalDevice.cpp',
 	'pipeline.cpp',
 	'procAddr.cpp',

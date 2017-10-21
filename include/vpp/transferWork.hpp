@@ -7,8 +7,6 @@
 #include <vpp/fwd.hpp>
 #include <vpp/work.hpp>
 #include <vpp/sharedBuffer.hpp>
-#include <vpp/bufferOps.hpp>
-#include <vpp/memoryResource.hpp>
 
 // These classes are used internally (buffer and image fill/retrieve) but might also be useful
 // for custom upload/download work implementations
@@ -20,39 +18,54 @@ namespace vpp {
 template<typename T>
 class TransferWork : public CommandWork<T> {
 public:
-	TransferWork(CommandBuffer&& cmdBuf, const vpp::Queue& queue, 
-		BufferRange&& range) : CommandWork<T>(std::move(cmdBuf), queue), 
-			bufferRange_(std::move(range)) {}
+	TransferWork(CommandBuffer&& cmdBuf, QueueSubmitter& submitter,
+		BufferRange&& range) : 
+			CommandWork<T>(submitter, std::move(cmdBuf)), 
+			bufferRange(std::move(range)) {}
 
-	BufferRange& bufferRange() { return bufferRange_; }
-	const BufferRange& bufferRange() const { return bufferRange_; }
+	TransferWork(TransferWork&&) noexcept = default;
+	TransferWork& operator=(TransferWork&&) noexcept = default;
 
-protected:
-	BufferRange bufferRange_;
+	BufferRange bufferRange;
 };
 
-// TODO
 /// Download work implementation.
 /// Can be used to download data from a bufferor image using a
 /// TransferManager.
-class DownloadWork : public TransferWork<nytl::Span<const uint8_t>> {
+class DownloadWork : public TransferWork<nytl::Span<const std::byte>> {
 public:
 	using TransferWork::TransferWork;
-	nytl::Span<const uint8_t> data() override {
+
+	DownloadWork(DownloadWork&&) noexcept = default;
+	DownloadWork& operator=(DownloadWork&&) noexcept = default;
+
+	nytl::Span<const std::byte> data() override {
 		finish();
-		downloadWork_ = retrieve(bufferRange_.buffer(), 
-			bufferRange_.offset(), bufferRange_.size());
-		auto data = downloadWork_->data();
-		return data;
+		if(!stagingMap.valid()) {
+			stagingMap = bufferRange.memoryMap();
+		}
+
+		return {stagingMap.ptr(), stagingMap.size()};
 	}
 
-protected:
-	DataWorkPtr downloadWork_;
+	MemoryMapView stagingMap;
 };
 
+/// Upload work implementation.
+/// Does not implement any further functionality since it only needs the passed
+/// command buffer and upload range.
+class UploadWork : public TransferWork<void> {
+public:
+	using TransferWork::TransferWork;
+
+	UploadWork(UploadWork&&) noexcept = default;
+	UploadWork& operator=(UploadWork&&) noexcept = default;
+};
+
+/*
 /// Download work implementation for mappable memory resources.
 /// Returns the data span directly from the mapped memory range.
-class MappableDownloadWork : public FinishedWork<nytl::Span<const uint8_t>> {
+class MappableDownloadWork : public FinishedWork<nytl::Span<const std::byte>> {
 public:
 	MappableDownloadWork(MemoryMapView&& view) : map_(std::move(view)) {}
 	nytl::Span<const uint8_t> data() override { 
@@ -73,13 +86,6 @@ public:
 protected:
 	std::vector<std::uint8_t> data_;
 };
-
-/// Upload work implementation.
-/// Does not implement any further functionality since it only needs the passed
-/// command buffer and upload range.
-class UploadWork : public TransferWork<void> {
-public:
-	using TransferWork::TransferWork;
-};
+*/
 
 } // namespace vpp

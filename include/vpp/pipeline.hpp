@@ -63,7 +63,6 @@ inline void save(const PipelineCache& cache, std::string_view file)
 	{ save(cache.device(), cache, file); }
 
 // TODO: make this a resourceRef on pipeline layout?
-// part of pipeline rework
 
 /// RAII Vulkan pipeline wrapper.
 /// A pipeline is basically a collection of draw/compute information that contains e.g.

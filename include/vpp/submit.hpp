@@ -6,128 +6,83 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
-#include <vpp/util/span.hpp>
+#include <vpp/sync.hpp>
+#include <vpp/vulkan/span.hpp>
 
+#include <deque>
 #include <vector>
-#include <mutex>
 
 namespace vpp {
 
-/// Responsible for synchronizing submissions to the device.
-/// In vulkan, submitting work to the device is a pretty heavy operation and must be synchronized
-/// (e.g. there should always only be one thread calling vkQueueSubmit no matter on which queue).
-/// This class manages these submissions and also batches mulitple command buffers together.
-/// There is always only one SubmitManager for a vulkan device and if vkQueueSumit is called
-/// maually, it must be ensured that no other thread calls this function or uses the submitManager
-/// for the same device at the same time.
-/// See also the Queue class for more on queue and submission synchronization.
-class SubmitManager : public Resource {
+/// Bundles multiple SubmitInfos into few queueSubmit calls.
+/// Can be used to track the submit state using an id.
+/// Is bound to a fixed queue and not synchronized in any way.
+class QueueSubmitter : public ResourceReference<QueueSubmitter> {
 public:
-	/// Submits all CommandBuffers in the submission queue.
-	/// Is the same as calling submit with all queues that have pending submissions.
-	void submit();
+	QueueSubmitter() = default;
+	QueueSubmitter(const Queue& queue);
+	~QueueSubmitter();
 
-	/// Submits all command buffers waiting for submission for the given queue.
-	void submit(const vpp::Queue&);
+	/// Adds a submission.
+	/// Returns the id associated with this submission. The id
+	/// will usually not be unique.
+	/// All values referenced by the given SubmitInfo must
+	/// stay valid until the returned id was submitted.
+	/// It will not be possible to remove this submitInfo.
+	uint64_t add(const vk::SubmitInfo& info);
 
-	/// Adds a given vulkan submit info for exection of a commandBuffer on the given queue.
-	/// Note that this function does not directly submits the given info.
-	/// All pointers in the vk::SubmitInfo must remain valid until the submission gets
-	/// submitted to the device (which can be ensured by using an passed CommandExecutionState
-	/// or calling submit on this SubmitManager).
-	void add(const vpp::Queue&, nytl::Span<const vk::CommandBuffer>, CommandExecutionState* = {});
-	void add(const vpp::Queue&, nytl::Span<const vk::CommandBuffer>,
-		const vk::SubmitInfo&, CommandExecutionState* = {});
+	/// Makes sure the given id is submitted to the device.
+	/// The id must have been returned by add.
+	void submit(uint64_t);
 
+	/// Returns whether the given id was already submitted.
+	/// Also returns true if it has already completed.
+	/// The id must have been returned by add.
+	bool submitted(uint64_t) const;
 
-	/// Makes sure the command buffers associated with the given state are submitted to
-	/// the device. Will output a warning in debug mode if the given state is invalid.
-	/// Usually not called manually. Prefer to use CommandExecutionState::submit.
-	void submit(const CommandExecutionState&);
+	/// Returns if the submission associated with the given id
+	/// has completed on the device.
+	/// The id must have been returned by add.
+	bool completed(uint64_t) const;
 
-	/// Removed the given CommandExecutionState from the potential observers.
-	/// Usually not called manually, triggered on CommandExeuctionState destruction.
-	/// Note that this function does not remove the associated command buffers.
-	void removeStateObserver(const CommandExecutionState&);
+	/// Waits for the submission associated with the given id to complete.
+	/// Will submit it if it hasn't been yet submitted.
+	/// Returns whether the id is now completed (e.g. if false is
+	/// returned, the timeout triggered the return).
+	bool wait(uint64_t id, uint64_t timeout = UINT64_MAX);
 
-	/// Moves the given CommandExeuctionState observer to another object.
-	/// Usually not called manually, triggered by the CommandExeuctionState move
-	/// constructor and assignment operator.
-	void moveStateObserver(const CommandExecutionState& old, CommandExecutionState& newOne);
+	/// Submits all pending submissions.
+	/// Returns the number of submissions.
+	unsigned int submit();
+
+	/// Returns the number of pending submissions.
+	unsigned int pending() const;
+
+	/// Can (but does not have to) be called at any time to
+	/// check all possibly signaled fences. Will be automatically
+	/// called on submit.
+	void update();
+
+	/// Returns the current id.
+	/// Could be used to observe its state.
+	uint64_t current() const { return id_; }
+
+	const auto& queue() const { return *queue_; }
+	const auto& resourceRef() const { return *queue_; }
 
 protected:
-	struct Submission;
-	friend class Device;
+	std::vector<vk::SubmitInfo> pending_;
+	const vpp::Queue* queue_ {};
 
-	SubmitManager(const Device& dev);
-	~SubmitManager();
+	struct NamedFence {
+		uint64_t id;
+		vpp::Fence fence;
+	};
 
-protected:
-	std::vector<Submission> pending_;
-	std::mutex mutex_; // internal mutex
+	mutable std::deque<NamedFence> fences_;
+	mutable std::vector<vpp::Fence> unusedFences_;
+	uint64_t id_ {1u};
+	bool wrapped_ {};
 };
-
-/// Can be used to track the state of a queued command buffer.
-/// Also useful to make sure the associated command buffers were submitted
-/// to the device or wait for them to complete execution.
-/// Created with default constructor and then passed to SubmitManager when
-/// adding a pending command buffer submission.
-/// Internally uses a shared fence pointer as soon as the command buffers are submitted
-/// since multiple CommandExeuctionState objects might be associated with the
-/// same fence.
-class CommandExecutionState {
-public:
-	CommandExecutionState(); // = default
-	~CommandExecutionState();
-
-	CommandExecutionState(CommandExecutionState&& other) noexcept;
-	CommandExecutionState& operator=(CommandExecutionState&& other) noexcept;
-
-	/// Makes sure the associated command buffers are submitted to the device.
-	/// Will have no effect if they were already submitted.
-	void submit();
-
-	/// Waits until execution of the associated command buffers has finished.
-	/// Has no effect and returns immediatly if they already have finished.
-	/// Will submit them if they are not already submitted.
-	/// Will wait at least for the given timeout in nanoseconds or until the
-	/// command buffers have finished otherwise.
-	/// Can be called with timeout 0 to simply update the state.
-	/// The default timeout value (i.e. all bits set) will wait without timeout.
-	/// Returns true if the command buffers have finished execution after this
-	/// call, false otherwise.
-	bool wait(std::uint64_t timeout = ~std::uint64_t(0));
-
-	/// Returns whether the associated command buffers were submitted to the device.
-	bool submitted() const;
-
-	/// Returns whether the associated command buffers have finished their
-	/// execution on the device.
-	/// Will update the state if it is not already completed.
-	bool completed() const;
-
-	/// Returns whether this object is valid, i.e. if there is
-	/// a command buffer submissions associated with it.
-	/// Is invalid if only defaulted constructed and valid if it was
-	/// passed to a SubmitManager when adding a submission.
-	/// Will return true even if the associated command buffers have finished.
-	bool valid() const { return (submitManager_ || completed_ || fence_); }
-
-	/// Returns the fence associated with the exeuction of the associated command buffers.
-	/// If this object is invalid, the associated command buffers were not yet submitted or
-	/// have already finished returns a nullHandle.
-	vk::Fence fence() const;
-
-protected:
-	friend class SubmitManager;
-	void init(SubmitManager&);
-
-	SubmitManager* submitManager_ {};
-
-	// mutable since changed by completed(), used as cache
-	mutable std::shared_ptr<Fence> fence_ {};
-	mutable bool completed_ {};
-};
-
 
 } // namespace vpp
