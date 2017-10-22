@@ -13,19 +13,21 @@
 #include <vpp/util/span.hpp>
 #include <vpp/util/allocation.hpp>
 #include <vpp/util/tmp.hpp>
+#include <cstring>
 
 namespace vpp {
 
 /// Specifies the different buffer alignment methods.
-/// For the differences, read https://www.opengl.org/wiki/Interface_Block_(GLSL)#Memory_layout.
-/// Uniform buffer are by default std140 while storage buffers are by default std430.
+/// For the differences, read 
+/// https://www.opengl.org/wiki/Interface_Block_(GLSL)#Memory_layout.
+/// Uniform buffer are by default std140, storage buffers are by default std430.
 /// Both defaults can be explicitly changed in the shader files using the buffers.
 enum class BufferLayout {
 	std140,
 	std430
 };
 
-/// Base for classes that operator on a buffer such as BufferUpdate, BufferReader or BufferSizer.
+/// Base for classes that operator on a buffer such as Reader, Writer, Sizer.
 /// Moves linearly over the buffer and somehow operates on it and the data it gets.
 /// Uses the CRTP idiom.
 template<typename B>
@@ -195,6 +197,7 @@ public:
 	void alignStorage() noexcept;
 	void alignTexel() noexcept;
 
+	const auto& map() const noexcept { return view_; }
 	auto& regions() noexcept { return regions_; }
 	const auto& regions() const noexcept { return regions_; }
 
@@ -251,35 +254,33 @@ CommandBuffer copyCmdBuf(QueueSubmitter&, const Buffer& buffer,
 
 } // namespace detail
 
+// TODO: assertions?
+
 /// Uses a MappedBufferWriter to directly write the mappable buffer.
 /// Undefined behavior if the buffer is not mappable.
 /// The buffer must not be in use (you will probably need a pipeline barrier).
 template<typename... T>
-void writeMap(const Buffer& buf, BufferLayout layout, const T&... args) 
-{
+void writeMap(const Buffer& buf, BufferLayout layout, const T&... args) {
 	MappedBufferWriter writer(buf.memoryMap(), layout);
+	writer.map().flush();
 	writer.add(args...);
 }
 
 template<typename... T>
-void writeMap(const BufferRange& buf, BufferLayout layout, const T&... args) 
-{
+void writeMap(const BufferRange& buf, BufferLayout layout, const T&... args) {
 	MappedBufferWriter writer(buf.memoryMap(), layout);
+	writer.map().flush();
 	writer.add(args...);
 }
 
 template<typename B, typename... T>
-void writeMap140(const B& buf, const T&... args) 
-{
-	MappedBufferWriter writer(buf.memoryMap(), BufferLayout::std140);
-	writer.add(args...);
+void writeMap140(const B& buf, const T&... args) {
+	writeMap(buf, BufferLayout::std140, args...);
 }
 
 template<typename B, typename... T>
-void writeMap430(const B& buf, const T&... args) 
-{
-	MappedBufferWriter writer(buf.memoryMap(), BufferLayout::std430);
-	writer.add(args...);
+void writeMap430(const B& buf, const T&... args) {
+	writeMap(buf, BufferLayout::std430, args...);
 }
 
 /// Uses a staging buffer to write the given arguments with the
@@ -301,6 +302,7 @@ UploadWork writeStaging(QueueSubmitter& qs, vk::DeviceSize offset,
 	MappedBufferWriter writer(stage.memoryMap(), layout, true);
 	writer.offset(offset, false);
 	writer.add(args...);
+	writer.map().flush();
 	return detail::apply(buf, std::move(stage), writer.regions(), qs);
 }
 
@@ -416,6 +418,7 @@ protected:
 template<typename... T>
 void readMap(const Buffer& buf, BufferLayout layout, T&... args) {
 	auto map = buf.memoryMap();
+	map.invalidate();
 	BufferReader reader(buf.device(), layout, {map.ptr(), map.size()});
 	reader.add(args...);
 }
@@ -423,6 +426,7 @@ void readMap(const Buffer& buf, BufferLayout layout, T&... args) {
 template<typename... T>
 void readMap(const BufferRange& buf, BufferLayout layout, T&... args) {
 	auto map = buf.memoryMap();
+	map.invalidate();
 	BufferReader reader(buf.device(), layout, {map.ptr(), map.size()});
 	reader.add(args...);
 }
@@ -472,6 +476,7 @@ WorkPtr readStaging(QueueSubmitter& qs, vk::DeviceSize offset,
 		void finish() override {
 			CommandWork::finish();
 			auto map = stage_.memoryMap();
+			map.invalidate();
 			BufferReader reader(stage_.device(), layout_, map.cspan());
 			reader.offset(offset_, false);
 			std::apply([&](auto&... args){ reader.add(args...); }, args_);
@@ -491,14 +496,14 @@ template<typename... T>
 auto readStaging(QueueSubmitter& qs, const Buffer& buf, 
 	BufferLayout layout, T&... args) 
 {
-	readStaging(qs, buf, 0u, layout, args...);
+	return readStaging(qs, buf, 0u, layout, args...);
 }
 
 template<typename... T>
 auto readStaging(QueueSubmitter& qs, const BufferRange& buf, 
 	BufferLayout layout, T&... args) 
 {
-	readStaging(qs, buf, buf.offset(), layout, args...);
+	return readStaging(qs, buf, buf.offset(), layout, args...);
 }
 
 template<typename B, typename... T>
@@ -508,13 +513,13 @@ auto readStaging(const B& buf, BufferLayout layout, T&... args) {
 
 template<typename B, typename... T>
 auto readStaging140(const B& buf, T&... args) {
-	readStaging(buf.device().queueSubmitter(), buf, 
+	return readStaging(buf.device().queueSubmitter(), buf, 
 		BufferLayout::std140, args...);
 }
 
 template<typename B, typename... T>
 auto readStaging430(const B& buf, T&... args) {
-	readStaging(buf.device().queueSubmitter(), buf, 
+	return readStaging(buf.device().queueSubmitter(), buf, 
 		BufferLayout::std430, args...);
 }
 

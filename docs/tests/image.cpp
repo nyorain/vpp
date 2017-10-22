@@ -25,45 +25,44 @@ TEST(image) {
 	imgInfo.usage = vk::ImageUsageBits::sampled;
 	imgInfo.format = vk::Format::r8Uint;
 	imgInfo.tiling = vk::ImageTiling::linear;
+	imgInfo.initialLayout = vk::ImageLayout::preinitialized;
 	auto bits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
 	vpp::Image img2 = {dev, imgInfo, bits};
 
-	std::vector<std::uint8_t> data(4 * size.width * size.height, 0xffu);
-	data[0] = 0x00;
-	data[1] = 0x01;
-	data[2] = 0x02;
-	data[3] = 0x03;
+	std::vector<std::byte> data(4 * size.width * size.height, std::byte{0xffu});
+	data[0] = std::byte {0x00};
+	data[1] = std::byte {0x01};
+	data[2] = std::byte {0x02};
+	data[3] = std::byte {0x03};
 
-	auto layout1 = vk::ImageLayout::undefined;
-	vpp::WorkManager mgr;
-	mgr.add(vpp::fill(img1, *data.data(), 
-		vk::Format::b8g8r8a8Unorm,
-		layout1, size,
-		{vk::ImageAspectBits::color, 0, 0}, {}, false));
+	// NOTE: they should not be used like this.
+	// the multiple submissions should at least be grouped together...
+	vpp::changeLayout(img1,
+		vk::ImageLayout::undefined, vk::PipelineStageBits::topOfPipe, {},
+		vk::ImageLayout::transferDstOptimal, vk::PipelineStageBits::transfer,
+		vk::AccessBits::transferWrite,
+		{vk::ImageAspectBits::color, 0, 1, 0, 1}, dev.queueSubmitter());
 
-	auto layout2 = vk::ImageLayout::undefined;
-	mgr.add(vpp::fill(img2, *data.data(), 
-		vk::Format::r8Unorm,
-		layout2, size,
-		{vk::ImageAspectBits::color, 0, 0}));
+	vpp::fillStaging(img1, vk::Format::r8g8b8a8Unorm,
+		vk::ImageLayout::transferDstOptimal, size, data,
+		{vk::ImageAspectBits::color});
 
-	mgr.add(vpp::changeLayout(dev, img2, 
-		layout2, vk::PipelineStageBits::allCommands, 
-		vk::ImageLayout::shaderReadOnlyOptimal,
-		vk::PipelineStageBits::allCommands, 
-		{vk::ImageAspectBits::color, 0, 1, 0, 1}));
-	layout2 = vk::ImageLayout::transferSrcOptimal;
-	mgr.finish();
+	vpp::fillMap(img2, vk::Format::r8Unorm, size, 
+		{data.data(), size.width * size.height}, 
+		{vk::ImageAspectBits::color});
 
-	auto dataWork1 = vpp::retrieve(img1, layout1, 
-		vk::Format::b8g8r8a8Unorm, size,
-		{vk::ImageAspectBits::color, 0, 0}, {}, false);
-	auto dataWork2 = vpp::retrieve(img2, layout2,
-		vk::Format::r8Unorm, size,
-		{vk::ImageAspectBits::color, 0, 0});
+	vpp::changeLayout(img1,
+		vk::ImageLayout::transferDstOptimal, vk::PipelineStageBits::transfer, 
+		vk::AccessBits::transferWrite,
+		vk::ImageLayout::transferSrcOptimal, vk::PipelineStageBits::transfer, 
+		vk::AccessBits::transferRead,
+		{vk::ImageAspectBits::color, 0, 1, 0, 1}, dev.queueSubmitter());
 
-	mgr.finish();
-	auto data1 = dataWork1->data();
+	auto dataWork = vpp::retrieveStaging(img1, 
+		vk::Format::r8g8b8a8Unorm, vk::ImageLayout::transferSrcOptimal,
+		size, {vk::ImageAspectBits::color, 0, 0});
+
+	auto data1 = dataWork.data();
 	EXPECT(data1.size(), size.width * size.height * 4u);
 	EXPECT((unsigned int) data1[0], 0x00u);
 	EXPECT((unsigned int) data1[1], 0x01u);
@@ -73,7 +72,8 @@ TEST(image) {
 		EXPECT((unsigned int) data1[i], 0xffu);
 	}
 
-	auto data2 = dataWork2->data();
+	auto data2 = vpp::retrieveMap(img2, vk::Format::r8Unorm, size,
+		{vk::ImageAspectBits::color});
 	EXPECT(data2.size(), size.width * size.height * 1u);
 	EXPECT((unsigned int) data2[0], 0x00u);
 	EXPECT((unsigned int) data2[1], 0x01u);

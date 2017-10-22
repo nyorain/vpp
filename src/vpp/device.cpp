@@ -17,12 +17,8 @@
 
 namespace vpp {
 
+// order here is important
 struct Device::Impl {
-	DynamicThreadStorage tls;
-	unsigned int tlsDeviceAllocatorID {};
-	unsigned int tlsBufferAllocatorID {};
-	unsigned int tlsQueueSubmitterID {};
-
 	vk::PhysicalDeviceProperties physicalDeviceProperties;
 	vk::PhysicalDeviceMemoryProperties memoryProperties;
 
@@ -30,6 +26,11 @@ struct Device::Impl {
 	std::vector<std::unique_ptr<Queue, Device::QueueDeleter>> queues;
 	std::vector<const Queue*> queuesVec; // cache vector for queues() function
 	std::shared_mutex sharedQueueMutex;
+
+	DynamicThreadStorage tls;
+	unsigned int tlsDeviceAllocatorID {};
+	unsigned int tlsBufferAllocatorID {};
+	unsigned int tlsQueueSubmitterID {};
 };
 
 struct Device::Provider {
@@ -211,11 +212,14 @@ Device::Device(vk::Instance ini, vk::SurfaceKHR surface, const Queue*& present,
 
 Device::~Device()
 {
+	vk::deviceWaitIdle(*this);
+
 	// XXX: it is important to first reset the stored objects that
 	// depend on the vulkan device to be valid before actually destroying the
 	// vulkan device.
 	// When adding additional members that depend on the vulkan device, make
 	// sure to destroy them here before calling vk::destroyDevice
+	// TODO:
 	provider_.reset();
 	impl_.reset();
 

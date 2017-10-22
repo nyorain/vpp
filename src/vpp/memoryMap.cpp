@@ -68,24 +68,30 @@ const vk::DeviceMemory& MemoryMap::vkMemory() const noexcept
 	return memory_->vkHandle();
 }
 
-void MemoryMap::flush() const
+void MemoryMap::flush(const Allocation& range) const
 {
-	dlg_checkt(("MemoryMap::flush"), {
-		if(coherent()) dlg_warn("Called on coherent memory. Not needed.");
-	});
+	if(coherent()) {
+		return;
+	}
 
-	auto range = mappedMemoryRange();
-	vk::flushMappedMemoryRanges(vkDevice(), 1, range);
+	auto o = range.offset + offset();
+	auto s = range.size == vk::wholeSize ? size() : range.size;
+	dlg_assert(s <= size());
+
+	vk::flushMappedMemoryRanges(vkDevice(), 1, {vkMemory(), o, s});
 }
 
-void MemoryMap::reload() const
+void MemoryMap::invalidate(const Allocation& range) const
 {
-	dlg_checkt(("MemoryMap::reload"), {
-		if(coherent()) dlg_warn("Called on coherent memory. Not needed.");
-	});
+	if(coherent()) {
+		return;
+	}
 
-	auto range = mappedMemoryRange();
-	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);
+	auto o = range.offset + offset();
+	auto s = range.size == vk::wholeSize ? size() : range.size;
+	dlg_assert(s <= size());
+
+	vk::invalidateMappedMemoryRanges(vkDevice(), 1, {vkMemory(), o, s});
 }
 
 bool MemoryMap::coherent() const noexcept
@@ -161,20 +167,20 @@ vk::MappedMemoryRange MemoryMapView::mappedMemoryRange() const noexcept
 
 void MemoryMapView::flush() const
 {
-	dlg_checkt(("MemoryMapView::flush"), {
-		if(coherent()) dlg_warn("Called on coherent memory. Not needed.");
-	});
+	if(coherent()) {
+		return;
+	}
 
 	auto range = mappedMemoryRange();
 	vk::flushMappedMemoryRanges(vkDevice(), 1, range);
 }
 
-void MemoryMapView::reload() const
+void MemoryMapView::invalidate() const
 {
-	dlg_checkt(("MemoryMapView::reload"), {
-		if(coherent()) dlg_warn("Called on coherent memory. Not needed.");
-	});
-
+	if(coherent()) {
+		return;
+	}
+	
 	auto range = mappedMemoryRange();
 	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);
 }

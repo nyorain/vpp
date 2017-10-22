@@ -75,6 +75,7 @@ bool QueueSubmitter::completed(uint64_t id) const
 
 	auto status = vk::getFenceStatus(device(), it->fence);
 	if(status == vk::Result::success) {
+		vk::resetFences(device(), {it->fence});
 		unusedFences_.emplace_back(std::move(it->fence));
 		fences_.erase(it);
 		return true;
@@ -157,14 +158,20 @@ unsigned int QueueSubmitter::pending() const
 void QueueSubmitter::update()
 {
 	dlg_assert(queue_);
-	for(auto it = fences_.begin(); it < fences_.end();) {
+	std::vector<vk::Fence> reset;
+	for(auto it = fences_.begin(); it != fences_.end();) {
 		auto status = vk::getFenceStatus(device(), it->fence);
 		if(status == vk::Result::success) {
+			reset.push_back(it->fence);
 			unusedFences_.emplace_back(std::move(it->fence));
 			it = fences_.erase(it);
 		} else {
 			++it;
 		}
+	}
+
+	if(!reset.empty()) {
+		vk::resetFences(device(), reset);
 	}
 }
 

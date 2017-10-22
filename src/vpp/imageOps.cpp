@@ -15,231 +15,210 @@ vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout,
 	unsigned int texelSize, unsigned int x, unsigned int y, unsigned int z, 
 	unsigned int layer)
 {
-	return layer * layout.arrayPitch + z * layout.depthPitch + y * layout.rowPitch +
-		x * texelSize + layout.offset;
+	return layer * layout.arrayPitch + z * layout.depthPitch + 
+		y * layout.rowPitch + x * texelSize + layout.offset;
 }
 
-// TODO: pipeline barriers? at least document theyre needed?
-WorkPtr fill(const Image& image, const uint8_t& data, vk::Format format,
-	vk::ImageLayout& layout, const vk::Extent3D& extent, const vk::ImageSubresource& subres,
-	const vk::Offset3D& offset, bool allowMap)
+void fillMap(const Image& img, vk::Format format,
+	const vk::Extent3D& size, nytl::Span<std::byte> data, 
+	const vk::ImageSubresource& subres, const vk::Offset3D& offset)
 {
-	image.ensureMemory();
-	const auto texSize = formatSize(format);
+	auto texSize = formatSize(format);
 
-	if(image.mappable() && allowMap) {
+	dlg_assert(img.vkHandle());
+	dlg_assert(img.mappable());
+	dlg_assert(texSize > 0);
+	dlg_assert(size.width != 0 && size.height != 0);
+	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
+	dlg_assert(data.size() == size.width * size.height * size.depth * texSize);
+	dlg_assert(data.size() <= img.memorySize());
+	
+	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
+	auto map = img.memoryEntry().map();
 
-		// baiscally the size of the format in bytes. Can be computed from the given size/extent.
-		auto sresLayout = vk::getImageSubresourceLayout(image.device(), image, subres);
-		auto map = image.memoryEntry().map();
+	// make it work for 2d images that specify a depth of zero
+	auto depth = size.depth ? size.depth : 1u;
+	auto doffset = 0u; // current data offset
 
-		// make it work for 2d images that specify a depth of zero
-		auto depth = extent.depth ? extent.depth : 1;
-		auto doffset = 0u; // current data offset
-		for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
-			for(unsigned int h = offset.y; h < offset.y + extent.height; ++h) {
-				auto ioff = imageAddress(sresLayout, texSize, offset.x, h, d, subres.arrayLayer);
-				std::memcpy(map.ptr() + ioff, &data + doffset, texSize * extent.width);
-				doffset += extent.width * texSize;
-			}
+	// copy row (width) after row
+	for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
+		for(unsigned int h = offset.y; h < offset.y + size.height; ++h) {
+			auto ptr = map.ptr() + texelAddress(sresLayout, texSize, 
+				offset.x, h, d, subres.arrayLayer);
+			std::memcpy(ptr, data.data() + doffset, texSize * size.width);
+			doffset += size.width * texSize;
 		}
+	}
 
-		if(!map.coherent()) {
-			map.flush();
-		}
-
-		return std::make_unique<FinishedWork<void>>();
-	} else {
-		const auto byteSize = texSize * extent.width * extent.height * extent.depth;
-		const Queue* queue;
-		auto qFam = transferQueueFamily(image.device(), &queue);
-		auto cmdBuffer = image.device().commandProvider().get(qFam);
-		auto memBits = image.device().memoryTypeBits(
-			vk::MemoryPropertyBits::hostVisible);
-		auto uploadBuffer = image.device().bufferAllocator().alloc(byteSize,
-			vk::BufferUsageBits::transferSrc, memBits);
-
-		{
-			auto map = 	uploadBuffer.buffer().memoryMap();
-			std::memcpy(map.ptr(), &data, byteSize);
-		}
-
-		vk::BufferImageCopy region;
-		region.imageOffset = offset;
-		region.imageExtent = extent;
-		region.imageSubresource = {subres.aspectMask, subres.mipLevel, subres.arrayLayer, 1};
-
-		vk::beginCommandBuffer(cmdBuffer, {});
-
-		// TODO: srcStage?
-		// change layout if needed
-		if(layout != vk::ImageLayout::transferDstOptimal && layout != vk::ImageLayout::general) {
-			constexpr auto srcStage = vk::PipelineStageBits::allCommands;
-			changeLayoutCommand(cmdBuffer, image, layout, srcStage,
-				vk::ImageLayout::transferDstOptimal,
-				vk::PipelineStageBits::transfer,
-				{subres.aspectMask, subres.mipLevel, 1, subres.arrayLayer, 1});
-			layout = vk::ImageLayout::transferDstOptimal;
-		}
-
-		vk::cmdCopyBufferToImage(cmdBuffer, uploadBuffer.buffer(), image, layout, {region});
-		vk::endCommandBuffer(cmdBuffer);
-
-		return std::make_unique<UploadWork>(std::move(cmdBuffer), *queue, std::move(uploadBuffer));
+	if(!map.coherent()) {
+		map.flush();
 	}
 }
 
-DataWorkPtr retrieve(const Image& image, vk::ImageLayout& layout, vk::Format format,
-	const vk::Extent3D& extent, const vk::ImageSubresource& subres, const vk::Offset3D& offset,
-	bool allowMap)
+std::vector<std::byte> retrieveMap(const Image& img, vk::Format format, 
+	const vk::Extent3D& size, const vk::ImageSubresource& subres,
+	const vk::Offset3D& offset)
 {
-	dlg_checkt(("retrieve(image)"), {
-		if(!image.memoryEntry().allocated()) dlg_error("Image has no memory");
-	});
-
 	const auto texSize = formatSize(format);
-	const auto byteSize = texSize * extent.width * extent.height * extent.depth;
+	const auto depth = size.depth ? size.depth : 1u;
+	const auto byteSize = texSize * size.width * size.height * depth;
 
-	if(image.mappable() && allowMap) {
-		std::vector<std::uint8_t> data(byteSize);
-		auto map = image.memoryMap();
+	dlg_assert(img.vkHandle());
+	dlg_assert(img.mappable());
+	dlg_assert(texSize > 0);
+	dlg_assert(byteSize > 0);
+	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
+	dlg_assert(byteSize <= img.memorySize());
+	dlg_assert(size.width != 0 && size.height != 0);
 
-		// baiscally the size of the format in bytes. 
-		// Can be computed from the given size/extent.
-		auto subresLayout = vk::getImageSubresourceLayout(image.device(), image, subres);
+	std::vector<std::byte> data(byteSize);
+	auto map = img.memoryMap();
+	map.invalidate();
 
-		auto depth = extent.depth ? extent.depth : 1;
-		auto doffset = 0u; // dataOffset
-		for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
-			for(unsigned int h = offset.y; h < offset.y + extent.height; ++h) {
-				auto ioffset = imageAddress(subresLayout, texSize, 0, h, d, subres.arrayLayer);
-				std::memcpy(data.data() + doffset, map.ptr() + ioffset, extent.width);
-				doffset += extent.width;
-			}
+	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
+	auto doffset = 0u; // dataOffset
+
+	// copy row (width) after row
+	for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
+		for(unsigned int h = offset.y; h < offset.y + size.height; ++h) {
+			auto ptr = map.ptr() + texelAddress(sresLayout, texSize, 
+				offset.x, h, d, subres.arrayLayer);
+			std::memcpy(data.data() + doffset, ptr, size.width);
+			doffset += size.width * texSize;
 		}
-
-		return std::make_unique<StoredDataWork>(std::move(data));
-	} else {
-		const Queue* queue;
-		auto qFam = transferQueueFamily(image.device(), &queue);
-		auto cmdBuffer = image.device().commandProvider().get(qFam);
-		auto memBits = image.device().memoryTypeBits(
-			vk::MemoryPropertyBits::hostVisible);
-		auto downloadBuffer = image.device().bufferAllocator().alloc(byteSize,
-			vk::BufferUsageBits::transferDst, memBits);
-
-		vk::beginCommandBuffer(cmdBuffer, {});
-
-		// TODO: src stage?
-		// change layout if needed
-		if(layout != vk::ImageLayout::transferSrcOptimal && layout != vk::ImageLayout::general) {
-			constexpr auto srcStage = vk::PipelineStageBits::allCommands;
-			changeLayoutCommand(cmdBuffer, image, layout, srcStage,
-				vk::ImageLayout::transferSrcOptimal,
-				vk::PipelineStageBits::transfer,
-				{subres.aspectMask, subres.mipLevel, 1, subres.arrayLayer, 1});
-			layout = vk::ImageLayout::transferSrcOptimal;
-		}
-
-		vk::BufferImageCopy region;
-		region.imageOffset = offset;
-		region.imageExtent = extent;
-		region.imageSubresource = {subres.aspectMask, subres.mipLevel, subres.arrayLayer, 1};
-
-		vk::cmdCopyImageToBuffer(cmdBuffer, image, layout, downloadBuffer.buffer(), {region});
-		vk::endCommandBuffer(cmdBuffer);
-
-		auto ret = std::make_unique<DownloadWork>(std::move(cmdBuffer), *queue,
-			std::move(downloadBuffer));
-		return ret;
 	}
+
+	return data;
 }
 
-// TODO: probably remove!
-// free utility functions
-void changeLayoutCommand(vk::CommandBuffer cmdBuffer, vk::Image img, 
-	vk::ImageLayout oldLayout, vk::PipelineStageFlags srcStage,
-	vk::ImageLayout newLayout, vk::PipelineStageFlags dstStage,
-	const vk::ImageSubresourceRange& range)
+UploadWork fillStaging(const Image& img, vk::Format format, 
+	vk::ImageLayout layout, const vk::Extent3D& size, 
+	nytl::Span<const std::byte> data, const vk::ImageSubresource& subres, 
+	const vk::Offset3D& offset, QueueSubmitter* qsp)
 {
-	// TODO
+	auto& dev = img.device();
+	auto& qs = qsp ? *qsp : dev.queueSubmitter();
+	auto cmdBuf = dev.commandProvider().get(qs.queue().family());
+
+	vk::beginCommandBuffer(cmdBuf, {});
+	auto range = fillStaging(cmdBuf, img, format, layout, size, data,
+		subres, offset);
+	vk::endCommandBuffer(cmdBuf);
+	return {std::move(cmdBuf), qs, std::move(range)};
+}
+
+BufferRange fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
+	vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size, 
+	nytl::Span<const std::byte> data, const vk::ImageSubresource& subres, 
+	const vk::Offset3D& offset)
+{
+	const auto texSize = formatSize(format);
+	const auto depth = size.depth ? size.depth : 1u;	
+
+	dlg_assert(cmdBuf);
+	dlg_assert(layout == vk::ImageLayout::transferDstOptimal || 
+		layout == vk::ImageLayout::general);
+	dlg_assert(img.vkHandle());
+	dlg_assert(texSize > 0);
+	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
+	dlg_assert(data.size() == texSize * size.width * size.height * depth);
+	dlg_assert(data.size() <= img.memorySize());
+	dlg_assert(size.width != 0 && size.height != 0);
+
+	auto uploadBuffer = img.device().bufferAllocator().alloc(data.size(),
+		vk::BufferUsageBits::transferSrc, 
+		vk::MemoryPropertyBits::hostVisible);
+
+	{
+		auto map = uploadBuffer.memoryMap();
+		map.invalidate();
+		std::memcpy(map.ptr(), data.data(), data.size());
+	}
+
+	auto buf = uploadBuffer.buffer().vkHandle();
+	auto boffset = uploadBuffer.offset();
+	vk::ImageSubresourceLayers layers {subres.aspectMask, subres.mipLevel, 
+		subres.arrayLayer, 1};
+	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset, 
+		{size.width, size.height, depth}};
+
+	vk::cmdCopyBufferToImage(cmdBuf, buf, img, layout, {region});
+	return uploadBuffer;
+}
+
+DownloadWork retrieveStaging(const Image& img, vk::Format format, 
+	vk::ImageLayout layout, const vk::Extent3D& size, 
+	const vk::ImageSubresource& subres, const vk::Offset3D& offset,
+	QueueSubmitter* qsp)
+{
+	auto& dev = img.device();
+	auto& qs = qsp ? *qsp : dev.queueSubmitter();
+	auto cmdBuf = dev.commandProvider().get(qs.queue().family());
+
+	vk::beginCommandBuffer(cmdBuf, {});
+	auto range = retrieveStaging(cmdBuf, img, format, layout, size, 
+		subres, offset);
+	vk::endCommandBuffer(cmdBuf);
+	return {std::move(cmdBuf), qs, std::move(range)};
+}
+
+BufferRange retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
+	vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size, 
+	const vk::ImageSubresource& subres, const vk::Offset3D& offset)
+{
+	const auto texSize = formatSize(format);
+	const auto depth = size.depth ? size.depth : 1u;	
+	const auto byteSize = texSize * size.width * size.height * depth;
+
+	dlg_assert(cmdBuf);
+	dlg_assert(layout == vk::ImageLayout::transferSrcOptimal || 
+		layout == vk::ImageLayout::general);
+	dlg_assert(img.vkHandle());
+	dlg_assert(texSize > 0);
+	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
+	dlg_assert(byteSize <= img.memorySize());
+	dlg_assert(size.width != 0 && size.height != 0);
+
+	auto downloadBuffer = img.device().bufferAllocator().alloc(byteSize,
+		vk::BufferUsageBits::transferDst, 
+		vk::MemoryPropertyBits::hostVisible);
+
+	auto buf = downloadBuffer.buffer().vkHandle();
+	auto boffset = downloadBuffer.offset();
+	vk::ImageSubresourceLayers layers {subres.aspectMask, subres.mipLevel, 
+		subres.arrayLayer, 1};
+	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset, 
+		{size.width, size.height, depth}};
+
+	vk::cmdCopyImageToBuffer(cmdBuf, img, layout, buf, {region});
+	return downloadBuffer;
+}
+
+void changeLayout(vk::CommandBuffer cmdBuf, vk::Image img,
+	vk::ImageLayout ol, vk::PipelineStageFlags srcs, vk::AccessFlags srca,
+	vk::ImageLayout nl, vk::PipelineStageFlags dsts, vk::AccessFlags dsta,
+	const vk::ImageSubresourceRange& subres)
+{
 	vk::ImageMemoryBarrier barrier;
-	barrier.oldLayout = oldLayout;
-	barrier.newLayout = newLayout;
+	barrier.oldLayout = ol;
+	barrier.newLayout = nl;
 	barrier.image = img;
-	barrier.subresourceRange = range;
-
-	switch(oldLayout) {
-		case vk::ImageLayout::undefined:
-			barrier.srcAccessMask = {}; 
-			break;
-		case vk::ImageLayout::preinitialized:
-			barrier.srcAccessMask = vk::AccessBits::hostWrite; 
-			break;
-		case vk::ImageLayout::colorAttachmentOptimal:
-			barrier.srcAccessMask = vk::AccessBits::colorAttachmentWrite; 
-			break;
-		case vk::ImageLayout::depthStencilAttachmentOptimal:
-			barrier.srcAccessMask = vk::AccessBits::depthStencilAttachmentWrite; 
-			break;
-		case vk::ImageLayout::transferSrcOptimal:
-			barrier.srcAccessMask = vk::AccessBits::transferRead; 
-			break;
-		case vk::ImageLayout::transferDstOptimal:
-			barrier.srcAccessMask = vk::AccessBits::transferWrite; 
-			break;
-		case vk::ImageLayout::shaderReadOnlyOptimal:
-			barrier.srcAccessMask = vk::AccessBits::shaderRead; 
-			break;
-		default:
-			break;
-	}
-
-	switch(newLayout) {
-		case vk::ImageLayout::transferDstOptimal:
-			barrier.dstAccessMask = vk::AccessBits::transferWrite; 
-			break;
-		case vk::ImageLayout::transferSrcOptimal:
-			barrier.srcAccessMask |= vk::AccessBits::transferRead;
-			barrier.dstAccessMask = vk::AccessBits::transferRead;
-			break;
-		case vk::ImageLayout::colorAttachmentOptimal:
-			barrier.srcAccessMask = vk::AccessBits::transferRead;
-			barrier.dstAccessMask = vk::AccessBits::colorAttachmentWrite;
-			break;
-		case vk::ImageLayout::depthStencilAttachmentOptimal:
-			barrier.dstAccessMask |= vk::AccessBits::depthStencilAttachmentWrite;
-			break;
-		case vk::ImageLayout::shaderReadOnlyOptimal:
-			if(!barrier.srcAccessMask) {
-				barrier.srcAccessMask = vk::AccessBits::hostWrite | 
-					vk::AccessBits::transferWrite;
-			}
-			barrier.dstAccessMask = vk::AccessBits::shaderRead;
-			break;
-		default:
-			break;
-	}
-
-	vk::cmdPipelineBarrier(cmdBuffer, srcStage, dstStage, {}, {}, {}, {barrier});
+	barrier.subresourceRange = subres;
+	barrier.srcAccessMask = srca;
+	barrier.dstAccessMask = dsta;
+	vk::cmdPipelineBarrier(cmdBuf, srcs, dsts, {}, {}, {}, {barrier});
 }
 
-WorkPtr  changeLayout(const Device& dev, vk::Image img,
-	vk::ImageLayout oldLayout, vk::PipelineStageFlags srcStage,
-	vk::ImageLayout newLayout, vk::PipelineStageFlags dstStage,
-	const vk::ImageSubresourceRange& range)
+CommandWork<void> changeLayout(vk::Image image,
+	vk::ImageLayout ol, vk::PipelineStageFlags srcs, vk::AccessFlags srca,
+	vk::ImageLayout nl, vk::PipelineStageFlags dsts, vk::AccessFlags dsta,
+	const vk::ImageSubresourceRange& subres, QueueSubmitter& qs)
 {
-
-	const Queue* queue;
-	auto qFam = transferQueueFamily(dev, &queue);
-
-	auto cmdBuffer = dev.commandProvider().get(qFam);
-	vk::beginCommandBuffer(cmdBuffer, {});
-	changeLayoutCommand(cmdBuffer, img, oldLayout, srcStage,
-		newLayout, dstStage, range);
-	vk::endCommandBuffer(cmdBuffer);
-
-	return std::make_unique<CommandWork<void>>(std::move(cmdBuffer), *queue);
+	auto cmdBuf = qs.device().commandProvider().get(qs.queue().family());
+	vk::beginCommandBuffer(cmdBuf, {});
+	changeLayout(cmdBuf, image, ol, srcs, srca, nl, dsts, dsta, subres);
+	vk::endCommandBuffer(cmdBuf);
+	return {qs, std::move(cmdBuf)};
 }
 
 // Utility functions

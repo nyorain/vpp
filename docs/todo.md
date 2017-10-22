@@ -11,21 +11,19 @@ Todo list vor vpp
 		- to check for simple/trivial impl things
 	- test all bufferOps (ranges, different upload mechanisms)
 
-- improve meson
-	- use install_subdir over install headers
-	- fix codegen
-		- remove codegen/pre (just bundle it fixed with vpp/include)
-		- generate code only in(to) build dir, fix random build race errors
-
+- dataWork::data: use non-rvalue & modifier?
+	- to disallow something like ```data = retrieve(...)->data```
+- fill operations: take std::byte& instead of span?
+- image fillStaging/retrieveStagin: copy commands have requirements on buffer offset alignemnt
 - fix imageOps (fill/retrieve)
 - bufferOps: add raw fill/retrieve calls
 - deprecate memoryResource::memorySize?
+- imageOps: really allow extent with depth == 0? also handle it for height == 0?
 
 - clean up usage of dlg
 	- check can often be replaced with assert
 - clean up usage of nytl
 	- just include it as subproject?
-- make codestyle consistent everywhere
 
 - utility for checking device limits
 	- differentiate: assumptions and tests/checks
@@ -47,9 +45,12 @@ Todo list vor vpp
 
 - release next version
 
+- make codestyle consistent everywhere
+
 low prio / general / ideas
 --------------------------
 
+- remove enums.hpp include from commandBuffer
 - example vulkanType impl for nytl and glm
 - maybe expose BufferOperator as independent header?
 	- especially BufferSizer, constexpr neededBufferSize

@@ -3,7 +3,7 @@ tests = [
   'copy',
   'memory',
   'bufferOps',
- # 'image',
+  'image',
   'submit'
 ]
 

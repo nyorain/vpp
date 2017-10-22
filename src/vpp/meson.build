@@ -8,6 +8,7 @@ vpp_sources = [
 	'device.cpp',
 	'framebuffer.cpp',
 	'image.cpp',
+	'imageOps.cpp',
 	'instance.cpp',
 	'memory.cpp',
 	'memoryMap.cpp',

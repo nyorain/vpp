@@ -26,14 +26,15 @@ public:
 	/// Might remap the mapped range.
 	void remap(const Allocation& allocation);
 
-	/// Makes sure the mapped data is visible on the device.
-	/// If memory is coherent, this function will have no effect.
-	void flush() const;
+	/// Calls flushMappedMemoryRanges, see the vulkan spec.
+	/// If memory is coherent, this function will have no effect (it
+	/// will check everytime).
+	void flush(const Allocation& = {0u, vk::wholeSize}) const;
 
-	/// Reloads the device memory into mapped memory, i.e. makes sure writes by the device
-	/// are made visible.
-	/// If the memory is coherent, this function will have no effect.
-	void reload() const;
+	/// Calls invalidateMappedMemoryRanges, see the vulkan spec.
+	/// If memory is coherent, this function will have no effect (it
+	/// will check everytime).
+	void invalidate(const Allocation& = {0u, vk::wholeSize}) const;
 
 	/// Returns whether this object is valid.
 	/// If it is not, any operations on it may result in undefined behavior.
@@ -100,15 +101,15 @@ public:
 		return *this; 
 	}
 
-	/// Makes sure the mapped data is visible on the device.
-	/// Not needed when memory is coherent, look at vkFlushMappedMemoryRanges.
-	/// Can be checked with coherent().
+	/// Calls flushMappedMemoryRanges, see the vulkan spec.
+	/// If memory is coherent, this function will have no effect (it
+	/// will check everytime).
 	void flush() const;
 
-	/// Reloads the device memory into mapped memory, i.e. makes sure writes by the device
-	/// are made visible. Not needed when memory is coherent, look at
-	/// vkInvalidateMappedMemoryRanges. Can be checked with coherent().
-	void reload() const;
+	/// Calls invalidateMappedMemoryRanges, see the vulkan spec.
+	/// If memory is coherent, this function will have no effect (it
+	/// will check everytime).
+	void invalidate() const;
 
 	/// Returns whether the view is valid.
 	bool valid() const noexcept { return memoryMap_; }
