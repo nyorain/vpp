@@ -40,7 +40,7 @@ BufferRange::~BufferRange()
 
 MemoryMapView BufferRange::memoryMap() const
 {
-	// buffer().memoryMap will already warn if buffer is mappable
+	// buffer().memoryMap will warn if buffer is not mappable
 	return buffer().memoryMap(offset(), size());
 }
 
@@ -120,17 +120,22 @@ BufferRange BufferAllocator::alloc(vk::DeviceSize size,
 	for(auto& buf : buffers_) {
 		auto* mem = buf.buffer.memoryEntry().memory();
 		dlg_assert(mem);
-		if((buf.usage & usage) != usage || !(memBits & mem->type())) {
+		if((buf.usage & usage) != usage || !(memBits & (1 << mem->type()))) {
 			continue;
 		}
 
 		auto alloc = buf.buffer.alloc(size);
 		if(alloc.size != 0) {
+			dlg_assert(alloc.size == size);
 			return BufferRange(buf.buffer, alloc);
 		}
 	}
 
 	// TODO: algorithm can probably be optimized, don't be greedy
+	// TODO: we curently just add all previous reservings... maybe
+	//  subtract currently requested size (only if smaller than
+	//  absolute size or sth.)?
+
 	// allocate a new buffer
 	// gather all matching buffer information
 	vk::BufferCreateInfo createInfo;
@@ -147,7 +152,6 @@ BufferRange BufferAllocator::alloc(vk::DeviceSize size,
 	}
 
 	buffers_.emplace_back(device(), createInfo, memBits);
-	buffers_.back().buffer.ensureMemory(); // TODO
 	auto alloc = buffers_.back().buffer.alloc(size);
 	dlg_assert(alloc.size == size);
 	return BufferRange(buffers_.back().buffer, alloc);

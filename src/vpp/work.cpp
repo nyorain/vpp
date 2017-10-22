@@ -25,7 +25,7 @@ void WorkManager::add(std::vector<std::unique_ptr<WorkBase>>&& work)
 {
 	dlg_check({
 		for(auto& w : work) {
-			dlg_assert(w);
+			dlg_assertm(w, "WorkManager::add: nullptr work");
 		}
 	});
 

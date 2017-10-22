@@ -33,11 +33,17 @@ public:
 public:
 	/// Returns error | warning | performanceWarning.
 	/// Used as default debug report flags.
-	/// Additional options would be information, debug or
+	/// Additional options would be e.g. information or debug.
 	static vk::DebugReportFlagsEXT defaultFlags();
 
+	/// The default flags for which to return a validation error,
+	/// i.e. make the vulkan call fail. Returns only the error flag.
+	static vk::DebugReportFlagsEXT defaultErrorFlags();
+
 public:
-	DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags = defaultFlags());
+	DebugCallback(vk::Instance instance, 
+		vk::DebugReportFlagsEXT flags = defaultFlags(), bool verbose = false, 
+		vk::DebugReportFlagsEXT errorFlags = defaultErrorFlags());
 	virtual ~DebugCallback();
 
 	vk::Instance vkInstance() const { return instance_; }
@@ -59,6 +65,8 @@ public:
 protected:
 	vk::Instance instance_ {};
 	vk::DebugReportCallbackEXT debugCallback_ {};
+	vk::DebugReportFlagsEXT errorFlags_ {};
+	bool verbose_ {};
 };
 
 } // namespace vpp

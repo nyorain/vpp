@@ -181,7 +181,7 @@ UploadWork apply(const Buffer& buf, BufferRange&& stage,
 	nytl::Span<const vk::BufferCopy> copies, QueueSubmitter& qs)
 {
 	auto& dev = stage.device();
-	auto cmdBuf = dev.commandProvider().get(qs.queue().family());
+	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
 	vk::beginCommandBuffer(cmdBuf, {});
 	vk::cmdCopyBuffer(cmdBuf, stage.buffer(), buf, copies);
 	vk::endCommandBuffer(cmdBuf);
@@ -192,7 +192,7 @@ CommandWork<void> apply(const Buffer& buf, const DirectBufferWriter& writer,
 	QueueSubmitter& qs)
 {
 	auto& dev = writer.device();
-	auto cmdBuf = dev.commandProvider().get(qs.queue().family());
+	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
 	vk::beginCommandBuffer(cmdBuf, {});
 	for(auto& copy : writer.copies()) {
 		vk::cmdUpdateBuffer(cmdBuf, buf, copy.dstOffset, copy.size,
@@ -210,7 +210,7 @@ CommandBuffer copyCmdBuf(QueueSubmitter& qs, const Buffer& buf,
 	dlg_assert(stage.size() >= size);
 
 	auto& dev = qs.device();
-	auto cmdBuf = dev.commandProvider().get(qs.queue().family());
+	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
 	vk::beginCommandBuffer(cmdBuf, {});
 	vk::cmdCopyBuffer(cmdBuf, buf, stage.buffer(), {{offset,
 		stage.offset(), size}});

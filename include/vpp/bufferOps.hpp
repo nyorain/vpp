@@ -13,6 +13,7 @@
 #include <vpp/util/span.hpp>
 #include <vpp/util/allocation.hpp>
 #include <vpp/util/tmp.hpp>
+#include <vkpp/enums.hpp>
 #include <cstring>
 
 namespace vpp {

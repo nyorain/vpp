@@ -1,0 +1,35 @@
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/libvulkan.so.1.0.61
+   obj:/usr/lib/libvulkan.so.1.0.61
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/libvulkan.so.1.0.61
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:call_init.part.0
+   fun:_dl_init
+   fun:dl_open_worker
+   fun:_dl_catch_error
+   fun:_dl_open
+   obj:/usr/lib/libdl-2.26.so
+   fun:_dl_catch_error
+}
+

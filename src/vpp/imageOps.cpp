@@ -98,7 +98,7 @@ UploadWork fillStaging(const Image& img, vk::Format format,
 {
 	auto& dev = img.device();
 	auto& qs = qsp ? *qsp : dev.queueSubmitter();
-	auto cmdBuf = dev.commandProvider().get(qs.queue().family());
+	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
 
 	vk::beginCommandBuffer(cmdBuf, {});
 	auto range = fillStaging(cmdBuf, img, format, layout, size, data,
@@ -153,7 +153,7 @@ DownloadWork retrieveStaging(const Image& img, vk::Format format,
 {
 	auto& dev = img.device();
 	auto& qs = qsp ? *qsp : dev.queueSubmitter();
-	auto cmdBuf = dev.commandProvider().get(qs.queue().family());
+	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
 
 	vk::beginCommandBuffer(cmdBuf, {});
 	auto range = retrieveStaging(cmdBuf, img, format, layout, size, 
@@ -214,7 +214,7 @@ CommandWork<void> changeLayout(vk::Image image,
 	vk::ImageLayout nl, vk::PipelineStageFlags dsts, vk::AccessFlags dsta,
 	const vk::ImageSubresourceRange& subres, QueueSubmitter& qs)
 {
-	auto cmdBuf = qs.device().commandProvider().get(qs.queue().family());
+	auto cmdBuf = qs.device().commandAllocator().get(qs.queue().family());
 	vk::beginCommandBuffer(cmdBuf, {});
 	changeLayout(cmdBuf, image, ol, srcs, srca, nl, dsts, dsta, subres);
 	vk::endCommandBuffer(cmdBuf);

@@ -46,19 +46,7 @@ DeviceMemory::DeviceMemory(const Device& dev, vk::DeviceMemory mem,
 
 DeviceMemory::~DeviceMemory()
 {
-	dlg_check({
-		if(!allocations_.empty()) {
-			std::string msg = "~DeviceMemory: ";
-			msg += std::to_string(allocations_.size());
-			msg += " allocations left:";
-			for(auto& a : allocations_) {
-				msg += "\n\t" + std::to_string(a.allocation.offset);
-				msg += " " + std::to_string(a.allocation.size);
-			}
-
-			dlg_warn("{}", msg);
-		}
-	});
+	dlg_assertm(allocations_.empty(), "~DeviceMemory: allocations left");
 }
 
 DeviceMemory::Allocation DeviceMemory::alloc(vk::DeviceSize size, 

@@ -16,7 +16,7 @@ TEST(submit) {
 
 	vpp::Event event = {dev};
 
-	auto cmdBuf = dev.commandProvider().get(queue.family());
+	auto cmdBuf = dev.commandAllocator().get(queue.family());
 	vk::beginCommandBuffer(cmdBuf, {});
 	vk::cmdSetEvent(cmdBuf, event, vk::PipelineStageBits::allCommands);
 	vk::endCommandBuffer(cmdBuf);

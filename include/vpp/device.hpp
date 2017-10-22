@@ -144,7 +144,7 @@ public:
 	/// Returns a CommandBufferProvider that can be used to easily allocate command buffers.
 	/// The returned CommandProvider will be specific for the calling thread.
 	/// \sa CommandProvider
-	CommandProvider& commandProvider() const;
+	CommandAllocator& commandAllocator() const;
 
 	/// Default threadlocal queue submitter for a graphical queue.
 	QueueSubmitter& queueSubmitter() const;
@@ -188,10 +188,10 @@ protected:
 	vk::PhysicalDevice physicalDevice_ {};
 	vk::Device device_ {};
 
-	/// Device uses the pimpl idion since it holds internally many (partly thread-speciic) object
-	/// that would pull a lot of huge headers or simply more an implementation detail.
+	// Device uses the pimpl idion since it holds internally many (partly 
+	// thread-speciic) object that would pull a lot of huge headers or 
+	// are simply more an implementation detail.
 	std::unique_ptr<Impl> impl_;
-	std::unique_ptr<Provider> provider_;
 };
 
 } // namespace vpp

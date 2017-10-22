@@ -3,55 +3,55 @@ Todo list vor vpp
 
 - testing!
 	- continue bufferops testing/fixing
-	- test everything using valgrind (with/without layers) to find potential leaks/errors
-	- test & fix image upload (layout) bug
-	- test memorymap + view (extend memoryMap test in memory.cpp)
-		- maybe buggy for multiple views (when remapped)
-	- add test case which instanciates every class at least once
-		- to check for simple/trivial impl things
-	- test all bufferOps (ranges, different upload mechanisms)
+		- test all bufferOps (ranges, different upload mechanisms)
+	- continue objects.cpp test, move larger tests to own file
+		- check for simple/trivial impl things
 
-- dataWork::data: use non-rvalue & modifier?
-	- to disallow something like ```data = retrieve(...)->data```
-- fill operations: take std::byte& instead of span?
-- image fillStaging/retrieveStagin: copy commands have requirements on buffer offset alignemnt
-- fix imageOps (fill/retrieve)
-- bufferOps: add raw fill/retrieve calls
-- deprecate memoryResource::memorySize?
-- imageOps: really allow extent with depth == 0? also handle it for height == 0?
-
-- clean up usage of dlg
-	- check can often be replaced with assert
-- clean up usage of nytl
-	- just include it as subproject?
+- sharedBuffer: provide alignment options
+	- image fillStaging/retrieveStagin: copy commands have requirements 
+	  on buffer offset alignemnt (-> SharedBuffer alignment, also minMemoryMapAlignemnt)
+	- sharedBuffer: (add way to) respect nonCoherentAtomSize
+		- alternative: force all users that want to map memory to use coherent memory
+		- problem: also needs to ensure empty (unused) space AFTER buffer,
+		  also has to make sure that no allocation follow in unused space.
+		  Probably best to make sharedBuffer care for nonCoherentAtomSize
+		  directly
 
 - utility for checking device limits
 	- differentiate: assumptions and tests/checks
 	- also make sure they are valid in vpp
-		- minMemoryMapAlignment
-		- memoryMap: help with nonCoherentAtom size
-			- problem with sharedBuffer...
 		- optimalBufferCopyOffsetAlignment/optimalBufferCopyRowPitchAlignment
-	- valid formats? (-> ViewableImage Creatinfo rework)
-		- also see vulkanspec required format support
+			- -> sharedBuffer alignment
 - use defaults concept
 	- implement for ViewableImage (constructor)
-- separate header for stuff that requires the generated vulkan headers
-	- don't pull them in in other headers
-	- (-> defaults)
-- fix/cleanup debugCallback
-	- make verbose in print function member option?
-- make CommandProvider thread-specific as well
+	- valid formats?
+		- also see vulkanspec required format support
 
+- update README
 - release next version
 
+- fix config for vkpp
+- imageOps: really allow extent with depth == 0? also handle it for height == 0?
 - make codestyle consistent everywhere
+- device: cache supported extensions (see e.g. defaults.cpp: could change
+  format querying behvaior)
+- write basic docs
 
 low prio / general / ideas
 --------------------------
 
-- remove enums.hpp include from commandBuffer
+- physicalDevice: add overload that take already queried physical dev properties
+- fill operations: take std::byte& instead of span?
+- dataWork::data: use non-rvalue & modifier?
+	- to disallow something like ```data = retrieve(...)->data```
+	- has multiple problems: sometimes it's probably valid to do this.
+- clean up usage of nytl
+	- just include it as subproject?
+- bufferOps: add raw fill/retrieve calls?
+- rework commandBuffer
+	- don't make commandPools store information
 - example vulkanType impl for nytl and glm
+- deprecate memoryResource::memorySize?
 - maybe expose BufferOperator as independent header?
 	- especially BufferSizer, constexpr neededBufferSize
 		- maybe even useful in gl
@@ -81,11 +81,6 @@ low prio / general / ideas
   To create large (like over 100 mb) buffers of a memory type we know we will need
   Also something like an additional allocation strategy?
   Allocate more than needed if the user wants it
-- vpp: don't output all extensions. Only required (via settings) ones
-- vpp: some way to detect installed vulkan version and automatically generate for it?
-	- should be doable with meson (python vulkan module; get version; download spec; parse it)
-	- Would probably require some spec version testing for codegen (fix issues with ALL spec version...)
-- codegen: queueFamilyExternalKhr (i.e. constants of extensions) -> ...KHR
 - config: vpp_debug vs vpp_ndebug rather messy now
 	- configurable from build system?
 - work dependencies
@@ -122,7 +117,7 @@ low prio / general / ideas
 	[range, nonCopyable in utility]
 	- where (if) to use namespace nytl (fwd.hpp? already in the vk headers?)
 
-- further custom exception? like vpp::QueueError if there is not queue that
+- further custom exception? like vpp::QueueError if there is no queue that
 	can execute the needed operation
 	- think about some functionality to handle device lost (how to deal with it?)
 
@@ -149,3 +144,48 @@ low prio / general / ideas
 // TODO (e.g. for the point above): dynamic queue mangement. Sometimes more than one queue
 // would be able to execute commands, make it possible to just give some expression that is
 // available to use the first matching queue.
+
+- docs
+
+/// General documentation for vpp two-step-initiazation classes.
+/// Constructors shall always either fully construct the object or be default constructors.
+/// This way users of classes can always be sure that constructing the object with arguments
+/// will initialize it wihtout having to look into some documentation.
+
+/// For two-step-initiazation only the two member functions create(...) and init(...) will
+/// be used on a default constructed object. Calling create() for an object that was
+/// not default constructed and since then unchanged, calling init() for an object
+/// on that create() was not called before, or calling one of the functions
+/// more than one time is usually undefined behaviour.
+/// It therefore might work but class writers are encouraged throw an exception in such
+/// a case.
+/// Both functions can be const but are not required to be so.
+/// There might also be mutliple overloads of both functions, taking 0 or more arguments.
+/// Classes should try to avoid redundant information in the both functions,
+/// e.g. if both of them need certain information they should simply take it as paramter
+/// in create and then store it (if this does not introduce an unacceptable overheat).
+
+/// If one wants to re-two-step-initialized an already initialized object, it must first
+/// move assign (or copy assign if available) with a default constructed object and then
+/// call the two functions.
+/// Using an uninitialized object will result in undefined behaviour. This time class
+/// authors are explicitly encouraged to NOT check for this case, since that would result
+/// in high overheads, so this will likely lead to a memory error e.g. when dereferencing
+/// an nullptr.
+/// Destructors (as an exception) should work for default constructed object as well,
+/// i.e. they must not assume that the destructing object was ever valid.
+
+/// Classes should generally avoid having something like a destroy method (and if, then protected).
+/// In move operators the destructor can be directly called.
+/// Usually classes implement a free friend swap function for themselves and then use it
+/// for the move operator.
+
+
+Move to vkpp
+------------
+
+- codegen: don't output all extensions. Only required (via settings) ones
+- codegen: some way to detect installed vulkan version and automatically generate for it?
+	- should be doable with meson (python vulkan module; get version; download spec; parse it)
+	- Would probably require some spec version testing for codegen (fix issues with ALL spec version...)
+- codegen: queueFamilyExternalKhr (i.e. constants of extensions) -> ...KHR

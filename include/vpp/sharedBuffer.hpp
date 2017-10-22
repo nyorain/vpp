@@ -126,6 +126,8 @@ public:
 	/// Releases all currently unused shared buffers.
 	void shrink();
 
+	const auto& buffers() const { return buffers_; }
+
 protected:
 	struct Requirement {
 		std::size_t size {};

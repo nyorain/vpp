@@ -16,10 +16,8 @@ DeviceMemoryAllocator::DeviceMemoryAllocator(const Device& dev) : Resource(dev)
 
 DeviceMemoryAllocator::~DeviceMemoryAllocator()
 {
-	dlg_checkt(("~DMA"), {
-		if(!requirements_.empty())
-			dlg_warn("There are requirements left");
-	});
+	// really an error?
+	dlg_assertm(requirements_.empty(), "~DeviceMemoryAllocator: reqs left");
 }
 
 DeviceMemoryAllocator::DeviceMemoryAllocator(DeviceMemoryAllocator&& other) noexcept

@@ -7,12 +7,13 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/util/nonCopyable.hpp>
-#include <vkpp/enums.hpp>
 
 #include <vector> // std::vector
 #include <functional> // std::function
 
 namespace vpp {
+
+extern const vk::CommandBufferLevel primaryCmdBufLevel;
 
 /// RAII vulkan CommandPool wrapper.
 /// CommanPools belong to the thread in which they were created. Theyself as well as
@@ -30,9 +31,9 @@ public:
 	CommandPool(CommandPool&& lhs) noexcept { swap(*this, lhs); }
 	CommandPool& operator=(CommandPool lhs) noexcept { swap(*this, lhs); return *this; }
 
-	CommandBuffer allocate(vk::CommandBufferLevel lvl = vk::CommandBufferLevel::primary);
+	CommandBuffer allocate(vk::CommandBufferLevel lvl = primaryCmdBufLevel);
 	std::vector<CommandBuffer> allocate(size_t count,
-		vk::CommandBufferLevel = vk::CommandBufferLevel::primary);
+		vk::CommandBufferLevel = primaryCmdBufLevel);
 
 	uint32_t queueFamily() const { return qFamily_; }
 	vk::CommandPoolCreateFlags flags() const { return flags_; }
@@ -44,6 +45,7 @@ protected:
 	uint32_t qFamily_ {};
 };
 
+// TODO: make resource reference to command pool?
 /// RAII vulkan CommandBuffer wrapper.
 /// Note that the CommandBuffer must not be in use by any device when it is destructed.
 /// Keeps a reference to the CommandPool it was allocated from.
@@ -57,7 +59,10 @@ public:
 	~CommandBuffer();
 
 	CommandBuffer(CommandBuffer&& lhs) noexcept { swap(*this, lhs); }
-	CommandBuffer& operator=(CommandBuffer lhs) noexcept { swap(*this, lhs); return *this; }
+	CommandBuffer& operator=(CommandBuffer lhs) noexcept { 
+		swap(*this, lhs); 
+		return *this; 
+	}
 
 	const vk::CommandPool& commandPool() const { return commandPool_; }
 	friend void swap(CommandBuffer& a, CommandBuffer& b) noexcept;
@@ -66,39 +71,29 @@ protected:
 	vk::CommandPool commandPool_;
 };
 
-/// Able to efficiently provide commandBuffer of all types for all threads by holding an internal
-/// pool of commandPools. Will use the thread specific storage mechanism of the
-/// associated device.
-/// Thought as a general command pool providing mechanism mainly useful for
-/// initialization and general usage e.g. by vpp or other libraries where not every resource
-/// can manage its own CommandPool. On hot paths one should still use fixed custom
-/// CommandPools.
-class CommandProvider : public Resource {
+/// Owns a pool of commandPools that allow to allocate commandBuffers of all kind.
+/// Not synchronized in any way.
+class CommandAllocator : public Resource {
 public:
-	CommandProvider(const Device& dev);
-	~CommandProvider() = default;
+	CommandAllocator(const Device& dev);
+	~CommandAllocator() = default;
 
-	/// Allocates a commandBuffer for the calling thread that matches the given requirements.
+	/// Allocates a commandBuffer for the calling thread that matches 
+	/// the given requirements.
 	CommandBuffer get(uint32_t qfamily, vk::CommandPoolCreateFlags = {},
-		vk::CommandBufferLevel = vk::CommandBufferLevel::primary);
+		vk::CommandBufferLevel = primaryCmdBufLevel);
 
-	/// Allocates multiple commandBuffers for the calling thread with the given requirements.
+	/// Allocates multiple commandBuffers for the calling thread with 
+	/// the given requirements.
 	/// Might be more efficient than multiple calls to get.
 	std::vector<CommandBuffer> get(uint32_t qfamily, unsigned int count,
 		vk::CommandPoolCreateFlags = {},
-		vk::CommandBufferLevel = vk::CommandBufferLevel::primary);
+		vk::CommandBufferLevel = primaryCmdBufLevel);
 
-	/// Allocates a CommandBuffer from the first CommandPool of the already existent
-	/// commandBuffer for which the given predicate returns true.
-	/// If there are no CommandPools yet, or the predicate returns false for all of
-	/// them, a default-constructed CommandBuffer object is returned.
-	CommandBuffer get(const std::function<bool(const CommandPool& pool)>& pred);
-
-	/// Allcoates multiple CommandBuffers on a CommandPool that is accepted by the predicate.
-	CommandBuffer get(const std::function<bool(const CommandPool& pool)>& pred, unsigned int count);
+	const auto& pools() const { return pools_; }
 
 protected:
-	unsigned int tlsID_ {};
+	std::vector<CommandPool> pools_;
 };
 
 } // namespace vpp

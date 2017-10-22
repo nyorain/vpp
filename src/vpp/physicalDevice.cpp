@@ -14,16 +14,22 @@ vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice> phdevs)
 	vk::PhysicalDevice best = {};
 	auto bestScore = 0u;
 
-	// TODO: better querying!
+	// TODO: better querying! consider memory side and stuff
 	for(auto& phdev : phdevs) {
 		auto props = vk::getPhysicalDeviceProperties(phdev);
 		auto score = 0u;
 
-		if(props.deviceType == vk::PhysicalDeviceType::discreteGpu) score = 5;
-		else if(props.deviceType == vk::PhysicalDeviceType::integratedGpu) score = 4;
-		else if(props.deviceType == vk::PhysicalDeviceType::virtualGpu) score = 3;
-		else if(props.deviceType == vk::PhysicalDeviceType::cpu) score = 2;
-		else score = 1u;
+		if(props.deviceType == vk::PhysicalDeviceType::discreteGpu) {
+			score = 5;
+		} else if(props.deviceType == vk::PhysicalDeviceType::integratedGpu) {
+			score = 4;
+		} else if(props.deviceType == vk::PhysicalDeviceType::virtualGpu) {
+			score = 3;
+		} else if(props.deviceType == vk::PhysicalDeviceType::cpu) {
+			score = 2;
+		} else {
+			score = 1u;
+		}
 
 		if(score > bestScore) {
 			bestScore = score;
@@ -34,8 +40,8 @@ vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice> phdevs)
 	return best;
 }
 
-vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice> phdevs, vk::Instance instance,
-	vk::SurfaceKHR surface)
+vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice> phdevs, 
+	vk::Instance instance, vk::SurfaceKHR surface)
 {
 	std::vector<vk::PhysicalDevice> supported;
 	supported.reserve(phdevs.size());
@@ -43,12 +49,71 @@ vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice> phdevs, vk::Instance in
 	// first check for all passed physical devices if it has any
 	// queue that can present on the passed device
 	// if so, insert it into the supported vector
-	for(auto phdev : phdevs)
-		if(findQueueFamily(phdev, instance, surface) != -1)
+	for(auto phdev : phdevs) {
+		if(findQueueFamily(phdev, instance, surface) != -1) {
 			supported.push_back(phdev);
+		}
+	}
 
 	// default choose by usability from the phdevs that support presenting on the surface
 	return choose(supported);
+}
+
+const char* name(vk::PhysicalDeviceType type)
+{
+	switch(type) {
+		case vk::PhysicalDeviceType::discreteGpu: 
+			return "discreteGpu";
+		case vk::PhysicalDeviceType::integratedGpu: 
+			return "integratedGpu";
+		case vk::PhysicalDeviceType::virtualGpu: 
+			return "virtualGpu";
+		case vk::PhysicalDeviceType::other: 
+			return "other";
+		default: 
+			return "<unknown>";
+	}
+}
+
+std::array<unsigned int, 3> apiVersion(uint32_t v)
+{
+	return {v >> 22, (v >> 12) & 0x3ff, v & 0xfff};
+}
+
+std::string description(vk::PhysicalDevice phdev, const char* sep)
+{
+	std::string ret;
+	auto props = vk::getPhysicalDeviceProperties(phdev);
+
+	ret += "Name: ";
+	ret += props.deviceName.data();
+	ret += sep;
+
+	ret += "Type: ";
+	ret += name(props.deviceType);
+	ret += sep;
+
+	auto v = apiVersion(props.apiVersion);
+	ret += "Api version: ";
+	ret += std::to_string(v[0]);
+	ret += ".";
+	ret += std::to_string(v[1]);
+	ret += ".";
+	ret += std::to_string(v[2]);
+	ret += sep;
+
+	ret += "Device ID: ";
+	ret += std::to_string(props.deviceID);
+	ret += sep;
+
+	ret += "Vendor ID: ";
+	ret += std::to_string(props.vendorID);
+	ret += sep;
+
+	ret += "Driver version: ";
+	ret += std::to_string(props.driverVersion);
+
+	return ret;
 }
 
 int findQueueFamily(vk::PhysicalDevice phdev, vk::QueueFlags flags, OptimizeQueueFamily optimize)

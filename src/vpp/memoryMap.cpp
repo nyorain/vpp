@@ -13,11 +13,8 @@ namespace vpp {
 MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
 	: memory_(&memory), allocation_(alloc)
 {
-	dlg_checkt(("MemoryMap::MemoryMap"), {
-		if(!(memory.properties() & vk::MemoryPropertyBits::hostVisible))
-			dlg_error("trying to map unmappable memory");
-	});
-
+	dlg_assertm(memory.properties() & vk::MemoryPropertyBits::hostVisible,
+		"Trying to map unmappable memory");
 	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
 }
 
@@ -101,12 +98,11 @@ bool MemoryMap::coherent() const noexcept
 
 void MemoryMap::unmap()
 {
-	dlg_checkt(("MemoryMap::ummap"), {
-		if(views_ > 0) dlg_error("there are still views for this map");
-	});
+	dlg_assertm(views_ == 0, "unmap: still views for this map");
 
-	if(memory_ && vkMemory() && ptr() && size())
+	if(memory_ && vkMemory() && ptr() && size()) {
 		vk::unmapMemory(memory().vkDevice(), vkMemory());
+	}
 
 	memory_ = nullptr;
 	allocation_ = {};
@@ -121,11 +117,9 @@ void MemoryMap::ref() noexcept
 
 void MemoryMap::unref() noexcept
 {
-	dlg_checkt(("MemoryMap::unref"), {
-		if(views_ == 0) dlg_warn("refcount already zero");
-	});
-
+	dlg_assertm(views_ > 0, "unref: refcount already zero");
 	views_--;
+	
 	if(views_ == 0) {
 		try {
 			unmap();
@@ -139,17 +133,16 @@ void MemoryMap::unref() noexcept
 MemoryMapView::MemoryMapView(MemoryMap& map, const Allocation& allocation)
 	: memoryMap_(&map), allocation_(allocation)
 {
-	dlg_checkt(("MemoryMapView::MemoryMapView"), {
-		if(allocation.size == 0) dlg_error("invalid allocation");
-	});
-
+	dlg_assert(map.valid());
+	dlg_assertm(allocation.size > 0, "MemoryMapView: invalid allocation");
 	memoryMap_->ref();
 }
 
 MemoryMapView::~MemoryMapView()
 {
-	if(memoryMap_)
+	if(memoryMap_) {
 		memoryMap_->unref();
+	}
 }
 
 void MemoryMapView::swap(MemoryMapView& lhs) noexcept

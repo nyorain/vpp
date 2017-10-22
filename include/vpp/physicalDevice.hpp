@@ -9,6 +9,8 @@
 
 #include <vector> // std::vector
 #include <utility> // std::pair
+#include <string> // std::string
+#include <array> // std::array
 
 namespace vpp {
 
@@ -25,6 +27,17 @@ vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice>);
 /// The given surface and physical devices must have been retrieved from the
 /// given instance which is needed for querying the surface function pointers.
 vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice>, vk::Instance, vk::SurfaceKHR);
+
+/// Returns the name of the given enum value.
+const char* name(vk::PhysicalDeviceType);
+
+/// Returns the version (major, minor, patch) of the given driverVersion (from
+/// vk::PhysicalDeviceProperties)
+std::array<unsigned int, 3> apiVersion(uint32_t driverVersion);
+
+/// Returns a (by default multiline) string identifying the given physical device.
+/// Useful as debug mechanism, users usually only need the name.
+std::string description(vk::PhysicalDevice, const char* sep = "\n");
 
 /// Specifies in which way a queue family should be selected.
 /// When 'none' is used, the first valid queue family is returned.

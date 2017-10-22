@@ -1,5 +1,4 @@
 #include "init.hpp"
-#include "bugged.hpp"
 
 TEST(memory) {
 	auto size = 1024u;
@@ -66,6 +65,7 @@ TEST(map) {
 	EXPECT(map.size(), 1024u);
 	EXPECT(&map.memory(), &memory);
 	EXPECT(map.ptr() != nullptr, true);
+	EXPECT(memory.mapped() != nullptr, true);
 
 	// this will have no effect, just return another view
 	auto map2 = memory.map({0, 256});
@@ -77,4 +77,38 @@ TEST(map) {
 	// just another view
 	auto map3 = memory.map({256, 256});
 	EXPECT(map3.ptr(), map.ptr() + 256);
+}
+
+TEST(remap) {
+	auto size = 1024u;
+	auto& dev = *globals.device;
+	uint32_t type = dev.memoryType(vk::MemoryPropertyBits::hostVisible);
+	vpp::DeviceMemory memory(dev, {size, type});
+	
+	EXPECT(memory.mappable(), true);
+	auto map = memory.map({100u, 200});
+	EXPECT(map.offset(), 100u);
+	EXPECT(memory.mapped() != nullptr, true);
+	EXPECT(memory.mapped()->valid(), true);
+	EXPECT(memory.mapped()->offset(), 100u);
+	EXPECT(memory.mapped()->size(), 200u);
+	EXPECT(map.size(), 200u);
+	EXPECT(&map.memory(), &memory);
+	EXPECT(map.ptr() != nullptr, true);
+
+	// remap the memory
+	{
+		auto map2 = memory.map({0u, 16u});
+		EXPECT(map2.offset(), 0u);
+		EXPECT(map2.size(), 16u);
+		EXPECT(map2.memoryMap().valid(), true);
+		EXPECT(memory.mapped(), &map2.memoryMap());
+		EXPECT(memory.mapped()->valid(), true);
+		EXPECT(memory.mapped()->offset(), 0u);
+		EXPECT(memory.mapped()->size(), 300u);
+		EXPECT(map2.ptr(), memory.mapped()->ptr());
+		EXPECT(map.ptr(), memory.mapped()->ptr() + 100u);
+	}
+
+	EXPECT(map.ptr() != nullptr, true);
 }

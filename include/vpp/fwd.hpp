@@ -66,12 +66,10 @@ class DeviceMemoryAllocator;
 class MemoryEntry;
 class ViewableImage;
 
-class CommandProvider;
-class DeviceMemoryProvider;
-class HostMemoryProvider;
 class WorkManager;
 class SharedBuffer;
 class BufferRange;
+class CommandAllocator;
 class BufferAllocator;
 class QueueSubmitter;
 

@@ -31,11 +31,7 @@ struct Device::Impl {
 	unsigned int tlsDeviceAllocatorID {};
 	unsigned int tlsBufferAllocatorID {};
 	unsigned int tlsQueueSubmitterID {};
-};
-
-struct Device::Provider {
-	CommandProvider command;
-	Provider(const Device& dev) : command(dev) {}
+	unsigned int tlsCommandAllocatorID {};
 };
 
 // used so the Queue destructor can be made not public and Device a friend.
@@ -212,15 +208,14 @@ Device::Device(vk::Instance ini, vk::SurfaceKHR surface, const Queue*& present,
 
 Device::~Device()
 {
+	// make sure there are no pending command buffers and stuff
 	vk::deviceWaitIdle(*this);
 
-	// XXX: it is important to first reset the stored objects that
+	// it is important to first reset the stored objects that
 	// depend on the vulkan device to be valid before actually destroying the
 	// vulkan device.
 	// When adding additional members that depend on the vulkan device, make
 	// sure to destroy them here before calling vk::destroyDevice
-	// TODO:
-	provider_.reset();
 	impl_.reset();
 
 	if(vkDevice()) {
@@ -251,8 +246,7 @@ void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
 	impl_->tlsDeviceAllocatorID = impl_->tls.add();
 	impl_->tlsBufferAllocatorID = impl_->tls.add();
 	impl_->tlsQueueSubmitterID = impl_->tls.add();
-
-	provider_ = std::make_unique<Provider>(*this);
+	impl_->tlsCommandAllocatorID = impl_->tls.add();
 }
 
 void Device::release()
@@ -333,8 +327,7 @@ BufferAllocator& Device::bufferAllocator() const
 {
 	auto ptr = impl_->tls.get(impl_->tlsBufferAllocatorID); // DynamicStoragePtr*
 	if(!ptr->get()) {
-		auto storage = new ValueStorage<BufferAllocator>();
-		storage->value = {*this};
+		auto storage = new ValueStorage<BufferAllocator>(*this);
 		ptr->reset(storage);
 		return storage->value;
 	}
@@ -346,8 +339,7 @@ DeviceMemoryAllocator& Device::deviceAllocator() const
 {
 	auto ptr = impl_->tls.get(impl_->tlsDeviceAllocatorID); // DynamicStoragePtr*
 	if(!ptr->get()) {
-		auto storage = new ValueStorage<DeviceMemoryAllocator>();
-		storage->value = {*this};
+		auto storage = new ValueStorage<DeviceMemoryAllocator>(*this);
 		ptr->reset(storage);
 		return storage->value;
 	}
@@ -355,14 +347,16 @@ DeviceMemoryAllocator& Device::deviceAllocator() const
 	return static_cast<ValueStorage<DeviceMemoryAllocator>*>(ptr->get())->value;
 }
 
-DynamicThreadStorage& Device::threadStorage() const
+CommandAllocator& Device::commandAllocator() const
 {
-	return impl_->tls;
-}
+	auto ptr = impl_->tls.get(impl_->tlsCommandAllocatorID); // DynamicStoragePtr*
+	if(!ptr->get()) {
+		auto storage = new ValueStorage<CommandAllocator>(*this);
+		ptr->reset(storage);
+		return storage->value;
+	}
 
-CommandProvider& Device::commandProvider() const
-{
-	return provider_->command;
+	return static_cast<ValueStorage<CommandAllocator>*>(ptr->get())->value;
 }
 
 QueueSubmitter& Device::queueSubmitter() const
@@ -375,6 +369,11 @@ QueueSubmitter& Device::queueSubmitter() const
 	}
 
 	return static_cast<ValueStorage<QueueSubmitter>*>(ptr->get())->value;
+}
+
+DynamicThreadStorage& Device::threadStorage() const
+{
+	return impl_->tls;
 }
 
 std::shared_mutex& Device::sharedQueueMutex() const

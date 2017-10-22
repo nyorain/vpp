@@ -4,7 +4,8 @@ tests = [
   'memory',
   'bufferOps',
   'image',
-  'submit'
+  'submit',
+  'objects'
 ]
 
 foreach test : tests

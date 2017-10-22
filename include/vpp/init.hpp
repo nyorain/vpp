@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <vpp/defer.hpp>
 #include <utility> // std::forward
 
 namespace vpp {
@@ -34,8 +35,7 @@ class Initializer {
 public:
 	///Constructs an internal object of type T with the given arguments.
 	template<typename... A>
-	Initializer(A&&... args) : obj_()
-		{ obj_.create(std::forward<A>(args)...); }
+	Initializer(A&&... args) : obj_(defer, std::forward<A>(args)) {}
 
 	///Initialzed the object constructed by this initializer with the given arguments
 	///which completes the initialization process and returns (moves) the object.
@@ -48,38 +48,5 @@ public:
 private:
 	T obj_;
 };
-
-/// General documentation for vpp two-step-initiazation classes.
-/// Constructors shall always either fully construct the object or be default constructors.
-/// This way users of classes can always be sure that constructing the object with arguments
-/// will initialize it wihtout having to look into some documentation.
-
-/// For two-step-initiazation only the two member functions create(...) and init(...) will
-/// be used on a default constructed object. Calling create() for an object that was
-/// not default constructed and since then unchanged, calling init() for an object
-/// on that create() was not called before, or calling one of the functions
-/// more than one time is usually undefined behaviour.
-/// It therefore might work but class writers are encouraged throw an exception in such
-/// a case.
-/// Both functions can be const but are not required to be so.
-/// There might also be mutliple overloads of both functions, taking 0 or more arguments.
-/// Classes should try to avoid redundant information in the both functions,
-/// e.g. if both of them need certain information they should simply take it as paramter
-/// in create and then store it (if this does not introduce an unacceptable overheat).
-
-/// If one wants to re-two-step-initialized an already initialized object, it must first
-/// move assign (or copy assign if available) with a default constructed object and then
-/// call the two functions.
-/// Using an uninitialized object will result in undefined behaviour. This time class
-/// authors are explicitly encouraged to NOT check for this case, since that would result
-/// in high overheads, so this will likely lead to a memory error e.g. when dereferencing
-/// an nullptr.
-/// Destructors (as an exception) should work for default constructed object as well,
-/// i.e. they must not assume that the destructing object was ever valid.
-
-/// Classes should generally avoid having something like a destroy method (and if, then protected).
-/// In move operators the destructor can be directly called.
-/// Usually classes implement a free friend swap function for themselves and then use it
-/// for the move operator.
 
 } // namespace vpp

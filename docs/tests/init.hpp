@@ -5,7 +5,9 @@
 #include <vpp/device.hpp>
 #include <vpp/instance.hpp>
 #include <vpp/debug.hpp>
+#include <vpp/physicalDevice.hpp>
 #include <memory>
+#include <dlg/dlg.hpp>
 
 struct Globals {
 	vpp::Instance instance;
@@ -34,6 +36,9 @@ void initGlobals()
 	globals.instance = {instanceInfo};
 	globals.debugCallback = std::make_unique<vpp::DebugCallback>(globals.instance);
 	globals.device = std::make_unique<vpp::Device>(globals.instance);
+
+	dlg_info("Physical device info:\n\t{}", 
+		vpp::description(globals.device->vkPhysicalDevice(), "\n\t"));
 }
 
 int main() { 

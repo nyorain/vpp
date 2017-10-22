@@ -7,9 +7,6 @@
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 
-#include <iostream> // std::cerr
-#include <sstream> // std::stringstream
-
 namespace vpp {
 namespace {
 
@@ -33,17 +30,37 @@ VKAPI_PTR vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags,
 
 std::string to_string(vk::DebugReportFlagsEXT flags)
 {
-	std::string ret = "";
-	unsigned int count = 0u;
-	if(flags & vk::DebugReportBitsEXT::information) ret += "information, ", ++count;
-	if(flags & vk::DebugReportBitsEXT::warning) ret += "warning, ", ++count;
-	if(flags & vk::DebugReportBitsEXT::performanceWarning) ret += "performanceWarning, ", ++count;
-	if(flags & vk::DebugReportBitsEXT::error) ret += "error, ", ++count;
-	if(flags & vk::DebugReportBitsEXT::debug) ret += "debug, ", ++count;
+	static constexpr struct {
+		vk::DebugReportBitsEXT bit;
+		const char* name;
+	} names[] = {
+		{vk::DebugReportBitsEXT::information, "information"},
+		{vk::DebugReportBitsEXT::warning, "warning"},
+		{vk::DebugReportBitsEXT::performanceWarning, "performanceWarning"},
+		{vk::DebugReportBitsEXT::error, "error"},
+		{vk::DebugReportBitsEXT::debug, "debug"},
+	};
 
-	if(ret.empty()) ret = "<unknown>";
-	else if(ret.size() > 3) ret = ret.substr(0, ret.size() - 2);
-	if(count > 1) ret = "{" + ret + "}";
+	std::string ret;
+	unsigned int count = 0u;
+	for(auto name : names) {
+		if(flags & name.bit) {
+			++count;
+			ret += name.name;
+			ret += ", ";
+		}
+	}
+
+	if(ret.empty()) {
+		ret = "<unknown>";
+	} else if(ret.size() > 3) {
+		ret = ret.substr(0, ret.size() - 2);
+	} 
+
+	if(count > 1) {
+		ret = "{" + ret + "}";
+	}
+
 	return ret;
 }
 
@@ -92,8 +109,14 @@ vk::DebugReportFlagsEXT DebugCallback::defaultFlags()
 		vk::DebugReportBitsEXT::performanceWarning;
 }
 
-DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags)
-	: instance_(instance)
+vk::DebugReportFlagsEXT DebugCallback::defaultErrorFlags()
+{
+	return vk::DebugReportBitsEXT::error;
+}
+
+DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags,
+	bool verbose, vk::DebugReportFlagsEXT error) : 
+		instance_(instance), errorFlags_(error), verbose_(verbose)
 {
 	VPP_LOAD_PROC(vkInstance(), CreateDebugReportCallbackEXT);
 	vk::DebugReportCallbackCreateInfoEXT createInfo(flags, &defaultMessageCallback, this);
@@ -109,36 +132,31 @@ DebugCallback::~DebugCallback()
 
 bool DebugCallback::call(const CallbackInfo& info) const noexcept
 {
-	static constexpr bool verbose = true;
-	// we use a stringstream here because the callback might be called from multiple threads
-	// and debug messages should not interfer with each other
-
-	std::stringstream message;
-	message << info.message;
-
-	if(verbose) {
-		message << "\n\tflags: " << to_string(info.flags) << "\n\t"
-			    << "objType: " << to_string(info.objectType) << "\n\t"
-			    << "srcObject: " << info.srcObject << "\n\t"
-			    << "location: " << info.location << "\n\t"
-			    << "code: " << info.messageCode << "\n\t"
-			    << "layer: " << info.layer;
+	std::string verbose;
+	if(verbose_) {
+		verbose = "\n\tflags: " + to_string(info.flags) + "\n\t";
+		verbose += "objType: " + to_string(info.objectType) + "\n\t";
+		verbose += "srcObject: " + std::to_string(info.srcObject) + "\n\t";
+		verbose += "location: " + std::to_string(info.location) + "\n\t";
+		verbose += "code: " + std::to_string(info.messageCode) + "\n\t";
+		verbose += "layer: ";
+		verbose += info.layer;
 	}
 
 	dlg_tags("DebugCallback");
 	if(info.flags & vk::DebugReportBitsEXT::error) {
-		dlg_error("{}", message.str());
+		dlg_error("{}{}", info.message, verbose);
 	} else if(info.flags & vk::DebugReportBitsEXT::warning) {
-		dlg_warn("{}", message.str());
+		dlg_warn("{}{}", info.message, verbose);
 	} else if(info.flags & vk::DebugReportBitsEXT::information) {
-		dlg_info("{}", message.str());
+		dlg_info("{}{}", info.message, verbose);
 	} else if(info.flags & vk::DebugReportBitsEXT::performanceWarning) {
-		dlg_info("{}", message.str());
+		dlg_info("{}{}", info.message, verbose);
 	} else if(info.flags & vk::DebugReportBitsEXT::debug) {
-		dlg_debug("{}", message.str());
+		dlg_debug("{}{}", info.message, verbose);
 	}
 
-	return info.flags == vk::DebugReportBitsEXT::error;
+	return (info.flags & errorFlags_);
 }
 
 } // namespace vpp

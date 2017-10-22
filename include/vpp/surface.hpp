@@ -25,9 +25,6 @@ public:
 	vk::Instance vkInstance() const { return instance_; }
 	vk::SurfaceKHR vkHandle() const { return surface_; }
 
-	[[deprecated("Use vkHandle instead")]]
-	vk::SurfaceKHR vkSurface() const { return surface_; }
-
 	operator vk::SurfaceKHR() const { return surface_; }
 	friend void swap(Surface& a, Surface& b) noexcept;
 

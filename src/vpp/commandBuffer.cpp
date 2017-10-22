@@ -3,11 +3,12 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/commandBuffer.hpp>
-#include <vpp/vk.hpp>
 #include <vpp/util/threadStorage.hpp>
-#include <deque>
+#include <vpp/vk.hpp>
 
 namespace vpp {
+
+const vk::CommandBufferLevel primaryCmdBufLevel {vk::CommandBufferLevel::primary};
 
 // CommandPool
 CommandPool::CommandPool(const Device& dev, uint32_t qfam, vk::CommandPoolCreateFlags flags)
@@ -77,7 +78,7 @@ CommandBuffer::CommandBuffer(const CommandPool& pool)
 }
 
 CommandBuffer::CommandBuffer(const CommandPool& pool, vk::CommandBufferLevel lvl)
-	: ResourceHandle(), commandPool_(pool)
+	: ResourceHandle(pool.device()), commandPool_(pool)
 {
 	vk::allocateCommandBuffers(pool.device(), {pool, lvl, 1u}, handle_);
 }
@@ -110,48 +111,35 @@ void swap(CommandBuffer& a, CommandBuffer& b) noexcept
 }
 
 // CommandProvider
-CommandProvider::CommandProvider(const Device& dev) : Resource(dev)
+CommandAllocator::CommandAllocator(const Device& dev) : Resource(dev)
 {
-	tlsID_ = dev.threadStorage().add();
 }
 
-CommandBuffer CommandProvider::get(uint32_t family,
+// TODO: really use '==' for flags? '&' not enough?
+CommandBuffer CommandAllocator::get(uint32_t family,
 	 vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
 {
-	using Storage = ValueStorage<std::deque<CommandPool>>;
-	auto ptr = device().threadStorage().get(tlsID_);
-	if(!ptr->get())
-		ptr->reset(new Storage());
-
-	auto& pools = static_cast<Storage*>(ptr->get())->value;
-	for(auto& pool : pools) {
+	for(auto& pool : pools_) {
 		if(pool.queueFamily() == family && pool.flags() == flags) {
 			return pool.allocate(lvl);
 		}
 	}
 
-	 pools.emplace_back(device(), family, flags);
-	 return pools.back().allocate(lvl);
+	 pools_.emplace_back(device(), family, flags);
+	 return pools_.back().allocate(lvl);
 }
 
-std::vector<CommandBuffer> CommandProvider::get(uint32_t family, unsigned int count,
+std::vector<CommandBuffer> CommandAllocator::get(uint32_t family, unsigned int count,
 	vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
 {
-	using Storage = ValueStorage<std::deque<CommandPool>>;
-	auto ptr = device().threadStorage().get(tlsID_);
-	if(!ptr->get()) {
-		ptr->reset(new Storage());
-	}
-
-	auto& pools = static_cast<Storage*>(ptr->get())->value;
-	for(auto& pool : pools) {
+	for(auto& pool : pools_) {
 		if(pool.queueFamily() == family && pool.flags() == flags) {
 			return pool.allocate(count, lvl);
 		}
 	}
 
-	 pools.emplace_back(device(), family, flags);
-	 return pools.back().allocate(count, lvl);
+	 pools_.emplace_back(device(), family, flags);
+	 return pools_.back().allocate(count, lvl);
 }
 
 } // namespace vpp
