@@ -17,15 +17,10 @@ Todo list vor vpp
 		  Probably best to make sharedBuffer care for nonCoherentAtomSize
 		  directly
 
-- utility for checking device limits
-	- differentiate: assumptions and tests/checks
-	- also make sure they are valid in vpp
-		- optimalBufferCopyOffsetAlignment/optimalBufferCopyRowPitchAlignment
-			- -> sharedBuffer alignment
-- use defaults concept
-	- implement for ViewableImage (constructor)
-	- valid formats?
-		- also see vulkanspec required format support
+- make sure device limits are correct in vpp
+	- optimalBufferCopyOffsetAlignment/
+	  optimalBufferCopyRowPitchAlignment
+		- -> sharedBuffer alignment
 
 - update README
 - release next version
@@ -40,6 +35,8 @@ Todo list vor vpp
 low prio / general / ideas
 --------------------------
 
+- more utility for checking device limits?
+	- differentiate: assumptions and tests/checks
 - physicalDevice: add overload that take already queried physical dev properties
 - fill operations: take std::byte& instead of span?
 - dataWork::data: use non-rvalue & modifier?

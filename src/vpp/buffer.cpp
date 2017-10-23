@@ -42,15 +42,22 @@ Buffer::Buffer(const Device& dev, vk::Buffer buffer, vk::BufferUsageFlags usage,
 	ensureMemory();
 }
 
-Buffer::Buffer(const Device& dev, vk::Buffer buffer, MemoryEntry&& entry) : 
-	BufferHandle(dev, buffer), MemoryResource(std::move(entry))
+Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, 
+	DeviceMemory& mem) :
+		BufferHandle(dev, vk::createBuffer(dev, info))
 {
-	ensureMemory();
+	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
+	dlg_assertm(reqs.memoryTypeBits & (1 << mem.type()), "Invalid memory type");
+	auto alloc = mem.alloc(reqs.size, reqs.alignment, AllocationType::linear);
+	if(alloc.size == 0) {
+		throw std::runtime_error("Buffer: failed to alloc from memory");
+	}
+
+	memoryEntry_ = {mem, alloc};
 }
 
-Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info, 
-	MemoryEntry&& entry) : 
-		Buffer(dev, vk::createBuffer(dev, info), std::move(entry))
+Buffer::Buffer(const Device& dev, vk::Buffer buffer, MemoryEntry&& entry) : 
+	BufferHandle(dev, buffer), MemoryResource(std::move(entry))
 {
 }
 
@@ -62,13 +69,13 @@ Buffer::Buffer(DeferTag, const Device& dev, vk::Buffer buffer,
 	dlg_assert(buffer);
 	dlg_assert(memBits);
 
-	alloc = alloc ? alloc : &dev.deviceAllocator();
 	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
 	reqs.memoryTypeBits &= memBits;
 	dlg_assertm(reqs.memoryTypeBits, "Buffer: No memory type bits left");
 	dlg_assert(reqs.size > 0);
 
-	dev.deviceAllocator().request(vkHandle(), reqs, usage, memoryEntry_);
+	auto& allocr = alloc ? *alloc : dev.deviceAllocator();
+	allocr.request(vkHandle(), reqs, usage, memoryEntry_);
 }
 
 Buffer::Buffer(DeferTag, const Device& dev, const vk::BufferCreateInfo& info,

@@ -113,7 +113,7 @@ public:
 	ViewableImage(const Device&, const vk::ImageCreateInfo&, 
 		const vk::ImageViewCreateInfo&, unsigned int memBits = ~0u, 
 		vpp::DeviceMemoryAllocator* = {});
-	ViewableImage(const Device& dev, ViewableImageCreateInfo,
+	ViewableImage(const Device& dev, const ViewableImageCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
 	ViewableImage(Image&&, const vk::ImageViewCreateInfo&);
 	ViewableImage(Image&&, ImageView&&);

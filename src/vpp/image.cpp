@@ -3,6 +3,7 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/image.hpp>
+#include <vpp/formats.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 
@@ -101,12 +102,12 @@ ViewableImage::ViewableImage(const Device& dev,
 {
 }
 
-/* TODO
 ViewableImage::ViewableImage(const Device& dev, 
-	const ViewableImageCreateInfo& info) : ViewableImage(devv, info.image, info.view)
+	const ViewableImageCreateInfo& info, unsigned int memBits,
+	vpp::DeviceMemoryAllocator* alloc) : 
+		ViewableImage(dev, info.img, info.view, memBits, alloc)
 {
 }
-*/
 
 ViewableImage::ViewableImage(Image&& image, const vk::ImageViewCreateInfo& info) :
 	image_(std::move(image))

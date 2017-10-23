@@ -33,27 +33,28 @@ public:
 
 	/// The various types of constructors:
 	/// - Transfer ownership vs create
-	///   * (1,3,5,7): BufferCreateInfo parameter: create a new buffer
-	///   * (2,4,6,8): vk::Buffer parameter: transfer ownerhip of existent buffer
-	///     Note that for (2,5,7), the buffer must not already be bound to memory
+	///   * (1,3,5): BufferCreateInfo parameter: create a new buffer
+	///   * (2,4,6): vk::Buffer parameter: transfer ownerhip of existent buffer
+	///     Note that for (2,6), the buffer must NOT already be bound to memory
 	/// - Allocate mechanism. You can either use/pass
 	///   * (1,2): using a DeviceMemoryAllocator, if none is given using
 	///     the default threadlocal allocator of the given device.
 	///     Guarantees that the memory is allocated on a memory type
 	///     contained in memBits (e.g. to assure it's allocated
 	///     on hostVisible memory).
-	///   * (3,4): a valid (non-empty) MemoryEntry: Will pass ownership
-	///     of the memory entry, must be associated with the buffer.
-	///     Only the constructor that newly creates the buffer will bind the 
-	///     memory to the buffer. Both constructors will make sure
-	///     that the memory entry is allocated (and not pending).
-	///     The custom MemoryEntry object could e.g. be created from
-	///     a custom DeviceMemory object.
+	///   * (3): allocate on a specific DeviceMemory object.
+	///     Will throw std::runtime_error if the DeviceMemory fails
+	///     to allocate enough memory. The DeviceMemory must
+	///     be allocated on a type that is supported for the
+	///     created buffer (the vulkan spec gives some guarantess there).
+	///   * (4): a valid (non-empty) MemoryEntry: Will pass ownership
+	///     of the memory entry. The memoryEntry must be valid (i.e.
+	///     allocated) and already bound to the passed buffer.
 	/// - Deferred? See the vpp doc for deferred initialization
-	///   * (1-6) bind the buffer immediately to memory. For (1,2) this
-	///     means to immediately allocate memory, which might result
+	///   * (1,2,3) bind the buffer immediately to memory. For (1,2) this
+	///     means to immediately request memory, which might result
 	///     in a vkAllocateMemory call
-	///   * (7,8) does not bind the buffer to memory, only when
+	///   * (5, 6) does not bind the buffer to memory, only when
 	///     ensureMemory is called. Already issues a reserving request
 	///     to the DeviceMemoryAllocator, might result in less
 	///     memory allocations made if multiple resources are created deferred.
@@ -66,8 +67,8 @@ public:
 	Buffer(const Device&, vk::Buffer, vk::BufferUsageFlags,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
 
+	Buffer(const Device&, const vk::BufferCreateInfo&, vpp::DeviceMemory&);
 	Buffer(const Device&, vk::Buffer, MemoryEntry&&);
-	Buffer(const Device&, const vk::BufferCreateInfo&, MemoryEntry&&);
 
 	/// Creates the buffer without any bound memory.
 	/// You have to call the ensureMemory function later on to

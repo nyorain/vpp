@@ -6,6 +6,7 @@ vpp_sources = [
 	'debug.cpp',
 	'descriptor.cpp',
 	'device.cpp',
+	'formats.cpp',
 	'framebuffer.cpp',
 	'image.cpp',
 	'imageOps.cpp',

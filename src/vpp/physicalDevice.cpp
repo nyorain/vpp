@@ -100,6 +100,7 @@ std::string description(vk::PhysicalDevice phdev, const char* sep)
 	ret += std::to_string(v[1]);
 	ret += ".";
 	ret += std::to_string(v[2]);
+	ret += " (" + std::to_string(props.apiVersion) + ")";
 	ret += sep;
 
 	ret += "Device ID: ";

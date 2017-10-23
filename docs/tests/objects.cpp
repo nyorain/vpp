@@ -5,6 +5,10 @@
 #include <vpp/memory.hpp>
 #include <vpp/sharedBuffer.hpp>
 #include <vpp/sync.hpp>
+#include <vpp/formats.hpp>
+#include <vpp/framebuffer.hpp>
+#include <vpp/image.hpp>
+#include <vpp/renderPass.hpp>
 
 // test just instanciates all vpp objects
 // also used as bootstrap for all classes that currently have no own test
@@ -39,6 +43,57 @@ TEST(cmd) {
 	auto cmdAllocator = vpp::CommandAllocator(dev);
 	auto cmdBuf5 = cmdAllocator.get(0);
 	auto cmdBufs6 = cmdAllocator.get(0, 3);
+}
+
+// returns the index of the first set bit of an uint
+// returns -1 if no bit is set
+int firstBitSet(uint32_t bits) 
+{
+	for(auto i = 0u; i < 32; ++i) {
+		if(bits & (1 << i)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+TEST(buf) {
+	auto& dev = *globals.device;
+	vpp::BufferHandle buf1(dev, {{}, 1024, vk::BufferUsageBits::uniformBuffer});
+
+	auto rawBuf = vk::createBuffer(dev, {{}, 2341, vk::BufferUsageBits::vertexBuffer});
+	auto rawBuf2 = vk::createBuffer(dev, {{}, 12, vk::BufferUsageBits::vertexBuffer});
+	vpp::BufferHandle buf2(dev, rawBuf);
+	vpp::BufferHandle buf2b(dev, rawBuf2);
+	buf2b.release();
+
+	auto hvBits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
+	auto dlBits = dev.memoryTypeBits(vk::MemoryPropertyBits::deviceLocal);
+
+	auto info = vk::BufferCreateInfo {{}, 123, 
+		vk::BufferUsageBits::storageBuffer |
+		vk::BufferUsageBits::indexBuffer |
+		vk::BufferUsageBits::uniformTexelBuffer};
+	vpp::Buffer buf3(dev, info);
+	vpp::Buffer buf4(dev, info, hvBits);
+
+	vpp::DeviceMemoryAllocator allocator(dev);
+	vpp::Buffer buf5(vpp::defer, dev, info, dlBits, &allocator);
+	vpp::Buffer buf6(dev, info, dlBits, &allocator);
+	buf5.init();
+	EXPECT(allocator.memories().size(), 1u);
+
+	vpp::Buffer buf7(dev, rawBuf2, vk::BufferUsageBits::vertexBuffer);
+
+	auto rawBuf3 = vk::createBuffer(dev, {{}, 123, vk::BufferUsageBits::uniformBuffer});
+	auto reqs = vk::getBufferMemoryRequirements(dev, rawBuf3);
+	unsigned int type = firstBitSet(reqs.memoryTypeBits);
+	vpp::DeviceMemory mem(dev, {1024, type});
+	auto memAlloc = mem.alloc(reqs.size, reqs.alignment, vpp::AllocationType::linear);
+	vk::bindBufferMemory(dev, rawBuf3, mem, memAlloc.offset);
+	vpp::MemoryEntry entry(mem, memAlloc);
+	vpp::Buffer buf8(dev, rawBuf3, std::move(entry));
 }
 
 TEST(sharedBuf) {
@@ -95,13 +150,61 @@ TEST(sync) {
 	vpp::Event event(dev);
 }
 
-/*
-TEST(other) {
+// TODO: should get own test probably
+TEST(framebuffer) {
 	auto& dev = *globals.device;
+	const auto size = vk::Extent3D {420, 693};
 
-	vk::FramebufferCreateInfo info;
-	auto fb = Framebuffer(dev, info);
+	using VICI = vpp::ViewableImageCreateInfo;
+	auto colorUsage = vk::ImageUsageBits::colorAttachment;
+	auto colorInfo = VICI::color(dev, size, colorUsage).value();
+	auto depthInfo = VICI::depth(dev, size).value();
+	vpp::ViewableImage color(dev, colorInfo);
+	vpp::ViewableImage depth(dev, depthInfo);
+
+	vk::AttachmentDescription attachments[2] {{{},
+			colorInfo.img.format, vk::SampleCountBits::e1,
+			vk::AttachmentLoadOp::dontCare,
+			vk::AttachmentStoreOp::dontCare,
+			vk::AttachmentLoadOp::dontCare,
+			vk::AttachmentStoreOp::dontCare,
+			vk::ImageLayout::undefined,
+			vk::ImageLayout::colorAttachmentOptimal,
+		}, {{},
+			depthInfo.img.format, vk::SampleCountBits::e1,
+			vk::AttachmentLoadOp::dontCare,
+			vk::AttachmentStoreOp::dontCare,
+			vk::AttachmentLoadOp::dontCare,
+			vk::AttachmentStoreOp::dontCare,
+			vk::ImageLayout::undefined,
+			vk::ImageLayout::depthStencilAttachmentOptimal,
+		}
+	};
+
+	vk::AttachmentReference colorRef {
+		0, vk::ImageLayout::colorAttachmentOptimal
+	};
+
+	vk::AttachmentReference depthRef {
+		1, vk::ImageLayout::depthStencilAttachmentOptimal
+	};
+
+	vk::SubpassDescription subpass {{},
+		vk::PipelineBindPoint::graphics, 0, {},
+		1, &colorRef, 0, &depthRef
+	};
+
+	vk::RenderPassCreateInfo rpInfo;
+	vpp::RenderPass renderPass {dev, {{}, 
+		2, attachments,
+		1, &subpass,
+	}};
+
+	auto fbAttachments = {color.vkImageView(), depth.vkImageView()};
+	vk::FramebufferCreateInfo info {
+		{}, renderPass, 2, fbAttachments.begin(), size.width, size.height, 1
+	};
+	auto fb = vpp::Framebuffer(dev, info);
 }
-*/
 
 // TODO: add remaining objects
