@@ -30,6 +30,7 @@ Todo list vor vpp
 - write basic docs
 - rework (probably) overcomplicated offset mechanisms (mainly MappedBufferWriter)
   in bufferOps
+- implement BufferAllocator optimize/shrink
 
 low prio / general / ideas
 --------------------------

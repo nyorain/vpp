@@ -444,8 +444,6 @@ void readMap430(const B& buf, T&... args) {
 	return readMap(buf, BufferLayout::std430, args...);
 }
 
-// TODO: return 'auto' instead of ptr?
-
 /// Reads the given buffer using the given layout into the given arguments
 /// by retrieving it from a temporary staging buffer.
 /// The buffer must not be in use (you will probably need a pipeline barrier).
@@ -456,7 +454,7 @@ void readMap430(const B& buf, T&... args) {
 /// If the given arguments don't match the data of the buffer you will
 /// probably get garbage.
 template<typename... T>
-WorkPtr readStaging(QueueSubmitter& qs, vk::DeviceSize offset, 
+auto readStaging(QueueSubmitter& qs, vk::DeviceSize offset, 
 	const Buffer& buf, BufferLayout layout, T&... args)
 {
 	auto size = neededBufferSize(layout, args...);
@@ -491,8 +489,8 @@ WorkPtr readStaging(QueueSubmitter& qs, vk::DeviceSize offset,
 		std::tuple<T&...> args_;
 	};
 
-	return std::make_unique<WorkImpl>(qs, std::move(cmdBuf), std::move(stage),
-		layout, args...);
+	return WorkImpl{qs, std::move(cmdBuf), std::move(stage),
+		layout, args...};
 }
 
 template<typename... T>
