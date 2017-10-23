@@ -1,12 +1,6 @@
 Todo list vor vpp
 =================
 
-- testing!
-	- continue bufferops testing/fixing
-		- test all bufferOps (ranges, different upload mechanisms)
-	- continue objects.cpp test, move larger tests to own file
-		- check for simple/trivial impl things
-
 - sharedBuffer: provide alignment options
 	- image fillStaging/retrieveStagin: copy commands have requirements 
 	  on buffer offset alignemnt (-> SharedBuffer alignment, also minMemoryMapAlignemnt)
@@ -16,25 +10,32 @@ Todo list vor vpp
 		  also has to make sure that no allocation follow in unused space.
 		  Probably best to make sharedBuffer care for nonCoherentAtomSize
 		  directly
-
-- make sure device limits are correct in vpp
-	- optimalBufferCopyOffsetAlignment/
-	  optimalBufferCopyRowPitchAlignment
-		- -> sharedBuffer alignment
+	- optimalBufferCopyOffsetAlignment/ optimalBufferCopyRowPitchAlignment in
+	  bufferOps
 
 - update README
 - release next version
 
+- more general testing
+	- maybe also automate visual testing (surface,swapchain,renderer?)
+	- make sure to really test all classes and functions
+		- physicalDevice
+		- queue
+		- etc...
 - fix config for vkpp
 - imageOps: really allow extent with depth == 0? also handle it for height == 0?
 - make codestyle consistent everywhere
 - device: cache supported extensions (see e.g. defaults.cpp: could change
   format querying behvaior)
 - write basic docs
+- rework (probably) overcomplicated offset mechanisms (mainly MappedBufferWriter)
+  in bufferOps
 
 low prio / general / ideas
 --------------------------
 
+- make sure device limits are correct in vpp
+	- are there any device limits we currently don't respect?
 - more utility for checking device limits?
 	- differentiate: assumptions and tests/checks
 - physicalDevice: add overload that take already queried physical dev properties

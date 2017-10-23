@@ -92,7 +92,10 @@ unsigned int ThreadStorage<T>::add(T** obj)
 	std::lock_guard lock(mutex_);
 	auto id = ++highestID_;
 	ids_.push_back(id);
-	if(obj) *obj = &objects_[std::this_thread::get_id()][id];
+	if(obj) {
+		*obj = &objects_[std::this_thread::get_id()][id];
+	}
+
 	return id;
 }
 
@@ -100,7 +103,10 @@ template<typename T>
 T* ThreadStorage<T>::get(unsigned int id)
 {
 	SharedLockGuard lock(mutex_);
-	if(std::find(ids_.begin(), ids_.end(), id) == ids_.end()) return nullptr;
+	if(std::find(ids_.begin(), ids_.end(), id) == ids_.end()) {
+		return nullptr;
+	}
+
 	return &objects_[std::this_thread::get_id()][id];
 }
 
@@ -108,7 +114,10 @@ template<typename T>
 const T* ThreadStorage<T>::get(unsigned int id) const
 {
 	SharedLockGuard lock(mutex_);
-	if(std::find(ids_.begin(), ids_.end(), id) == ids_.end()) return nullptr;
+	if(std::find(ids_.begin(), ids_.end(), id) == ids_.end()) {
+		return nullptr;
+	}
+
 	return &objects_[std::this_thread::get_id()][id];
 }
 
@@ -117,9 +126,15 @@ bool ThreadStorage<T>::remove(unsigned int id)
 {
 	std::lock_guard lock(mutex_);
 	auto it = std::find(ids_.begin(), ids_.end(), id);
-	if(it == ids_.end()) return false;
+	if(it == ids_.end()) {
+		return false;
+	}
+
 	ids_.erase(it);
-	for(auto& obj : objects_) obj.erase(id);
+	for(auto& obj : objects_) {
+		obj.second.erase(id);
+	}
+
 	return true;
 }
 

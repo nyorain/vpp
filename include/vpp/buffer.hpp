@@ -47,9 +47,8 @@ public:
 	///     to allocate enough memory. The DeviceMemory must
 	///     be allocated on a type that is supported for the
 	///     created buffer (the vulkan spec gives some guarantess there).
-	///   * (4): a valid (non-empty) MemoryEntry: Will pass ownership
-	///     of the memory entry. The memoryEntry must be valid (i.e.
-	///     allocated) and already bound to the passed buffer.
+	///   * (4): Will pass ownership of the memory entry which must be 
+	///     in allocated state and bound to the buffer.
 	/// - Deferred? See the vpp doc for deferred initialization
 	///   * (1,2,3) bind the buffer immediately to memory. For (1,2) this
 	///     means to immediately request memory, which might result
@@ -67,7 +66,7 @@ public:
 	Buffer(const Device&, vk::Buffer, vk::BufferUsageFlags,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
 
-	Buffer(const Device&, const vk::BufferCreateInfo&, vpp::DeviceMemory&);
+	Buffer(const Device&, const vk::BufferCreateInfo&, DeviceMemory&);
 	Buffer(const Device&, vk::Buffer, MemoryEntry&&);
 
 	/// Creates the buffer without any bound memory.
@@ -101,5 +100,9 @@ public:
 		return *this; 
 	}
 };
+
+/// Returns the alignment requirement a buffer with the given usages
+/// has for offset in vkBindBufferMemory.
+vk::DeviceSize usageAlignment(const Device&, vk::BufferUsageFlags);
 
 } // namespace vpp

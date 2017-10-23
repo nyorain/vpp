@@ -182,7 +182,7 @@ class MappedBufferWriter :
 	public ResourceReference<MappedBufferWriter> {
 public:
 	MappedBufferWriter(MemoryMapView&& view, BufferLayout, 
-		bool staging = false);
+		bool tight = false, vk::DeviceSize srcOffset = 0u);
 
 	/// Writes size bytes from ptr to the buffer.
 	/// Undefined behaviour if ptr does not point to at least size bytes
@@ -207,6 +207,7 @@ public:
 protected:
 	MemoryMapView view_;
 	vk::DeviceSize viewOffset_ {};
+	vk::DeviceSize srcOffset_ {};
 	bool tight_ {};
 	std::vector<vk::BufferCopy> regions_; // regions written
 };
@@ -300,7 +301,7 @@ UploadWork writeStaging(QueueSubmitter& qs, vk::DeviceSize offset,
 	auto stage = buf.device().bufferAllocator().alloc(size,
 		vk::BufferUsageBits::transferSrc, 
 		vk::MemoryPropertyBits::hostVisible);
-	MappedBufferWriter writer(stage.memoryMap(), layout, true);
+	MappedBufferWriter writer(stage.memoryMap(), layout, true, stage.offset());
 	writer.offset(offset, false);
 	writer.add(args...);
 	writer.map().flush();
@@ -315,8 +316,9 @@ auto writeStaging(QueueSubmitter& qs, const Buffer& buf,
 
 template<typename... T>
 auto writeStaging(QueueSubmitter& qs, const BufferRange& buf, 
-	BufferLayout layout, const T&... args) {
-	return writeStaging(qs, buf.offset(), buf, layout, args...);
+	BufferLayout layout, const T&... args) 
+{
+	return writeStaging(qs, buf.offset(), buf.buffer(), layout, args...);
 }
 
 template<typename B, typename... T>
@@ -365,7 +367,7 @@ template<typename... T>
 auto writeDirect(QueueSubmitter& qs, const BufferRange& buf, 
 	BufferLayout layout, const T&... args)
 {
-	return writeDirect(qs, buf.offset(), buf, layout, args...);
+	return writeDirect(qs, buf.offset(), buf.buffer(), layout, args...);
 }
 
 template<typename B, typename... T>
@@ -442,6 +444,8 @@ void readMap430(const B& buf, T&... args) {
 	return readMap(buf, BufferLayout::std430, args...);
 }
 
+// TODO: return 'auto' instead of ptr?
+
 /// Reads the given buffer using the given layout into the given arguments
 /// by retrieving it from a temporary staging buffer.
 /// The buffer must not be in use (you will probably need a pipeline barrier).
@@ -464,9 +468,9 @@ WorkPtr readStaging(QueueSubmitter& qs, vk::DeviceSize offset,
 	class WorkImpl : public CommandWork<void> {
 	public:
 		WorkImpl(QueueSubmitter& qs, CommandBuffer&& cmdBuf, BufferRange&& stage, 
-			BufferLayout layout, vk::DeviceSize offset, T&... xargs) :
+			BufferLayout layout, T&... xargs) :
 				CommandWork(qs, std::move(cmdBuf)), stage_(std::move(stage)),
-				layout_(layout), offset_(offset), args_(xargs...)
+				layout_(layout), args_(xargs...)
 		{
 		}
 
@@ -479,18 +483,16 @@ WorkPtr readStaging(QueueSubmitter& qs, vk::DeviceSize offset,
 			auto map = stage_.memoryMap();
 			map.invalidate();
 			BufferReader reader(stage_.device(), layout_, map.cspan());
-			reader.offset(offset_, false);
 			std::apply([&](auto&... args){ reader.add(args...); }, args_);
 		}
 
 		BufferRange stage_;
 		BufferLayout layout_;
-		vk::DeviceSize offset_;
 		std::tuple<T&...> args_;
 	};
 
 	return std::make_unique<WorkImpl>(qs, std::move(cmdBuf), std::move(stage),
-		layout, offset, args...);
+		layout, args...);
 }
 
 template<typename... T>
@@ -504,7 +506,7 @@ template<typename... T>
 auto readStaging(QueueSubmitter& qs, const BufferRange& buf, 
 	BufferLayout layout, T&... args) 
 {
-	return readStaging(qs, buf, buf.offset(), layout, args...);
+	return readStaging(qs, buf.offset(), buf.buffer(), layout, args...);
 }
 
 template<typename B, typename... T>

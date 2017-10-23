@@ -22,6 +22,17 @@ struct Mat2d : public std::array<Vec2d, 2> {};
 struct Mat3d : public std::array<Vec3d, 3> {};
 struct Mat4d : public std::array<Vec4d, 4> {};
 
+template<typename T, std::size_t I>
+std::ostream& operator<<(std::ostream& os, const std::array<T, I>& arr)
+{
+	os << "(";
+	for(auto& val : arr) {
+		os << val << ",";
+	}
+	os << ")";
+	return os;
+}
+
 struct SomePOD {
 	float value;
 	Vec3f vec;
@@ -185,4 +196,62 @@ TEST(write_read) {
 	EXPECT(r4, 4.);
 	EXPECT(r567, (Vec3f{5.f, 6.f, 7.f}));
 	EXPECT(r8, 8);
+}
+
+vpp::BufferRange readWrite(vk::MemoryPropertyFlags memFlags, vk::BufferUsageFlags
+	usage, bool direct = false)
+{
+	auto& dev = *globals.device;
+	auto size = vpp::neededBufferSize140<float, Vec3f, std::int32_t>();
+	auto buf = dev.bufferAllocator().alloc(size, usage);
+
+	float a {};
+	Vec3f b {};
+	std::int32_t c {};
+
+	if(!direct && memFlags == vk::MemoryPropertyBits::deviceLocal) {
+		vpp::writeStaging140(buf, 42.f, Vec3f {1.f, 2.f, 3.f}, (std::int32_t) -420);
+		vpp::readStaging140(buf, a, b, c);
+	} else if(!direct) {
+		vpp::writeMap140(buf, 42.f, Vec3f {1.f, 2.f, 3.f}, (std::int32_t) -420);
+		vpp::readMap140(buf, a, b, c);
+	} else {
+		vpp::writeDirect140(buf, 42.f, Vec3f {1.f, 2.f, 3.f}, (std::int32_t) -420);
+		vpp::readStaging140(buf, a, b, c);
+	}
+
+	EXPECT(a, 42.f);
+	EXPECT(b, (Vec3f {1.f, 2.f, 3.f}));
+	EXPECT(c, -420);
+
+	return buf;
+}
+
+TEST(buffer_range) {
+	dlg_info("buf_range");
+
+	using MPB = vk::MemoryPropertyBits;
+	using BUB = vk::BufferUsageBits;;
+
+	auto& dev = *globals.device;
+	auto usage = BUB::storageBuffer | BUB::transferSrc | BUB::transferDst;
+	dev.bufferAllocator().reserve(100, usage, MPB::hostVisible);
+	dev.bufferAllocator().reserve(100, usage, MPB::deviceLocal);
+
+	auto buf1 = readWrite(MPB::hostVisible, usage);
+	auto buf2 = readWrite(MPB::hostVisible, usage);
+	auto buf3 = readWrite(MPB::deviceLocal, usage);
+	auto buf4 = readWrite(MPB::deviceLocal, usage);
+	auto buf5 = readWrite(MPB::deviceLocal, usage, true);
+	auto buf6 = readWrite(MPB::hostVisible, usage, true);
+
+	for(auto i = 0u; i < 1000u; ++i) {
+		readWrite(MPB::hostVisible, usage);
+	}
+
+	for(auto i = 0u; i < 1000u; ++i) {
+		readWrite(MPB::deviceLocal, usage);
+	}
+
+	EXPECT(dev.bufferAllocator().buffers().size() <= 2, true);
 }

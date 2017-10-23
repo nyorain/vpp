@@ -211,6 +211,11 @@ Device::~Device()
 	// make sure there are no pending command buffers and stuff
 	vk::deviceWaitIdle(*this);
 
+	// the fact that we have to do this probably shows that
+	// the whole thread-specific stuff isn't the best design but
+	// anyways... make sure we have a sane destruction order.
+	threadStorage().remove(impl_->tlsBufferAllocatorID);
+
 	// it is important to first reset the stored objects that
 	// depend on the vulkan device to be valid before actually destroying the
 	// vulkan device.

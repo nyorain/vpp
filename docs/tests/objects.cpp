@@ -74,12 +74,15 @@ TEST(buf) {
 	auto info = vk::BufferCreateInfo {{}, 123, 
 		vk::BufferUsageBits::storageBuffer |
 		vk::BufferUsageBits::indexBuffer |
+		vk::BufferUsageBits::transferDst |
 		vk::BufferUsageBits::uniformTexelBuffer};
 	vpp::Buffer buf3(dev, info);
 	vpp::Buffer buf4(dev, info, hvBits);
 
 	vpp::DeviceMemoryAllocator allocator(dev);
 	vpp::Buffer buf5(vpp::defer, dev, info, dlBits, &allocator);
+	auto rawBuf3b = vk::createBuffer(dev, info);
+	vpp::Buffer buf5b(vpp::defer, dev, rawBuf3b, info.usage, dlBits, &allocator);
 	vpp::Buffer buf6(dev, info, dlBits, &allocator);
 	buf5.init();
 	EXPECT(allocator.memories().size(), 1u);
@@ -89,11 +92,13 @@ TEST(buf) {
 	auto rawBuf3 = vk::createBuffer(dev, {{}, 123, vk::BufferUsageBits::uniformBuffer});
 	auto reqs = vk::getBufferMemoryRequirements(dev, rawBuf3);
 	unsigned int type = firstBitSet(reqs.memoryTypeBits);
-	vpp::DeviceMemory mem(dev, {1024, type});
+	vpp::DeviceMemory mem(dev, {12000, type});
 	auto memAlloc = mem.alloc(reqs.size, reqs.alignment, vpp::AllocationType::linear);
 	vk::bindBufferMemory(dev, rawBuf3, mem, memAlloc.offset);
 	vpp::MemoryEntry entry(mem, memAlloc);
 	vpp::Buffer buf8(dev, rawBuf3, std::move(entry));
+
+	vpp::Buffer buf9(dev, info, mem);
 }
 
 TEST(sharedBuf) {

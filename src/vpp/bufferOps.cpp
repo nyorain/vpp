@@ -18,42 +18,51 @@ namespace vpp {
 
 // MappedBufferWriter
 MappedBufferWriter::MappedBufferWriter(MemoryMapView&& view, 
-	BufferLayout layout, bool staging) :
-		BufferOperator(layout), view_(std::move(view)), tight_(staging)
+	BufferLayout layout, bool tight, vk::DeviceSize srcOffset) :
+		BufferOperator(layout), view_(std::move(view)), srcOffset_(srcOffset),
+		tight_(tight)
 {
 	dlg_assert(view_.valid());
-	regions_.push_back({0u, 0u, 0u});
+	regions_.push_back({srcOffset_, 0u, 0u});
 }
 
 void MappedBufferWriter::operate(const void* ptr, vk::DeviceSize size)
 {
+	dlg_assert(viewOffset_ + size <= view_.size());
+	dlg_assert(size > 0);
+
 	offset_ = std::max(offset_, nextOffset_);
 	std::memcpy(view_.ptr() + viewOffset_, ptr, size);
 	viewOffset_ += size;
 	offset_ += size;
-	dlg_assert(viewOffset_ < view_.size());
+	regions_.back().size += size;
 }
 
 void MappedBufferWriter::offset(vk::DeviceSize size, bool update)
 {
+	if(size == 0) {
+		return;
+	}
+
 	offset_ += size;
 	if(update) {
 		std::memset(view_.ptr() + viewOffset_, 0, size);
 		viewOffset_ += size;
+		regions_.back().size += size;
 	} else {
 		if(!tight_) {
 			viewOffset_ += size;	
 		}
 
 		if(regions_.back().size == 0u) {
-			regions_.back().srcOffset = viewOffset_;
+			regions_.back().srcOffset = srcOffset_ + viewOffset_;
 			regions_.back().dstOffset = offset_;
 		} else {
-			regions_.push_back({viewOffset_, offset_, 0u});
+			regions_.push_back({srcOffset_ + viewOffset_, offset_, 0u});
 		}
 	}
 
-	dlg_assert(viewOffset_ < view_.size());
+	dlg_assert(viewOffset_ <= view_.size());
 }
 void MappedBufferWriter::alignUniform() noexcept
 {
@@ -134,7 +143,9 @@ BufferReader::BufferReader(const Device& dev, BufferLayout layout,
 void BufferReader::operate(void* ptr, vk::DeviceSize size)
 {
 	offset_ = std::max(offset_, nextOffset_);
-	dlg_assert(offset_ <= data_.size());
+	dlg_assert(size > 0);
+	dlg_assert(offset_ + size <= data_.size());
+
 	std::memcpy(ptr, &data_[offset_], size);
 	offset_ += size;
 }

@@ -48,17 +48,19 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info,
 {
 	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
 	dlg_assertm(reqs.memoryTypeBits & (1 << mem.type()), "Invalid memory type");
-	auto alloc = mem.alloc(reqs.size, reqs.alignment, AllocationType::linear);
+	auto align = std::max(reqs.alignment, usageAlignment(dev, info.usage));
+	auto alloc = mem.alloc(reqs.size, align, AllocationType::linear);
 	if(alloc.size == 0) {
-		throw std::runtime_error("Buffer: failed to alloc from memory");
+		throw std::runtime_error("Failed to alloc from memory");
 	}
 
 	memoryEntry_ = {mem, alloc};
 }
 
 Buffer::Buffer(const Device& dev, vk::Buffer buffer, MemoryEntry&& entry) : 
-	BufferHandle(dev, buffer), MemoryResource(std::move(entry))
+		BufferHandle(dev, buffer), MemoryResource(std::move(entry))
 {
+	dlg_assert(memoryEntry().allocated());
 }
 
 Buffer::Buffer(DeferTag, const Device& dev, vk::Buffer buffer, 
@@ -71,7 +73,7 @@ Buffer::Buffer(DeferTag, const Device& dev, vk::Buffer buffer,
 
 	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
 	reqs.memoryTypeBits &= memBits;
-	dlg_assertm(reqs.memoryTypeBits, "Buffer: No memory type bits left");
+	dlg_assertm(reqs.memoryTypeBits, "No memory type bits left");
 	dlg_assert(reqs.size > 0);
 
 	auto& allocr = alloc ? *alloc : dev.deviceAllocator();
@@ -100,6 +102,29 @@ BufferView::~BufferView()
 	if(vkHandle()) {
 		vk::destroyBufferView(device(), vkHandle());
 	}
+}
+
+// util
+vk::DeviceSize usageAlignment(const Device& dev, vk::BufferUsageFlags usage)
+{
+	vk::DeviceSize ret = 0u;
+
+	auto align = dev.properties().limits.minUniformBufferOffsetAlignment;
+	if(usage & vk::BufferUsageBits::uniformBuffer && align > 0) {
+		ret = std::max(ret, align);
+	}
+
+	align = dev.properties().limits.minTexelBufferOffsetAlignment;
+	if(usage & vk::BufferUsageBits::uniformTexelBuffer && align > 0) {
+		ret = std::max(ret, align);
+	}
+
+	align = dev.properties().limits.minStorageBufferOffsetAlignment;
+	if(usage & vk::BufferUsageBits::storageBuffer && align > 0) {
+		ret = std::max(ret, align);
+	}
+
+	return ret;
 }
 
 } // namespace vpp

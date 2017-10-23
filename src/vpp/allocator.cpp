@@ -3,6 +3,7 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/allocator.hpp>
+#include <vpp/buffer.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 #include <algorithm>
@@ -74,21 +75,7 @@ void DeviceMemoryAllocator::request(vk::Buffer requestor,
 	// apply additional device limits alignments
 	// the vulkan spec does not state that this is needed in
 	// vkBindBufferMemory and we will not store the usage.
-	auto align = device().properties().limits.minUniformBufferOffsetAlignment;
-	if(usage & vk::BufferUsageBits::uniformBuffer && align > 0) {
-		req.alignment = vpp::align(req.alignment, align);
-	}
-
-	align = device().properties().limits.minTexelBufferOffsetAlignment;
-	if(usage & vk::BufferUsageBits::uniformTexelBuffer && align > 0) {
-		req.alignment = vpp::align(req.alignment, align);
-	}
-
-	align = device().properties().limits.minStorageBufferOffsetAlignment;
-	if(usage & vk::BufferUsageBits::storageBuffer && align > 0) {
-		req.alignment = vpp::align(req.alignment, align);
-	}
-
+	req.alignment = std::max(req.alignment, usageAlignment(device(), usage));
 	requirements_.push_back(req);
 }
 

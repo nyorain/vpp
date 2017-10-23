@@ -40,13 +40,13 @@ public:
 	///     Guarantees that the memory is allocated on a memory type
 	///     contained in memBits (e.g. to assure it's allocated
 	///     on hostVisible memory).
-	///   * (3,4): a valid (non-empty) MemoryEntry: Will pass ownership
-	///     of the memory entry, must be associated with the image.
-	///     Only the constructor that newly creates the image will bind the 
-	///     memory to the image. Both constructors will make sure
-	///     that the memory entry is allocated (and not pending).
-	///     The custom MemoryEntry object could e.g. be created from
-	///     a custom DeviceMemory object.
+	///   * (3): allocate on a specific DeviceMemory object.
+	///     Will throw std::runtime_error if the DeviceMemory fails
+	///     to allocate enough memory. The DeviceMemory must
+	///     be allocated on a type that is supported for the
+	///     created image (the vulkan spec gives some guarantess there).
+	///   * (4): Will pass ownership of the memory entry which must be 
+	///     in allocated state and bound to the image.
 	/// - Deferred? See the vpp doc for deferred initialization
 	///   * (1-6) bind the image immediately to memory. For (1,2) this
 	///     means to immediately allocate memory, which might result
@@ -64,8 +64,8 @@ public:
 	Image(const Device&, vk::Image, vk::ImageTiling,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
 
+	Image(const Device&, const vk::ImageCreateInfo&, DeviceMemory&);
 	Image(const Device&, vk::Image, MemoryEntry&&);
-	Image(const Device&, const vk::ImageCreateInfo&, MemoryEntry&&);
 
 	/// Creates the image without any bound memory.
 	/// You have to call the ensureMemory function later on to

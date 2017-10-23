@@ -41,16 +41,27 @@ Image::Image(const Device& dev, vk::Image image, vk::ImageTiling tiling,
 	ensureMemory();
 }
 
+Image::Image(const Device& dev, const vk::ImageCreateInfo& info, 
+	DeviceMemory& mem) : 
+		ImageHandle(dev, vk::createImage(dev, info))
+{
+	auto reqs = vk::getImageMemoryRequirements(dev, vkHandle());
+	dlg_assertm(reqs.memoryTypeBits & (1 << mem.type()), "Invalid memory type");
+
+	auto allocType = info.tiling == vk::ImageTiling::linear ?
+		AllocationType::linear : AllocationType::optimal;
+	auto alloc = mem.alloc(reqs.size, reqs.alignment, allocType);
+	if(alloc.size == 0) {
+		throw std::runtime_error("Failed to alloc from memory");
+	}
+
+	memoryEntry_ = {mem, alloc};
+}
+
 Image::Image(const Device& dev, vk::Image image, MemoryEntry&& entry) : 
 	ImageHandle(dev, image), MemoryResource(std::move(entry))
 {
-	ensureMemory();
-}
-
-Image::Image(const Device& dev, const vk::ImageCreateInfo& info, 
-	MemoryEntry&& entry) : 
-		Image(dev, vk::createImage(dev, info), std::move(entry))
-{
+	dlg_assert(memoryEntry().allocated());
 }
 
 Image::Image(DeferTag, const Device& dev, vk::Image image, 

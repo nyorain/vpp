@@ -22,6 +22,9 @@ public:
 		BufferRange&& range) : 
 			CommandWork<T>(submitter, std::move(cmdBuf)), 
 			bufferRange(std::move(range)) {}
+	~TransferWork() {
+		tryFinish(*this, "~TransferWork");
+	}
 
 	TransferWork(TransferWork&&) noexcept = default;
 	TransferWork& operator=(TransferWork&&) noexcept = default;
