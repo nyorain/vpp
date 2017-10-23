@@ -18,9 +18,8 @@ namespace vpp {
 //  uploading or initializing stuff. But again, implement as 
 //  a separate version, only pay for what you use.
 
-// can buffer offsets (like, ever) need alignments?
-// neither vkCmdBindVertexBuffers nor VkDescriptorBufferInfo
-// mention anything (as of 1.0.62) so i guess not.
+// TODO: document alignment parameters, show how it supports
+//  nonCoherentAtom
 
 
 /// Like vpp::Buffer but keeps track of sub-allocated BufferRanges.
@@ -29,6 +28,7 @@ namespace vpp {
 class SharedBuffer : public Buffer {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
+	bool cohorentAtomAlign {false};
 
 public:
 	using Buffer::Buffer;
@@ -37,7 +37,7 @@ public:
 	/// Tries to allocate a range with the given size.
 	/// Returns an empty (i.e. size == 0) allocation if there
 	/// is not enough free space left.
-	Allocation alloc(vk::DeviceSize size);
+	Allocation alloc(vk::DeviceSize size, vk::DeviceSize align = 0u);
 
 	/// Frees the given allocation. Undefined behavior if the
 	/// allocation is invalid (i.e. not allocated on this SharedBuffer).
@@ -60,7 +60,7 @@ public:
 
 public:
 	BufferRange() = default;
-	BufferRange(SharedBuffer&, vk::DeviceSize size);
+	BufferRange(SharedBuffer&, vk::DeviceSize size, vk::DeviceSize align = 0u);
 	BufferRange(SharedBuffer&, const Allocation& allocation);
 	~BufferRange();
 
@@ -107,16 +107,14 @@ public:
 	/// This does not automatically reserve anything, only
 	/// causes the next buffer that has to be created and matches
 	/// the given requirements to be larger (using the size parameter).
-	void reserve(vk::DeviceSize size, vk::BufferUsageFlags, 
-		unsigned int memBits = ~0u);
-	void reserve(vk::DeviceSize size, vk::BufferUsageFlags, 
-		vk::MemoryPropertyFlags memProps);
+	/// If you wish to map the buffer, you have to pass true as mappable.
+	void reserve(bool mappable, vk::DeviceSize size, vk::BufferUsageFlags, 
+		vk::DeviceSize align = 0u, unsigned int memBits = ~0u);
 
 	/// Allocates a buffer range with the given requirements.
-	BufferRange alloc(vk::DeviceSize size, vk::BufferUsageFlags, 
-		unsigned int memBits = ~0u);
-	BufferRange alloc(vk::DeviceSize size, vk::BufferUsageFlags, 
-		vk::MemoryPropertyFlags memProps);
+	/// If you wish to map the buffer, you have to pass true as mappable.
+	BufferRange alloc(bool mappable, vk::DeviceSize size, vk::BufferUsageFlags, 
+		vk::DeviceSize align = 0u, unsigned int memBits = ~0u);
 
 	/// Optimizes the buffer allocations. Will recreate all unused buffers
 	/// as one big buffer. Makes sense to call when no/few buffer rangers
@@ -130,9 +128,10 @@ public:
 
 protected:
 	struct Requirement {
-		std::size_t size {};
+		vk::DeviceSize size {};
 		vk::BufferUsageFlags usage {};
 		unsigned int memBits {};
+		bool mappable {};
 	};
 
 	struct Buffer {
@@ -140,6 +139,7 @@ protected:
 
 		SharedBuffer buffer;
 		vk::BufferUsageFlags usage;
+		bool coherentAtomAlign;
 	};
 
 	std::deque<Buffer> buffers_;

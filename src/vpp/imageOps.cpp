@@ -125,9 +125,8 @@ BufferRange fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	dlg_assert(data.size() <= img.memorySize());
 	dlg_assert(size.width != 0 && size.height != 0);
 
-	auto uploadBuffer = img.device().bufferAllocator().alloc(data.size(),
-		vk::BufferUsageBits::transferSrc, 
-		vk::MemoryPropertyBits::hostVisible);
+	auto uploadBuffer = img.device().bufferAllocator().alloc(true, data.size(),
+		vk::BufferUsageBits::transferSrc);
 
 	{
 		auto map = uploadBuffer.memoryMap();
@@ -179,9 +178,8 @@ BufferRange retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	dlg_assert(byteSize <= img.memorySize());
 	dlg_assert(size.width != 0 && size.height != 0);
 
-	auto downloadBuffer = img.device().bufferAllocator().alloc(byteSize,
-		vk::BufferUsageBits::transferDst, 
-		vk::MemoryPropertyBits::hostVisible);
+	auto downloadBuffer = img.device().bufferAllocator().alloc(true, byteSize,
+		vk::BufferUsageBits::transferDst);
 
 	auto buf = downloadBuffer.buffer().vkHandle();
 	auto boffset = downloadBuffer.offset();

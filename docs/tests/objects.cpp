@@ -135,14 +135,14 @@ TEST(sharedBuf) {
 
 	// allocator
 	vpp::BufferAllocator bufAlloc(dev);
-	bufAlloc.reserve(1000u, vk::BufferUsageBits::uniformBuffer);
-	bufAlloc.reserve(10000u, vk::BufferUsageBits::uniformBuffer);
-	bufAlloc.reserve(7u, vk::BufferUsageBits::storageBuffer);
-	bufAlloc.reserve(100u, vk::BufferUsageBits::indexBuffer);
+	bufAlloc.reserve(false, 1000u, vk::BufferUsageBits::uniformBuffer);
+	bufAlloc.reserve(false, 10000u, vk::BufferUsageBits::uniformBuffer);
+	bufAlloc.reserve(false, 7u, vk::BufferUsageBits::storageBuffer);
+	bufAlloc.reserve(false, 100u, vk::BufferUsageBits::indexBuffer);
 	EXPECT(bufAlloc.buffers().size(), 0u);
 
 	for(auto i = 0u; i < 100; ++i) {
-		bufAlloc.alloc(11000u, vk::BufferUsageBits::uniformBuffer |
+		bufAlloc.alloc(false, 11000u, vk::BufferUsageBits::uniformBuffer |
 			vk::BufferUsageBits::storageBuffer);
 		EXPECT(bufAlloc.buffers().size(), 1u);
 	}

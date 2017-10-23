@@ -11,11 +11,12 @@
 namespace vpp {
 
 // BufferRange
-BufferRange::BufferRange(SharedBuffer& buf, vk::DeviceSize size)
+BufferRange::BufferRange(SharedBuffer& buf, vk::DeviceSize size,
+	vk::DeviceSize align)
 {
 	dlg_assert(buf.vkHandle());
 
-	auto alloc = buf.alloc(size);
+	auto alloc = buf.alloc(size, align);
 	if(!alloc.size) {
 		throw std::runtime_error("BufferRange: not enough space on shared buffer");
 	}
@@ -59,8 +60,11 @@ SharedBuffer::~SharedBuffer()
 	dlg_assertm(allocations_.empty(), "~SharedBuffer: allocations left");
 }
 
-SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size)
+SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
+	vk::DeviceSize alignment)
 {
+	dlg_error("TODO: SharedBuffer::alloc");
+
 	// TODO: can be improved
 	Allocation old = {0, 0};
 
@@ -99,24 +103,24 @@ BufferAllocator::BufferAllocator(const Device& dev) :
 {
 }
 
-void BufferAllocator::reserve(vk::DeviceSize size, vk::BufferUsageFlags usage, 
-	unsigned int memBits)
+void BufferAllocator::reserve(bool mappable, vk::DeviceSize size, 
+	vk::BufferUsageFlags usage, vk::DeviceSize align, unsigned int memBits)
 {
+	dlg_error("TODO: BufferAllocator::reserve");
+
+	// TODO
 	auto& back = reqs_.emplace_back();	
 	back.size = size;
 	back.usage = usage;
 	back.memBits = memBits;
 }
 
-void BufferAllocator::reserve(vk::DeviceSize size, vk::BufferUsageFlags usage, 
-	vk::MemoryPropertyFlags memProps)
+BufferRange BufferAllocator::alloc(bool mappable, vk::DeviceSize size, 
+	vk::BufferUsageFlags usage, vk::DeviceSize align, unsigned int memBits)
 {
-	reserve(size, usage, device().memoryTypeBits(memProps));
-}
+	dlg_error("TODO: BufferAllocator::alloc");
+	// TODO
 
-BufferRange BufferAllocator::alloc(vk::DeviceSize size, 
-	vk::BufferUsageFlags usage, unsigned int memBits)
-{
 	for(auto& buf : buffers_) {
 		auto* mem = buf.buffer.memoryEntry().memory();
 		dlg_assert(mem);
@@ -155,12 +159,6 @@ BufferRange BufferAllocator::alloc(vk::DeviceSize size,
 	auto alloc = buffers_.back().buffer.alloc(size);
 	dlg_assert(alloc.size == size);
 	return BufferRange(buffers_.back().buffer, alloc);
-}
-
-BufferRange BufferAllocator::alloc(vk::DeviceSize size, 
-	vk::BufferUsageFlags usage, vk::MemoryPropertyFlags memProps)
-{
-	return alloc(size, usage, device().memoryTypeBits(memProps));
 }
 
 void BufferAllocator::optimize()

@@ -2,7 +2,7 @@ Todo list vor vpp
 =================
 
 - sharedBuffer: provide alignment options
-	- image fillStaging/retrieveStagin: copy commands have requirements 
+	- image fillStaging/retrieveStaging: copy commands have requirements 
 	  on buffer offset alignemnt (-> SharedBuffer alignment, also minMemoryMapAlignemnt)
 	- sharedBuffer: (add way to) respect nonCoherentAtomSize
 		- alternative: force all users that want to map memory to use coherent memory
@@ -21,6 +21,7 @@ Todo list vor vpp
 	- make sure to really test all classes and functions
 		- physicalDevice
 		- queue
+		- image constructors (simply copy from buffer constructors in objects.cpp)
 		- etc...
 - fix config for vkpp
 - imageOps: really allow extent with depth == 0? also handle it for height == 0?
@@ -35,6 +36,13 @@ Todo list vor vpp
 low prio / general / ideas
 --------------------------
 
+- support for checking max available vs used memory
+- support for allocation strategies (mainly DeviceMemoryAllocator),
+  support massive preallocations (like allocate pretty much the whole device memory)
+	- allow to explicity allocate memory on a given memory allocator.
+	  To create large (like over 100 mb) buffers of a memory type we know we will need
+	  Also something like an additional allocation strategy?
+	  Allocate more than needed if the user wants it
 - make sure device limits are correct in vpp
 	- are there any device limits we currently don't respect?
 - more utility for checking device limits?
@@ -76,10 +84,6 @@ low prio / general / ideas
 	- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
 - is there a better way for the Resource::swap mess?
 - generalize TransferBuffer into some shared buffer
-- allow to explicity allocate memory on a given memory allocator.
-  To create large (like over 100 mb) buffers of a memory type we know we will need
-  Also something like an additional allocation strategy?
-  Allocate more than needed if the user wants it
 - config: vpp_debug vs vpp_ndebug rather messy now
 	- configurable from build system?
 - work dependencies

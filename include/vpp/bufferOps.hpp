@@ -298,9 +298,8 @@ UploadWork writeStaging(QueueSubmitter& qs, vk::DeviceSize offset,
 	const Buffer& buf, BufferLayout layout, const T&... args)
 {
 	auto size = neededBufferSize(layout, args...);
-	auto stage = buf.device().bufferAllocator().alloc(size,
-		vk::BufferUsageBits::transferSrc, 
-		vk::MemoryPropertyBits::hostVisible);
+	auto stage = buf.device().bufferAllocator().alloc(true, size,
+		vk::BufferUsageBits::transferSrc);
 	MappedBufferWriter writer(stage.memoryMap(), layout, true, stage.offset());
 	writer.offset(offset, false);
 	writer.add(args...);
@@ -458,9 +457,8 @@ auto readStaging(QueueSubmitter& qs, vk::DeviceSize offset,
 	const Buffer& buf, BufferLayout layout, T&... args)
 {
 	auto size = neededBufferSize(layout, args...);
-	auto stage = buf.device().bufferAllocator().alloc(size,
-		vk::BufferUsageBits::transferDst,
-		vk::MemoryPropertyBits::hostVisible);
+	auto stage = buf.device().bufferAllocator().alloc(true, size,
+		vk::BufferUsageBits::transferDst);
 	auto cmdBuf = detail::copyCmdBuf(qs, buf, stage, offset, size);
 
 	class WorkImpl : public CommandWork<void> {
