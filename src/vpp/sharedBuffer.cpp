@@ -67,7 +67,7 @@ SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
 	dlg_assertm(alignment == 1 || alignment % 2 == 0, 
 		"Alignment {} not power of 2", alignment);
 
-	// TODO: allocation algorithm can be improved
+	// TODO: allocation algorithm can be improved, greedy atm
 	Allocation old = {0, 0};
 	vk::DeviceSize endAlign = 0u;
 	if(coherentAtomAlign) {
@@ -77,10 +77,8 @@ SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
 
 	for(auto it = allocations_.begin(); it != allocations_.end(); ++it) {
 		auto aligned = vpp::align(old.end(), alignment);
-		if(it->offset - aligned >= vpp::align(size, endAlign)) {
+		if(aligned + vpp::align(size, endAlign) <= it->offset) {
 			Allocation range = {aligned, size};
-
-			// inserts the tested range before the higher range, if there is any
 			allocations_.insert(it, range);
 			return range;
 		}
@@ -91,7 +89,7 @@ SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
 	// last
 	// we don't have to check for nonCoherentAtom align here
 	auto aligned = vpp::align(old.end(), alignment);
-	if(memorySize() - aligned >= size) {
+	if(aligned + size <= memorySize()) {
 		Allocation range = {aligned, size};
 		allocations_.push_back(range);
 		return range;
@@ -156,7 +154,7 @@ BufferRange BufferAllocator::alloc(bool mappable, vk::DeviceSize size,
 		}
 
 		// check the buffer is mappable
-		if(mappable && !buf.coherentAtomAlign) {
+		if(mappable && !buf.buffer.coherentAtomAlign) {
 			auto props = buf.buffer.memoryEntry().memory()->properties();
 			if(!(props & vk::MemoryPropertyBits::hostCoherent)) {
 				continue;	

@@ -1,0 +1,126 @@
+#include "init.hpp"
+#include <vpp/sharedBuffer.hpp>
+#include <ostream>
+
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const vpp::BasicAllocation<T>& alloc)
+{
+	os << "(" << alloc.offset << ", " << alloc.size << ")";
+	return os;
+}
+
+TEST(sharedBuf) {
+	auto& dev = *globals.device;
+	vpp::SharedBuffer buf(dev, {{}, 1024u, vk::BufferUsageBits::uniformBuffer});
+	auto alloc1 = buf.alloc(1000u);
+	EXPECT(alloc1.offset, 0u);
+	EXPECT(alloc1.size, 1000u);
+
+	auto alloc2 = buf.alloc(3u);
+	EXPECT(alloc2.size, 3u);
+
+	auto alloc3 = buf.alloc(7u);
+	EXPECT(alloc3.size, 7u);
+
+	buf.free(alloc1);
+
+	auto alloc4 = buf.alloc(231u);
+	EXPECT(alloc4.size, 231u);
+
+	buf.free(alloc2);
+	buf.free(alloc4);
+
+	auto alloc5 = buf.alloc(2100u);
+	EXPECT(alloc5.size, 0u);
+	buf.free(alloc3);
+
+	vpp::BufferRange bufRange(buf, 100u);
+	EXPECT(&bufRange.buffer(), &buf);
+	EXPECT(bufRange.size(), 100u);
+	EXPECT(bufRange.offset(), 0u);
+
+	ERROR(vpp::BufferRange(buf, 1000u), std::runtime_error);
+
+	// allocator
+	vpp::BufferAllocator bufAlloc(dev);
+	bufAlloc.reserve(false, 1000u, vk::BufferUsageBits::uniformBuffer);
+	bufAlloc.reserve(false, 10000u, vk::BufferUsageBits::uniformBuffer);
+	bufAlloc.reserve(false, 7u, vk::BufferUsageBits::storageBuffer);
+	bufAlloc.reserve(false, 100u, vk::BufferUsageBits::indexBuffer);
+	EXPECT(bufAlloc.buffers().size(), 0u);
+
+	for(auto i = 0u; i < 100; ++i) {
+		bufAlloc.alloc(false, 11000u, vk::BufferUsageBits::uniformBuffer |
+			vk::BufferUsageBits::storageBuffer);
+		EXPECT(bufAlloc.buffers().size(), 1u);
+	}
+}
+
+TEST(alignment) {
+	using Alloc = vpp::SharedBuffer::Allocation;
+	auto& dev = *globals.device;
+	vpp::SharedBuffer buf(dev, {{}, 2048u, vk::BufferUsageBits::uniformBuffer});
+
+	auto alloc1 = buf.alloc(230u, 64u);
+	EXPECT(alloc1, (Alloc{0, 230u}));
+
+	auto alloc2 = buf.alloc(200u, 128u);
+	EXPECT(alloc2, (Alloc{256u, 200u}));
+
+	auto alloc3 = buf.alloc(44u, 2u);
+	EXPECT(alloc3, (Alloc{456u, 44u}));
+
+	auto alloc4 = buf.alloc(2048, 0u);
+	EXPECT(alloc4.size, 0u);
+
+	auto alloc5 = buf.alloc(100u, 0u);
+	EXPECT(alloc5, (Alloc{500u, 100u}));
+
+	auto alloc6 = buf.alloc(100u, 1u);
+	EXPECT(alloc6, (Alloc{600u, 100u}));
+
+	auto alloc7 = buf.alloc(100u, 2048u);
+	EXPECT(alloc7.size, 0u);
+
+	buf.free(alloc1);
+	auto alloc8 = buf.alloc(100u, 2048u);
+	EXPECT(alloc8, (Alloc{0u, 100u}));
+
+	auto alloc9 = buf.alloc(99, 0u);
+	EXPECT(alloc9, (Alloc{100u, 99u}));
+
+	auto alloc10 = buf.alloc(1, 1);
+	EXPECT(alloc10, (Alloc{199u, 1u}));
+
+	buf.free(alloc2);
+	buf.free(alloc3);
+	buf.free(alloc5);
+	buf.free(alloc6);
+	buf.free(alloc8);
+	buf.free(alloc9);
+	buf.free(alloc10);
+}
+
+TEST(nonCoherentAtomAlign) {
+	using Alloc = vpp::SharedBuffer::Allocation;
+	auto& dev = *globals.device;
+	auto atomAlign = dev.properties().limits.nonCoherentAtomSize;
+
+	vpp::SharedBuffer buf(dev, {{}, 2048u, vk::BufferUsageBits::uniformBuffer});
+	buf.coherentAtomAlign = true;
+
+	vpp::BufferRange range1(buf, buf.alloc(10u));
+	EXPECT(range1.allocation(), (Alloc{0u, 10u}));
+
+	vpp::BufferRange range2(buf, buf.alloc(10u));
+	auto offset = vpp::align<vk::DeviceSize>(10u, atomAlign);
+	EXPECT(range2.allocation(), (Alloc{offset, 10u}));
+
+	vpp::BufferRange range3(buf, buf.alloc(100u));
+	offset = vpp::align<vk::DeviceSize>(range2.allocation().end(), atomAlign);
+	EXPECT(range3.allocation(), (Alloc{offset, 100u}));
+}
+
+TEST(mappable) {
+	// TODO: test bufferAllocator with mappable buffers	
+}

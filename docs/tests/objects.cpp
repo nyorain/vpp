@@ -101,115 +101,11 @@ TEST(buf) {
 	vpp::Buffer buf9(dev, info, mem);
 }
 
-TEST(sharedBuf) {
-	auto& dev = *globals.device;
-	vpp::SharedBuffer buf(dev, {{}, 1024u, vk::BufferUsageBits::uniformBuffer});
-	auto alloc1 = buf.alloc(1000u);
-	EXPECT(alloc1.offset, 0u);
-	EXPECT(alloc1.size, 1000u);
-
-	auto alloc2 = buf.alloc(3u);
-	EXPECT(alloc2.size, 3u);
-
-	auto alloc3 = buf.alloc(7u);
-	EXPECT(alloc3.size, 7u);
-
-	buf.free(alloc1);
-
-	auto alloc4 = buf.alloc(231u);
-	EXPECT(alloc4.size, 231u);
-
-	buf.free(alloc2);
-	buf.free(alloc4);
-
-	auto alloc5 = buf.alloc(2100u);
-	EXPECT(alloc5.size, 0u);
-	buf.free(alloc3);
-
-	vpp::BufferRange bufRange(buf, 100u);
-	EXPECT(&bufRange.buffer(), &buf);
-	EXPECT(bufRange.size(), 100u);
-	EXPECT(bufRange.offset(), 0u);
-
-	ERROR(vpp::BufferRange(buf, 1000u), std::runtime_error);
-
-	// allocator
-	vpp::BufferAllocator bufAlloc(dev);
-	bufAlloc.reserve(false, 1000u, vk::BufferUsageBits::uniformBuffer);
-	bufAlloc.reserve(false, 10000u, vk::BufferUsageBits::uniformBuffer);
-	bufAlloc.reserve(false, 7u, vk::BufferUsageBits::storageBuffer);
-	bufAlloc.reserve(false, 100u, vk::BufferUsageBits::indexBuffer);
-	EXPECT(bufAlloc.buffers().size(), 0u);
-
-	for(auto i = 0u; i < 100; ++i) {
-		bufAlloc.alloc(false, 11000u, vk::BufferUsageBits::uniformBuffer |
-			vk::BufferUsageBits::storageBuffer);
-		EXPECT(bufAlloc.buffers().size(), 1u);
-	}
-}
-
 TEST(sync) {
 	auto& dev = *globals.device;
 	vpp::Fence fence(dev);
 	vpp::Semaphore semaphore(dev);
 	vpp::Event event(dev);
-}
-
-// TODO: should get own test probably
-TEST(framebuffer) {
-	auto& dev = *globals.device;
-	const auto size = vk::Extent3D {420, 693};
-
-	using VICI = vpp::ViewableImageCreateInfo;
-	auto colorUsage = vk::ImageUsageBits::colorAttachment;
-	auto colorInfo = VICI::color(dev, size, colorUsage).value();
-	auto depthInfo = VICI::depth(dev, size).value();
-	vpp::ViewableImage color(dev, colorInfo);
-	vpp::ViewableImage depth(dev, depthInfo);
-
-	vk::AttachmentDescription attachments[2] {{{},
-			colorInfo.img.format, vk::SampleCountBits::e1,
-			vk::AttachmentLoadOp::dontCare,
-			vk::AttachmentStoreOp::dontCare,
-			vk::AttachmentLoadOp::dontCare,
-			vk::AttachmentStoreOp::dontCare,
-			vk::ImageLayout::undefined,
-			vk::ImageLayout::colorAttachmentOptimal,
-		}, {{},
-			depthInfo.img.format, vk::SampleCountBits::e1,
-			vk::AttachmentLoadOp::dontCare,
-			vk::AttachmentStoreOp::dontCare,
-			vk::AttachmentLoadOp::dontCare,
-			vk::AttachmentStoreOp::dontCare,
-			vk::ImageLayout::undefined,
-			vk::ImageLayout::depthStencilAttachmentOptimal,
-		}
-	};
-
-	vk::AttachmentReference colorRef {
-		0, vk::ImageLayout::colorAttachmentOptimal
-	};
-
-	vk::AttachmentReference depthRef {
-		1, vk::ImageLayout::depthStencilAttachmentOptimal
-	};
-
-	vk::SubpassDescription subpass {{},
-		vk::PipelineBindPoint::graphics, 0, {},
-		1, &colorRef, 0, &depthRef
-	};
-
-	vk::RenderPassCreateInfo rpInfo;
-	vpp::RenderPass renderPass {dev, {{}, 
-		2, attachments,
-		1, &subpass,
-	}};
-
-	auto fbAttachments = {color.vkImageView(), depth.vkImageView()};
-	vk::FramebufferCreateInfo info {
-		{}, renderPass, 2, fbAttachments.begin(), size.width, size.height, 1
-	};
-	auto fb = vpp::Framebuffer(dev, info);
 }
 
 // TODO: add remaining objects

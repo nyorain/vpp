@@ -7,6 +7,12 @@
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 
+// NOTE: vulkan 1.0 does not have any requirements onto the memoryMap
+//  offset, minMemoryMapAlignment (despite its name) is a guarantee
+//  the implementation gives for the returned data pointer.
+//  Only noted here since i pretty much panic every few months seeing
+//  minMemoryMapAlignment somewhere.
+
 namespace vpp {
 
 // MemoryMap

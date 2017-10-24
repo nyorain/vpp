@@ -1,16 +1,11 @@
 Todo list vor vpp
 =================
 
-- fix alignment/offset requirements (use new sharedBuffer api):
-	- image fillStaging/retrieveStaging: copy commands have requirements 
-	  on buffer offset alignemnt 
-	- optimalBufferCopyOffsetAlignment/ optimalBufferCopyRowPitchAlignment in
-	  bufferOps
-	- respect minMemoryMapAlignment
-
 - update README
 - release next version
 
+- memorySize on buffer really ok? (e.g. see sharedBuffer, fill/retrieve)
+	- probably best to deprecate memoryResource::memorySize?
 - handle problem: memBits (in buffer/sharedBuffer/image) no compatible
   with buffer requirements
   	- solution: might require to be checked/handled by user
@@ -32,11 +27,21 @@ Todo list vor vpp
 - write basic docs
 - rework (probably) overcomplicated offset mechanisms (mainly MappedBufferWriter)
   in bufferOps
+  	- also: maybe best to not put (even if only couple of lines) the whole
+  	  stage buffer allocation handling in header?
 - implement BufferAllocator optimize/shrink
+- add more assertions everywhere where things are assumed
+	- don't overdo, only if potentially useful when debugging
 
 low prio / general / ideas
 --------------------------
 
+- imageOps: fill: option to use direct update instead of mapping?
+	- probably not worth it, we have to allocate buffer either way...
+	- or is there a way to directly update deviceLocal image?
+- respect optimalBufferCopyRowPitchAlignment somehow
+	- retrieve: probably not possible if we want to guarantee tightly packed data
+	- we could maybe use it when uploading data
 - support for checking max available vs used memory
 - support for allocation strategies (mainly DeviceMemoryAllocator),
   support massive preallocations (like allocate pretty much the whole device memory)
@@ -50,6 +55,7 @@ low prio / general / ideas
 	- differentiate: assumptions and tests/checks
 - physicalDevice: add overload that take already queried physical dev properties
 - fill operations: take std::byte& instead of span?
+	- probably not a good idea, see issue with memorySize(). We should not use it
 - dataWork::data: use non-rvalue & modifier?
 	- to disallow something like ```data = retrieve(...)->data```
 	- has multiple problems: sometimes it's probably valid to do this.
@@ -59,7 +65,6 @@ low prio / general / ideas
 - rework commandBuffer
 	- don't make commandPools store information
 - example vulkanType impl for nytl and glm
-- deprecate memoryResource::memorySize?
 - maybe expose BufferOperator as independent header?
 	- especially BufferSizer, constexpr neededBufferSize
 		- maybe even useful in gl

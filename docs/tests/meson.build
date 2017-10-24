@@ -1,11 +1,13 @@
 tests = [
   'allocator',
   'copy',
+  'framebuffer',
   'memory',
   'bufferOps',
   'image',
+  'objects',
   'submit',
-  'objects'
+  'sharedBuffer'
 ]
 
 foreach test : tests

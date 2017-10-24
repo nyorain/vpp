@@ -125,8 +125,11 @@ BufferRange fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	dlg_assert(data.size() <= img.memorySize());
 	dlg_assert(size.width != 0 && size.height != 0);
 
+	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
+	align = std::max<vk::DeviceSize>(align, texSize);
+	align = std::max<vk::DeviceSize>(align, 4u);
 	auto uploadBuffer = img.device().bufferAllocator().alloc(true, data.size(),
-		vk::BufferUsageBits::transferSrc);
+		vk::BufferUsageBits::transferSrc, align);
 
 	{
 		auto map = uploadBuffer.memoryMap();
@@ -178,8 +181,11 @@ BufferRange retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	dlg_assert(byteSize <= img.memorySize());
 	dlg_assert(size.width != 0 && size.height != 0);
 
+	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
+	align = std::max<vk::DeviceSize>(align, texSize);
+	align = std::max<vk::DeviceSize>(align, 4u);
 	auto downloadBuffer = img.device().bufferAllocator().alloc(true, byteSize,
-		vk::BufferUsageBits::transferDst);
+		vk::BufferUsageBits::transferDst, align);
 
 	auto buf = downloadBuffer.buffer().vkHandle();
 	auto boffset = downloadBuffer.offset();

@@ -242,7 +242,7 @@ TEST(buffer_range) {
 	auto buf5 = readWrite(true, usage, true);
 	auto buf6 = readWrite(false, usage, true);
 
-	for(auto i = 0u; i < 1000u; ++i) {
+	for(auto i = 0u; i < 100u; ++i) {
 		readWrite(true, usage);
 		readWrite(false, usage);
 		readWrite(true, usage, true);

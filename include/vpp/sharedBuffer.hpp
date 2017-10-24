@@ -28,7 +28,9 @@ namespace vpp {
 class SharedBuffer : public Buffer {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
-	// TODO: badly name, rather nonCoherentAtomAlign
+	// TODO: badly named, rather nonCoherentAtomAlign
+	// TODO: should probably not be changed at lifetime...
+	//  add constructors and make private
 	bool coherentAtomAlign {false};
 
 public:
@@ -140,7 +142,6 @@ protected:
 
 		SharedBuffer buffer;
 		vk::BufferUsageFlags usage;
-		bool coherentAtomAlign;
 	};
 
 	std::deque<Buffer> buffers_;
