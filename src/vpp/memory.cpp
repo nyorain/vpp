@@ -101,7 +101,8 @@ DeviceMemory::Allocation DeviceMemory::allocatable(vk::DeviceSize size,
 	// size could be a taken in account (smaller = better) since the new sizes 
 	// on both sides should be as small as possible. true?
 
-	dlg_assertm(alignment % 2 == 0, "alignment {} not power of 2", alignment);
+	dlg_assertm(alignment == 1 || alignment % 2 == 0, 
+		"Alignment {} not power of 2", alignment);
 	dlg_assertm(size != 0, "given alloc size 0");
 	dlg_assertm(type != AllocationType::none, "given AllocationType::none");
 

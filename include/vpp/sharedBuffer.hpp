@@ -28,7 +28,8 @@ namespace vpp {
 class SharedBuffer : public Buffer {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
-	bool cohorentAtomAlign {false};
+	// TODO: badly name, rather nonCoherentAtomAlign
+	bool coherentAtomAlign {false};
 
 public:
 	using Buffer::Buffer;

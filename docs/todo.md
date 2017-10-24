@@ -1,21 +1,21 @@
 Todo list vor vpp
 =================
 
-- sharedBuffer: provide alignment options
+- fix alignment/offset requirements (use new sharedBuffer api):
 	- image fillStaging/retrieveStaging: copy commands have requirements 
-	  on buffer offset alignemnt (-> SharedBuffer alignment, also minMemoryMapAlignemnt)
-	- sharedBuffer: (add way to) respect nonCoherentAtomSize
-		- alternative: force all users that want to map memory to use coherent memory
-		- problem: also needs to ensure empty (unused) space AFTER buffer,
-		  also has to make sure that no allocation follow in unused space.
-		  Probably best to make sharedBuffer care for nonCoherentAtomSize
-		  directly
+	  on buffer offset alignemnt 
 	- optimalBufferCopyOffsetAlignment/ optimalBufferCopyRowPitchAlignment in
 	  bufferOps
+	- respect minMemoryMapAlignment
 
 - update README
 - release next version
 
+- handle problem: memBits (in buffer/sharedBuffer/image) no compatible
+  with buffer requirements
+  	- solution: might require to be checked/handled by user
+  		- then: does sharedBuffer (the hostCoherent checking) implement
+  		  it correctly?
 - more general testing
 	- maybe also automate visual testing (surface,swapchain,renderer?)
 	- make sure to really test all classes and functions
@@ -23,6 +23,7 @@ Todo list vor vpp
 		- queue
 		- image constructors (simply copy from buffer constructors in objects.cpp)
 		- etc...
+	- also test coherent atom handling in SharedBuffer
 - fix config for vkpp
 - imageOps: really allow extent with depth == 0? also handle it for height == 0?
 - make codestyle consistent everywhere

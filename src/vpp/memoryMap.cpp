@@ -34,7 +34,9 @@ void MemoryMap::remap(const Allocation& allocation)
 	auto nsize = std::max(allocation.end(), allocation_.end()) - nbeg;
 
 	// if new extent lay inside old do nothing
-	if(offset() <= nbeg && offset() + size() >= nbeg + nsize) return;
+	if(offset() <= nbeg && offset() + size() >= nbeg + nsize) {
+		return;
+	}
 
 	// else remap the memory
 	vk::unmapMemory(vkDevice(), vkMemory());
