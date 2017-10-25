@@ -107,7 +107,7 @@ TEST(nonCoherentAtomAlign) {
 	auto atomAlign = dev.properties().limits.nonCoherentAtomSize;
 
 	vpp::SharedBuffer buf(dev, {{}, 2048u, vk::BufferUsageBits::uniformBuffer});
-	buf.coherentAtomAlign = true;
+	buf.nonCoherentAtomAlign = true;
 
 	vpp::BufferRange range1(buf, buf.alloc(10u));
 	EXPECT(range1.allocation(), (Alloc{0u, 10u}));
@@ -122,5 +122,42 @@ TEST(nonCoherentAtomAlign) {
 }
 
 TEST(mappable) {
-	// TODO: test bufferAllocator with mappable buffers	
+	auto& dev = *globals.device;
+	auto& allocator = dev.bufferAllocator();
+	auto usage = vk::BufferUsageBits::vertexBuffer;
+	auto coherentBits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostCoherent);
+	auto atomAlign = dev.properties().limits.nonCoherentAtomSize;
+
+	// just allocate a mappable buffer
+	auto buf1 = allocator.alloc(true, 100u, usage, 128u);
+	EXPECT(buf1.allocation().size, 100u);
+	EXPECT(buf1.buffer().mappable(), true);
+	auto props = buf1.buffer().memoryEntry().memory()->properties();
+	auto coherent = (props & vk::MemoryPropertyBits::hostCoherent);
+	EXPECT(buf1.buffer().nonCoherentAtomAlign, !coherent);
+	EXPECT(buf1.offset() % 128u, 0u);
+	if(!coherent) {
+		EXPECT(buf1.offset() % atomAlign, 0u);
+	}
+
+	// allocate mappable buffer on coherent memory
+	auto buf2 = allocator.alloc(true, 1000u, usage, 0u, coherentBits);
+	EXPECT(buf2.allocation().size, 1000u);
+	EXPECT(buf2.buffer().mappable(), true);
+	auto type = buf2.buffer().memoryEntry().memory()->type();
+	EXPECT((coherentBits & (1 << type)) != 0, true);
+	EXPECT(buf2.buffer().nonCoherentAtomAlign, false);
+
+	// allocate mappable buffer on non-coherent memory
+	// there might be vulkan implementations where are all hostVisible
+	// types are also hostCoherent, we cannot do this test there
+	if(dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible) & ~coherentBits) {
+		auto buf3 = allocator.alloc(true, 511u, usage, 0u, ~coherentBits);
+		EXPECT(buf3.allocation().size, 511u);
+		EXPECT(buf3.buffer().mappable(), true);
+		type = buf3.buffer().memoryEntry().memory()->type();
+		EXPECT((~coherentBits & (1 << type)) != 0, true);
+		EXPECT(buf3.buffer().nonCoherentAtomAlign, true);
+		EXPECT(buf3.offset() % atomAlign, 0u);
+	}
 }

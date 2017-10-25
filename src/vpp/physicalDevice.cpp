@@ -14,7 +14,7 @@ vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice> phdevs)
 	vk::PhysicalDevice best = {};
 	auto bestScore = 0u;
 
-	// TODO: better querying! consider memory side and stuff
+	// TODO: better querying! consider memory size and stuff
 	for(auto& phdev : phdevs) {
 		auto props = vk::getPhysicalDeviceProperties(phdev);
 		auto score = 0u;

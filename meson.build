@@ -54,13 +54,12 @@ if tests
 endif
 
 # pkgconfig
-# TODO: make sure requires is correct
 # test the packageconfig with an external project
 pkg = import('pkgconfig')
-pkg_dirs = ['vpp']
+pkg_dirs = ['.']
 pkg.generate(
 	name: 'vpp',
-	requires: ['vulkan'], # TODO
+	requires: ['vulkan'],
 	libraries: vpp_lib,
 	filebase: 'vpp',
 	subdirs: pkg_dirs,

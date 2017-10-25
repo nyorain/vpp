@@ -6,38 +6,30 @@
 
 namespace vpp {
 
-// NOTE: it might be useful to go even one step further and add a new
-//  SharedBuffer class that makes use of sparse memory bindings and
-//  only binds those regions that are currently used by a BufferRange.
-//  Will have different costs than this concept (and this is fine
-//  in most cases, also sparse stuff is only sparingly (i'm sorry) supported)
-//  so keep this separate.
-
-// NOTE: also implement synchronized versions of these classes?
-//  might be useful since often there are multiple threads e.g. 
-//  uploading or initializing stuff. But again, implement as 
-//  a separate version, only pay for what you use.
-
-// TODO: document alignment parameters, show how it supports
-//  nonCoherentAtom
-
-
 /// Like vpp::Buffer but keeps track of sub-allocated BufferRanges.
 /// Can be used to share a buffer.
 /// See also BufferAllocator.
+/// Also implements a mechanism to make sure all allocations are spaced
+/// according to the devices nonCoherentAtomAlign property. 
 class SharedBuffer : public Buffer {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
-	// TODO: badly named, rather nonCoherentAtomAlign
-	// TODO: should probably not be changed at lifetime...
-	//  add constructors and make private
-	bool coherentAtomAlign {false};
+
+	/// Whether the nonCoherentAtomAlign feature is enabled.
+	/// If this is true, will make sure allocations are spaced
+	/// in a way that allows mapping and accessing them independently
+	/// even on non-hostCoherent memory.
+	/// Makes no sense to set on non-hostVisible or hostCoherent memory.
+	/// Note that changing this only affects future allocations, so you
+	/// probably don't want to call this while there are active
+	/// allocations. 
+	bool nonCoherentAtomAlign {false};
 
 public:
 	using Buffer::Buffer;
 	~SharedBuffer();
 
-	/// Tries to allocate a range with the given size.
+	/// Tries to allocate a range with the given size and align.
 	/// Returns an empty (i.e. size == 0) allocation if there
 	/// is not enough free space left.
 	Allocation alloc(vk::DeviceSize size, vk::DeviceSize align = 0u);
@@ -45,13 +37,12 @@ public:
 	/// Frees the given allocation. Undefined behavior if the
 	/// allocation is invalid (i.e. not allocated on this SharedBuffer).
 	void free(const Allocation&);
+
+	/// Returns all current allocations.
 	const auto& allocations() const { return allocations_; }
 
 protected:
 	// sorted by position for efficient allocation/release
-	// NOTE: we might want to use set/list for more efficient insert/erase,
-	//  worse iteration though. Would allow to only use a poiner in
-	//  bufferRange intead of the full allocation object
 	std::vector<Allocation> allocations_;
 };
 

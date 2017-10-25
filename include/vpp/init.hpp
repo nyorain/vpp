@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <vpp/defer.hpp>
+#include <vpp/fwd.hpp>
 #include <utility> // std::forward
 
 namespace vpp {
@@ -35,7 +35,7 @@ class Initializer {
 public:
 	///Constructs an internal object of type T with the given arguments.
 	template<typename... A>
-	Initializer(A&&... args) : obj_(defer, std::forward<A>(args)) {}
+	Initializer(A&&... args) : obj_(defer, std::forward<A>(args)...) {}
 
 	///Initialzed the object constructed by this initializer with the given arguments
 	///which completes the initialization process and returns (moves) the object.

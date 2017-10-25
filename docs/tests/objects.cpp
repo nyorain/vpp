@@ -9,6 +9,7 @@
 #include <vpp/framebuffer.hpp>
 #include <vpp/image.hpp>
 #include <vpp/renderPass.hpp>
+#include <vpp/vpp.hpp>
 
 // test just instanciates all vpp objects
 // also used as bootstrap for all classes that currently have no own test

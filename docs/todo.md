@@ -4,6 +4,7 @@ Todo list vor vpp
 - update README
 - release next version
 
+- add glfw/sdl examples
 - memorySize on buffer really ok? (e.g. see sharedBuffer, fill/retrieve)
 	- probably best to deprecate memoryResource::memorySize?
 - handle problem: memBits (in buffer/sharedBuffer/image) no compatible
@@ -188,6 +189,21 @@ low prio / general / ideas
 /// In move operators the destructor can be directly called.
 /// Usually classes implement a free friend swap function for themselves and then use it
 /// for the move operator.
+
+### From sharedbuffer:
+
+// NOTE: it might be useful to go even one step further and add a new
+//  SharedBuffer class that makes use of sparse memory bindings and
+//  only binds those regions that are currently used by a BufferRange.
+//  Will have different costs than this concept (and this is fine
+//  in most cases, also sparse stuff is only sparingly (i'm sorry) supported)
+//  so keep this separate.
+
+// NOTE: also implement synchronized versions of these classes?
+//  might be useful since often there are multiple threads e.g. 
+//  uploading or initializing stuff. But again, implement as 
+//  a separate version, only pay for what you use.
+
 
 
 Move to vkpp

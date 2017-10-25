@@ -1,185 +1,163 @@
 vpp
 ===
 
-A vulkan abstraction library written in modern C++ and licensed by
-the __Boost License__ (similar to MIT License).
+A vulkan abstraction and utility library written in modern C++.
 
-Does not aim to be a full-sized graphics engine, but rather focuses on
+Does not aim to be a framework or full-sized graphics engine, but rather focuses on
 providing some useful features that make programming vulkan applications in
 C++ more convenient and less repetitive while not introducing unreasonable overhead.
 
-At the moment, vpp is still in an alpha state, its first unstable release
-is __[v0.1-alpha](https://github.com/nyorain/vpp/releases)__
+__Things vpp provides:__
 
-If you want to improve the library or add your own ideas, just start a pull request.
+- C++ vulkan api with all its advantages
+	- while still keeping the compile time and LOC amount sane
+- RAII classes for all handles
+	- you only pay for what you use: no shared_ptr lock-in, no virtual abstraction
+- memory management utilities
+	- automatic yet efficient memory allocation (if you want)
+	- you can still allocate/manage your own memory if you need to
+		- e.g. vpp currently does not provide any sparse memory utility
+- idioms for efficient vulkan use
+	- Deferred initialization: allows to allocate as few resources as possible
+	  and share them
+	- SharedBuffer and BufferAllocator
+	- sharing DeviceMemory, DeviceMemoryAllocator (grouping allocations)
+	- Bundled command buffer submissions
+- retrieving/filling buffers and images in various ways
+	- utility for correctly filling std140, std430 buffers
+- query valid image usage combinations
+	- default image/imageView creation initializers
+- various initialization helpers (querying properties)
+	- Swapchain
+	- Image and ImageView default createInfos
+	- physical device querying
+- vpp::Renderer: implementing swapchain renderbuffer handling and 
+  submission/presentation synchronization
+
+__Things vpp does not provide:__
+
+- Full renderer/graphical implementations
+	- vpp will not provide something like a forward/deferred renderer imlpementation
+	- no non-vulkan concepts like camera, transform, matrix or vector
+- High-cost or non-generic abstractions like Texture/Model
+- a Window abstraction (just use sdl/glfw or whatever you want)
+	- vpp does not implement any platform-specific bits
+- Examples for learning vulkan
+
+At the moment, vpp is still in an early state, its latest unstable release
+is __[v0.1](https://github.com/nyorain/vpp/releases)__
+You can build it using meson. Linux (android as well) and Windows are
+supported and tested. Needs a solid C++17 compiler, msvc currently does
+currently not implement enough of the standard correctly.
+MinGW-w64 works on windows.
+
 Any contributions (feature requests, critics and recommendations as well)
 are highly appreciated.
 
-## Examples
+# Examples
 
-__A good place to start with vpp is the [hello world triangle
-example](doc/examples/intro.cpp)__
+__[This example](docs/examples/intro_ny.cpp)__ implements the hello-world-triangle
+using a cross-platform window abstraction and vpp.
+Below a couple of idiomatic usages of the rather high-level interfaces.
+You could also check out the [tests](docs/tests) to see basic usage
+of those classes with expected results.
+For more information on any of them, just check out the usually well-documented
+[header files](include/vpp).
 
-In addition, here are some smaller code snippets to give you an idea on how the
-api will probably look like and in which way in may be useful to program vulkan applications.
-Examples as well as a full documentation will be provided at some first release of a stable api.
-
-### Initialization
-
-The snippet below (taken from the intro example) shows how vpp can be used for easier
-intializing vulkan resources. Using plain vulkan and C to initialize instance, device,
-debugCallback and swapchain needs usually way more (repetitive) lines of code without
-expressing any interesting information (note that vpp always offer additional ways for
-configuration).
+#### Initialization
 
 ```cpp
-// the needed vulkan extensions and debug layer
-constexpr char* iniExts[] = {
-	VK_KHR_SURFACE_EXTENSION_NAME,
-	VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-	VK_EXT_DEBUG_REPORT_EXTENSION_NAME
-};
-
-constexpr auto layer = "VK_LAYER_LUNARG_standard_validation";
-constexpr auto extCount = sizeof(iniExts) / sizeof(iniExts[0]);
-
-// first, create a vulkan instance
-// with all needed extensions and the default debug layers enabled
-vk::ApplicationInfo appInfo ("intro", 1, "vpp", 1, VK_API_VERSION_1_0);
-
-vk::InstanceCreateInfo iniInfo;
-iniInfo.pApplicationInfo = &appInfo;
-iniInfo.enabledExtensionCount = extCount;
-iniInfo.ppEnabledExtensionNames = iniExtensions;
-instanceInfo.enabledLayerCount = 1;
-instanceInfo.ppEnabledLayerNames = &layer;
-
+// Create instance and debugCallback
+vk::InstanceCreateInfo iniInfo = {  ...  };
 vpp::Instance instance(iniInfo);
+vpp::DebugCallback debugCallback(instance); // extension must be enabled
 
-// create a debug callback for our instance and the default layers
-// the default implementation will just output to std::cerr
-vpp::DebugCallback debugCallback(instance);
+auto surface = /* use your favorite window abstraction to create a surface */
 
-// now create a device for the instance and a SurfaceKHR.
-// vpp will take care of basic queue and physical device choosing
-// We retrieve the queue to present on our surface
+// Let vpp choose a default physical device, present, graphics and compute queue
+// Note that while this (usually works) and is convenient at the beginning,
+// you can still just choose your own physical device or pass
+// your own DeviceCreateInfo with chosen queue families.
 const vpp::Queue* presentQueue;
-vpp::Device device(instance, vkSurface, presentQueue);
-
-// now we can create a vulkan swapchain
-// again, we just use the fast way and let vpp choose sane defaults
-vpp::Swapchain swapchain(device, window.surface);
+vpp::Device device(instance, surface, present);
 ```
 
-### Work batches
-
-The library was mainly built for high-performance vulkan apps therefore it abstracts the
-vulkan api while still making use of its explicitness. One of the main concepts of vpp is two step
-initialization which can bring huge performance gains in comparison to
-naive-written vulkan or opengl apps.
-
-The main idea is to batch the heavy work such as allocating device resource or executing commands
-on the device together.
-First, as many host objects as needed will be __created__ (which will make them
-request the resources and queue the work) and then all the objects will be __initialized__
-which means that the requested resources will be allocated, and the work that has to be
-done will be submitted all together.
-
-The example below creates multiple vulkan memory resources.
-If possible, all of them will automatically be allocated on the same device memory allocation.
-This is possible since creating them won't automatically bind them to memory.
-Only when they are
-used (i.e. vpp::Buffer::ensureMemory is called e.g. by filling them), they will
-be bound to memory. This defered two-step initialization idiom will improve
-performance and the needed number of allocations.
+#### Submission batches
 
 ```cpp
-vpp::Buffer a(dev, {{}, 1024 * 2000, vk::BufferUsageBits::vertex});
-vpp::Buffer b(dev, {{}, 1024 * 48, vk::BufferUsageBits::index});
-vpp::Buffer c(dev, {{}, 96, vk::BufferUsageBits::uniform},
+// vpp::QueueSubmitter allows to bundle multiple queue submissions
+// and then track the submission state.
+vpp::QueueSubmitter submitter(queue);
+auto id = submitter.add({submitInfo1, submitInfo2, submitInfo3});
+submitter.submit(id);
+submitter.wait(id);
 ```
 
-#### vpp::Work
-
-This idiom is extended beyond initialization to general work.
-This example shows how to fill or retrieve the data from buffers and images asynchronously.
-There will only be one call to vk::queueSubmit since all command buffers will be batched
-together. It also shows the utility vpp provides to easily fill/read images and buffers.
+#### Deferred initialization
 
 ```cpp
-// Fill a buffer with the 32 bit int and the data of a
-// vector (will extract it correctly) using std140 layout.
-std::uint32_t a = 420;
-std::vector<std::int32_t> b = {1, 4, 2, 5, 6, 3, 2, 4, 3};
-auto work1 = fill140(buffer1, a, b);
+// Create a couple of memory resources deferred
+// They are not fully initialized, not ready to be used
+vpp::Buffer buffer1(vpp::defer, device, bufferCreateInfo1);
+vpp::Buffer buffer2(vpp::defer, device, bufferCreateInfo2);
+vpp::Image image1(vpp::defer, device, imaCreateInfo1);
 
-// In this case the buffer is just filled the buffer with a raw
-// copy of the given type.
-MyPodStructData data;
-auto work2 = fill140(buffer2, 0.f, vpp::raw(data));
-
-// Read the aligned data using std430 layout into the given variables.
-// One can also specify how custom types (e.g. when using glm) should
-// be written or read.
-float d;
-Vec2 e;
-std::vector<std::uint32_t> f(200);
-auto work3 = retrieve430(buffer3, d, e, f);
-
-// We can now control and receive the state of the work.
-// For more information see the vpp::Work class template.
-work1->finish();
-work2->finish();
-work3->finish();
-
-// Alternatively, if there is lots of setup to do and one does
-// not want to care about all work objects seperatly, one can simply
-// give them to a work manager and then wait for the
-// work manager at the end of setup.
-WorkManager workManager;
-workManager.add({std::move(work1), std::move(work2), std::move(work3)});
-
-// The workManager would automatically finish the owned work on destruction
-// or you can call it manually.
-workManager.finish();
+// Finish deferred initialization for all resources
+// If posssible (due to vulkan MemoryRequirements) will allocate all resources
+// on a single device memory (respecting alignments etc)
+buffer1.init();
+buffer2.init();
+image1.init();
 ```
 
-Submitting just one batch of command buffers to the vulkan device for all operations
-above can bring massive performance gains, since submitting a queue is considered
-a heavy operation.
+#### SharedBuffer and BufferAllocator
 
-Good starting points for the vpp documentation are
-[vpp::Work](include/vpp/work.hpp), [vpp::Device](include/vpp/device.hpp) or
-[the bufferOps header](include/vpp/bufferOps.hpp).
+```cpp
+// Create a bufferAllocator (we could also use the device's thread-specific
+// default allocator) and allocate a bunch of mappable uniform buffer objects.
+// Since we reserve the needed storage, only one buffer will be created.
+// Alternatively, we could have directly created one vpp::SharedBuffer.
+vpp::BufferAllocator bufferAllocator(device);
+bufferAllocator.reserve(true, 1024, vk::BufferUsageBits::uniformBuffer);
+auto ubo1 = bufferAllocator.alloc(true, 64u, vk::BufferUsageBits::uniformBuffer);
+auto ubo2 = bufferAllocator.alloc(true, 64u, vk::BufferUsageBits::uniformBuffer);
+auto ubo3 = bufferAllocator.alloc(true, 64u, vk::BufferUsageBits::uniformBuffer);
+auto ubo4 = bufferAllocator.alloc(true, 64u, vk::BufferUsageBits::uniformBuffer);
+```
 
-All the examples here are using the highest level of abstraction of vpp (vpp is
-NOT an engine, so there will be no abstraction like Mesh, Material or Camera), but the api
-can also be accessed on a lower level of abstraction using e.g.
-[DeviceMemory](include/vpp/memory.hpp),
-[SubmitManager](include/vpp/submit.hpp), or
-[DeviceMemoryAllocator](include/vpp/allocator.hpp).
+#### Aligned buffer reading/writing
 
-## Building
-__vpp does not have any external dependencies (excluding vulkan headers and loader lib of course).__
-Since it already uses C++17 it compiles (at the moment) only on the latest gcc and clang
-builds.
+```cpp
+// Fill buffers in different ways using vpp.
+// Will automatically apply alignment requirements for std140/std430.
+// You could also use the oop api with more features (e.g. MappedBufferWriter)
+// Note that you have to specialize the vpp::VulkanType template
+// to make this work with your structs, vector or matrix types
+vpp::writeMap140(ubo, 1.f, someVec2f, 5u); // ubo must be mappable
+vpp::writeStaging140(vertexBuffer, verticesContainer); // use a staging buffer
+vpp::writeStagin430(storageBuffer, vpp::raw(data, size));
+vpp::writeDirect140(smallBuffer, 1.f, 2.f, 3.f); // direct update for few data
 
-Just download the repository or clone it with git, run cmake in a
-new build folder and then build it (e.g. using make or ninja with gcc/clang).
+// You can also read a buffer respecting the layout/alignment
+// will read the values set above
+float float1, float2, float3;
+/* your favorite vector type */ vec2f;
+vpp::readMap140(ubo, float1, vec2f, float2); 
+auto work = vpp::readStaging140(smallBuffer, float1, float2, float3);
 
-### Troubleshooting
+// will submit and wait for the command buffer
+// will write float1,float2,float3
+// can be used deferred to group multiple commands into one submission
+work.wait(); 
+```
 
-Compiling:
-* to find the vulkan library, the build system guesses depending on the platform or uses the
-VK_SDK_PATH environment variable, so if it fails to find the vulkan header or library make
-sure the variable is correctly set.
-* to use vpp in your own appliation, make sure that you pass the include/ directory of your install
-folder as include dir, the lib/ directory as link dir and link
-against vpp (libvpp.so or libvpp.dll). Additionally the vpp dynamic library (.so or .dll)
-must be located in the same directory as your executable or in the runtime path
-of your environment.
-* Make sure your have the latest vulkan sdk path installed, otherwise the generated C++ api will
-not be compatible with the installed plain vulkan api.
+#### Image filling/retrieving
 
-For further help or to report any problems (there are probably some at the moment) just
-open an issue at the [github page](https://github.com/nyorain/vpp)
+```cpp
+// You can also easily fill images. When using them, you should check the
+// documentation at vpp/imageOps.hpp for requirements
+vpp::fillMap(img1, size, dataToWrite, {vk::AspectBits::color});
+vpp::fillStaging(img2, format, layout, size, dataToWrite, {vk::AspectBits::color});
+auto work = vpp::retrieveStaging(img3, format, layout, size, {vk::AspectBits::color});
+auto img3Data = auto work.data();
+```

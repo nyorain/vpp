@@ -70,7 +70,7 @@ SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
 	// TODO: allocation algorithm can be improved, greedy atm
 	Allocation old = {0, 0};
 	vk::DeviceSize endAlign = 0u;
-	if(coherentAtomAlign) {
+	if(nonCoherentAtomAlign) {
 		endAlign = device().properties().limits.nonCoherentAtomSize;
 		alignment = std::max(alignment, endAlign);
 	}
@@ -87,7 +87,7 @@ SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
 	}
 
 	// last
-	// we don't have to check for nonCoherentAtom align here
+	// we don't have to check for nonCoherentAtom end align here
 	auto aligned = vpp::align(old.end(), alignment);
 	if(aligned + size <= memorySize()) {
 		Allocation range = {aligned, size};
@@ -118,7 +118,6 @@ void BufferAllocator::reserve(bool mappable, vk::DeviceSize size,
 	dlg_assertm(align == 1 || align % 2 == 0, 
 		"Alignment {} not power of 2", align);
 
-	// TODO: use align in a better way?
 	if(mappable) {
 		memBits &= device().memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
 		dlg_assertm(memBits, "reserve: invalid (too few) memBits given");
@@ -138,7 +137,13 @@ BufferRange BufferAllocator::alloc(bool mappable, vk::DeviceSize size,
 	dlg_assertm(align == 1 || align % 2 == 0, 
 		"Alignment {} not power of 2", align);
 
-	// TODO: really dumb algorithm atm
+	// TODO: 
+	// - really dumb algorithm atm, greedy af
+	// - we curently just add all previous reservings... maybe
+	//  subtract currently requested size (only if smaller than
+	//  absolute size or sth.)?
+	// - maybe always use hostCoherent memory types for mappable buffers?
+
 	if(mappable) {
 		memBits &= device().memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
 		dlg_assertm(memBits, "alloc: invalid (too few) memBits given");
@@ -154,7 +159,7 @@ BufferRange BufferAllocator::alloc(bool mappable, vk::DeviceSize size,
 		}
 
 		// check the buffer is mappable
-		if(mappable && !buf.buffer.coherentAtomAlign) {
+		if(mappable && !buf.buffer.nonCoherentAtomAlign) {
 			auto props = buf.buffer.memoryEntry().memory()->properties();
 			if(!(props & vk::MemoryPropertyBits::hostCoherent)) {
 				continue;	
@@ -167,11 +172,6 @@ BufferRange BufferAllocator::alloc(bool mappable, vk::DeviceSize size,
 			return BufferRange(buf.buffer, alloc);
 		}
 	}
-
-	// TODO: algorithm can probably be optimized, don't be greedy
-	// TODO: we curently just add all previous reservings... maybe
-	//  subtract currently requested size (only if smaller than
-	//  absolute size or sth.)?
 
 	// allocate a new buffer
 	// gather all matching buffer information
@@ -190,20 +190,12 @@ BufferRange BufferAllocator::alloc(bool mappable, vk::DeviceSize size,
 		}
 	}
 
-	// TODO: really prefer hostCoherent memory over atom alignment?
-	// maybe only check if ALL supported bits are hostCoherent or set the
-	// flag AFTER the sharedBuffer was created (probably the best solution)
-	if(createMappable) {
-		auto coherentBits = memBits & device().memoryTypeBits(
-			vk::MemoryPropertyBits::hostCoherent);
-		if(coherentBits) {
-			memBits = coherentBits;
-			createMappable = false;
-		}
+	buffers_.emplace_back(device(), createInfo, memBits);
+	auto props = buffers_.back().buffer.memoryEntry().memory()->properties();
+	if(createMappable && !(props & vk::MemoryPropertyBits::hostCoherent)) {
+		buffers_.back().buffer.nonCoherentAtomAlign = true;
 	}
 
-	buffers_.emplace_back(device(), createInfo, memBits);
-	buffers_.back().buffer.coherentAtomAlign = createMappable;
 	auto alloc = buffers_.back().buffer.alloc(size);
 	dlg_assert(alloc.size == size);
 	return BufferRange(buffers_.back().buffer, alloc);
