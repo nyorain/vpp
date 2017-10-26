@@ -179,7 +179,7 @@ BufferRange BufferAllocator::alloc(bool mappable, vk::DeviceSize size,
 	createInfo.size = size;
 	createInfo.usage = usage;
 
-	bool createMappable = false;
+	bool createMappable = mappable;
 	for(auto& req : reqs_) {
 		auto mem = memBits & req.memBits;
 		if(mem) {
