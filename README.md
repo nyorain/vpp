@@ -51,7 +51,7 @@ supported and tested. Needs a solid C++17 compiler, msvc does
 currently not implement enough of the standard correctly.
 MinGW-w64 works on windows.
 
-Any contributions (feature requests, critics and recommendations as well)
+Any contributions (feature requests, issues and recommendations as well)
 are highly appreciated.
 
 # Examples
