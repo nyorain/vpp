@@ -47,7 +47,7 @@ __Things vpp does not provide:__
 At the moment, vpp is still in an early state, its latest unstable release
 is __[v0.2](https://github.com/nyorain/vpp/releases)__
 You can build it using meson. Linux (android as well) and Windows are
-supported and tested. Needs a solid C++17 compiler, msvc currently does
+supported and tested. Needs a solid C++17 compiler, msvc does
 currently not implement enough of the standard correctly.
 MinGW-w64 works on windows.
 
