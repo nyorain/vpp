@@ -1,9 +1,7 @@
 Todo list vor vpp
 =================
 
-- release next version
 - update this file (cleanup, organize into ideas/fixes)
-
 - integrate renderer with QueueSubmitter
 - work dependency chaining (-> QueueSubmitter semaphores)
 	- would allow to e.g. let Renderer submission depend on buffer updates
