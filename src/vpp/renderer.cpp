@@ -155,10 +155,17 @@ vk::Result Renderer::render(vk::Fence* fence)
 	swap(acquireSemaphore_, buf.semaphore);
 
 	// make sure the command buffer is recorded
-	if(!buf.valid || mode_ == RecordMode::always) {
-		dlg_assertl(dlg_level_debug, mode_ != RecordMode::all);
+	if(!buf.valid) {
 		record(buf);
 		buf.valid = true;
+	} else if(mode_ == RecordMode::always) {
+		// NOTE: there is currently no better way to do this, 
+		// we cannot reset the commandPool since there might be
+		// command buffers that are currently in use
+		// Maybe create commandPool with the freeable flag in this case
+		buf.commandBuffer = {};
+		buf.commandBuffer = commandPool_.allocate();
+		record(buf);
 	}
 
 	vk::PipelineStageFlags flags = vk::PipelineStageBits::colorAttachmentOutput;
@@ -180,7 +187,6 @@ vk::Result Renderer::render(vk::Fence* fence)
 		vk::resetFences(device(), {buf.fence});
 	}
 
-	// NOTE: integrate with submit manager?
 	{
 		QueueLock lock(device());
 		vk::queueSubmit(*render_,  {submitInfo}, buf.fence);

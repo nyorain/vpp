@@ -1,9 +1,12 @@
 Todo list vor vpp
 =================
 
-- update README
 - release next version
+- update this file (cleanup, organize into ideas/fixes)
 
+- integrate renderer with QueueSubmitter
+- work dependency chaining (-> QueueSubmitter semaphores)
+	- would allow to e.g. let Renderer submission depend on buffer updates
 - add glfw/sdl examples
 - memorySize on buffer really ok? (e.g. see sharedBuffer, fill/retrieve)
 	- probably best to deprecate memoryResource::memorySize?
@@ -204,13 +207,3 @@ low prio / general / ideas
 //  uploading or initializing stuff. But again, implement as 
 //  a separate version, only pay for what you use.
 
-
-
-Move to vkpp
-------------
-
-- codegen: don't output all extensions. Only required (via settings) ones
-- codegen: some way to detect installed vulkan version and automatically generate for it?
-	- should be doable with meson (python vulkan module; get version; download spec; parse it)
-	- Would probably require some spec version testing for codegen (fix issues with ALL spec version...)
-- codegen: queueFamilyExternalKhr (i.e. constants of extensions) -> ...KHR
