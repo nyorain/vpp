@@ -75,7 +75,7 @@ vpp::DebugCallback debugCallback(instance); // extension must be enabled
 auto surface = /* use your favorite window abstraction to create a surface */
 
 // Let vpp choose a default physical device, present, graphics and compute queue
-// Note that while this (usually works) and is convenient at the beginning,
+// Note that while this usually works and is convenient at the beginning,
 // you can still just choose your own physical device or pass
 // your own DeviceCreateInfo with chosen queue families.
 const vpp::Queue* presentQueue;
