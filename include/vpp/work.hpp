@@ -11,6 +11,7 @@
 
 #include <memory> // std::unique_ptr
 #include <stdexcept> // std::exception
+#include <utility> // std::swap
 
 namespace vpp {
 
@@ -99,10 +100,10 @@ class FinishedWork : public Work<R> {
 public:
 	virtual ~FinishedWork() = default;
 
-	virtual void submit() override {}
-	virtual void finish() override {}
-	virtual void wait() override {}
-	virtual WorkBase::State state() override { return WorkBase::State::finished; }
+	void submit() override {}
+	void finish() override {}
+	void wait() override {}
+	WorkBase::State state() override { return WorkBase::State::finished; }
 };
 
 /// Implements the work interface for command buffers and device submissions.
@@ -118,12 +119,12 @@ public:
 	CommandWork(QueueSubmitter&, const vk::SubmitInfo&, CommandBuffer&& = {});
 	~CommandWork();
 
-	CommandWork(CommandWork&&) noexcept = default;
-	CommandWork& operator=(CommandWork&&) noexcept = default;
+	CommandWork(CommandWork&& rhs) noexcept;
+	CommandWork& operator=(CommandWork&& rhs) noexcept;
 
-	virtual void submit() override;
-	virtual void wait() override;
-	virtual WorkBase::State state() override;
+	void submit() override;
+	void wait() override;
+	WorkBase::State state() override;
 
 protected:
 	void init(QueueSubmitter&, const vk::SubmitInfo& info);

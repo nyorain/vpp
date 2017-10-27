@@ -2,6 +2,7 @@ Todo list vor vpp
 =================
 
 - update this file (cleanup, organize into ideas/fixes)
+- update travis (for vkpp)
 - integrate renderer with QueueSubmitter
 - work dependency chaining (-> QueueSubmitter semaphores)
 	- would allow to e.g. let Renderer submission depend on buffer updates

@@ -22,7 +22,9 @@ CommandWork<R>::CommandWork(QueueSubmitter& submitter,
 template<typename R>
 CommandWork<R>::~CommandWork()
 {
-	tryFinish(*this, "~CommandWork");
+	if(submitter_) {
+		tryFinish(*this, "~CommandWork");
+	}
 }
 
 template<typename R>
@@ -74,4 +76,33 @@ WorkBase::State CommandWork<R>::state()
 	}
 
 	return state_;
+}
+
+template<typename R>
+CommandWork<R>::CommandWork(CommandWork&& rhs) noexcept :
+	cmdBuffer_(std::move(rhs.cmdBuffer_)), submitter_(rhs.submitter_),
+	submitID_(rhs.submitID_), state_(rhs.state_)
+{
+	rhs.submitter_ = {};
+	rhs.submitID_ = {};
+	rhs.state_ = WorkBase::State::none;
+}
+
+template<typename R>
+CommandWork<R>& CommandWork<R>::operator=(CommandWork&& rhs) noexcept
+{
+	if(submitter_) {
+		tryFinish(*this, "CommandWork::operator=");
+	}
+
+	cmdBuffer_ = std::move(rhs.cmdBuffer_);
+	submitter_ = rhs.submitter_;
+	submitID_ = rhs.submitID_;
+	state_ = rhs.state_;
+
+	rhs.submitter_ = {};
+	rhs.submitID_ = {};
+	rhs.state_ = WorkBase::State::none;
+
+	return *this;
 }
