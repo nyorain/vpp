@@ -113,6 +113,14 @@ vk::DebugReportFlagsEXT DebugCallback::defaultErrorFlags()
 {
 	return vk::DebugReportBitsEXT::error;
 }
+vk::DebugReportFlagsEXT DebugCallback::allBits()
+{
+	return vk::DebugReportBitsEXT::warning |
+		vk::DebugReportBitsEXT::error |
+		vk::DebugReportBitsEXT::performanceWarning |
+		vk::DebugReportBitsEXT::debug |
+		vk::DebugReportBitsEXT::information;
+}
 
 DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags,
 	bool verbose, vk::DebugReportFlagsEXT error) : 

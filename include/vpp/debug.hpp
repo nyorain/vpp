@@ -36,6 +36,9 @@ public:
 	/// Additional options would be e.g. information or debug.
 	static vk::DebugReportFlagsEXT defaultFlags();
 
+	/// Returns all possible bits.
+	static vk::DebugReportFlagsEXT allBits();
+
 	/// The default flags for which to return a validation error,
 	/// i.e. make the vulkan call fail. Returns only the error flag.
 	static vk::DebugReportFlagsEXT defaultErrorFlags();

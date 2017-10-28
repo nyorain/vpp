@@ -39,6 +39,11 @@ TEST(sharedBuf) {
 	EXPECT(bufRange.size(), 100u);
 	EXPECT(bufRange.offset(), 0u);
 
+	auto bufRange2 = std::move(bufRange);
+	EXPECT(&bufRange2.buffer(), &buf);
+	EXPECT(bufRange2.size(), 100u);
+	EXPECT(bufRange2.offset(), 0u);
+
 	ERROR(vpp::BufferRange(buf, 1000u), std::runtime_error);
 
 	// allocator
@@ -119,6 +124,8 @@ TEST(nonCoherentAtomAlign) {
 	vpp::BufferRange range3(buf, buf.alloc(100u));
 	offset = vpp::align<vk::DeviceSize>(range2.allocation().end(), atomAlign);
 	EXPECT(range3.allocation(), (Alloc{offset, 100u}));
+
+	auto range4 = std::move(range3);
 }
 
 TEST(mappable) {
@@ -147,6 +154,10 @@ TEST(mappable) {
 	auto type = buf2.buffer().memoryEntry().memory()->type();
 	EXPECT((coherentBits & (1 << type)) != 0, true);
 	EXPECT(buf2.buffer().nonCoherentAtomAlign, false);
+
+	auto mapView1 = buf2.memoryMap();
+	auto mapView2 = buf2.memoryMap();
+	auto mapView3 = buf2.memoryMap();
 
 	// allocate mappable buffer on non-coherent memory
 	// there might be vulkan implementations where are all hostVisible

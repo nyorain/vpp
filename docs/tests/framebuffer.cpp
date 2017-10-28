@@ -61,4 +61,5 @@ TEST(framebuffer) {
 		{}, renderPass, 2, fbAttachments.begin(), size.width, size.height, 1
 	};
 	auto fb = vpp::Framebuffer(dev, info);
+	auto moved = std::move(fb);
 }

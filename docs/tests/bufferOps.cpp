@@ -210,13 +210,19 @@ vpp::BufferRange readWrite(bool mappable, vk::BufferUsageFlags usage,
 	std::int32_t c {};
 
 	if(!direct && !mappable) {
-		vpp::writeStaging140(buf, 42.f, Vec3f {1.f, 2.f, 3.f}, (std::int32_t) -420);
+		auto work = vpp::writeStaging140(buf, 42.f, Vec3f {1.f, 2.f, 3.f}, (std::int32_t) -420);
+		auto work2 = std::move(work);
+		work2.finish();
+
 		vpp::readStaging140(buf, a, b, c);
 	} else if(!direct && mappable) {
 		vpp::writeMap140(buf, 42.f, Vec3f {1.f, 2.f, 3.f}, (std::int32_t) -420);
 		vpp::readMap140(buf, a, b, c);
 	} else {
-		vpp::writeDirect140(buf, 42.f, Vec3f {1.f, 2.f, 3.f}, (std::int32_t) -420);
+		auto work = vpp::writeDirect140(buf, 42.f, Vec3f {1.f, 2.f, 3.f}, (std::int32_t) -420);
+		auto work2 = std::move(work);
+		work2.finish();
+		
 		vpp::readStaging140(buf, a, b, c);
 	}
 
@@ -243,7 +249,9 @@ TEST(buffer_range) {
 	auto buf6 = readWrite(false, usage, true);
 
 	for(auto i = 0u; i < 100u; ++i) {
-		readWrite(true, usage);
+		auto range = readWrite(true, usage);
+		auto range2 = std::move(range);
+
 		readWrite(false, usage);
 		readWrite(true, usage, true);
 		readWrite(false, usage, true);

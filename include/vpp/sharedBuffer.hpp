@@ -29,6 +29,10 @@ public:
 	using Buffer::Buffer;
 	~SharedBuffer();
 
+	/// Not movable to allow BufferRanges to reference it.
+	SharedBuffer(SharedBuffer&&) noexcept = delete;
+	SharedBuffer& operator=(SharedBuffer&&) noexcept = delete;
+
 	/// Tries to allocate a range with the given size and align.
 	/// Returns an empty (i.e. size == 0) allocation if there
 	/// is not enough free space left.

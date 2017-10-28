@@ -29,7 +29,11 @@ public:
 	/// All values referenced by the given SubmitInfo must
 	/// stay valid until the returned id was submitted.
 	/// It will not be possible to remove this submitInfo.
-	uint64_t add(const vk::SubmitInfo& info);
+	/// If the given second argument is not null, sets it to the specific of
+	/// this submission. Until the returned id is not submitted,
+	/// pendingInfos()[specificID] can be used to refer to (and change)
+	/// this submit info (since submissions cannot be deleted).
+	uint64_t add(const vk::SubmitInfo& info, unsigned int* specificID = {});
 
 	/// Makes sure the given id is submitted to the device.
 	/// The id must have been returned by add.
@@ -66,6 +70,9 @@ public:
 	/// Returns the current id.
 	/// Could be used to observe its state.
 	uint64_t current() const { return id_; }
+
+	const auto& pendingInfos() const { return pending_; }
+	auto& pendingInfos() { return pending_; }
 
 	const auto& queue() const { return *queue_; }
 	const auto& resourceRef() const { return *queue_; }

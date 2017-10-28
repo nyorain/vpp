@@ -205,7 +205,7 @@ vk::DeviceSize DeviceMemory::totalFree() const noexcept
 MemoryMapView DeviceMemory::map(const Allocation& allocation)
 {
 	if(!mapped()) {
-		memoryMap_ = MemoryMap(*this, allocation);
+		memoryMap_.map(*this, allocation);
 	} else {
 		memoryMap_.remap(allocation);
 	}

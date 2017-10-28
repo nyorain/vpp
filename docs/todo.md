@@ -22,7 +22,8 @@ Todo list vor vpp
 		- image constructors (simply copy from buffer constructors in objects.cpp)
 		- etc...
 	- also test coherent atom handling in SharedBuffer
-- fix config for vkpp
+- fix config.hpp for vkpp (messed up atm)
+- memoryMap: remap when MemoryMapView is destroyed? for guarantees?
 - imageOps: really allow extent with depth == 0? also handle it for height == 0?
 - make codestyle consistent everywhere
 - device: cache supported extensions (see e.g. defaults.cpp: could change
@@ -35,6 +36,7 @@ Todo list vor vpp
 - implement BufferAllocator optimize/shrink
 - add more assertions everywhere where things are assumed
 	- don't overdo, only if potentially useful when debugging
+	- see work.inl (something like tryFinish probably best)
 
 low prio / general / ideas
 --------------------------

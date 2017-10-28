@@ -3,6 +3,7 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/work.hpp>
+#include <vkpp/structs.hpp>
 #include <dlg/dlg.hpp>
 
 #include <iterator>
@@ -72,6 +73,21 @@ bool tryFinish(WorkBase& work, const char* msg) noexcept
 	}
 
 	return true;
+}
+
+void commandWork_assert(bool expr, const char* msg)
+{
+	dlg_assertm(expr, "CommandWork: {}", msg);
+}
+
+void commandWork_updateMoved(QueueSubmitter* submitter, uint64_t submitID, 
+	unsigned int infoID, const vk::CommandBuffer& cmdBuf)
+{
+	if(submitter && !submitter->submitted(submitID) && cmdBuf) {
+		dlg_assert(submitter->pendingInfos().size() > infoID);
+		dlg_assert(submitter->pendingInfos()[infoID].commandBufferCount == 1);
+		submitter->pendingInfos()[infoID].pCommandBuffers = &cmdBuf;
+	}
 }
 
 } // namespace vpp

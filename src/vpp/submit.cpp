@@ -30,9 +30,13 @@ QueueSubmitter::~QueueSubmitter()
 	}
 }
 
-uint64_t QueueSubmitter::add(const vk::SubmitInfo& info)
+uint64_t QueueSubmitter::add(const vk::SubmitInfo& info, unsigned int* specificID)
 {
 	dlg_assert(queue_);
+	if(specificID) {
+		*specificID = pending_.size();
+	}
+
 	pending_.push_back(info);
 	return id_;
 }

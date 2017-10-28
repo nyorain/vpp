@@ -21,6 +21,8 @@ TEST(image) {
 	};
 
 	vpp::Image img1 = {dev, imgInfo};
+	auto moved = std::move(img1);
+	img1 = std::move(moved);
 
 	imgInfo.usage = vk::ImageUsageBits::sampled;
 	imgInfo.format = vk::Format::r8Uint;
@@ -43,26 +45,33 @@ TEST(image) {
 		vk::AccessBits::transferWrite,
 		{vk::ImageAspectBits::color, 0, 1, 0, 1}, dev.queueSubmitter());
 
-	vpp::fillStaging(img1, vk::Format::r8g8b8a8Unorm,
+	auto work = vpp::fillStaging(img1, vk::Format::r8g8b8a8Unorm,
 		vk::ImageLayout::transferDstOptimal, size, data,
 		{vk::ImageAspectBits::color});
+	auto workm = std::move(work);
+	workm.wait();
+	workm.submit();
+	workm.finish();
 
 	vpp::fillMap(img2, vk::Format::r8Unorm, size, 
 		{data.data(), size.width * size.height}, 
 		{vk::ImageAspectBits::color});
 
-	vpp::changeLayout(img1,
+	auto work1 = vpp::changeLayout(img1,
 		vk::ImageLayout::transferDstOptimal, vk::PipelineStageBits::transfer, 
 		vk::AccessBits::transferWrite,
 		vk::ImageLayout::transferSrcOptimal, vk::PipelineStageBits::transfer, 
 		vk::AccessBits::transferRead,
 		{vk::ImageAspectBits::color, 0, 1, 0, 1}, dev.queueSubmitter());
+	auto work2 = std::move(work1);
+	work2.finish();
 
-	auto dataWork = vpp::retrieveStaging(img1, 
+	auto dataWork1 = vpp::retrieveStaging(img1, 
 		vk::Format::r8g8b8a8Unorm, vk::ImageLayout::transferSrcOptimal,
 		size, {vk::ImageAspectBits::color, 0, 0});
+	auto dataWork2 = std::move(dataWork1);
 
-	auto data1 = dataWork.data();
+	auto data1 = dataWork2.data();
 	EXPECT(data1.size(), size.width * size.height * 4u);
 	EXPECT((unsigned int) data1[0], 0x00u);
 	EXPECT((unsigned int) data1[1], 0x01u);

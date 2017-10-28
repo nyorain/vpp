@@ -28,8 +28,11 @@ public:
 	CommandPool(const Device& dev, uint32_t qfam, vk::CommandPoolCreateFlags flags = {});
 	~CommandPool();
 
-	CommandPool(CommandPool&& lhs) noexcept { swap(*this, lhs); }
-	CommandPool& operator=(CommandPool lhs) noexcept { swap(*this, lhs); return *this; }
+	CommandPool(CommandPool&& rhs) noexcept { swap(*this, rhs); }
+	CommandPool& operator=(CommandPool rhs) noexcept { 
+		swap(*this, rhs); 
+		return *this; 
+	}
 
 	CommandBuffer allocate(vk::CommandBufferLevel lvl = primaryCmdBufLevel);
 	std::vector<CommandBuffer> allocate(size_t count,
@@ -58,9 +61,9 @@ public:
 	CommandBuffer(const Device&, vk::CommandPool, vk::CommandBuffer);
 	~CommandBuffer();
 
-	CommandBuffer(CommandBuffer&& lhs) noexcept { swap(*this, lhs); }
-	CommandBuffer& operator=(CommandBuffer lhs) noexcept { 
-		swap(*this, lhs); 
+	CommandBuffer(CommandBuffer&& rhs) noexcept { swap(*this, rhs); }
+	CommandBuffer& operator=(CommandBuffer rhs) noexcept { 
+		swap(*this, rhs); 
 		return *this; 
 	}
 

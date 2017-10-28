@@ -20,6 +20,7 @@ TEST(mem) {
 	auto rawMem = vk::allocateMemory(dev, {2048, 0u});
 	auto memHandle1 = vpp::DeviceMemoryHandle(dev, {256u, 0u});
 	auto memHandle2 = vpp::DeviceMemoryHandle(dev, rawMem);
+	auto memHandle3 = std::move(memHandle2);
 
 	auto rawMem2 = vk::allocateMemory(dev, {14u, 0u});
 	auto mem1 = vpp::DeviceMemory(dev, {256u, 0u});
@@ -27,6 +28,7 @@ TEST(mem) {
 
 	auto allocator = vpp::DeviceMemoryAllocator(dev);
 	auto memEntry = vpp::MemoryEntry(mem1, mem1.alloc(10u, 0u, vpp::AllocationType::linear));
+	auto memEntry2 = std::move(memEntry);
 }
 
 TEST(cmd) {
@@ -44,6 +46,7 @@ TEST(cmd) {
 	auto cmdAllocator = vpp::CommandAllocator(dev);
 	auto cmdBuf5 = cmdAllocator.get(0);
 	auto cmdBufs6 = cmdAllocator.get(0, 3);
+	auto cmdBuf7 = std::move(cmdBuf5);
 }
 
 // returns the index of the first set bit of an uint
@@ -100,6 +103,7 @@ TEST(buf) {
 	vpp::Buffer buf8(dev, rawBuf3, std::move(entry));
 
 	vpp::Buffer buf9(dev, info, mem);
+	auto buf10 = std::move(buf9);
 }
 
 TEST(sync) {

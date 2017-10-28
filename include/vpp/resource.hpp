@@ -128,7 +128,7 @@ template<typename Handle>
 class ResourceHandle : public Resource, public nytl::NonCopyable {
 public:
 	const Handle& vkHandle() const noexcept { return handle_; }
-	operator Handle() const noexcept { return vkHandle(); }
+	operator const Handle&() const noexcept { return vkHandle(); }
 
 	void release() { handle_ = {}; }
 
@@ -158,7 +158,7 @@ template<typename B, typename Handle>
 class ResourceReferenceHandle : public ResourceReference<B>, public nytl::NonCopyable {
 public:
 	const Handle& vkHandle() const noexcept { return handle_; }
-	operator Handle() const noexcept { return vkHandle(); }
+	operator const Handle&() const noexcept { return vkHandle(); }
 	void release() { handle_ = {}; }
 
 protected:

@@ -61,6 +61,9 @@ TEST(map) {
 	
 	EXPECT(memory.mappable(), true);
 	auto map = memory.map({0u, 1024u});
+	auto map2 = std::move(map);
+	map = std::move(map2);
+
 	EXPECT(map.offset(), 0u);
 	EXPECT(map.size(), 1024u);
 	EXPECT(&map.memory(), &memory);
@@ -68,7 +71,7 @@ TEST(map) {
 	EXPECT(memory.mapped() != nullptr, true);
 
 	// this will have no effect, just return another view
-	auto map2 = memory.map({0, 256});
+	map2 = memory.map({0, 256});
 	EXPECT(map2.offset(), 0u);
 	EXPECT(map2.size(), 256u);
 	EXPECT(map2.ptr(), map.ptr());
@@ -77,6 +80,8 @@ TEST(map) {
 	// just another view
 	auto map3 = memory.map({256, 256});
 	EXPECT(map3.ptr(), map.ptr() + 256);
+
+	map = std::move(map3);
 }
 
 TEST(remap) {

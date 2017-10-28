@@ -22,8 +22,14 @@ public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
 
 public:
+	/// MemoryMap is NonMovable to allow views to keep references
+	/// to the MemoryMap object (e.g. unref it on destruction).
+	MemoryMap(MemoryMap&&) noexcept = delete;
+	MemoryMap& operator=(MemoryMap&&) noexcept = delete;
+
 	/// Assures that the range given by allocation is included in the map.
-	/// Might remap the mapped range.
+	/// Might remap the mapped range. If the memory is currently not
+	/// mapped, will map it.
 	void remap(const Allocation& allocation);
 
 	/// Calls flushMappedMemoryRanges, see the vulkan spec.
@@ -56,21 +62,15 @@ public:
 	vk::MappedMemoryRange mappedMemoryRange() const noexcept;
 
 	const DeviceMemory& resourceRef() const noexcept { return *memory_; }
-	friend void swap(MemoryMap& a, MemoryMap& b) noexcept;
 
 protected:
 	friend class MemoryMapView;
 	friend class DeviceMemory;
 
 	MemoryMap()  = default;
-	MemoryMap(const DeviceMemory& memory, const Allocation& alloc);
 	~MemoryMap();
 
-	MemoryMap(MemoryMap&& rhs) noexcept { swap(*this, rhs); }
-	MemoryMap& operator=(MemoryMap rhs) noexcept { 
-		swap(*this, rhs); 
-		return *this; 
-	}
+	void map(const DeviceMemory& memory, const Allocation& alloc);
 
 	void ref() noexcept;
 	void unref() noexcept;

@@ -16,14 +16,6 @@
 namespace vpp {
 
 // MemoryMap
-MemoryMap::MemoryMap(const DeviceMemory& memory, const Allocation& alloc)
-	: memory_(&memory), allocation_(alloc)
-{
-	dlg_assertm(memory.properties() & vk::MemoryPropertyBits::hostVisible,
-		"Trying to map unmappable memory");
-	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
-}
-
 MemoryMap::~MemoryMap()
 {
 	try {
@@ -33,8 +25,20 @@ MemoryMap::~MemoryMap()
 	}
 }
 
+void MemoryMap::map(const DeviceMemory& memory, const Allocation& alloc)
+{
+	unmap();
+
+	dlg_assertm(memory.properties() & vk::MemoryPropertyBits::hostVisible,
+		"Trying to map unmappable memory");
+	memory_ = &memory;
+	allocation_ = alloc;
+	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
+}
+
 void MemoryMap::remap(const Allocation& allocation)
 {
+
 	// new allocation extent
 	auto nbeg = std::min(allocation.offset, allocation_.offset);
 	auto nsize = std::max(allocation.end(), allocation_.end()) - nbeg;
@@ -49,18 +53,6 @@ void MemoryMap::remap(const Allocation& allocation)
 	allocation_ = {nbeg, nsize};
 
 	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
-}
-
-void swap(MemoryMap& a, MemoryMap& b) noexcept
-{
-	using std::swap;
-	using RR = ResourceReference<MemoryMap>;
-
-	swap(static_cast<RR&>(a), static_cast<RR&>(b));
-	swap(a.memory_, b.memory_);
-	swap(a.allocation_, b.allocation_);
-	swap(a.ptr_, b.ptr_);
-	swap(a.views_, b.views_);
 }
 
 vk::MappedMemoryRange MemoryMap::mappedMemoryRange() const noexcept

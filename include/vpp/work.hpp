@@ -50,7 +50,7 @@ public:
 	// Will wait for the work to finish and may then execute post-wait 
 	// finishing operation like receiving data.
 	// Must not be called in invalid state.
-	virtual void finish() { wait(); }
+	virtual void finish() = 0;
 
 	// Returns the current state of the work.
 	// Might query it every time this function is called.
@@ -116,7 +116,7 @@ class CommandWork : public Work<R> {
 public:
 	CommandWork() = default;
 	CommandWork(QueueSubmitter&, CommandBuffer&&);
-	CommandWork(QueueSubmitter&, const vk::SubmitInfo&, CommandBuffer&& = {});
+	CommandWork(QueueSubmitter&, const vk::SubmitInfo&);
 	~CommandWork();
 
 	CommandWork(CommandWork&& rhs) noexcept;
@@ -124,6 +124,7 @@ public:
 
 	void submit() override;
 	void wait() override;
+	void finish() override;
 	WorkBase::State state() override;
 
 protected:
@@ -133,6 +134,7 @@ protected:
 	CommandBuffer cmdBuffer_;
 	QueueSubmitter* submitter_ {};
 	uint64_t submitID_ {};
+	unsigned int infoID_ {};
 	WorkBase::State state_ {WorkBase::State::none};
 };
 
