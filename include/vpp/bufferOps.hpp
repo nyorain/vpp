@@ -495,7 +495,7 @@ template<typename... T>
 auto readStaging(QueueSubmitter& qs, const Buffer& buf, 
 	BufferLayout layout, T&... args) 
 {
-	return readStaging(qs, buf, 0u, layout, args...);
+	return readStaging(qs, 0u, buf, layout, args...);
 }
 
 template<typename... T>
