@@ -2,6 +2,9 @@ Todo list vor vpp
 =================
 
 - update this file (cleanup, organize into ideas/fixes)
+- QueueSubmitter exception safe (clear pending_?)
+- save(PipelineCache) should probably not throw on error (return false)
+- one_device: store device in Device, not Resource. Make sure it can be reset (after destruction) e.g. for device lost or multiple devices in sequence + example/test (create multiple devices and resources)
 - update travis (for vkpp)
 - integrate renderer with QueueSubmitter
 - work dependency chaining (-> QueueSubmitter semaphores)
@@ -41,6 +44,7 @@ Todo list vor vpp
 low prio / general / ideas
 --------------------------
 
+- PipelineLayout constructor (use range of vk::DescirptorSEtLayout)
 - imageOps: fill: option to use direct update instead of mapping?
 	- probably not worth it, we have to allocate buffer either way...
 	- or is there a way to directly update deviceLocal image?
@@ -116,9 +120,7 @@ low prio / general / ideas
 	- scope of vpp?
 	- must wait until supported somewhere, for tests
 - pipeline init helper functions (really useful/needed?)
-	- pipeline rework
-		- see initializers concept...
-		- rather unintuitive at the moment to explicitly call record (?)
+- pipeline layout constructor (use range of vk::DescirptorSetLayout)
 - queue constness? (maybe make it related to any operations on the queue?)
 - codegen constexpr?
 - write deviceLost handling code snippet example

@@ -1,5 +1,10 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #pragma once
 
+#include <vpp/fwd.hpp>
 #include <vpp/buffer.hpp>
 #include <vpp/resource.hpp>
 #include <deque>
@@ -81,7 +86,7 @@ public:
 
 protected:
 	SharedBuffer* shared_ {};
-	Allocation allocation_;
+	Allocation allocation_ {};
 };
 
 // movable? 
