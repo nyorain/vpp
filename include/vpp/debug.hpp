@@ -6,6 +6,8 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/util/nonCopyable.hpp>
+#include <vpp/util/span.hpp>
+#include <vkpp/enums.hpp>
 
 #include <vector> // std::vector
 #include <cstdint> // std::uint64_t
@@ -13,6 +15,7 @@
 namespace vpp {
 
 /// Vulkan DebugCallback base class.
+/// Requires VK_EXT_debug_report to be enabled in instance (will throw otherwise).
 /// By default this will just dump the received information for the given flags
 /// to the standard output. Custom implementations can device from this class
 /// and override the call member to handle debug callbacks in a custom way.
@@ -71,5 +74,82 @@ protected:
 	vk::DebugReportFlagsEXT errorFlags_ {};
 	bool verbose_ {};
 };
+
+/// - Debug marker utitlity -
+/// Require VK_EXT_debug_marker in instance, will have no effect otherwise.
+
+/// Set the name of the given handle.
+/// Also see the templated version below.
+void nameHandle(vk::Device, std::uint64_t handle, 
+	vk::DebugReportObjectTypeEXT, const char* name);
+
+/// Sets the tag of the given handle.
+/// Also see the templated version below.
+void tagHandle(vk::Device, std::uint64_t handle, vk::DebugReportObjectTypeEXT, 
+	std::uint64_t name, nytl::Span<const std::byte> data);
+
+void beginDebugRegion(vk::Device, vk::CommandBuffer, const char* name,
+	std::array<float, 4> col = {});
+void endDebugRegion(vk::Device, vk::CommandBuffer);
+void insertDebugMarker(vk::Device, vk::CommandBuffer, const char* name,
+	std::array<float, 4> col = {});
+
+namespace detail {
+
+template<typename T>
+struct DebugHandleType;
+
+#define DebugHandleSpec(handle, name) \
+	template<> struct DebugHandleType<handle> { \
+		static constexpr auto value = vk::DebugReportObjectTypeEXT::name; \
+	}
+
+DebugHandleSpec(vk::Instance, instance);
+DebugHandleSpec(vk::PhysicalDevice, physicalDevice);
+DebugHandleSpec(vk::Device, device);
+DebugHandleSpec(vk::CommandBuffer, commandBuffer);
+DebugHandleSpec(vk::Queue, queue);
+DebugHandleSpec(vk::Image, image);
+DebugHandleSpec(vk::ImageView, imageView);
+DebugHandleSpec(vk::Buffer, buffer);
+DebugHandleSpec(vk::BufferView, bufferView);
+DebugHandleSpec(vk::Framebuffer, framebuffer);
+DebugHandleSpec(vk::Sampler, sampler);
+DebugHandleSpec(vk::DeviceMemory, deviceMemory);
+DebugHandleSpec(vk::DescriptorSetLayout, descriptorSetLayout);
+DebugHandleSpec(vk::DescriptorSet, descriptorSet);
+DebugHandleSpec(vk::DescriptorPool, descriptorPool);
+DebugHandleSpec(vk::PipelineLayout, pipelineLayout);
+DebugHandleSpec(vk::Pipeline, pipeline);
+DebugHandleSpec(vk::RenderPass, renderPass);
+DebugHandleSpec(vk::Semaphore, semaphore);
+DebugHandleSpec(vk::Fence, fence);
+DebugHandleSpec(vk::Event, event);
+DebugHandleSpec(vk::QueryPool, queryPool);
+DebugHandleSpec(vk::ShaderModule, shaderModule);
+DebugHandleSpec(vk::SurfaceKHR, surfaceKHR);
+DebugHandleSpec(vk::SwapchainKHR, swapchainKHR);
+DebugHandleSpec(vk::DebugReportCallbackEXT, debugReportCallbackEXT);
+DebugHandleSpec(vk::DisplayKHR, displayKHR);
+DebugHandleSpec(vk::DisplayModeKHR, displayModeKHR);
+
+#undef DebugHandleSpec
+
+} // namespace detail
+
+template<typename T> constexpr auto debugReportHandleType = 
+	detail::DebugHandleType<T>::value;
+
+template<typename T>
+void nameHandle(vk::Device dev,T handle, const char* name) {
+	nameHandle(dev, (std::uint64_t) handle, debugReportHandleType<T>, name);
+}
+
+template<typename T>
+void tagHandle(vk::Device dev, T handle, std::uint64_t name, 
+	nytl::Span<const std::byte> d) 
+{
+	tagHandle(dev, (std::uint64_t) handle, debugReportHandleType<T>, name, d);
+}
 
 } // namespace vpp

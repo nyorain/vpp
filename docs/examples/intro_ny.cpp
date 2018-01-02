@@ -15,6 +15,9 @@
 //	- n: reset to normal toplevel state
 //	- Escape: close the window
 
+// uncomment this to load renderdoc layers and name handles.
+// #define RENDERDOC
+
 #include <vpp/renderer.hpp> // vpp::DefaultRenderer
 #include <vpp/pipeline.hpp> // vpp::GraphicsPipeline
 #include <vpp/instance.hpp> // vpp::Instance
@@ -102,7 +105,12 @@ int main(int, char**)
 	iniExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 
 	// enables all default layers
-	constexpr auto layer = "VK_LAYER_LUNARG_standard_validation";
+	constexpr const char* layers[] = {
+		"VK_LAYER_LUNARG_standard_validation",
+#ifdef RENDERDOC
+		"VK_LAYER_RENDERDOC_Capture",
+#endif
+	};
 
 	// basic application info
 	// we use vulkan api version 1.0
@@ -112,8 +120,8 @@ int main(int, char**)
 	instanceInfo.pApplicationInfo = &appInfo;
 	instanceInfo.enabledExtensionCount = iniExtensions.size();
 	instanceInfo.ppEnabledExtensionNames = iniExtensions.data();
-	instanceInfo.enabledLayerCount = 1;
-	instanceInfo.ppEnabledLayerNames = &layer;
+	instanceInfo.enabledLayerCount = sizeof(layers) / sizeof(const char*);
+	instanceInfo.ppEnabledLayerNames = layers;
 
 	vpp::Instance instance(instanceInfo);
 
@@ -138,7 +146,15 @@ int main(int, char**)
 	// now (if everything went correctly) we have the window (and a 
 	// vulkan surface) and can create the device and renderer.
 	const vpp::Queue* present;
+
+#ifdef RENDERDOC
+	auto devExtensions = {
+		VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
+	};
+	vpp::Device device(instance, vkSurface, present, devExtensions);
+#else
 	vpp::Device device(instance, vkSurface, present);
+#endif
 	dlg_assert(present);
 
 	// we can construct everything for our renderer
@@ -201,6 +217,7 @@ void MyRenderer::record(const RenderBuffer& buf) {
 	const auto height = scInfo_.imageExtent.height;
 
 	auto cmdBuf = buf.commandBuffer;
+
 	vk::beginCommandBuffer(cmdBuf, {});
 	vk::cmdBeginRenderPass(cmdBuf, {
 		renderPass(),
@@ -213,10 +230,13 @@ void MyRenderer::record(const RenderBuffer& buf) {
 	vk::Viewport vp {0.f, 0.f, (float) width, (float) height, 0.f, 1.f};
 	vk::cmdSetViewport(cmdBuf, 0, 1, vp);
 	vk::cmdSetScissor(cmdBuf, 0, 1, {0, 0, width, height});
+	// vpp::insertDebugMarker(device(), cmdBuf, "finish setup");
 
+	// vpp::beginDebugRegion(device(), cmdBuf, "render triangle", {1, 0.5, 0.5, 1});
 	vk::cmdBindPipeline(cmdBuf, vk::PipelineBindPoint::graphics, pipeline_);
 	// vk::cmdBindVertexBuffers(cmdBuffer, 0, {vertexBuffer}, {0});
 	vk::cmdDraw(cmdBuf, 3, 1, 0, 0);
+	// vpp::endDebugRegion(device(), cmdBuf);
 
 	vk::cmdEndRenderPass(cmdBuf);
 	vk::endCommandBuffer(cmdBuf);
@@ -374,6 +394,11 @@ vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
 	// if the shaders cannot be found/compiled, this will throw (and end the application)
 	vpp::ShaderModule vertexShader(dev, intro_vert_spv_data);
 	vpp::ShaderModule fragmentShader(dev, intro_frag_spv_data);
+
+#ifdef RENDERDOC
+	vpp::nameHandle(dev, vertexShader.vkHandle(), "triangleVertexShader");
+	vpp::nameHandle(dev, fragmentShader.vkHandle(), "triangleFragmentShader");
+#endif
 
 	vpp::ShaderProgram shaderStages({
 		{vertexShader, vk::ShaderStageBits::vertex},

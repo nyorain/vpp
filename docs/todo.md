@@ -40,6 +40,8 @@ Todo list vor vpp
 - add more assertions everywhere where things are assumed
 	- don't overdo, only if potentially useful when debugging
 	- see work.inl (something like tryFinish probably best)
+- move debug report stuff in debug.hpp to separte file (and remove enums.hpp
+  from debug.hpp)
 
 low prio / general / ideas
 --------------------------

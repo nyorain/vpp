@@ -167,4 +167,66 @@ bool DebugCallback::call(const CallbackInfo& info) const noexcept
 	return (info.flags & errorFlags_);
 }
 
+// debug report
+void nameHandle(vk::Device dev, std::uint64_t handle, 
+	vk::DebugReportObjectTypeEXT type, const char* name)
+{
+	VPP_LOAD_PROC_NOTHROW(dev, DebugMarkerSetObjectNameEXT);
+	if(pfDebugMarkerSetObjectNameEXT) {
+		vk::DebugMarkerObjectNameInfoEXT info;
+		info.object = handle;
+		info.objectType = type;
+		info.pObjectName = name;
+		pfDebugMarkerSetObjectNameEXT(dev, &info);
+	}
+}
+
+void tagHandle(vk::Device dev, std::uint64_t handle, 
+	vk::DebugReportObjectTypeEXT type, std::uint64_t name, 
+	nytl::Span<const std::byte> data)
+{
+	VPP_LOAD_PROC_NOTHROW(dev, DebugMarkerSetObjectTagEXT);
+	if(pfDebugMarkerSetObjectTagEXT) {
+		vk::DebugMarkerObjectTagInfoEXT info;
+		info.object = handle;
+		info.objectType = type;
+		info.pTag = data.data();
+		info.tagSize = data.size();
+		info.tagName = name;
+		pfDebugMarkerSetObjectTagEXT(dev, &info);
+	}
+}
+
+void beginDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf, 
+	const char* name, std::array<float, 4> col)
+{
+	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerBeginEXT);
+	if(pfCmdDebugMarkerBeginEXT) {
+		vk::DebugMarkerMarkerInfoEXT markerInfo;
+		markerInfo.color = col;
+		markerInfo.pMarkerName = name;
+		pfCmdDebugMarkerBeginEXT(cmdBuf, &markerInfo);
+	}
+}
+
+void endDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf)
+{
+	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerEndEXT);
+	if(pfCmdDebugMarkerEndEXT) {
+		pfCmdDebugMarkerEndEXT(cmdBuf);
+	}
+}
+
+void insertDebugMarker(vk::Device dev, vk::CommandBuffer cmdBuf, 
+	const char* name, std::array<float, 4> col)
+{
+	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerInsertEXT);
+	if(pfCmdDebugMarkerInsertEXT) {
+		vk::DebugMarkerMarkerInfoEXT markerInfo;
+		markerInfo.color = col;
+		markerInfo.pMarkerName = name;
+		pfCmdDebugMarkerInsertEXT(cmdBuf, &markerInfo);
+	}
+}
+
 } // namespace vpp

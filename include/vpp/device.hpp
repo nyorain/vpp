@@ -52,7 +52,7 @@ public:
 	/// which can be retrieved using the queue() functions.
 	/// Might (as all vpp classes) throw a vk::VulkanError from the underlaying api calls.
 	/// Will throw std::runtime_error if valid physical device can be found.
-	/// \param extensions The extensions to be enabled. If this is empty, will automatically
+	/// \param extensions The extensions to be enabled. Will automatically
 	/// activate the swapchain extension.
 	Device(vk::Instance, vk::SurfaceKHR, const Queue*& present,
 		nytl::Span<const char* const> extensions = {});
