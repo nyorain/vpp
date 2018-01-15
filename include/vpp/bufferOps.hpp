@@ -19,7 +19,7 @@
 namespace vpp {
 
 /// Specifies the different buffer alignment methods.
-/// For the differences, read 
+/// For the differences, read
 /// https://www.opengl.org/wiki/Interface_Block_(GLSL)#Memory_layout.
 /// Uniform buffer are by default std140, storage buffers are by default std430.
 /// Both defaults can be explicitly changed in the shader files using the buffers.
@@ -42,13 +42,13 @@ public:
 	template<typename... T>
 	void add(T&&... obj);
 
-	/// Will operator on the given object. 
-	/// The type of the given object must have a specialization for the 
+	/// Will operator on the given object.
+	/// The type of the given object must have a specialization for the
 	/// VulkanType template struct that carriers information about
 	/// the corresponding shader variable type of the object to align it correctly.
 	/// The given object can also be a container/array of such types.
 	/// If one wants the operator to just use raw data it can use vpp::raw for
-	/// an object which will wrap it into a temporary RawBuffer object that 
+	/// an object which will wrap it into a temporary RawBuffer object that
 	/// can also be operated on without any alignment or offsets.
 	template<typename T>
 	void addSingle(T&& obj);
@@ -62,25 +62,25 @@ public:
 
 	/// Sets the align that offset should have before operating on the next data.
 	/// Will not be applied if there is no further data to operate on.
-	constexpr void nextOffsetAlign(vk::DeviceSize algn) noexcept { 
-		nextOffset_ = ::vpp::align(offset_, algn); 
+	constexpr void nextOffsetAlign(vk::DeviceSize algn) noexcept {
+		nextOffset_ = ::vpp::align(offset_, algn);
 	}
 
-	/// Assures that the current position on the buffer meets the given 
-	/// alignment requirements. If it does not, it will be changed to the next 
+	/// Assures that the current position on the buffer meets the given
+	/// alignment requirements. If it does not, it will be changed to the next
 	/// value fulfilling the requirement.
-	constexpr void align(vk::DeviceSize algn, bool update = true) { 
+	constexpr void align(vk::DeviceSize algn, bool update = true) {
 		auto delta = ::vpp::align(offset_, algn) - offset_;
 		static_cast<B&>(*this).offset(delta, update);
 	}
 
 	constexpr BufferLayout layout() const noexcept { return layout_; }
 
-	constexpr bool std140() const noexcept { 
-		return layout_ == BufferLayout::std140; 
+	constexpr bool std140() const noexcept {
+		return layout_ == BufferLayout::std140;
 	}
-	constexpr bool std430() const noexcept { 
-		return layout_ == BufferLayout::std430; 
+	constexpr bool std430() const noexcept {
+		return layout_ == BufferLayout::std430;
 	}
 
 	// Expected to exist in B:
@@ -92,12 +92,12 @@ protected:
 	vk::DeviceSize offset_ {};
 
 	// structs/arrays may have offset requirement for next written data.
-	vk::DeviceSize nextOffset_ {}; 
+	vk::DeviceSize nextOffset_ {};
 };
 
 
 // -- size api --
-/// Can be used to calculate the size that would be needed to fit certain 
+/// Can be used to calculate the size that would be needed to fit certain
 /// objects with certain alignments on a buffer.
 /// Alternative name: BufferSizeCalculator
 class BufferSizer : public BufferOperator<BufferSizer>, public Resource {
@@ -110,11 +110,11 @@ public:
 public:
 	/// Constructs a compile-time instance of BufferSizer.
 	/// Cannot be used for dynamic alignment requirements (e.g. uniform offset).
-	constexpr BufferSizer(CompileTimeTag, BufferLayout l) : 
+	constexpr BufferSizer(CompileTimeTag, BufferLayout l) :
 		BufferOperator(l) {}
 
 	/// Constructs a runtime instance of a BufferSizer.
-	/// Can be used for dynamic alignment requirements like uniform, 
+	/// Can be used for dynamic alignment requirements like uniform,
 	/// storage or texel.
 	BufferSizer(const Device&, BufferLayout);
 	~BufferSizer() = default;
@@ -135,7 +135,7 @@ public:
 	void alignTexel() noexcept;
 };
 
-/// Calculates the size a vulkan buffer must have to be able to store all 
+/// Calculates the size a vulkan buffer must have to be able to store all
 /// the given objects.
 /// \sa BufferSizer
 template<typename... T>
@@ -159,29 +159,29 @@ constexpr vk::DeviceSize neededBufferSize(BufferLayout align)
 	return sizer.offset();
 }
 
-template<typename... T> vk::DeviceSize neededBufferSize140(const T&... args) { 
-	return neededBufferSize(BufferLayout::std140, args...); 
+template<typename... T> vk::DeviceSize neededBufferSize140(const T&... args) {
+	return neededBufferSize(BufferLayout::std140, args...);
 }
 
-template<typename... T> constexpr vk::DeviceSize neededBufferSize140() { 
-	return neededBufferSize<T...>(BufferLayout::std140); 
+template<typename... T> constexpr vk::DeviceSize neededBufferSize140() {
+	return neededBufferSize<T...>(BufferLayout::std140);
 }
 
-template<typename... T> vk::DeviceSize neededBufferSize430(const T&... args) { 
-	return neededBufferSize(BufferLayout::std430, args...); 
+template<typename... T> vk::DeviceSize neededBufferSize430(const T&... args) {
+	return neededBufferSize(BufferLayout::std430, args...);
 }
 
-template<typename... T> constexpr vk::DeviceSize neededBufferSize430() { 
-	return neededBufferSize<T...>(BufferLayout::std430); 
+template<typename... T> constexpr vk::DeviceSize neededBufferSize430() {
+	return neededBufferSize<T...>(BufferLayout::std430);
 }
 
 // -- write api --
 /// Can be used to write aligned data to a mapped buffer.
-class MappedBufferWriter : 
+class MappedBufferWriter :
 	public BufferOperator<MappedBufferWriter>,
 	public ResourceReference<MappedBufferWriter> {
 public:
-	MappedBufferWriter(MemoryMapView&& view, BufferLayout, 
+	MappedBufferWriter(MemoryMapView&& view, BufferLayout,
 		bool tight = false, vk::DeviceSize srcOffset = 0u);
 
 	/// Writes size bytes from ptr to the buffer.
@@ -189,8 +189,8 @@ public:
 	/// or this write extends the range of the memory map.
 	void operate(const void* ptr, vk::DeviceSize size);
 
-	/// Offsets the current position on the buffer by size bytes. 
-	/// If update is true, it will override the bytes with zero, otherwise they 
+	/// Offsets the current position on the buffer by size bytes.
+	/// If update is true, it will override the bytes with zero, otherwise they
 	/// will not be changed.
 	void offset(vk::DeviceSize size, bool update = true);
 
@@ -214,7 +214,7 @@ protected:
 
 /// Can be used to write aligned data into raw memory, can
 /// then be used to perform a direct update command.
-class DirectBufferWriter : 
+class DirectBufferWriter :
 	public BufferOperator<DirectBufferWriter>,
 	public ResourceReference<DirectBufferWriter> {
 public:
@@ -225,8 +225,8 @@ public:
 	/// or this write extends the range of the memory map.
 	void operate(const void* ptr, vk::DeviceSize size);
 
-	/// Offsets the current position on the buffer by size bytes. 
-	/// If update is true, it will override the bytes with zero, otherwise they 
+	/// Offsets the current position on the buffer by size bytes.
+	/// If update is true, it will override the bytes with zero, otherwise they
 	/// will not be changed.
 	void offset(vk::DeviceSize size, bool update = true);
 
@@ -247,16 +247,14 @@ protected:
 
 namespace detail {
 
-UploadWork apply(const Buffer&, BufferRange&& stage, 
+UploadWork apply(const Buffer&, BufferRange&& stage,
 	nytl::Span<const vk::BufferCopy>, QueueSubmitter&);
-CommandWork<void> apply(const Buffer&, const DirectBufferWriter&, 
+CommandWork<void> apply(const Buffer&, const DirectBufferWriter&,
 	QueueSubmitter&);
 CommandBuffer copyCmdBuf(QueueSubmitter&, const Buffer& buffer,
 	const BufferRange& stage, vk::DeviceSize offset, vk::DeviceSize size);
 
 } // namespace detail
-
-// TODO: assertions?
 
 /// Uses a MappedBufferWriter to directly write the mappable buffer.
 /// Undefined behavior if the buffer is not mappable.
@@ -289,15 +287,19 @@ void writeMap430(const B& buf, const T&... args) {
 /// given layout into the given buffer. Will connect the uploadWork
 /// to the given QueueSubmitter.
 /// Note that the buffer must have been created with the transferDst
-/// usage bit set. The buffer must not be in use (you will probably need 
+/// usage bit set. The buffer must not be in use (you will probably need
 /// a pipeline barrier).
 /// The work must be finished before any resources are destroyed.
 /// The passed arguments to write are not needed after the call returns.
 template<typename... T>
-UploadWork writeStaging(QueueSubmitter& qs, vk::DeviceSize offset, 
-	const Buffer& buf, BufferLayout layout, const T&... args)
+UploadWork writeStaging(QueueSubmitter& qs, vk::DeviceSize offset,
+	vk::DeviceSize maxSize, const Buffer& buf, BufferLayout layout,
+	const T&... args)
 {
-	auto size = neededBufferSize(layout, args...);
+	// TODO: error if neededBufferSize > maxSize, we should probably
+	//  already check/signal this here somehow
+	//  same problem as in readStaging
+	auto size = std::min(maxSize, neededBufferSize(layout, args...));
 	auto stage = buf.device().bufferAllocator().alloc(true, size,
 		vk::BufferUsageBits::transferSrc);
 	MappedBufferWriter writer(stage.memoryMap(), layout, true, stage.offset());
@@ -308,16 +310,17 @@ UploadWork writeStaging(QueueSubmitter& qs, vk::DeviceSize offset,
 }
 
 template<typename... T>
-auto writeStaging(QueueSubmitter& qs, const Buffer& buf, 
+auto writeStaging(QueueSubmitter& qs, const Buffer& buf,
 	BufferLayout layout, const T&... args) {
-	return writeStaging(qs, 0u, buf, layout, args...);
+	return writeStaging(qs, 0u, buf.memorySize(), buf, layout, args...);
 }
 
 template<typename... T>
-auto writeStaging(QueueSubmitter& qs, const BufferRange& buf, 
-	BufferLayout layout, const T&... args) 
+auto writeStaging(QueueSubmitter& qs, const BufferRange& buf,
+	BufferLayout layout, const T&... args)
 {
-	return writeStaging(qs, buf.offset(), buf.buffer(), layout, args...);
+	return writeStaging(qs, buf.offset(), buf.size(), 
+		buf.buffer(), layout, args...);
 }
 
 template<typename B, typename... T>
@@ -327,13 +330,13 @@ auto writeStaging(const B& buf, BufferLayout layout, const T&... args) {
 
 template<typename B, typename... T>
 auto writeStaging140(const B& buf, const T&... args) {
-	return writeStaging(buf.device().queueSubmitter(), buf, 
+	return writeStaging(buf.device().queueSubmitter(), buf,
 		BufferLayout::std140, args...);
 }
 
 template<typename B, typename... T>
 auto writeStaging430(const B& buf, const T&... args) {
-	return writeStaging(buf.device().queueSubmitter(), buf, 
+	return writeStaging(buf.device().queueSubmitter(), buf,
 		BufferLayout::std430, args...);
 }
 
@@ -341,12 +344,12 @@ auto writeStaging430(const B& buf, const T&... args) {
 /// the given arguments and layout. Should only be used (and only
 /// works) for small updates, i.e. if the update size is smaller
 /// than 2^16 bytes. The buffer must have been created with the transferDst
-/// usage bit set. The buffer must not be in use (you will probably need 
+/// usage bit set. The buffer must not be in use (you will probably need
 /// a pipeline barrier).
 /// The work must be finished before any resources are destroyed.
 /// The passed arguments to write are not needed after the call returns.
 template<typename... T>
-CommandWork<void> writeDirect(QueueSubmitter& qs, vk::DeviceSize offset, 
+CommandWork<void> writeDirect(QueueSubmitter& qs, vk::DeviceSize offset,
 	const Buffer& buf, BufferLayout layout, const T&... args)
 {
 	DirectBufferWriter writer(buf, layout);
@@ -356,14 +359,14 @@ CommandWork<void> writeDirect(QueueSubmitter& qs, vk::DeviceSize offset,
 }
 
 template<typename... T>
-auto writeDirect(QueueSubmitter& qs, const Buffer& buf, 
+auto writeDirect(QueueSubmitter& qs, const Buffer& buf,
 	BufferLayout layout, const T&... args)
 {
 	return writeDirect(qs, 0u, buf, layout, args...);
 }
 
 template<typename... T>
-auto writeDirect(QueueSubmitter& qs, const BufferRange& buf, 
+auto writeDirect(QueueSubmitter& qs, const BufferRange& buf,
 	BufferLayout layout, const T&... args)
 {
 	return writeDirect(qs, buf.offset(), buf.buffer(), layout, args...);
@@ -376,13 +379,13 @@ auto writeDirect(const B& buf, BufferLayout layout, const T&... args) {
 
 template<typename B, typename... T>
 auto writeDirect140(const B& buf, const T&... args) {
-	return writeDirect(buf.device().queueSubmitter(), buf, 
+	return writeDirect(buf.device().queueSubmitter(), buf,
 		BufferLayout::std140, args...);
 }
 
 template<typename B, typename... T>
 auto writeDirect430(const B& buf, const T&... args) {
-	return writeDirect(buf.device().queueSubmitter(), buf, 
+	return writeDirect(buf.device().queueSubmitter(), buf,
 		BufferLayout::std430, args...);
 }
 
@@ -453,17 +456,20 @@ void readMap430(const B& buf, T&... args) {
 /// If the given arguments don't match the data of the buffer you will
 /// probably get garbage.
 template<typename... T>
-auto readStaging(QueueSubmitter& qs, vk::DeviceSize offset, 
-	const Buffer& buf, BufferLayout layout, T&... args)
+auto readStaging(QueueSubmitter& qs, vk::DeviceSize offset,
+	vk::DeviceSize maxSize, const Buffer& buf, BufferLayout layout, T&... args)
 {
-	auto size = neededBufferSize(layout, args...);
+	// TODO: error if neededBufferSize > maxSize, we should probably
+	//  already check/signal this here somehow
+	//  same problem as in writeStaging
+	auto size = std::min(maxSize, neededBufferSize(layout, args...));
 	auto stage = buf.device().bufferAllocator().alloc(true, size,
 		vk::BufferUsageBits::transferDst);
 	auto cmdBuf = detail::copyCmdBuf(qs, buf, stage, offset, size);
 
 	class WorkImpl : public CommandWork<void> {
 	public:
-		WorkImpl(QueueSubmitter& qs, CommandBuffer&& cmdBuf, BufferRange&& stage, 
+		WorkImpl(QueueSubmitter& qs, CommandBuffer&& cmdBuf, BufferRange&& stage,
 			BufferLayout layout, T&... xargs) :
 				CommandWork(qs, std::move(cmdBuf)), stage_(std::move(stage)),
 				layout_(layout), args_(xargs...)
@@ -492,17 +498,18 @@ auto readStaging(QueueSubmitter& qs, vk::DeviceSize offset,
 }
 
 template<typename... T>
-auto readStaging(QueueSubmitter& qs, const Buffer& buf, 
-	BufferLayout layout, T&... args) 
+auto readStaging(QueueSubmitter& qs, const Buffer& buf,
+	BufferLayout layout, T&... args)
 {
-	return readStaging(qs, 0u, buf, layout, args...);
+	return readStaging(qs, 0u, buf.memorySize(), buf, layout, args...);
 }
 
 template<typename... T>
-auto readStaging(QueueSubmitter& qs, const BufferRange& buf, 
-	BufferLayout layout, T&... args) 
+auto readStaging(QueueSubmitter& qs, const BufferRange& buf,
+	BufferLayout layout, T&... args)
 {
-	return readStaging(qs, buf.offset(), buf.buffer(), layout, args...);
+	return readStaging(qs, buf.offset(), buf.size(), buf.buffer(),
+		layout, args...);
 }
 
 template<typename B, typename... T>
@@ -512,13 +519,13 @@ auto readStaging(const B& buf, BufferLayout layout, T&... args) {
 
 template<typename B, typename... T>
 auto readStaging140(const B& buf, T&... args) {
-	return readStaging(buf.device().queueSubmitter(), buf, 
+	return readStaging(buf.device().queueSubmitter(), buf,
 		BufferLayout::std140, args...);
 }
 
 template<typename B, typename... T>
 auto readStaging430(const B& buf, T&... args) {
-	return readStaging(buf.device().queueSubmitter(), buf, 
+	return readStaging(buf.device().queueSubmitter(), buf,
 		BufferLayout::std430, args...);
 }
 

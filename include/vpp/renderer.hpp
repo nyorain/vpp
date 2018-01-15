@@ -19,7 +19,7 @@ namespace vpp {
 /// Fence that knows if it has been used.
 /// Will wait on destruction if it has been used.
 class TrackedFence : public Fence {
-public:	
+public:
 	bool used {};
 
 public:
@@ -70,7 +70,14 @@ public:
 	/// Will set the size parameter to the actually used size (but
 	/// must be filled with an expected size which might be used).
 	/// Must not be called while a render call is left unfinished.
-	void resize(const vk::Extent2D& size, vk::SwapchainCreateInfoKHR&);
+	/// Can also be used to change the swapchain settings (e.g.
+	/// when vsync was toggled).
+	void recreate(const vk::Extent2D& size, vk::SwapchainCreateInfoKHR&);
+
+	[[deprecated("Will be removed, use recreate")]]
+	void resize(const vk::Extent2D& size, vk::SwapchainCreateInfoKHR& i) {
+		recreate(size, i);
+	}
 
 	/// Invalidates all recorded command buffers.
 	/// Only if the record mode is RecordMode::all all command buffers
@@ -79,7 +86,7 @@ public:
 	/// is left unfinished.
 	void invalidate();
 
-	/// Renders one frame. If fence is not nullptr, sets the fence parameter to 
+	/// Renders one frame. If fence is not nullptr, sets the fence parameter to
 	/// the fence signaling the end of the frame if vk::Result is success.
 	/// Otherwise returns the ocurred redner error (which might be non-critical
 	/// e.g. a suboptimal swapchain, will not render then nontheless).
@@ -106,7 +113,7 @@ public:
 	/// Changes the record mode.
 	/// Does not invalidate any currently recorded command buffers
 	/// but if records all invalid command buffers RecordMode is set to all,
-	/// so when there are invalid command buffers and this is called with 
+	/// so when there are invalid command buffers and this is called with
 	/// RecordMode::all, there must be no unfinished render calls.
 	void recordMode(RecordMode);
 
@@ -116,13 +123,18 @@ public:
 
 	const auto& swapchain() const { return swapchain_; }
 	auto recordMode() const { return mode_; }
-	const auto& resourceRef() const { return swapchain_; }
+	const auto& resourceRef() const { return *present_; }
 
 protected:
 	/// Initializes the Renderer into invalid state.
-	/// One must call init before any other function can be called.
+	/// The deriving class can initialize its own resources, but then
+	/// has to call init before any methods can be used.
 	/// Has no initializing constructor since the init
 	/// function requires the virtual functions.
+	Renderer(const Queue& present, const Queue* render = {},
+		RecordMode = RecordMode::all);
+
+	[[deprecated("Will be removed, use the other constructor instead")]]
 	Renderer() = default;
 
 	Renderer(Renderer&&) noexcept = default;
@@ -135,6 +147,9 @@ protected:
 	/// The real size of the swapchain will be returned in size.
 	/// Will also record all command buffers (if the record mode
 	/// is RecrodMode::all).
+	void init(const vk::SwapchainCreateInfoKHR&);
+
+	[[deprecated("Will be removed, use the other overload instead")]]
 	void init(const vk::SwapchainCreateInfoKHR&,
 		const Queue& present, const Queue* render = {},
 		RecordMode = RecordMode::all);
@@ -145,11 +160,11 @@ protected:
 	// - abstract interface -
 	/// Records into the given RenderBuffer.
 	/// Should use the render buffers framebuffer which is guaranteed
-	/// to be a framebuffer returned by createFramebuffer. It is 
+	/// to be a framebuffer returned by createFramebuffer. It is
 	/// also guaranteed that initFramebuffers was called since then.
 	virtual void record(const RenderBuffer&) = 0;
 
-	/// Should initialize all internal information required for rendering, 
+	/// Should initialize all internal information required for rendering,
 	/// such as framebuffers. Will be called everytime the swapchain
 	/// was recreated and therefore size and/or image views have changed.
 	virtual void initBuffers(const vk::Extent2D&, nytl::Span<RenderBuffer>) = 0;
@@ -173,8 +188,13 @@ protected:
 /// The record method is still abstract.
 class DefaultRenderer : public Renderer {
 protected:
+	using Renderer::Renderer;
+
 	/// Like the Renderer::init but additionally stores the
 	/// renderPass to create the framebuffers for.
+	void init(vk::RenderPass, const vk::SwapchainCreateInfoKHR&);
+
+	[[deprecated("Will be removed, use the other overload")]]
 	void init(vk::RenderPass, const vk::SwapchainCreateInfoKHR&,
 		const Queue& present, const Queue* render = {},
 		RecordMode = RecordMode::all);

@@ -10,6 +10,33 @@
 
 namespace vpp {
 
+Renderer::Renderer(const Queue& present, const Queue* render,
+	RecordMode mode) : present_(&present), mode_(mode)
+{
+	if(!render) {
+		render_ = device().queue(vk::QueueBits::graphics);
+		if(!render_) {
+			throw std::runtime_error("device has no graphcis queue");
+		}
+	} else {
+		render_ = render;
+		dlg_assert(&device() == &render_->device());
+	}
+
+	commandPool_ = {device(), render_->family()};
+	acquireSemaphore_ = {device()};
+}
+
+void Renderer::init(const vk::SwapchainCreateInfoKHR& scInfo)
+{
+	dlg_assert(present_ && commandPool_ && acquireSemaphore_);
+	dlg_assert(!swapchain_);
+
+	swapchain_ = {present_->device(), scInfo};
+	createBuffers(scInfo.imageExtent, scInfo.imageFormat);
+	invalidate();
+}
+
 void Renderer::init(const vk::SwapchainCreateInfoKHR& scInfo,
 	const Queue& present, const Queue* render, const RecordMode mode)
 {
@@ -20,7 +47,7 @@ void Renderer::init(const vk::SwapchainCreateInfoKHR& scInfo,
 	if(!render) {
 		render_ = device().queue(vk::QueueBits::graphics);
 		if(!render_) {
-			throw std::runtime_error("Renderer: device has no graphcis queue");
+			throw std::runtime_error("device has no graphcis queue");
 		}
 	} else {
 		render_ = render;
@@ -44,7 +71,7 @@ void Renderer::invalidate()
 	for(auto& buf : renderBuffers_) {
 		if(mode_ == RecordMode::all) {
 			record(buf);
-			buf.valid = true;	
+			buf.valid = true;
 		} else {
 			buf.valid = false;
 		}
@@ -60,12 +87,12 @@ void Renderer::createBuffers(const vk::Extent2D& size, vk::Format format)
 	if(newCount > renderBuffers_.size()) {
 		std::uint32_t cmdBufCount = newCount - renderBuffers_.size();
 		vk::CommandBufferAllocateInfo allocInfo {
-			commandPool_, 
+			commandPool_,
 			vk::CommandBufferLevel::primary,
 			cmdBufCount};
 		cmdBufs.resize(cmdBufCount);
 		vk::allocateCommandBuffers(device(), allocInfo, *cmdBufs.data());
-	} else if(newCount < renderBuffers_.size()) {			
+	} else if(newCount < renderBuffers_.size()) {
 		cmdBufs.resize(renderBuffers_.size() - newCount);
 		for(auto i = newCount; i < renderBuffers_.size(); ++i) {
 			cmdBufs.push_back(renderBuffers_[i].commandBuffer);
@@ -114,7 +141,7 @@ void Renderer::createBuffers(const vk::Extent2D& size, vk::Format format)
 	initBuffers(size, renderBuffers_);
 }
 
-void Renderer::resize(const vk::Extent2D& size, 
+void Renderer::recreate(const vk::Extent2D& size,
 	vk::SwapchainCreateInfoKHR& info)
 {
 	dlg_assert(swapchain_);
@@ -237,21 +264,28 @@ void Renderer::wait()
 }
 
 // DefaultRenderer
-void DefaultRenderer::init(vk::RenderPass rp, 
-	const vk::SwapchainCreateInfoKHR& scInfo, const Queue& present, 
+void DefaultRenderer::init(vk::RenderPass rp,
+	const vk::SwapchainCreateInfoKHR& scInfo, const Queue& present,
 	const Queue* render, RecordMode mode)
 {
 	renderPass_ = rp;
 	Renderer::init(scInfo, present, render, mode);
 }
 
-void DefaultRenderer::initBuffers(const vk::Extent2D& size, 
+void DefaultRenderer::init(vk::RenderPass rp,
+	const vk::SwapchainCreateInfoKHR& scInfo)
+{
+	renderPass_ = rp;
+	Renderer::init(scInfo);
+}
+
+void DefaultRenderer::initBuffers(const vk::Extent2D& size,
 	nytl::Span<RenderBuffer> buffers)
 {
 	initBuffers(size, buffers, {});
 }
 
-void DefaultRenderer::initBuffers(const vk::Extent2D& size, 
+void DefaultRenderer::initBuffers(const vk::Extent2D& size,
 	nytl::Span<RenderBuffer> bufs, std::vector<vk::ImageView> attachments)
 {
 	auto scPos = -1;
@@ -264,17 +298,17 @@ void DefaultRenderer::initBuffers(const vk::Extent2D& size,
 
 	if(scPos == -1) {
 		scPos = attachments.size();
-		attachments.emplace_back();	
+		attachments.emplace_back();
 	}
 
 	for(auto& buf : bufs) {
 		attachments[scPos] = buf.imageView;
-		vk::FramebufferCreateInfo info ({}, 
-			renderPass_, 
-			attachments.size(), 
+		vk::FramebufferCreateInfo info ({},
+			renderPass_,
+			attachments.size(),
 			attachments.data(),
-			size.width, 
-			size.height, 
+			size.width,
+			size.height,
 			1);
 		buf.framebuffer = {device(), info};
 	}

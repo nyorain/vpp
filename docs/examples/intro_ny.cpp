@@ -181,7 +181,7 @@ int main(int, char**)
 	// rather in a gui application (e.g. CAD app or high performance ui).
 	dlg_info("Entering main loop");
 	while(run && ac->waitEvents());
-	
+
 	// The loop below would be a typical game main loop.
 	// Note however that we currently also handle draw events which
 	// a game would usually not do (since it draws all the time anyways).
@@ -189,26 +189,25 @@ int main(int, char**)
 	// while(run && ac->pollEvents()) {
 	// 	renderer.renderBlock(); // or just render without blocking
 	// }
-	
+
 	vk::deviceWaitIdle(device);
 	dlg_info("Returning from main with grace");
 }
 
 // MyRenderer
 MyRenderer::MyRenderer(vk::RenderPass rp, vk::SwapchainCreateInfoKHR& scInfo,
-	const vpp::Queue& present) : scInfo_(scInfo)
+	const vpp::Queue& present) : vpp::DefaultRenderer(present), scInfo_(scInfo)
 {
 	// pipeline
-	auto& dev = present.device();
-	pipelineLayout_ = {dev, {}};
-	pipeline_ = createGraphicsPipeline(dev, rp, pipelineLayout_);
+	pipelineLayout_ = {device(), {}};
+	pipeline_ = createGraphicsPipeline(device(), rp, pipelineLayout_);
 
-	init(rp, scInfo, present);
+	init(rp, scInfo);
 }
 
-void MyRenderer::resize(nytl::Vec2ui size) 
+void MyRenderer::resize(nytl::Vec2ui size)
 {
-	vpp::DefaultRenderer::resize({size[0], size[1]}, scInfo_);
+	vpp::DefaultRenderer::recreate({size[0], size[1]}, scInfo_);
 }
 
 void MyRenderer::record(const RenderBuffer& buf) {

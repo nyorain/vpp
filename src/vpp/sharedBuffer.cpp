@@ -111,6 +111,7 @@ BufferAllocator::BufferAllocator(const Device& dev) :
 {
 }
 
+// TODO: not sure if alignment reserving is ok this way
 void BufferAllocator::reserve(bool mappable, vk::DeviceSize size, 
 	vk::BufferUsageFlags usage, vk::DeviceSize align, unsigned int memBits)
 {

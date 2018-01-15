@@ -127,11 +127,13 @@ DebugHandleSpec(vk::Fence, fence);
 DebugHandleSpec(vk::Event, event);
 DebugHandleSpec(vk::QueryPool, queryPool);
 DebugHandleSpec(vk::ShaderModule, shaderModule);
-DebugHandleSpec(vk::SurfaceKHR, surfaceKHR);
-DebugHandleSpec(vk::SwapchainKHR, swapchainKHR);
-DebugHandleSpec(vk::DebugReportCallbackEXT, debugReportCallbackEXT);
-DebugHandleSpec(vk::DisplayKHR, displayKHR);
-DebugHandleSpec(vk::DisplayModeKHR, displayModeKHR);
+
+// Only supported in newer versions
+// DebugHandleSpec(vk::SurfaceKHR, surfaceKHR);
+// DebugHandleSpec(vk::SwapchainKHR, swapchainKHR);
+// DebugHandleSpec(vk::DebugReportCallbackEXT, debugReportCallbackEXT);
+// DebugHandleSpec(vk::DisplayKHR, displayKHR);
+// DebugHandleSpec(vk::DisplayModeKHR, displayModeKHR);
 
 #undef DebugHandleSpec
 

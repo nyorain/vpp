@@ -17,7 +17,7 @@
 namespace vpp {
 
 // MappedBufferWriter
-MappedBufferWriter::MappedBufferWriter(MemoryMapView&& view, 
+MappedBufferWriter::MappedBufferWriter(MemoryMapView&& view,
 	BufferLayout layout, bool tight, vk::DeviceSize srcOffset) :
 		BufferOperator(layout), view_(std::move(view)), srcOffset_(srcOffset),
 		tight_(tight)
@@ -28,8 +28,9 @@ MappedBufferWriter::MappedBufferWriter(MemoryMapView&& view,
 
 void MappedBufferWriter::operate(const void* ptr, vk::DeviceSize size)
 {
-	dlg_assert(viewOffset_ + size <= view_.size());
-	dlg_assert(size > 0);
+	dlg_assertm(viewOffset_ + size <= view_.size(),
+		"Buffer overflow; Undefined behavior from now");
+	dlg_assertm(size > 0, "Invalid operation");
 
 	offset_ = std::max(offset_, nextOffset_);
 	std::memcpy(view_.ptr() + viewOffset_, ptr, size);
@@ -51,7 +52,7 @@ void MappedBufferWriter::offset(vk::DeviceSize size, bool update)
 		regions_.back().size += size;
 	} else {
 		if(!tight_) {
-			viewOffset_ += size;	
+			viewOffset_ += size;
 		}
 
 		if(regions_.back().size == 0u) {
@@ -89,6 +90,8 @@ DirectBufferWriter::DirectBufferWriter(const Buffer& buf, BufferLayout layout) :
 
 void DirectBufferWriter::operate(const void* ptr, vk::DeviceSize size)
 {
+	dlg_assertm(size > 0, "Invalid operation");
+
 	offset_ = std::max(offset_, nextOffset_);
 	auto prev = data_.size();
 	data_.resize(data_.size() + size);
@@ -96,7 +99,7 @@ void DirectBufferWriter::operate(const void* ptr, vk::DeviceSize size)
 	std::memcpy(&data_[prev], ptr, size);
 	offset_ += size;
 
-	dlg_assert(offset_ < buffer_.memorySize());
+	dlg_assertm(offset_ < buffer_.memorySize(), "Buffer overflow");
 }
 
 void DirectBufferWriter::offset(vk::DeviceSize size, bool update)
@@ -135,7 +138,7 @@ void DirectBufferWriter::alignTexel() noexcept
 
 // BufferReader
 BufferReader::BufferReader(const Device& dev, BufferLayout layout,
-	nytl::Span<const std::byte> data) : 
+	nytl::Span<const std::byte> data) :
 		BufferOperator(layout), Resource(dev), data_(data)
 {
 }
@@ -143,8 +146,8 @@ BufferReader::BufferReader(const Device& dev, BufferLayout layout,
 void BufferReader::operate(void* ptr, vk::DeviceSize size)
 {
 	offset_ = std::max(offset_, nextOffset_);
-	dlg_assert(size > 0);
-	dlg_assert(offset_ + size <= data_.size());
+	dlg_assertm(size > 0, "Invalid operation");
+	dlg_assertm(offset_ + size <= data_.size(), "Buffer underflow");
 
 	std::memcpy(ptr, &data_[offset_], size);
 	offset_ += size;
@@ -188,7 +191,7 @@ void BufferSizer::alignTexel() noexcept
 
 namespace detail {
 
-UploadWork apply(const Buffer& buf, BufferRange&& stage, 
+UploadWork apply(const Buffer& buf, BufferRange&& stage,
 	nytl::Span<const vk::BufferCopy> copies, QueueSubmitter& qs)
 {
 	auto& dev = stage.device();
@@ -199,7 +202,7 @@ UploadWork apply(const Buffer& buf, BufferRange&& stage,
 	return {std::move(cmdBuf), qs, std::move(stage)};
 }
 
-CommandWork<void> apply(const Buffer& buf, const DirectBufferWriter& writer, 
+CommandWork<void> apply(const Buffer& buf, const DirectBufferWriter& writer,
 	QueueSubmitter& qs)
 {
 	auto& dev = writer.device();

@@ -37,6 +37,7 @@ Todo list vor vpp
   	- also: maybe best to not put (even if only couple of lines) the whole
   	  stage buffer allocation handling in header?
 - implement BufferAllocator optimize/shrink
+	- also improve alloc algorithm
 - add more assertions everywhere where things are assumed
 	- don't overdo, only if potentially useful when debugging
 	- see work.inl (something like tryFinish probably best)

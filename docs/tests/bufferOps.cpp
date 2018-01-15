@@ -269,3 +269,24 @@ TEST(buffer_range) {
 
 	EXPECT(dev.bufferAllocator().buffers().size() <= 2, true);
 }
+
+// NOTE: this test should output a failed dlg_assert
+TEST(bufferOps_overflow) {
+	using BUB = vk::BufferUsageBits;
+	auto& dev = *globals.device;
+
+	auto bits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
+	auto usage = BUB::uniformBuffer | BUB::transferDst;
+	vpp::SharedBuffer sbuf(dev, {{}, 1024, usage}, bits);
+	auto range1 = vpp::BufferRange(sbuf, 64);
+	auto range2 = vpp::BufferRange(sbuf, 64);
+	auto range3 = vpp::BufferRange(sbuf, 64);
+
+	std::byte data[65];
+	std::byte data2[60];
+
+	// all of them should trigger a failed assertion
+	vpp::writeMap140(range1, vpp::raw(data));
+	vpp::writeStaging430(range2, vpp::raw(data));
+	vpp::writeStaging140(range3, 1.f, 2.f, 3.f, vpp::raw(data2));
+}
