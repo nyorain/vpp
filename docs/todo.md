@@ -2,13 +2,18 @@ Todo list vor vpp
 =================
 
 - update this file (cleanup, organize into ideas/fixes)
-- QueueSubmitter exception safe (clear pending_?)
-- save(PipelineCache) should probably not throw on error (return false)
-- one_device: store device in Device, not Resource. Make sure it can be reset (after destruction) e.g. for device lost or multiple devices in sequence + example/test (create multiple devices and resources)
+- QueueSubmitter exception safe (clear pending?)
+- save(PipelineCache) should probably not throw on error 
+  (return false or errocode overload)
+- one_device: store device in Device, not Resource. 
+  Make sure it can be reset (after destruction) e.g. for device lost or 
+  multiple devices in sequence + example/test 
+  (create multiple devices and resources)
 - update travis (for vkpp)
 - integrate renderer with QueueSubmitter
 - work dependency chaining (-> QueueSubmitter semaphores)
-	- would allow to e.g. let Renderer submission depend on buffer updates
+	- would allow to e.g. let Renderer submission depend on 
+	  (staging, so cmdBuf-based) buffer updates
 - add glfw/sdl examples
 - memorySize on buffer really ok? (e.g. see sharedBuffer, fill/retrieve)
 	- probably best to deprecate memoryResource::memorySize?
@@ -47,6 +52,11 @@ Todo list vor vpp
 low prio / general / ideas
 --------------------------
 
+- abstraction over BufferRange/Buffer
+	- they are pretty much the same...
+	- like a temporary wrapper that can be constructed from either one
+	- or allow BufferRange to represent something not borrowed from a shared
+	  buffer
 - PipelineLayout constructor (use range of vk::DescirptorSEtLayout)
 - imageOps: fill: option to use direct update instead of mapping?
 	- probably not worth it, we have to allocate buffer either way...
