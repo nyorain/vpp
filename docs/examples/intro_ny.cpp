@@ -24,6 +24,7 @@
 #include <vpp/debug.hpp> // vpp::DebugCallback
 #include <vpp/device.hpp> // vpp::Device
 #include <vpp/renderPass.hpp> // vpp::RenderPass
+#include <vpp/pipelineInfo.hpp> // vpp::GraphicsPipelineInfo
 #include <vpp/vk.hpp> // vulkan commands
 
 #include <ny/backend.hpp> // ny::Backend
@@ -41,15 +42,13 @@
 #include <dlg/dlg.hpp> // logging
 
 #include <nytl/vecOps.hpp> // print nytl::Vec
-#include <cstring> // std::memset
-#include <set>
 
 // shader
 #include "data/intro.frag.h"
 #include "data/intro.vert.h"
 
 vpp::RenderPass createRenderPass(const vpp::Device&, vk::Format);
-vpp::Pipeline createGraphicsPipeline(const vpp::Device&, vk::RenderPass, 
+vpp::Pipeline createGraphicsPipeline(const vpp::Device&, vk::RenderPass,
 	vk::PipelineLayout);
 
 // vpp::Renderer implementation (using DefaultRenderer since we
@@ -143,7 +142,7 @@ int main(int, char**)
 	// ws.initState = ny::ToplevelState::fullscreen;
 	auto wc = ac->createWindowContext(ws);
 
-	// now (if everything went correctly) we have the window (and a 
+	// now (if everything went correctly) we have the window (and a
 	// vulkan surface) and can create the device and renderer.
 	const vpp::Queue* present;
 
@@ -229,13 +228,18 @@ void MyRenderer::record(const RenderBuffer& buf) {
 	vk::Viewport vp {0.f, 0.f, (float) width, (float) height, 0.f, 1.f};
 	vk::cmdSetViewport(cmdBuf, 0, 1, vp);
 	vk::cmdSetScissor(cmdBuf, 0, 1, {0, 0, width, height});
-	// vpp::insertDebugMarker(device(), cmdBuf, "finish setup");
 
-	// vpp::beginDebugRegion(device(), cmdBuf, "render triangle", {1, 0.5, 0.5, 1});
+#ifdef RENDERDOC
+	vpp::insertDebugMarker(device(), cmdBuf, "finish setup");
+	vpp::beginDebugRegion(device(), cmdBuf, "render triangle", {1, 0.5, 0.5, 1});
+#endif
+
 	vk::cmdBindPipeline(cmdBuf, vk::PipelineBindPoint::graphics, pipeline_);
-	// vk::cmdBindVertexBuffers(cmdBuffer, 0, {vertexBuffer}, {0});
 	vk::cmdDraw(cmdBuf, 3, 1, 0, 0);
-	// vpp::endDebugRegion(device(), cmdBuf);
+
+#ifdef RENDERDOC
+	vpp::endDebugRegion(device(), cmdBuf);
+#endif
 
 	vk::cmdEndRenderPass(cmdBuf);
 	vk::endCommandBuffer(cmdBuf);
@@ -399,20 +403,17 @@ vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
 	vpp::nameHandle(dev, fragmentShader.vkHandle(), "triangleFragmentShader");
 #endif
 
-	vpp::ShaderProgram shaderStages({
+	vpp::GraphicsPipelineInfo pipeInfo(rp, layout, {{
 		{vertexShader, vk::ShaderStageBits::vertex},
 		{fragmentShader, vk::ShaderStageBits::fragment}
-	});
+	}});
 
-	vk::GraphicsPipelineCreateInfo pipelineInfo;
-	pipelineInfo.renderPass = rp;
-	pipelineInfo.layout = layout;
+	pipeInfo.assembly.topology = vk::PrimitiveTopology::triangleList;
 
-	pipelineInfo.stageCount = shaderStages.vkStageInfos().size();
-	pipelineInfo.pStages = shaderStages.vkStageInfos().data();
-
-	constexpr auto stride = (2 + 4) * 4; // 2 pos floats, 4 color floats (4 byte floats)
-	vk::VertexInputBindingDescription bufferBinding {0, stride, vk::VertexInputRate::vertex};
+	/* NOTE: if we would use a vertex buffer
+	constexpr auto stride = (2 + 4) * sizeof(float); // pos (vec2), color(vec4)
+	vk::VertexInputBindingDescription bufferBinding {0,
+		stride, vk::VertexInputRate::vertex};
 
 	// vertex position, color attributes
 	vk::VertexInputAttributeDescription attributes[2];
@@ -420,68 +421,22 @@ vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
 
 	attributes[1].location = 1;
 	attributes[1].format = vk::Format::r32g32b32a32Sfloat;
-	attributes[1].offset = 2 * 4; // pos: vec2f
+	attributes[1].offset = 2 * sizeof(float);
 
-	vk::PipelineVertexInputStateCreateInfo vertexInfo;
-	// vertexInfo.vertexBindingDescriptionCount = 1;
-	vertexInfo.vertexBindingDescriptionCount = 0;
-	vertexInfo.pVertexBindingDescriptions = &bufferBinding;
-	// vertexInfo.vertexAttributeDescriptionCount = 2;
-	vertexInfo.vertexAttributeDescriptionCount = 0;
-	vertexInfo.pVertexAttributeDescriptions = attributes;
-	pipelineInfo.pVertexInputState = &vertexInfo;
-
-	vk::PipelineInputAssemblyStateCreateInfo assemblyInfo;
-	assemblyInfo.topology = vk::PrimitiveTopology::triangleList;
-	pipelineInfo.pInputAssemblyState = &assemblyInfo;
-
-	vk::PipelineRasterizationStateCreateInfo rasterizationInfo;
-	rasterizationInfo.polygonMode = vk::PolygonMode::fill;
-	rasterizationInfo.cullMode = vk::CullModeBits::none;
-	rasterizationInfo.frontFace = vk::FrontFace::counterClockwise;
-	rasterizationInfo.depthClampEnable = false;
-	rasterizationInfo.rasterizerDiscardEnable = false;
-	rasterizationInfo.depthBiasEnable = false;
-	rasterizationInfo.lineWidth = 1.f;
-	pipelineInfo.pRasterizationState = &rasterizationInfo;
-
-	vk::PipelineMultisampleStateCreateInfo multisampleInfo;
-	multisampleInfo.rasterizationSamples = vk::SampleCountBits::e1;
-	pipelineInfo.pMultisampleState = &multisampleInfo;
-
-	vk::PipelineColorBlendAttachmentState blendAttachment;
-	blendAttachment.blendEnable = false;
-	blendAttachment.colorWriteMask =
-		vk::ColorComponentBits::r |
-		vk::ColorComponentBits::g |
-		vk::ColorComponentBits::b |
-		vk::ColorComponentBits::a;
-
-	vk::PipelineColorBlendStateCreateInfo blendInfo;
-	blendInfo.attachmentCount = 1;
-	blendInfo.pAttachments = &blendAttachment;
-	pipelineInfo.pColorBlendState = &blendInfo;
-
-	vk::PipelineViewportStateCreateInfo viewportInfo;
-	viewportInfo.scissorCount = 1;
-	viewportInfo.viewportCount = 1;
-	pipelineInfo.pViewportState = &viewportInfo;
-
-	static auto dynStates = {
-		vk::DynamicState::viewport, 
-		vk::DynamicState::scissor};
-
-	vk::PipelineDynamicStateCreateInfo dynamicInfo;
-	dynamicInfo.dynamicStateCount = dynStates.size();
-	dynamicInfo.pDynamicStates = dynStates.begin();
-	pipelineInfo.pDynamicState = &dynamicInfo;
+	pipeInfo.vertex.vertexBindingDescriptionCount = 1;
+	pipeInfo.vertex.pVertexBindingDescriptions = &bufferBinding;
+	pipeInfo.vertex.vertexAttributeDescriptionCount = 2;
+	pipeInfo.vertex.pVertexAttributeDescriptions = attributes;
+	*/
 
 	// we also use the vpp::PipelienCache in this case
 	// we try to load it from an already existent cache
 	constexpr auto cacheName = "grapihcsPipelineCache.bin";
 	vpp::PipelineCache cache {dev, cacheName};
 
-	auto vkPipeline = vk::createGraphicsPipelines(dev, cache, {pipelineInfo}).front();
+	vk::Pipeline vkPipeline;
+	vk::createGraphicsPipelines(dev, cache, 1, pipeInfo.info(), nullptr,
+		vkPipeline);
 
 	// save the cache to the file we tried to load it from
 	vpp::save(cache, cacheName);
