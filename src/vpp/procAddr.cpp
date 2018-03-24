@@ -3,7 +3,6 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/procAddr.hpp>
-#include <vpp/util/sharedLock.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 
@@ -11,6 +10,7 @@
 #include <string>
 #include <iostream>
 #include <shared_mutex>
+#include <mutex>
 
 namespace vpp {
 namespace {
@@ -27,61 +27,58 @@ std::shared_mutex deviceMutex;
 
 using namespace std::literals::string_literals;
 
-vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name, bool except)
-{
+vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name, bool except) {
+	const static std::string err = "vpp::vulkanProc: Failed to load ini proc ";
+
 	// try to find it
 	{
-		SharedLockGuard<std::shared_mutex> lock(instanceMutex);
+		std::shared_lock lock(instanceMutex);
 	    auto it = instanceProcs[instance].find(name);
-	    if(it != instanceProcs[instance].cend())
+	    if(it != instanceProcs[instance].cend()) {
 			return it->second;
+		}
 	}
 
 	// load
     auto addr = vk::getInstanceProcAddr(instance, name);
 	if(!addr) {
-		auto msg = "vpp::vulkanProc: Failed to load instance proc "s + name;
-		if(except) throw std::runtime_error(msg);
-
-		dlg_warnt(("vulkanProc"), "Failed to load instance proc {}", name);
+		if(except) {
+			throw std::runtime_error(err + name);
+		}
 		return nullptr;
 	}
 
 	// insert
-	{
-		std::lock_guard<std::shared_mutex> lock(instanceMutex);
-        instanceProcs[instance].insert({name, addr});
-	}
-
+	std::scoped_lock lock(instanceMutex);
+	instanceProcs[instance].insert({name, addr});
 	return addr;
 }
 
-vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name, bool except)
-{
+vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name, bool except) {
+	const static std::string err = "vpp::vulkanProc: Failed to load dev proc ";
+
 	// try to find it
 	{
-		SharedLockGuard<std::shared_mutex> lock(deviceMutex);
+		std::shared_lock lock(deviceMutex);
 	    auto it = deviceProcs[device].find(name);
-	    if(it != deviceProcs[device].cend())
+	    if(it != deviceProcs[device].cend()) {
 			return it->second;
+		}
 	}
 
 	// load
     auto addr = vk::getDeviceProcAddr(device, name);
 	if(!addr) {
-		auto msg = "vpp::vulkanProc: Failed to load device proc "s + name;
-		if(except) throw std::runtime_error(msg);
+		if(except) {
+			throw std::runtime_error(err + name);
+		}
 
-		dlg_warnt(("vulkanProc"), "Failed to load device proc {}", name);
 		return nullptr;
 	}
 
 	// insert
-	{
-		std::lock_guard<std::shared_mutex> lock(deviceMutex);
-        deviceProcs[device].insert({name, addr});
-	}
-
+	std::scoped_lock lock(deviceMutex);
+	deviceProcs[device].insert({name, addr});
 	return addr;
 }
 

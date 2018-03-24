@@ -2,17 +2,18 @@ Todo list vor vpp
 =================
 
 - update this file (cleanup, organize into ideas/fixes)
+- offer functionality to select supported extensions/layers from a list
 - QueueSubmitter exception safe (clear pending?)
-- save(PipelineCache) should probably not throw on error 
+- save(PipelineCache) should probably not throw on error
   (return false or errocode overload)
-- one_device: store device in Device, not Resource. 
-  Make sure it can be reset (after destruction) e.g. for device lost or 
-  multiple devices in sequence + example/test 
+- one_device: store device in Device, not Resource.
+  Make sure it can be reset (after destruction) e.g. for device lost or
+  multiple devices in sequence + example/test
   (create multiple devices and resources)
 - update travis (for vkpp)
 - integrate renderer with QueueSubmitter
 - work dependency chaining (-> QueueSubmitter semaphores)
-	- would allow to e.g. let Renderer submission depend on 
+	- would allow to e.g. let Renderer submission depend on
 	  (staging, so cmdBuf-based) buffer updates
 - add glfw/sdl examples
 - memorySize on buffer really ok? (e.g. see sharedBuffer, fill/retrieve)
@@ -219,7 +220,7 @@ low prio / general / ideas
 //  so keep this separate.
 
 // NOTE: also implement synchronized versions of these classes?
-//  might be useful since often there are multiple threads e.g. 
-//  uploading or initializing stuff. But again, implement as 
+//  might be useful since often there are multiple threads e.g.
+//  uploading or initializing stuff. But again, implement as
 //  a separate version, only pay for what you use.
 

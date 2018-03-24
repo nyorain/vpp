@@ -55,7 +55,7 @@ std::string to_string(vk::DebugReportFlagsEXT flags)
 		ret = "<unknown>";
 	} else if(ret.size() > 3) {
 		ret = ret.substr(0, ret.size() - 2);
-	} 
+	}
 
 	if(count > 1) {
 		ret = "{" + ret + "}";
@@ -102,19 +102,16 @@ std::string to_string(vk::DebugReportObjectTypeEXT type)
 } // anonymous util namespace
 
 // DebugCallback
-vk::DebugReportFlagsEXT DebugCallback::defaultFlags()
-{
+vk::DebugReportFlagsEXT DebugCallback::defaultFlags() {
 	return vk::DebugReportBitsEXT::warning |
 		vk::DebugReportBitsEXT::error |
 		vk::DebugReportBitsEXT::performanceWarning;
 }
 
-vk::DebugReportFlagsEXT DebugCallback::defaultErrorFlags()
-{
+vk::DebugReportFlagsEXT DebugCallback::defaultErrorFlags() {
 	return vk::DebugReportBitsEXT::error;
 }
-vk::DebugReportFlagsEXT DebugCallback::allBits()
-{
+vk::DebugReportFlagsEXT DebugCallback::allBits() {
 	return vk::DebugReportBitsEXT::warning |
 		vk::DebugReportBitsEXT::error |
 		vk::DebugReportBitsEXT::performanceWarning |
@@ -123,23 +120,21 @@ vk::DebugReportFlagsEXT DebugCallback::allBits()
 }
 
 DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags,
-	bool verbose, vk::DebugReportFlagsEXT error) : 
-		instance_(instance), errorFlags_(error), verbose_(verbose)
-{
+		bool verbose, vk::DebugReportFlagsEXT error) :
+		instance_(instance), errorFlags_(error), verbose_(verbose) {
+
 	VPP_LOAD_PROC(vkInstance(), CreateDebugReportCallbackEXT);
 	vk::DebugReportCallbackCreateInfoEXT createInfo(flags, &defaultMessageCallback, this);
 	VKPP_CALL(pfCreateDebugReportCallbackEXT(vkInstance(), &createInfo, nullptr, &debugCallback_));
 }
 
-DebugCallback::~DebugCallback()
-{
+DebugCallback::~DebugCallback() {
 	if(vkCallback()) {
 		VPP_PROC(vkInstance(), DestroyDebugReportCallbackEXT)(vkInstance(), vkCallback(), nullptr);
 	}
 }
 
-bool DebugCallback::call(const CallbackInfo& info) const noexcept
-{
+bool DebugCallback::call(const CallbackInfo& info) const noexcept {
 	std::string verbose;
 	if(verbose_) {
 		verbose = "\n\tflags: " + to_string(info.flags) + "\n\t";
@@ -168,65 +163,78 @@ bool DebugCallback::call(const CallbackInfo& info) const noexcept
 }
 
 // debug report
-void nameHandle(vk::Device dev, std::uint64_t handle, 
-	vk::DebugReportObjectTypeEXT type, const char* name)
-{
+vk::Result nameHandle(vk::Device dev, std::uint64_t handle,
+		vk::DebugReportObjectTypeEXT type, const char* name) {
+
 	VPP_LOAD_PROC_NOTHROW(dev, DebugMarkerSetObjectNameEXT);
-	if(pfDebugMarkerSetObjectNameEXT) {
-		vk::DebugMarkerObjectNameInfoEXT info;
-		info.object = handle;
-		info.objectType = type;
-		info.pObjectName = name;
-		pfDebugMarkerSetObjectNameEXT(dev, &info);
+	if(!pfDebugMarkerSetObjectNameEXT) {
+		return vk::Result::errorExtensionNotPresent;
 	}
+
+	vk::DebugMarkerObjectNameInfoEXT info;
+	info.object = handle;
+	info.objectType = type;
+	info.pObjectName = name;
+	return pfDebugMarkerSetObjectNameEXT(dev, &info);
 }
 
-void tagHandle(vk::Device dev, std::uint64_t handle, 
-	vk::DebugReportObjectTypeEXT type, std::uint64_t name, 
-	nytl::Span<const std::byte> data)
-{
+vk::Result tagHandle(vk::Device dev, std::uint64_t handle,
+		vk::DebugReportObjectTypeEXT type, std::uint64_t name,
+		nytl::Span<const std::byte> data) {
+
 	VPP_LOAD_PROC_NOTHROW(dev, DebugMarkerSetObjectTagEXT);
-	if(pfDebugMarkerSetObjectTagEXT) {
-		vk::DebugMarkerObjectTagInfoEXT info;
-		info.object = handle;
-		info.objectType = type;
-		info.pTag = data.data();
-		info.tagSize = data.size();
-		info.tagName = name;
-		pfDebugMarkerSetObjectTagEXT(dev, &info);
+	if(!pfDebugMarkerSetObjectTagEXT) {
+		return vk::Result::errorExtensionNotPresent;
 	}
+
+	vk::DebugMarkerObjectTagInfoEXT info;
+	info.object = handle;
+	info.objectType = type;
+	info.pTag = data.data();
+	info.tagSize = data.size();
+	info.tagName = name;
+	return pfDebugMarkerSetObjectTagEXT(dev, &info);
 }
 
-void beginDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf, 
+bool beginDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf,
 	const char* name, std::array<float, 4> col)
 {
 	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerBeginEXT);
-	if(pfCmdDebugMarkerBeginEXT) {
-		vk::DebugMarkerMarkerInfoEXT markerInfo;
-		markerInfo.color = col;
-		markerInfo.pMarkerName = name;
-		pfCmdDebugMarkerBeginEXT(cmdBuf, &markerInfo);
+	if(!pfCmdDebugMarkerBeginEXT) {
+		return false;
 	}
+
+	vk::DebugMarkerMarkerInfoEXT markerInfo;
+	markerInfo.color = col;
+	markerInfo.pMarkerName = name;
+	pfCmdDebugMarkerBeginEXT(cmdBuf, &markerInfo);
+	return true;
 }
 
-void endDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf)
+bool endDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf)
 {
 	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerEndEXT);
-	if(pfCmdDebugMarkerEndEXT) {
-		pfCmdDebugMarkerEndEXT(cmdBuf);
+	if(!pfCmdDebugMarkerEndEXT) {
+		return false;
 	}
+
+	pfCmdDebugMarkerEndEXT(cmdBuf);
+	return true;
 }
 
-void insertDebugMarker(vk::Device dev, vk::CommandBuffer cmdBuf, 
+bool insertDebugMarker(vk::Device dev, vk::CommandBuffer cmdBuf,
 	const char* name, std::array<float, 4> col)
 {
 	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerInsertEXT);
-	if(pfCmdDebugMarkerInsertEXT) {
-		vk::DebugMarkerMarkerInfoEXT markerInfo;
-		markerInfo.color = col;
-		markerInfo.pMarkerName = name;
-		pfCmdDebugMarkerInsertEXT(cmdBuf, &markerInfo);
+	if(!pfCmdDebugMarkerInsertEXT) {
+		return false;
 	}
+
+	vk::DebugMarkerMarkerInfoEXT markerInfo;
+	markerInfo.color = col;
+	markerInfo.pMarkerName = name;
+	pfCmdDebugMarkerInsertEXT(cmdBuf, &markerInfo);
+	return true;
 }
 
 } // namespace vpp

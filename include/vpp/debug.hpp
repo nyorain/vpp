@@ -47,8 +47,8 @@ public:
 	static vk::DebugReportFlagsEXT defaultErrorFlags();
 
 public:
-	DebugCallback(vk::Instance instance, 
-		vk::DebugReportFlagsEXT flags = defaultFlags(), bool verbose = false, 
+	DebugCallback(vk::Instance instance,
+		vk::DebugReportFlagsEXT flags = defaultFlags(), bool verbose = false,
 		vk::DebugReportFlagsEXT errorFlags = defaultErrorFlags());
 	virtual ~DebugCallback();
 
@@ -77,21 +77,24 @@ protected:
 
 /// - Debug marker utitlity -
 /// Require VK_EXT_debug_marker in instance, will have no effect otherwise.
+/// Will return vk::Result::errorExtensionNotPresent otherwise.
 
 /// Set the name of the given handle.
 /// Also see the templated version below.
-void nameHandle(vk::Device, std::uint64_t handle, 
+vk::Result nameHandle(vk::Device, std::uint64_t handle,
 	vk::DebugReportObjectTypeEXT, const char* name);
 
 /// Sets the tag of the given handle.
 /// Also see the templated version below.
-void tagHandle(vk::Device, std::uint64_t handle, vk::DebugReportObjectTypeEXT, 
-	std::uint64_t name, nytl::Span<const std::byte> data);
+vk::Result tagHandle(vk::Device, std::uint64_t handle,
+	vk::DebugReportObjectTypeEXT, std::uint64_t name,
+	nytl::Span<const std::byte> data);
 
-void beginDebugRegion(vk::Device, vk::CommandBuffer, const char* name,
+/// Return false if the extension (its function) could not be loaded.
+bool beginDebugRegion(vk::Device, vk::CommandBuffer, const char* name,
 	std::array<float, 4> col = {});
-void endDebugRegion(vk::Device, vk::CommandBuffer);
-void insertDebugMarker(vk::Device, vk::CommandBuffer, const char* name,
+bool endDebugRegion(vk::Device, vk::CommandBuffer);
+bool insertDebugMarker(vk::Device, vk::CommandBuffer, const char* name,
 	std::array<float, 4> col = {});
 
 namespace detail {
@@ -139,19 +142,20 @@ DebugHandleSpec(vk::ShaderModule, shaderModule);
 
 } // namespace detail
 
-template<typename T> constexpr auto debugReportHandleType = 
+template<typename T> constexpr auto debugReportHandleType =
 	detail::DebugHandleType<T>::value;
 
 template<typename T>
-void nameHandle(vk::Device dev,T handle, const char* name) {
-	nameHandle(dev, (std::uint64_t) handle, debugReportHandleType<T>, name);
+vk::Result nameHandle(vk::Device dev,T handle, const char* name) {
+	return nameHandle(dev, (std::uint64_t) handle,
+		debugReportHandleType<T>, name);
 }
 
 template<typename T>
-void tagHandle(vk::Device dev, T handle, std::uint64_t name, 
-	nytl::Span<const std::byte> d) 
-{
-	tagHandle(dev, (std::uint64_t) handle, debugReportHandleType<T>, name, d);
+void tagHandle(vk::Device dev, T handle, std::uint64_t name,
+		nytl::Span<const std::byte> d) {
+	return tagHandle(dev, (std::uint64_t) handle, debugReportHandleType<T>,
+		name, d);
 }
 
 } // namespace vpp
