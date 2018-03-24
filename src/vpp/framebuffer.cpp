@@ -8,31 +8,17 @@
 namespace vpp {
 
 Framebuffer::Framebuffer(const Device& dev, vk::Framebuffer framebuffer)
-	: ResourceHandle(dev, framebuffer)
-{
+		: ResourceHandle(dev, framebuffer) {
 }
 
-Framebuffer::Framebuffer(const Device& dev, const vk::FramebufferCreateInfo& info)
-	: ResourceHandle(dev, vk::createFramebuffer(dev, info))
-{
+Framebuffer::Framebuffer(const Device& dev, const vk::FramebufferCreateInfo& i)
+		: ResourceHandle(dev, vk::createFramebuffer(dev, i)) {
 }
 
-Framebuffer::~Framebuffer()
-{
+Framebuffer::~Framebuffer() {
 	if(vkHandle()) {
 		vk::destroyFramebuffer(vkDevice(), vkHandle(), nullptr);
 	}
-}
-
-Framebuffer::Framebuffer(Framebuffer&& rhs) noexcept 
-{ 
-	swap(*this, rhs); 
-}
-
-Framebuffer& Framebuffer::operator=(Framebuffer rhs) noexcept 
-{ 
-	swap(*this, rhs); 
-	return *this; 
 }
 
 } // namespace vpp

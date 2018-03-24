@@ -2,10 +2,13 @@ Todo list vor vpp
 =================
 
 - update this file (cleanup, organize into ideas/fixes)
+- next try at cleaning up move-op mess (document why if not possible)
 - offer functionality to select supported extensions/layers from a list
 - QueueSubmitter exception safe (clear pending?)
+- rework/remove bufferOps.inl api?
 - save(PipelineCache) should probably not throw on error
   (return false or errocode overload)
+- way to undo reservation in DescriptorAllocator (?)
 - one_device: store device in Device, not Resource.
   Make sure it can be reset (after destruction) e.g. for device lost or
   multiple devices in sequence + example/test

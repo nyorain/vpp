@@ -17,8 +17,11 @@ public:
 	Framebuffer(const Device&, vk::Framebuffer);
 	~Framebuffer();
 
-	Framebuffer(Framebuffer&& rhs) noexcept;
-	Framebuffer& operator=(Framebuffer rhs) noexcept;
+	Framebuffer(Framebuffer&& rhs) noexcept { swap(*this, rhs); }
+	Framebuffer& operator=(Framebuffer rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
+	}
 };
 
 } // namespace vpp

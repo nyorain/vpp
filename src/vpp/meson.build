@@ -27,6 +27,7 @@ vpp_sources = [
 	'surface.cpp',
 	'swapchain.cpp',
 	'sync.cpp',
+	'trackedDescriptor.cpp',
 	'work.cpp',
 	'util/file.cpp']
 

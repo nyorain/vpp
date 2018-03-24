@@ -9,8 +9,9 @@ namespace vpp {
 
 // DescriptorSetLayout
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
-	nytl::Span<const vk::DescriptorSetLayoutBinding> bindings) : ResourceHandle(dev)
-{
+		nytl::Span<const vk::DescriptorSetLayoutBinding> bindings) :
+			ResourceHandle(dev) {
+
 	static constexpr auto defaultBinding = std::uint32_t(-1);
 
 	std::vector<vk::DescriptorSetLayoutBinding> vkbindings;
@@ -31,70 +32,76 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	handle_ = vk::createDescriptorSetLayout(vkDevice(), descriptorLayout);
 }
 
-DescriptorSetLayout::~DescriptorSetLayout()
-{
-	if(vkHandle()) vk::destroyDescriptorSetLayout(vkDevice(), vkHandle());
+DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
+	vk::DescriptorSetLayout layout) : ResourceHandle(dev, layout) {
+}
+
+DescriptorSetLayout::~DescriptorSetLayout() {
+	if(vkHandle()) {
+		vk::destroyDescriptorSetLayout(vkDevice(), vkHandle());
+	}
 }
 
 // DescriptorSet
-DescriptorSet::DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPool pool)
-	: ResourceHandle(layout.device())
-{
-	vk::DescriptorSetAllocateInfo allocInfo;
-	allocInfo.descriptorPool = pool;
-	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = &layout.vkHandle();
-
-	vk::allocateDescriptorSets(vkDevice(), allocInfo, handle_);
+DescriptorSet::DescriptorSet(const DescriptorPool& p,
+		const DescriptorSetLayout& l) : DescriptorSet(p, l.vkHandle()) {
 }
 
-DescriptorSet::DescriptorSet(const Device& dev, vk::DescriptorSetLayout layout,
-	vk::DescriptorPool pool) : ResourceHandle(dev)
-{
+DescriptorSet::DescriptorSet(const DescriptorPool& pool,
+	vk::DescriptorSetLayout layout) :
+	DescriptorSet(pool.device(), pool, layout) {
+}
+
+DescriptorSet::DescriptorSet(vk::DescriptorPool pool,
+	const DescriptorSetLayout& layout) :
+	DescriptorSet(layout.device(), pool, layout) {
+}
+
+DescriptorSet::DescriptorSet(const Device& dev, vk::DescriptorPool pool,
+		vk::DescriptorSetLayout layout) : ResourceHandle(dev) {
+
 	vk::DescriptorSetAllocateInfo allocInfo;
 	allocInfo.descriptorPool = pool;
 	allocInfo.descriptorSetCount = 1;
 	allocInfo.pSetLayouts = &layout;
-
 	vk::allocateDescriptorSets(vkDevice(), allocInfo, handle_);
 }
 
 DescriptorSet::DescriptorSet(const Device& dev, vk::DescriptorSet set)
-	: ResourceHandle(dev, set)
-{
-}
-
-DescriptorSet::~DescriptorSet()
-{
-	// TODO: something about descriptorSet desctruction/freeing
+	: ResourceHandle(dev, set) {
 }
 
 // DescriptorPool
-DescriptorPool::DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info)
-	: ResourceHandle(dev)
-{
+DescriptorPool::DescriptorPool(const Device& dev,
+		const vk::DescriptorPoolCreateInfo& info) : ResourceHandle(dev) {
 	handle_ = vk::createDescriptorPool(dev, info);
 }
-DescriptorPool::~DescriptorPool()
-{
-	if(vkHandle()) vk::destroyDescriptorPool(device(), vkHandle());
+
+DescriptorPool::DescriptorPool(const Device& dev, vk::DescriptorPool pool)
+	: ResourceHandle(dev, pool) {
+}
+
+DescriptorPool::~DescriptorPool() {
+	if(vkHandle()) {
+		vk::destroyDescriptorPool(device(), vkHandle());
+	}
 }
 
 // DecriptorSetUpdate
-DescriptorSetUpdate::DescriptorSetUpdate(const DescriptorSet& set) : set_(&set)
-{
+DescriptorSetUpdate::DescriptorSetUpdate(const DescriptorSet& set)
+	: set_(&set) {
 }
 
-DescriptorSetUpdate::~DescriptorSetUpdate()
-{
+DescriptorSetUpdate::~DescriptorSetUpdate() {
 	apply();
 }
 
-void DescriptorSetUpdate::apply()
-{
-	if((writes_.empty() && copies_.empty()) || !set_) return;
-	vk::updateDescriptorSets(device(), writes_, copies_);
+void DescriptorSetUpdate::apply() {
+	if((writes_.empty() && copies_.empty()) || !set_) {
+		return;
+	}
 
+	vk::updateDescriptorSets(device(), writes_, copies_);
 	writes_.clear();
 	copies_.clear();
 	buffers_.clear();
@@ -104,7 +111,9 @@ void DescriptorSetUpdate::apply()
 
 void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates)
 {
-	if(updates.empty()) return;
+	if(updates.empty()) {
+		return;
+	}
 
 	std::vector<vk::WriteDescriptorSet> writes;
 	std::vector<vk::CopyDescriptorSet> copies;
@@ -130,133 +139,196 @@ void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates
 	}
 }
 
-void DescriptorSetUpdate::uniform(BufferInfos buffers, int binding, unsigned int elem)
-{
-	if(binding == -1) binding = currentBinding_++;
-	else currentBinding_ = binding + 1;
+void DescriptorSetUpdate::uniform(BufferInfos buffers, int binding,
+		unsigned int elem) {
+
+	if(binding == -1) {
+		binding = currentBinding_++;
+	} else {
+		currentBinding_ = binding + 1;
+	}
 
 	buffers_.emplace_back(std::move(buffers));
-	for(auto& b : buffers_.back()) if(b.range == 0) b.range = vk::wholeSize;
+	for(auto& b : buffers_.back()) {
+		if(b.range == 0) {
+			b.range = vk::wholeSize;
+		}
+	}
 
 	writes_.emplace_back(*set_, binding, elem, buffers_.back().size(),
-		vk::DescriptorType::uniformBuffer, nullptr, buffers_.back().data(), nullptr);
+		vk::DescriptorType::uniformBuffer, nullptr, buffers_.back().data(),
+		nullptr);
 }
 
-void DescriptorSetUpdate::storage(BufferInfos buffers, int binding, unsigned int elem)
-{
-	if(binding == -1) binding = currentBinding_++;
-	else currentBinding_ = binding + 1;
+void DescriptorSetUpdate::storage(BufferInfos buffers, int binding,
+		unsigned int elem) {
+
+	if(binding == -1) {
+		binding = currentBinding_++;
+	} else {
+		currentBinding_ = binding + 1;
+	}
 
 	buffers_.emplace_back(std::move(buffers));
-	for(auto& b : buffers_.back()) if(b.range == 0) b.range = vk::wholeSize;
+	for(auto& b : buffers_.back()) {
+		if(b.range == 0) {
+			b.range = vk::wholeSize;
+		}
+	}
 
 	writes_.emplace_back(*set_, binding, elem, buffers_.back().size(),
-		vk::DescriptorType::storageBuffer, nullptr, buffers_.back().data(), nullptr);
+		vk::DescriptorType::storageBuffer, nullptr, buffers_.back().data(),
+		nullptr);
 }
-void DescriptorSetUpdate::uniformDynamic(BufferInfos buffers, int binding, unsigned int elem)
-{
-	if(binding == -1) binding = currentBinding_++;
-	else currentBinding_ = binding + 1;
+
+void DescriptorSetUpdate::uniformDynamic(BufferInfos buffers, int binding,
+		unsigned int elem) {
+
+	if(binding == -1) {
+		binding = currentBinding_++;
+	} else {
+		currentBinding_ = binding + 1;
+	}
 
 	buffers_.emplace_back(std::move(buffers));
-	for(auto& b : buffers_.back()) if(b.range == 0) b.range = vk::wholeSize;
+	for(auto& b : buffers_.back()) {
+		if(b.range == 0) {
+			b.range = vk::wholeSize;
+		}
+	}
 
 	writes_.emplace_back(*set_, binding, elem, buffers_.back().size(),
-		vk::DescriptorType::uniformBufferDynamic, nullptr, buffers_.back().data(), nullptr);
+		vk::DescriptorType::uniformBufferDynamic, nullptr,
+		buffers_.back().data(), nullptr);
 }
-void DescriptorSetUpdate::storageDynamic(BufferInfos buffers, int binding, unsigned int elem)
-{
-	if(binding == -1) binding = currentBinding_++;
-	else currentBinding_ = binding + 1;
+
+void DescriptorSetUpdate::storageDynamic(BufferInfos buffers, int binding,
+		unsigned int elem) {
+
+	if(binding == -1) {
+		binding = currentBinding_++;
+	} else {
+		currentBinding_ = binding + 1;
+	}
 
 	buffers_.emplace_back(std::move(buffers));
-	for(auto& b : buffers_.back()) if(b.range == 0) b.range = vk::wholeSize;
+	for(auto& b : buffers_.back()) {
+		if(b.range == 0) {
+			b.range = vk::wholeSize;
+		}
+	}
 
 	writes_.emplace_back(*set_, binding, elem, buffers_.back().size(),
-		vk::DescriptorType::storageBufferDynamic, nullptr, buffers_.back().data(), nullptr);
+		vk::DescriptorType::storageBufferDynamic, nullptr,
+		buffers_.back().data(), nullptr);
 }
 
-void DescriptorSetUpdate::sampler(ImageInfos images, int binding, unsigned int elem)
-{
-	if(binding == -1) binding = currentBinding_++;
-	else currentBinding_ = binding + 1;
+void DescriptorSetUpdate::sampler(ImageInfos images, int binding,
+		unsigned int elem) {
+
+	if(binding == -1) {
+		binding = currentBinding_++;
+	} else {
+		currentBinding_ = binding + 1;
+	}
 
 	images_.emplace_back(std::move(images));
-
 	writes_.emplace_back(*set_, binding, elem, images_.back().size(),
 		vk::DescriptorType::sampler, images_.back().data(), nullptr, nullptr);
 }
-void DescriptorSetUpdate::image(ImageInfos images, int binding, unsigned int elem)
-{
-	if(binding == -1) binding = currentBinding_++;
-	else currentBinding_ = binding + 1;
+void DescriptorSetUpdate::image(ImageInfos images, int binding,
+			unsigned int elem) {
+
+	if(binding == -1) {
+		binding = currentBinding_++;
+	} else {
+		currentBinding_ = binding + 1;
+	}
 
 	images_.emplace_back(std::move(images));
-
 	writes_.emplace_back(*set_, binding, elem, images_.back().size(),
-		vk::DescriptorType::sampledImage, images_.back().data(), nullptr, nullptr);
+		vk::DescriptorType::sampledImage, images_.back().data(), nullptr,
+		nullptr);
 }
-void DescriptorSetUpdate::storage(ImageInfos images, int binding, unsigned int elem)
-{
-	if(binding == -1) binding = currentBinding_++;
-	else currentBinding_ = binding + 1;
+void DescriptorSetUpdate::storage(ImageInfos images, int binding,
+		unsigned int elem) {
+
+	if(binding == -1) {
+		binding = currentBinding_++;
+	} else {
+		currentBinding_ = binding + 1;
+	}
 
 	images_.emplace_back(std::move(images));
-
 	writes_.emplace_back(*set_, binding, elem, images_.back().size(),
-		vk::DescriptorType::storageImage, images_.back().data(), nullptr, nullptr);
+		vk::DescriptorType::storageImage, images_.back().data(), nullptr,
+		nullptr);
 }
-void DescriptorSetUpdate::imageSampler(ImageInfos images, int binding, unsigned int elem)
-{
-	if(binding == -1) binding = currentBinding_++;
-	else currentBinding_ = binding + 1;
+void DescriptorSetUpdate::imageSampler(ImageInfos images, int binding,
+		unsigned int elem) {
+
+	if(binding == -1) {
+		binding = currentBinding_++;
+	} else {
+		currentBinding_ = binding + 1;
+	}
 
 	images_.emplace_back(std::move(images));
-
 	writes_.emplace_back(*set_, binding, elem, images_.back().size(),
-		vk::DescriptorType::combinedImageSampler, images_.back().data(), nullptr, nullptr);
+		vk::DescriptorType::combinedImageSampler, images_.back().data(),
+		nullptr, nullptr);
 }
-void DescriptorSetUpdate::inputAttachment(ImageInfos images, int binding, unsigned int elem)
-{
-	if(binding == -1) binding = currentBinding_++;
-	else currentBinding_ = binding + 1;
+void DescriptorSetUpdate::inputAttachment(ImageInfos images, int binding,
+		unsigned int elem) {
+
+	if(binding == -1) {
+		binding = currentBinding_++;
+	} else {
+		currentBinding_ = binding + 1;
+	}
 
 	images_.emplace_back(std::move(images));
-
 	writes_.emplace_back(*set_, binding, elem, images_.back().size(),
-		vk::DescriptorType::inputAttachment, images_.back().data(), nullptr, nullptr);
+		vk::DescriptorType::inputAttachment, images_.back().data(), nullptr,
+		nullptr);
 }
 
-void DescriptorSetUpdate::uniformView(BufferViewInfos views, int binding, unsigned int elem)
-{
-	if(binding == -1) binding = currentBinding_++;
-	else currentBinding_ = binding + 1;
+void DescriptorSetUpdate::uniformView(BufferViewInfos views, int binding,
+		unsigned int elem) {
+
+	if(binding == -1) {
+		binding = currentBinding_++;
+	} else {
+		currentBinding_ = binding + 1;
+	}
 
 	views_.emplace_back(std::move(views));
-
 	writes_.emplace_back(*set_, binding, elem, views_.back().size(),
-		vk::DescriptorType::uniformTexelBuffer, nullptr, nullptr, views_.back().data());
+		vk::DescriptorType::uniformTexelBuffer, nullptr, nullptr,
+		views_.back().data());
 }
-void DescriptorSetUpdate::storageView(BufferViewInfos views, int binding, unsigned int elem)
-{
-	if(binding == -1) binding = currentBinding_++;
-	else currentBinding_ = binding + 1;
+void DescriptorSetUpdate::storageView(BufferViewInfos views, int binding,
+		unsigned int elem) {
+
+	if(binding == -1) {
+		binding = currentBinding_++;
+	} else {
+		currentBinding_ = binding + 1;
+	}
 
 	views_.emplace_back(std::move(views));
-
 	writes_.emplace_back(*set_, binding, elem, views_.back().size(),
-		vk::DescriptorType::storageTexelBuffer, nullptr, nullptr, views_.back().data());
+		vk::DescriptorType::storageTexelBuffer, nullptr, nullptr,
+		views_.back().data());
 }
-void DescriptorSetUpdate::copy(const vk::CopyDescriptorSet& copySet)
-{
+void DescriptorSetUpdate::copy(const vk::CopyDescriptorSet& copySet) {
 	copies_.push_back(copySet);
 }
 
 // utility
 vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
-	vk::ShaderStageFlags stages, unsigned int binding,
-	unsigned int count, const vk::Sampler* samplers)
-{
+		vk::ShaderStageFlags stages, unsigned int binding,
+		unsigned int count, const vk::Sampler* samplers) {
 	return {binding, type, count, stages, samplers};
 }
 

@@ -7,7 +7,10 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/util/span.hpp>
+#include <vpp/util/nonCopyable.hpp>
+
 #include <vector>
+#include <deque>
 
 namespace vpp {
 namespace fwd {
@@ -20,17 +23,17 @@ namespace fwd {
 class DescriptorSetLayout : public ResourceHandle<vk::DescriptorSetLayout> {
 public:
 	DescriptorSetLayout() = default;
-	DescriptorSetLayout(const Device& dev,
-		nytl::Span<const vk::DescriptorSetLayoutBinding> bindings);
+	DescriptorSetLayout(const Device&,
+		nytl::Span<const vk::DescriptorSetLayoutBinding>);
+	DescriptorSetLayout(const Device&, vk::DescriptorSetLayout);
 	~DescriptorSetLayout();
 
 	DescriptorSetLayout(DescriptorSetLayout&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(DescriptorSetLayout rhs) noexcept { swap(*this, rhs); return *this; }
+	auto& operator=(DescriptorSetLayout rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
+	}
 };
-
-// TODO: store a reference to pool/layout instead of the device pointer for additional information.
-// which one?
-/// TODO: currently DescriptorSet does not/cannot free it on desctruction
 
 /// Represents a vulkan descriptor set.
 /// A descriptor set is basically a set of different data types (uniform & storage buffer or
@@ -40,27 +43,34 @@ public:
 class DescriptorSet : public ResourceHandle<vk::DescriptorSet> {
 public:
 	DescriptorSet() = default;
-	DescriptorSet(const Device&, vk::DescriptorSetLayout, vk::DescriptorPool);
-	DescriptorSet(const DescriptorSetLayout& layout, vk::DescriptorPool pool);
+	DescriptorSet(const DescriptorPool&, const DescriptorSetLayout&);
+	DescriptorSet(const DescriptorPool&, vk::DescriptorSetLayout);
+	DescriptorSet(vk::DescriptorPool, const DescriptorSetLayout&);
+	DescriptorSet(const Device&, vk::DescriptorPool, vk::DescriptorSetLayout);
 	DescriptorSet(const Device&, vk::DescriptorSet);
-	~DescriptorSet();
+	~DescriptorSet() = default;
 
 	DescriptorSet(DescriptorSet&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(DescriptorSet rhs) noexcept { swap(*this, rhs); return *this; }
+	auto& operator=(DescriptorSet rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
+	}
 };
 
 /// RAII vulkan descriptor pool wrapper.
 class DescriptorPool : public ResourceHandle<vk::DescriptorPool> {
 public:
 	DescriptorPool() = default;
-	DescriptorPool(const Device& dev, const vk::DescriptorPoolCreateInfo& info);
+	DescriptorPool(const Device&, const vk::DescriptorPoolCreateInfo&);
+	DescriptorPool(const Device&, vk::DescriptorPool);
 	~DescriptorPool();
 
 	DescriptorPool(DescriptorPool&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(DescriptorPool rhs) noexcept { swap(*this, rhs); return *this; }
+	auto& operator=(DescriptorPool rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
+	}
 };
-
-// TODO: rename to DescriptorUpdate? easier and better
 
 /// Allows convinient descriptorSet updates.
 /// Does not perform any checking.
@@ -76,40 +86,36 @@ public:
 
 	/// When the range member of any buffer info is 0 (default constructed), it will
 	/// be automatically set to vk::wholeSize.
-	void uniform(BufferInfos buffers, int binding = -1, unsigned int elem = 0);
-	void storage(BufferInfos buffers, int binding = -1, unsigned int elem = 0);
-	void uniformDynamic(BufferInfos buffers, int binding = -1, unsigned int elem = 0);
-	void storageDynamic(BufferInfos buffers, int binding = -1, unsigned int elem = 0);
+	void uniform(BufferInfos, int binding = -1, unsigned int elem = 0);
+	void storage(BufferInfos, int binding = -1, unsigned int elem = 0);
+	void uniformDynamic(BufferInfos, int binding = -1, unsigned int elem = 0);
+	void storageDynamic(BufferInfos, int binding = -1, unsigned int elem = 0);
 
-	void sampler(ImageInfos images, int binding = -1, unsigned int elem = 0);
-	void image(ImageInfos images, int binding = -1, unsigned int elem = 0);
-	void storage(ImageInfos images, int binding = -1, unsigned int elem = 0);
-	void imageSampler(ImageInfos images, int binding = -1, unsigned int elem = 0);
-	void inputAttachment(ImageInfos images, int binding = -1, unsigned int elem = 0);
+	void sampler(ImageInfos, int binding = -1, unsigned int elem = 0);
+	void image(ImageInfos, int binding = -1, unsigned int elem = 0);
+	void storage(ImageInfos, int binding = -1, unsigned int elem = 0);
+	void imageSampler(ImageInfos, int binding = -1, unsigned int elem = 0);
+	void inputAttachment(ImageInfos, int binding = -1, unsigned int elem = 0);
 
-	void uniformView(BufferViewInfos views, int binding = -1, unsigned int elem = 0);
-	void storageView(BufferViewInfos views, int binding = -1, unsigned int elem = 0);
+	void uniformView(BufferViewInfos, int binding = -1, unsigned int elem = 0);
+	void storageView(BufferViewInfos, int binding = -1, unsigned int elem = 0);
 
 	void copy(const vk::CopyDescriptorSet& copySet);
 
-	/// Will be automatically triggered on destruction.
+	/// Appplies all queued updates.
+	/// If never called, will be automatically triggered on destruction.
 	void apply();
 
 	/// Skips the given number of descriptors.
 	void skip(unsigned int count = 1) { currentBinding_ += count; };
-
-	//XXX: more convinient copy function?
-	// void copy(const DescriptorSet& set, const std::uint32_t (&binding)[2],
-	// 	const std::uint32_t (&elem)[2] = {0, 0}, unsigned int count = 1);
-
 	const auto& resourceRef() const { return *set_; }
 
 protected:
 	std::vector<vk::WriteDescriptorSet> writes_;
 	std::vector<vk::CopyDescriptorSet> copies_;
 
-	//double vecotr to avoid reference (in writes_) invalidation
-	//some values must be stored continuesly, so deque doesnt work
+	// double vector to avoid reference (in writes_) invalidation
+	// some values must be stored continuesly, so deque doesnt work
 	std::vector<std::vector<vk::DescriptorBufferInfo>> buffers_;
 	std::vector<std::vector<vk::BufferView>> views_;
 	std::vector<std::vector<vk::DescriptorImageInfo>> images_;
@@ -117,7 +123,8 @@ protected:
 	unsigned int currentBinding_ = 0;
 	const DescriptorSet* set_;
 
-	friend void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates);
+	friend void apply(nytl::Span<const std::reference_wrapper<
+		DescriptorSetUpdate>> updates);
 };
 
 /// Applies multiple descriptor set updates.
@@ -125,8 +132,12 @@ protected:
 void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates);
 
 /// Alternative vk::DescriptorSetLayoutBinding constructor.
+/// When passed to the DescriptorSetLayout constructor, will automatically
+/// update binding number without spaces if it is -1.
 vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
-	vk::ShaderStageFlags stages = fwd::allShaderStages, unsigned int binding = -1,
-	unsigned int count = 1, const vk::Sampler* samplers = nullptr);
+	vk::ShaderStageFlags stages = fwd::allShaderStages,
+	unsigned int binding = -1,
+	unsigned int count = 1,
+	const vk::Sampler* samplers = nullptr);
 
 } // namespace vpp

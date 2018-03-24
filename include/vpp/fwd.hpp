@@ -73,6 +73,11 @@ class CommandAllocator;
 class BufferAllocator;
 class QueueSubmitter;
 
+class TrDsLayout;
+class TrDsPool;
+class TrDs;
+class DescriptorAllocator;
+
 struct ViewableImageCreateInfo;
 
 template<typename T> class CommandWork;
