@@ -23,7 +23,7 @@ arch:
     - vulkan-extra-layers
     - vulkan-icd-loader
   script:
-    - "meson build --buildtype $BUILDTYPE -Dtests=true -Dvkpp::version=$CODEGEN -Done_device=$ONE_DEVICE"
+    - "meson build --buildtype $BUILDTYPE -Dtests=true -Dvkpp:version=$CODEGEN -Done_device=$ONE_DEVICE"
     - "ninja -C build"
     # testing currently disabled sine this does not work on travis (no drivers probably)
     # - "meson test -C build"
