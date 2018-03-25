@@ -31,7 +31,7 @@ __Things vpp provides:__
 	- Swapchain
 	- Image and ImageView default createInfos
 	- physical device querying
-- vpp::Renderer: implementing swapchain renderbuffer handling and 
+- vpp::Renderer: implementing swapchain renderbuffer handling and
   submission/presentation synchronization
 
 __Things vpp does not provide:__
@@ -142,13 +142,13 @@ vpp::writeDirect140(smallBuffer, 1.f, 2.f, 3.f); // direct update for few data
 // will read the values set above
 float float1, float2, float3;
 /* your favorite vector type */ vec2f;
-vpp::readMap140(ubo, float1, vec2f, float2); 
+vpp::readMap140(ubo, float1, vec2f, float2);
 auto work = vpp::readStaging140(smallBuffer, float1, float2, float3);
 
 // will submit and wait for the command buffer
 // will write float1,float2,float3
 // can be used deferred to group multiple commands into one submission
-work.wait(); 
+work.wait();
 ```
 
 #### Image filling/retrieving
@@ -160,4 +160,17 @@ vpp::fillMap(img1, size, dataToWrite, {vk::AspectBits::color});
 vpp::fillStaging(img2, format, layout, size, dataToWrite, {vk::AspectBits::color});
 auto work = vpp::retrieveStaging(img3, format, layout, size, {vk::AspectBits::color});
 auto img3Data = auto work.data();
+```
+
+#### Testing
+
+To run all tests with valgrind leak checks, execute (in build dir):
+
+```
+meson test \
+	--print-errorlogs \
+	--wrapper 'valgrind
+		--leak-check=full
+		--error-exitcode=1
+		--suppressions=../docs/valgrind.supp'
 ```

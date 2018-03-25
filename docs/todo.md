@@ -41,6 +41,7 @@ low prio / general / ideas
 --------------------------
 
 - offer functionality to select supported extensions/layers from a list
+- GraphicsPipelineInfo: could provide conversion operator
 - add glfw/sdl examples
 - add more assertions everywhere where things are assumed
 	- don't overdo, only if potentially useful when debugging

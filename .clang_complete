@@ -1,0 +1,15 @@
+-I./include
+-I./src
+-I./build/linux/include
+-I./build/linux/subprojects/vkpp/include
+-I./build/linux/subprojects/ny/include
+-I./subprojects/dlg/include
+-I./subprojects/vkpp/include
+-I./subprojects/ny/include
+-Wall
+-Wextra
+-Wpedantic
+-Wno-missing-braces
+-Wno-pragma-once-outside-header
+-Wno-unused-const-variable
+-std=c++1z

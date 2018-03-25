@@ -1,5 +1,5 @@
 {
-   <insert_a_suppression_name_here>
+   vulkan_one_time_malloc
    Memcheck:Leak
    match-leak-kinds: definite
    fun:malloc
@@ -7,16 +7,48 @@
    obj:*
    obj:*
    obj:*
-   obj:/usr/lib/libvulkan.so.1.0.61
-   obj:/usr/lib/libvulkan.so.1.0.61
+   obj:/usr/lib/libvulkan.so.*
+   obj:/usr/lib/libvulkan.so.*
    obj:*
    obj:*
    obj:*
    obj:*
-   obj:/usr/lib/libvulkan.so.1.0.61
+   obj:/usr/lib/libvulkan.so.*
 }
 {
-   <insert_a_suppression_name_here>
+   vulkan_one_time_calloc
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/libvulkan.so.*
+   obj:/usr/lib/libvulkan.so.*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/libvulkan.so.*
+}
+{
+   vulkan_instance_create_one_time_new
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:_Znwm
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/libvulkan.so.*
+   fun:vkCreateInstance
+   fun:_ZN2vk14createInstanceERKNS_18InstanceCreateInfoEPKNS_19AllocationCallbacksE
+   fun:_ZN3vpp8InstanceC1ERKN2vk18InstanceCreateInfoE
+   fun:_Z11initGlobalsv
+   fun:main
+}
+{
+   dl_one_time_alloc
    Memcheck:Leak
    match-leak-kinds: definite
    fun:malloc
@@ -29,7 +61,7 @@
    fun:dl_open_worker
    fun:_dl_catch_error
    fun:_dl_open
-   obj:/usr/lib/libdl-2.26.so
+   obj:/usr/lib/libdl-*.so
    fun:_dl_catch_error
 }
 

@@ -32,6 +32,9 @@ vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name, bool except 
 /// \param name the name of the function without vk prefix (e.g. CreateSurfaceKHR)
 /// Can be e.g. used like VPP_PROC(instance, CreateSurfaceKHR)(instance, info);
 /// Throws an exception if the proc could not be loaded.
+///
+/// Examples:
+/// VPP_LOAD_PROC(device, CreateSwapchainKHR)(...);
 #define VPP_PROC(iniOrDev, name) \
 	reinterpret_cast<::vk::Pfn##name>(::vpp::vulkanProc(iniOrDev, "vk"#name))
 
@@ -47,6 +50,10 @@ vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name, bool except 
 /// This macro creates a variable in the current scope with the name pf<name> that
 /// holds a pointer to the vulkan function.
 /// Throws an exception if the proc could not be loaded.
+///
+/// Examples:
+/// VPP_LOAD_PROC(instance, DestroySurfaceKHR);
+/// pfDestroySurfaceKHR(...);
 #define VPP_LOAD_PROC(iniOrDev, name) \
 	auto pf##name = reinterpret_cast<::vk::Pfn##name>(::vpp::vulkanProc(iniOrDev, "vk"#name))
 

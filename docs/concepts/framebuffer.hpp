@@ -4,26 +4,18 @@
 #include <vpp/device.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/image.hpp>
+#include <vpp/framebuffer.hpp>
 #include <variant>
 
 namespace vpp {
 
-class Framebuffer : public ResourceHandle<vk::Framebuffer> {
-public:
-	Framebuffer() = default;
-	Framebuffer(const Device&, const vk::FramebufferCreateInfo&);
-	~Framebuffer();
-
-	Framebuffer(Framebuffer&& rhs) noexcept { swap(*this, rhs); }
-	Framebuffer& operator=(Framebuffer rhs) noexcept { swap(*this, rhs); return *this; }
-};
-
-
-class ManagedFramebuffer : public Framebuffer {
+/// Idea (was previously in vpp): Framebuffer that owns its attachments.
+/// Easier to create and use.
+class ManagedFramebuffer : public vpp::Framebuffer {
 public:
 	using AttachmentInfo = std::variant<
 		// Both create an owned viewable image
-		ViewableImage::CreateInfo, 
+		ViewableImage::CreateInfo,
 		std::pair<vk::ImageCreateInfo, unsigned int>,
 		vk::ImageView>; // static, non-owned attachment
 
@@ -34,7 +26,7 @@ public:
 	ManagedFramebuffer(ManagedFramebuffer&& rhs) noexcept;
 	ManagedFramebuffer& operator=(ManagedFramebuffer rhs) noexcept;
 
-	void create(const Device&, const vk::Extent2D& size, 
+	void create(const Device&, const vk::Extent2D& size,
 		nytl::Span<AttachmentInfo> attachments);
 	void init(vk::RenderPass);
 

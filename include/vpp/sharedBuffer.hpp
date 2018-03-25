@@ -89,6 +89,10 @@ protected:
 	Allocation allocation_ {};
 };
 
+/// Cases in which you might care for buffer alignment:
+///  - use it with a DrawIndirectCommand at the beginning (align 4)
+///  - descriptor buffer (align min*BufferOffsetAlignment)
+
 /// Allocates BufferRanges on owned SharedBuffers.
 /// Useful to reuse (espeically short-lived) buffers like staging
 /// transfer buffers or small buffers like ubos.
