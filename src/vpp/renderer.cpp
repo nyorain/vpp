@@ -10,20 +10,11 @@
 
 namespace vpp {
 
-Renderer::Renderer(const Queue& present, const Queue* render,
-	RecordMode mode) : present_(&present), mode_(mode)
-{
-	if(!render) {
-		render_ = device().queue(vk::QueueBits::graphics);
-		if(!render_) {
-			throw std::runtime_error("device has no graphcis queue");
-		}
-	} else {
-		render_ = render;
-		dlg_assert(&device() == &render_->device());
-	}
+Renderer::Renderer(const Queue& present, QueueSubmitter* submitter,
+	RecordMode mode) : present_(&present), mode_(mode) {
 
-	commandPool_ = {device(), render_->family()};
+	submitter_ = submitter ? submitter : &device().queueSubmitter();
+	commandPool_ = {device(), submitter_->queue().family()};
 	acquireSemaphore_ = {device()};
 }
 
@@ -33,31 +24,6 @@ void Renderer::init(const vk::SwapchainCreateInfoKHR& scInfo)
 	dlg_assert(!swapchain_);
 
 	swapchain_ = {present_->device(), scInfo};
-	createBuffers(scInfo.imageExtent, scInfo.imageFormat);
-	invalidate();
-}
-
-void Renderer::init(const vk::SwapchainCreateInfoKHR& scInfo,
-	const Queue& present, const Queue* render, const RecordMode mode)
-{
-	swapchain_ = {present.device(), scInfo};
-	present_ = &present;
-	mode_ = mode;
-
-	if(!render) {
-		render_ = device().queue(vk::QueueBits::graphics);
-		if(!render_) {
-			throw std::runtime_error("device has no graphcis queue");
-		}
-	} else {
-		render_ = render;
-		dlg_assert(&device() == &render_->device());
-	}
-
-	dlg_assert(&device() == &present_->device());
-	commandPool_ = {device(), render_->family()};
-
-	acquireSemaphore_ = {device()};
 	createBuffers(scInfo.imageExtent, scInfo.imageFormat);
 	invalidate();
 }
@@ -123,12 +89,10 @@ void Renderer::createBuffers(const vk::Extent2D& size, vk::Format format)
 		auto& buf = renderBuffers_[i];
 		if(!buf.commandBuffer) {
 			dlg_assert(!cmdBufs.empty());
-			dlg_assert(!buf.fence && !buf.framebuffer);
 			dlg_assert(!buf.valid && !buf.id);
 
 			buf.commandBuffer = cmdBufs.back();
 			cmdBufs.pop_back();
-			buf.fence = {device()};
 			buf.semaphore = {device()};
 			buf.id = i;
 		}
@@ -158,9 +122,12 @@ void Renderer::recreate(const vk::Extent2D& size,
 	invalidate();
 }
 
-vk::Result Renderer::render(vk::Fence* fence)
-{
+vk::Result Renderer::render(uint64_t* sid,
+		nytl::Span<const vk::Semaphore> wait,
+		nytl::Span<const vk::PipelineStageFlags> waitStages) {
+
 	dlg_assert(swapchain_ && commandPool_);
+	dlg_assert(wait.size() == waitStages.size());
 
 	// we use acquireSemaphore_ to acquire the image
 	// this semaphore is always unsignaled
@@ -186,7 +153,7 @@ vk::Result Renderer::render(vk::Fence* fence)
 		record(buf);
 		buf.valid = true;
 	} else if(mode_ == RecordMode::always) {
-		// NOTE: there is currently no better way to do this, 
+		// NOTE: there is currently no better way to do this,
 		// we cannot reset the commandPool since there might be
 		// command buffers that are currently in use
 		// Maybe create commandPool with the freeable flag in this case
@@ -202,37 +169,39 @@ vk::Result Renderer::render(vk::Fence* fence)
 	// makes this valid
 	vk::SubmitInfo submitInfo;
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &buf.semaphore.vkHandle();
-	submitInfo.pWaitDstStageMask = &flags;
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &buf.semaphore.vkHandle();
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &buf.commandBuffer;
 
-	if(buf.fence.used) {
-		vk::waitForFences(device(), {buf.fence}, true, UINT64_MAX);
-		vk::resetFences(device(), {buf.fence});
+	if(!wait.empty()) {
+		waitCache_ = {wait.begin(), wait.end()};
+		waitCache_.push_back(buf.semaphore.vkHandle());
+		waitStageCache_ = {waitStages.begin(), waitStages.end()};
+		waitStageCache_.push_back(flags);
+	} else {
+		submitInfo.pWaitSemaphores = &buf.semaphore.vkHandle();
+		submitInfo.pWaitDstStageMask = &flags;
 	}
 
-	{
-		QueueLock lock(device());
-		vk::queueSubmit(*render_,  {submitInfo}, buf.fence);
-	}
+	auto submitID = submitter().add(submitInfo);
+	submitter().submit();
 
-	buf.fence.used = true;
-	if(fence) {
-		*fence = buf.fence;
+	if(sid) {
+		*sid = submitID;
 	}
 
 	return swapchain().present(*present_, id, buf.semaphore);
 }
 
-vk::Result Renderer::renderBlock()
-{
-	vk::Fence fence {};
-	auto res = render(&fence);
-	if(fence) {
-		vk::waitForFences(device(), {fence}, true, UINT64_MAX);
+vk::Result Renderer::renderBlock(
+		nytl::Span<const vk::Semaphore> wait,
+		nytl::Span<const vk::PipelineStageFlags> waitStages) {
+
+	uint64_t id;
+	auto res = render(&id, wait, waitStages);
+	if(res == vk::Result::success) {
+		submitter().wait(id);
 	}
 
 	return res;
@@ -253,25 +222,7 @@ void Renderer::recordMode(RecordMode nm)
 	}
 }
 
-void Renderer::wait()
-{
-	for(auto& buf : renderBuffers_)	{
-		if(buf.fence.used) {
-			vk::waitForFences(device(), {buf.fence}, true, UINT64_MAX);
-			buf.fence.used = false;
-		}
-	}
-}
-
 // DefaultRenderer
-void DefaultRenderer::init(vk::RenderPass rp,
-	const vk::SwapchainCreateInfoKHR& scInfo, const Queue& present,
-	const Queue* render, RecordMode mode)
-{
-	renderPass_ = rp;
-	Renderer::init(scInfo, present, render, mode);
-}
-
 void DefaultRenderer::init(vk::RenderPass rp,
 	const vk::SwapchainCreateInfoKHR& scInfo)
 {
@@ -311,14 +262,6 @@ void DefaultRenderer::initBuffers(const vk::Extent2D& size,
 			size.height,
 			1);
 		buf.framebuffer = {device(), info};
-	}
-}
-
-// TrackedFence
-TrackedFence::~TrackedFence()
-{
-	if(used && vkHandle()) {
-		vk::waitForFences(device(), {vkHandle()}, true, UINT64_MAX);
 	}
 }
 

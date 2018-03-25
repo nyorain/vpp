@@ -1,7 +1,6 @@
 Todo list vor vpp
 =================
 
-- integrate renderer with QueueSubmitter
 - fix config.hpp for vkpp (messed up atm)
 - descriptorAllocator: reserve currently always just adds to allocate
   calls... Could allocate too much
@@ -41,6 +40,12 @@ low prio / general / ideas
 --------------------------
 
 - offer functionality to select supported extensions/layers from a list
+- renderer: rework/remove RecordMode::all. Any way to get around the invalidate
+  extra condition? Or at least rather use onDeman mode by default.
+  With RecordMode::all we could record all command buffers at once though,
+  implement possibility for that, i.e. record member function gets multiple
+  command buffers to record at once. Could be more efficient to do for some
+  engines (and they can still fall back to separate recording).
 - GraphicsPipelineInfo: could provide conversion operator
 - add glfw/sdl examples
 - add more assertions everywhere where things are assumed

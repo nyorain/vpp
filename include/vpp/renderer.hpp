@@ -16,19 +16,6 @@
 
 namespace vpp {
 
-/// Fence that knows if it has been used.
-/// Will wait on destruction if it has been used.
-class TrackedFence : public Fence {
-public:
-	bool used {};
-
-public:
-	using Fence::Fence;
-	TrackedFence(TrackedFence&&) noexcept = default;
-	TrackedFence& operator=(TrackedFence&&) noexcept = default;
-	~TrackedFence();
-};
-
 /// Simple default implementation for rendering onto a surface.
 /// Abstract class, one has to implement the framebuffer initialization
 /// as well as the command buffer recording.
@@ -55,7 +42,6 @@ public:
 		ImageView imageView;
 		Framebuffer framebuffer;
 		Semaphore semaphore;
-		TrackedFence fence;
 	};
 
 public:
@@ -86,29 +72,32 @@ public:
 	/// is left unfinished.
 	void invalidate();
 
-	/// Renders one frame. If fence is not nullptr, sets the fence parameter to
-	/// the fence signaling the end of the frame if vk::Result is success.
-	/// Otherwise returns the ocurred redner error (which might be non-critical
-	/// e.g. a suboptimal swapchain, will not render then nontheless).
+	/// Renders one frame. Uses the given QueueSubmitter to submit the
+	/// command buffer, so it must be using a graphical queue.
+	/// Otherwise just uses the devices default QueueSubmitter.
+	/// If submitID is not zero, will set it to the id received from
+	/// the submitter that can be used to track its state and e.g. wait for it
+	/// to complete.
+	/// If acquiring, or presenting to a swapchain image fails, returns the
+	/// error and does not render, otherwise returns vk::Result::Success.
+	/// Until the rendering completes (which can be tracked via submitID or
+	/// by calling vulkans waitIdle functions), no rendering resources must
+	/// be invalidated. This means calls to e.g. resize in this time will
+	/// trigger undefined behavior.
+	/// Submitting the rendering command buffer will add the given semaphores
+	/// and stages (sizes must match!).
 	/// It is allowed to call this function again before the fence completes
-	/// (at least if your frame- and commandbuffers allow it). Until the
-	/// fence is signaled, no rendering resources must be invalidated.
-	/// This means calls to e.g. resize in this time will trigger
-	/// undefined behavior.
-	/// Unless you will assure submission finish in some other way (e.g.
-	/// calling this->wait(), vk{Device,Queue}WaitIdle) you want to
-	/// receive the fence and make sure all submissions are finished
-	/// before destroying rendering resources (used buffer/pipelines or
-	/// calling resize).
-	/// This function might block for quite some time nontheless when acquiring
-	/// the next image or waiting for the last execution on this
-	/// render buffer to finish.
-	vk::Result render(vk::Fence* = {});
+	/// (at least if your frame- and commandbuffers allow it).
+	vk::Result render(uint64_t* submitID = {},
+		nytl::Span<const vk::Semaphore> wait = {},
+		nytl::Span<const vk::PipelineStageFlags> waitStages = {});
 
 	/// Renders one frame and waits for all frame operations to finish.
 	/// Returns any ocurred rendering error (which might be non-critical
 	/// e.g. a suboptimal swapchain, will not render then nontheless).
-	vk::Result renderBlock();
+	vk::Result renderBlock(
+		nytl::Span<const vk::Semaphore> wait = {},
+		nytl::Span<const vk::PipelineStageFlags> waitStages = {});
 
 	/// Changes the record mode.
 	/// Does not invalidate any currently recorded command buffers
@@ -117,13 +106,10 @@ public:
 	/// RecordMode::all, there must be no unfinished render calls.
 	void recordMode(RecordMode);
 
-	/// Waits for all pending rendering operations from this
-	/// renderer to finish.
-	void wait();
-
 	const auto& swapchain() const { return swapchain_; }
 	auto recordMode() const { return mode_; }
 	const auto& resourceRef() const { return *present_; }
+	auto& submitter() const { return *submitter_; }
 
 protected:
 	/// Initializes the Renderer into invalid state.
@@ -131,11 +117,8 @@ protected:
 	/// has to call init before any methods can be used.
 	/// Has no initializing constructor since the init
 	/// function requires the virtual functions.
-	Renderer(const Queue& present, const Queue* render = {},
+	Renderer(const Queue& present, QueueSubmitter* render = {},
 		RecordMode = RecordMode::all);
-
-	[[deprecated("Will be removed, use the other constructor instead")]]
-	Renderer() = default;
 
 	Renderer(Renderer&&) noexcept = default;
 	Renderer& operator=(Renderer&&) noexcept = default;
@@ -148,11 +131,6 @@ protected:
 	/// Will also record all command buffers (if the record mode
 	/// is RecrodMode::all).
 	void init(const vk::SwapchainCreateInfoKHR&);
-
-	[[deprecated("Will be removed, use the other overload instead")]]
-	void init(const vk::SwapchainCreateInfoKHR&,
-		const Queue& present, const Queue* render = {},
-		RecordMode = RecordMode::all);
 
 	/// (Re-)creates the render buffers.
 	void createBuffers(const vk::Extent2D& size, vk::Format swapchainFormat);
@@ -172,11 +150,14 @@ protected:
 protected:
 	Swapchain swapchain_ {};
 	const Queue* present_ {};
-	const Queue* render_ {};
+	QueueSubmitter* submitter_ {};
 	CommandPool commandPool_;
 	std::vector<RenderBuffer> renderBuffers_;
 	vpp::Semaphore acquireSemaphore_;
 	RecordMode mode_ {RecordMode::all};
+
+	std::vector<vk::Semaphore> waitCache_;
+	std::vector<vk::PipelineStageFlags> waitStageCache_;
 };
 
 /// Simple default framebuffer handling Renderer implementation.
@@ -194,14 +175,9 @@ protected:
 	/// renderPass to create the framebuffers for.
 	void init(vk::RenderPass, const vk::SwapchainCreateInfoKHR&);
 
-	[[deprecated("Will be removed, use the other overload")]]
-	void init(vk::RenderPass, const vk::SwapchainCreateInfoKHR&,
-		const Queue& present, const Queue* render = {},
-		RecordMode = RecordMode::all);
-
 	/// Overrides the default init method with a call to the init function
 	/// below (without additional attachments). You have to override in
-	/// when you want to use additional attachments and then assure in 
+	/// when you want to use additional attachments and then assure in
 	/// every call that the attachments have the correct dimensions.
 	void initBuffers(const vk::Extent2D&, nytl::Span<RenderBuffer>) override;
 

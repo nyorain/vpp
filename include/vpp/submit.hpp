@@ -35,6 +35,10 @@ public:
 	/// this submit info (since submissions cannot be deleted).
 	uint64_t add(const vk::SubmitInfo& info, unsigned int* specificID = {});
 
+	/// Submits all pending submissions.
+	/// Returns the number of submissions.
+	unsigned int submit();
+
 	/// Makes sure the given id is submitted to the device.
 	/// The id must have been returned by add.
 	void submit(uint64_t);
@@ -54,10 +58,6 @@ public:
 	/// Returns whether the id is now completed (e.g. if false is
 	/// returned, the timeout triggered the return).
 	bool wait(uint64_t id, uint64_t timeout = UINT64_MAX);
-
-	/// Submits all pending submissions.
-	/// Returns the number of submissions.
-	unsigned int submit();
 
 	/// Returns the number of pending submissions.
 	unsigned int pending() const;
