@@ -94,12 +94,15 @@ public:
 	~NonOwned() { T::release(); }
 
 	NonOwned(NonOwned&& other) = default;
-	NonOwned& operator=(NonOwned&& other) = default;
+	NonOwned& operator=(NonOwned&& other) {
+		T::release();
+		T::operator=(std::move(other));
+	}
 };
 
 /// Resource class that already holds another resource and does therefore not have to hold a second
 /// vulkan device reference.
-/// Classes inheriting from this template have to give theirselfs as template paramater (CRTP) and
+/// Classes inheriting from this template have to pass themself as first template paramater (CRTP) and
 /// implement a <resourceRef() const> member function which returns a (const) reference to a Resource
 /// or another ResourceReference.
 /// This class exists just as an optimization (1 word less memory needed) for Resource classes.
@@ -122,15 +125,16 @@ public:
 
 /// Utility template base class that makes RAII wrappers easier.
 /// Note that move constructor and assignment operator can be defined using the swap
-/// member function if there are no additional data members.
+/// member function if there are no additional data members. They cannot
+/// be implemented here instead of '= delete' and then simply defaulted
+/// in derived classes since the destructor of the derived classes needs to
+/// trigger in the case of operator=(Handle&&).
 /// \tparam H The vulkan handle type.
 template<typename Handle>
 class ResourceHandle : public Resource, public nytl::NonCopyable {
 public:
 	const Handle& vkHandle() const noexcept { return handle_; }
 	operator const Handle&() const noexcept { return vkHandle(); }
-
-	void release() { handle_ = {}; }
 
 protected:
 	ResourceHandle() = default;
@@ -140,6 +144,7 @@ protected:
 	ResourceHandle(ResourceHandle&& other) noexcept = delete;
 	ResourceHandle& operator=(ResourceHandle&& other) noexcept = delete;
 
+	void release() { handle_ = {}; }
 	friend void swap(ResourceHandle<Handle>& a, ResourceHandle<Handle>& b) noexcept
 	{
 		using std::swap;
@@ -159,7 +164,6 @@ class ResourceReferenceHandle : public ResourceReference<B>, public nytl::NonCop
 public:
 	const Handle& vkHandle() const noexcept { return handle_; }
 	operator const Handle&() const noexcept { return vkHandle(); }
-	void release() { handle_ = {}; }
 
 protected:
 	ResourceReferenceHandle() = default;
@@ -169,6 +173,7 @@ protected:
 	ResourceReferenceHandle(ResourceReferenceHandle&& other) noexcept = delete;
 	ResourceReferenceHandle& operator=(ResourceReferenceHandle&& other) noexcept = delete;
 
+	void release() { handle_ = {}; }
 	friend void swap(ResourceReferenceHandle& a, ResourceReferenceHandle& b) noexcept
 	{
 		using std::swap;

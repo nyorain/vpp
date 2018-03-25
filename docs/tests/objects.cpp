@@ -38,7 +38,7 @@ TEST(cmd) {
 	auto cmdBuf1 = vpp::CommandBuffer(commandPool);
 	auto cmdBuf2 = vpp::CommandBuffer(commandPool, vk::CommandBufferLevel::secondary);
 
-	auto cmdBufsRaw = vk::allocateCommandBuffers(dev, {commandPool, 
+	auto cmdBufsRaw = vk::allocateCommandBuffers(dev, {commandPool,
 		vk::CommandBufferLevel::primary, 2});
 	auto cmdBuf3 = vpp::CommandBuffer(commandPool, cmdBufsRaw[0]);
 	auto cmdBuf4 = vpp::CommandBuffer(dev, commandPool, cmdBufsRaw[1]);
@@ -51,7 +51,7 @@ TEST(cmd) {
 
 // returns the index of the first set bit of an uint
 // returns -1 if no bit is set
-int firstBitSet(uint32_t bits) 
+int firstBitSet(uint32_t bits)
 {
 	for(auto i = 0u; i < 32; ++i) {
 		if(bits & (1 << i)) {
@@ -69,13 +69,16 @@ TEST(buf) {
 	auto rawBuf = vk::createBuffer(dev, {{}, 2341, vk::BufferUsageBits::vertexBuffer});
 	auto rawBuf2 = vk::createBuffer(dev, {{}, 12, vk::BufferUsageBits::vertexBuffer});
 	vpp::BufferHandle buf2(dev, rawBuf);
-	vpp::BufferHandle buf2b(dev, rawBuf2);
-	buf2b.release();
+
+	// None of this should actually destroy we buffer, we use it below again
+	vpp::NonOwned<vpp::BufferHandle> buf2b(dev, rawBuf2);
+	vpp::NonOwned<vpp::BufferHandle> buf2c(std::move(buf2b));
+	buf2c = {};
 
 	auto hvBits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
 	auto dlBits = dev.memoryTypeBits(vk::MemoryPropertyBits::deviceLocal);
 
-	auto info = vk::BufferCreateInfo {{}, 123, 
+	auto info = vk::BufferCreateInfo {{}, 123,
 		vk::BufferUsageBits::storageBuffer |
 		vk::BufferUsageBits::indexBuffer |
 		vk::BufferUsageBits::transferDst |

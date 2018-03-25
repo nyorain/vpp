@@ -71,7 +71,7 @@ bool QueueSubmitter::completed(uint64_t id) const
 		return false;
 	}
 
-	auto it = std::find_if(fences_.begin(), fences_.end(), 
+	auto it = std::find_if(fences_.begin(), fences_.end(),
 		[&](auto& fence) { return fence.id == id; });
 	if(it == fences_.end()) {
 		return true;
@@ -90,6 +90,7 @@ bool QueueSubmitter::completed(uint64_t id) const
 
 unsigned int QueueSubmitter::submit()
 {
+	// this function has a special focus on exception safety
 	dlg_assert(queue_);
 	if(pending_.empty()) {
 		return 0u;
@@ -98,7 +99,6 @@ unsigned int QueueSubmitter::submit()
 	update();
 
 	// get fence
-	// make sure everything is exception safe
 	vpp::Fence fence;
 	if(!unusedFences_.empty()) {
 		fence = std::move(unusedFences_.back());
@@ -107,19 +107,9 @@ unsigned int QueueSubmitter::submit()
 		fence = {device()};
 	}
 
-	// submit
-	{
-		// lock all queues, submit must finish without other queue operation
-		QueueLock lock(device());
-		vk::queueSubmit(queue(), pending_, fence);
-	}
-
-	// set fence
-	auto& entry = fences_.emplace_back();
-	entry.id = id_;
-	entry.fence = std::move(fence);
-
-	// increase id
+	// move (clear) pending & increase id
+	auto pending = std::move(pending_);
+	auto id = id_;
 	if(id_ == UINT64_MAX) {
 		id_ = 1;
 		wrapped_= true;
@@ -127,10 +117,19 @@ unsigned int QueueSubmitter::submit()
 		++id_;
 	}
 
-	// clear pending
-	auto ret = pending_.size();
-	pending_.clear();
-	return ret;
+	// submit
+	{
+		// lock all queues, submit must finish without other queue operation
+		// Note that vk::queueSubmit might throw
+		QueueLock lock(device());
+		vk::queueSubmit(queue(), pending, fence);
+	}
+
+	// set fence
+	auto& entry = fences_.emplace_back();
+	entry.id = id;
+	entry.fence = std::move(fence);
+	return pending.size();
 }
 
 bool QueueSubmitter::wait(uint64_t id, uint64_t timeout)
@@ -141,7 +140,7 @@ bool QueueSubmitter::wait(uint64_t id, uint64_t timeout)
 
 	submit(id);
 
-	auto it = std::find_if(fences_.begin(), fences_.end(), 
+	auto it = std::find_if(fences_.begin(), fences_.end(),
 		[&](auto& fence) { return fence.id == id; });
 	if(it == fences_.end()) {
 		return true;

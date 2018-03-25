@@ -1,42 +1,30 @@
 Todo list vor vpp
 =================
 
-- update this file (cleanup, organize into ideas/fixes)
-- next try at cleaning up move-op mess (document why if not possible)
+- integrate renderer with QueueSubmitter
+- fix config.hpp for vkpp (messed up atm)
 - descriptorAllocator: reserve currently always just adds to allocate
   calls... Could allocate too much
-- offer functionality to select supported extensions/layers from a list
-- QueueSubmitter exception safe (clear pending?)
-- save(PipelineCache) should probably not throw on error
-  (return false or errocode overload)
-- way to undo reservation in DescriptorAllocator (?)
+	- general way to undo reservation in DescriptorAllocator (?)
+- move debug report stuff in debug.hpp to separte file (and remove enums.hpp
+  from debug.hpp)
+	- probably best to implement the handle type switching in some other
+	  way; in source file
 - one_device: store device in Device, not Resource.
   Make sure it can be reset (after destruction) e.g. for device lost or
   multiple devices in sequence + example/test
   (create multiple devices and resources)
-- update travis (for vkpp)
-- integrate renderer with QueueSubmitter
 - work dependency chaining (-> QueueSubmitter semaphores)
 	- would allow to e.g. let Renderer submission depend on
 	  (staging, so cmdBuf-based) buffer updates
-- add glfw/sdl examples
 - memorySize on buffer really ok? (e.g. see sharedBuffer, fill/retrieve)
-	- probably best to deprecate memoryResource::memorySize?
-- handle problem: memBits (in buffer/sharedBuffer/image) no compatible
+	- rather deprecate memoryResource::memorySize?
+- handle problem: memBits (in buffer/sharedBuffer/image) not compatible
   with buffer requirements
   	- solution: might require to be checked/handled by user
   		- then: does sharedBuffer (the hostCoherent checking) implement
   		  it correctly?
-- more general testing
-	- maybe also automate visual testing (surface,swapchain,renderer?)
-	- make sure to really test all classes and functions
-		- physicalDevice
-		- queue
-		- image constructors (simply copy from buffer constructors in objects.cpp)
-		- etc...
-	- also test coherent atom handling in SharedBuffer
-- fix config.hpp for vkpp (messed up atm)
-- memoryMap: remap when MemoryMapView is destroyed? for guarantees?
+- memoryMap: remap smaller range when a certain range is no longer needed?
 - imageOps: really allow extent with depth == 0? also handle it for height == 0?
 - make codestyle consistent everywhere
 - device: cache supported extensions (see e.g. defaults.cpp: could change
@@ -48,15 +36,24 @@ Todo list vor vpp
   	  stage buffer allocation handling in header?
 - implement BufferAllocator optimize/shrink
 	- also improve alloc algorithm
-- add more assertions everywhere where things are assumed
-	- don't overdo, only if potentially useful when debugging
-	- see work.inl (something like tryFinish probably best)
-- move debug report stuff in debug.hpp to separte file (and remove enums.hpp
-  from debug.hpp)
 
 low prio / general / ideas
 --------------------------
 
+- offer functionality to select supported extensions/layers from a list
+- add glfw/sdl examples
+- add more assertions everywhere where things are assumed
+	- don't overdo, only if potentially useful when debugging
+	- see work.inl (something like tryFinish probably best)
+- more general testing
+	- test NonOwned<T>
+	- maybe also automate visual testing (surface,swapchain,renderer?)
+	- make sure to really test all classes and functions
+		- physicalDevice
+		- queue
+		- image constructors (simply copy from buffer constructors in objects.cpp)
+		- etc...
+	- also test coherent atom handling in SharedBuffer
 - make DebugCallback::call non-const? might store data (see tests init.hpp)
 - abstraction over BufferRange/Buffer
 	- they are pretty much the same...
