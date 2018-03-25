@@ -10,14 +10,22 @@ TrDsLayout::TrDsLayout(const Device& dev,
 		DescriptorSetLayout(dev, xbindings) {
 
 	for(auto& b : xbindings) {
-		bindings_.push_back({});
-		bindings_.back().type = b.descriptorType;
-		bindings_.back().descriptorCount = b.descriptorCount;
+		auto it = std::find_if(bindings_.begin(), bindings_.end(),
+			[&](const auto& s) { return s.type == b.descriptorType; });
+		if(it != bindings_.end()) {
+			it->descriptorCount += b.descriptorCount;
+		} else {
+			bindings_.push_back({});
+			bindings_.back().type = b.descriptorType;
+			bindings_.back().descriptorCount = b.descriptorCount;
+		}
 	}
 }
 
 // TrDsPool
-TrDsPool::TrDsPool(const Device& dev, vk::DescriptorPoolCreateInfo info) {
+TrDsPool::TrDsPool(const Device& dev, vk::DescriptorPoolCreateInfo info)
+		: remainingSets_(info.maxSets) {
+
 	info.flags |= vk::DescriptorPoolCreateBits::freeDescriptorSet;
 	auto pool = vk::createDescriptorPool(dev, info, nullptr);
 	DescriptorPool::operator=({dev, pool});
@@ -30,7 +38,8 @@ TrDsPool::TrDsPool(const Device& dev, vk::DescriptorPoolCreateInfo info) {
 
 TrDsPool::TrDsPool(const Device& dev, unsigned maxSets,
 		nytl::Span<const vk::DescriptorPoolSize> sizes) :
-		remaining_(sizes.begin(), sizes.end()) {
+		remaining_(sizes.begin(), sizes.end()), remainingSets_(maxSets) {
+
 	vk::DescriptorPoolCreateInfo info;
 	info.flags = vk::DescriptorPoolCreateBits::freeDescriptorSet;
 	info.maxSets = maxSets;
@@ -49,6 +58,7 @@ TrDs::TrDs(TrDsPool& pool, const TrDsLayout& layout) :
 	dlg_assert(layout);
 
 	// remove from pool
+	// TODO: throw when there are not enough resources left?
 	auto& rem = pool.remaining_;
 	for(auto& binding : layout.bindings()) {
 		auto it = std::find_if(rem.begin(), rem.end(), [&](const auto& s)
@@ -63,8 +73,6 @@ TrDs::TrDs(TrDsPool& pool, const TrDsLayout& layout) :
 
 TrDs::TrDs(DeferTag, DescriptorAllocator& alloc, const TrDsLayout& layout) :
 		allocator_(&alloc), layout_(&layout) {
-	// TODO: some way to undo reservation if this object is destroyed
-	//   before initialized? Needs changes to DescriptorAllocator
 	allocator_->reserve(layout);
 }
 
@@ -141,20 +149,6 @@ void DescriptorAllocator::reserve(const TrDsLayout& layout, unsigned count) {
 TrDs DescriptorAllocator::allocate(const TrDsLayout& layout) {
 	dlg_assert(layout);
 
-	// TODO: really not efficient... cache somewhere?
-	// collect required bindings
-	std::vector<vk::DescriptorPoolSize> bindings;
-	for(auto& b1 : layout.bindings()) {
-		auto it = std::find_if(bindings.begin(), bindings.end(),
-			[&](const auto& b2){ return b2.type == b1.type; });
-
-		if(it == bindings.end()) {
-			bindings.push_back(b1);
-		} else {
-			it->descriptorCount += b1.descriptorCount;
-		}
-	}
-
 	// check if there is a pool with enough free space left
 	for(auto& pool : pools_) {
 		dlg_assert(pool);
@@ -167,7 +161,7 @@ TrDs DescriptorAllocator::allocate(const TrDsLayout& layout) {
 
 		// test for every binding if there are enough remaining
 		auto& rem = pool.remaining();
-		for(auto& b1 : bindings) {
+		for(auto& b1 : layout.bindings()) {
 			auto it = std::find_if(rem.begin(), rem.end(),
 				[&](const auto& b2){ return b2.type == b1.type; });
 			ok = (it != rem.end()) &&

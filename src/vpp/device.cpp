@@ -9,6 +9,7 @@
 #include <vpp/submit.hpp>
 #include <vpp/sharedBuffer.hpp>
 #include <vpp/physicalDevice.hpp>
+#include <vpp/trackedDescriptor.hpp>
 #include <vpp/util/threadStorage.hpp>
 
 #include <map> // std::map
@@ -32,6 +33,7 @@ struct Device::Impl {
 	unsigned int tlsBufferAllocatorID {};
 	unsigned int tlsQueueSubmitterID {};
 	unsigned int tlsCommandAllocatorID {};
+	unsigned int tlsDescriptorAllocatorID {};
 };
 
 // used so the Queue destructor can be made not public and Device a friend.
@@ -362,6 +364,18 @@ CommandAllocator& Device::commandAllocator() const
 	}
 
 	return static_cast<ValueStorage<CommandAllocator>*>(ptr->get())->value;
+}
+
+DescriptorAllocator& Device::descriptorAllocator() const
+{
+	auto ptr = impl_->tls.get(impl_->tlsDescriptorAllocatorID); // DynamicStoragePtr*
+	if(!ptr->get()) {
+		auto storage = new ValueStorage<DescriptorAllocator>(*this);
+		ptr->reset(storage);
+		return storage->value;
+	}
+
+	return static_cast<ValueStorage<DescriptorAllocator>*>(ptr->get())->value;
 }
 
 QueueSubmitter& Device::queueSubmitter() const

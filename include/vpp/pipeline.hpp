@@ -43,9 +43,9 @@ public:
 	PipelineCache(const Device& dev);
 
 	/// Loads the pipeline cache data from a file.
-	/// If expect is true and the file cannot be read, throws a
+	/// If except is true and the file cannot be read, throws a
 	/// std::runtime_error, otherwise just starts with an empty cache.
-	PipelineCache(const Device&, std::string_view file, bool expect = false);
+	PipelineCache(const Device&, std::string_view file, bool except = false);
 
 	/// Creates the pipeline cache with the given initial data.
 	PipelineCache(const Device& dev, nytl::Span<const std::uint8_t> data);
@@ -57,12 +57,11 @@ public:
 };
 
 /// Saves a pipeline cache to the given filename.
-/// \exception std::runtime_error if opening/writing the file fails
-void save(vk::Device dev, vk::PipelineCache cache, std::string_view filename);
-inline void save(const PipelineCache& cache, std::string_view file)
-	{ save(cache.device(), cache, file); }
-
-// TODO: make this a resourceRef on pipeline layout?
+/// Returns whether saving was succesful. Will not throw on failure.
+bool save(vk::Device dev, vk::PipelineCache cache, std::string_view filename);
+inline bool save(const PipelineCache& cache, std::string_view file) {
+	return save(cache.device(), cache, file);
+}
 
 /// RAII Vulkan pipeline wrapper.
 /// A pipeline is basically a collection of draw/compute information that contains e.g.

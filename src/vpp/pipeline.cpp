@@ -46,14 +46,14 @@ PipelineCache::PipelineCache(const Device& dev,
 }
 
 PipelineCache::PipelineCache(const Device& dev, std::string_view filename,
-		bool expect) : ResourceHandle(dev) {
+		bool except) : ResourceHandle(dev) {
 
-	std::vector<std::uint8_t> data;
+	std::vector<std::byte> data;
 	try {
 		data = readFile(filename);
 	} catch(const std::exception& err) {
 		dlg_info("PipelineCache: {}", err.what());
-		if(expect) {
+		if(except) {
 			throw;
 		}
 	}
@@ -67,9 +67,18 @@ PipelineCache::~PipelineCache() {
 	}
 }
 
-void save(vk::Device dev, vk::PipelineCache cache, std::string_view file) {
+bool save(vk::Device dev, vk::PipelineCache cache, std::string_view file) {
 	auto data = vk::getPipelineCacheData(dev, cache);
-	writeFile(file, data);
+	auto ptr = reinterpret_cast<const std::byte*>(data.data());
+
+	try {
+		writeFile(file, {ptr, data.size()});
+	} catch(const std::exception& err) {
+		dlg_warn("vpp::save(PipelineCache): {}", err.what());
+		return false;
+	}
+
+	return true;
 }
 
 // Pipeline
@@ -83,7 +92,7 @@ Pipeline::~Pipeline()
 //
 // GraphicsPipelineInfo
 GraphicsPipelineInfo::GraphicsPipelineInfo(vk::RenderPass renderPass,
-		vk::PipelineLayout layout, ShaderProgram&& program,
+		vk::PipelineLayout layout, ShaderProgram&& program, unsigned subpass,
 		vk::SampleCountBits samples) : program(std::move(program)) {
 
 	static const auto dynStates = {
@@ -111,6 +120,7 @@ GraphicsPipelineInfo::GraphicsPipelineInfo(vk::RenderPass renderPass,
 	info_.pStages = program.vkStageInfos().data();
 	info_.layout = layout;
 	info_.renderPass = renderPass;
+	info_.subpass = subpass;
 
 	assembly.topology = vk::PrimitiveTopology::triangleFan;
 

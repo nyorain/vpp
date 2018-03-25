@@ -9,16 +9,40 @@
 #include <memory>
 #include <dlg/dlg.hpp>
 
+class CustomDebugCallback : public vpp::DebugCallback {
+public:
+	using vpp::DebugCallback::DebugCallback;
+
+	bool call(const CallbackInfo& info) const noexcept override {
+		if(info.flags & vk::DebugReportBitsEXT::error) {
+			++errors;
+		}
+
+		if(info.flags & vk::DebugReportBitsEXT::warning) {
+			++warnings;
+		}
+
+		if(info.flags & vk::DebugReportBitsEXT::performanceWarning) {
+			++performanceWarnings;
+		}
+
+		return vpp::DebugCallback::call(info);
+	}
+
+	mutable unsigned int performanceWarnings {};
+	mutable unsigned int warnings {};
+	mutable unsigned int errors {};
+};
+
 struct Globals {
 	vpp::Instance instance;
-	std::unique_ptr<vpp::DebugCallback> debugCallback;
+	std::unique_ptr<CustomDebugCallback> debugCallback;
 	std::unique_ptr<vpp::Device> device;
 };
 
 static Globals globals;
 
-void initGlobals()
-{
+void initGlobals() {
 	constexpr const char* iniExtensions[] = {
 		VK_KHR_SURFACE_EXTENSION_NAME,
 		VK_EXT_DEBUG_REPORT_EXTENSION_NAME
@@ -34,18 +58,24 @@ void initGlobals()
 	instanceInfo.ppEnabledExtensionNames = iniExtensions;
 
 	globals.instance = {instanceInfo};
-	globals.debugCallback = std::make_unique<vpp::DebugCallback>(globals.instance);
+	globals.debugCallback = std::make_unique<CustomDebugCallback>(globals.instance);
 	globals.device = std::make_unique<vpp::Device>(globals.instance);
 
-	dlg_info("Physical device info:\n\t{}", 
+	dlg_info("Physical device info:\n\t{}",
 		vpp::description(globals.device->vkPhysicalDevice(), "\n\t"));
 }
 
-int main() { 
+int main() {
 	initGlobals();
-	auto ret = bugged::Testing::run(); 
+
+	auto ret = bugged::Testing::run();
+	ret += globals.debugCallback->performanceWarnings;
+	ret += globals.debugCallback->errors;
+	ret += globals.debugCallback->warnings;
+
 	globals.device = {};
 	globals.debugCallback = {};
 	globals.instance = {};
+
 	return ret;
 }

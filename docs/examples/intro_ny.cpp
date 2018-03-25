@@ -431,7 +431,7 @@ vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
 
 	// we also use the vpp::PipelienCache in this case
 	// we try to load it from an already existent cache
-	constexpr auto cacheName = "grapihcsPipelineCache.bin";
+	constexpr auto cacheName = "graphicsPipelineCache.bin";
 	vpp::PipelineCache cache {dev, cacheName};
 
 	vk::Pipeline vkPipeline;

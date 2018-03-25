@@ -35,6 +35,7 @@ public:
 public:
 	GraphicsPipelineInfo(vk::RenderPass, vk::PipelineLayout,
 		vpp::ShaderProgram&& program,
+		unsigned subpass = 0,
 		vk::SampleCountBits = vk::SampleCountBits::e1);
 
 	const vk::GraphicsPipelineCreateInfo& info();

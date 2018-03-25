@@ -9,37 +9,28 @@
 
 namespace vpp {
 
-std::vector<std::uint8_t> readFile(std::string_view filename, bool binary)
-{
-	const static std::string errorMsg1 = "vpp::readFile: couldnt open file ";
-	const static std::string errorMsg2 = "vpp::readFile: failed to read file ";
-
-	auto openmode = std::ios::ate;
-	if(binary) openmode |= std::ios::binary;
+std::vector<std::byte> readFile(std::string_view filename, bool binary) {
+	auto openmode = binary ? std::ios::binary : std::ios::ate;
 
 	std::ifstream ifs(std::string{filename}, openmode);
-	if(!ifs.is_open()) throw std::runtime_error(errorMsg1 + filename.data());
+	ifs.exceptions(std::ostream::failbit | std::ostream::badbit);
 
 	auto size = ifs.tellg();
 	ifs.seekg(0, std::ios::beg);
 
-	std::vector<std::uint8_t> buffer(size);
+	std::vector<std::byte> buffer(size);
 	auto data = reinterpret_cast<char*>(buffer.data());
-	if(!ifs.read(data, size)) throw std::runtime_error(errorMsg2 + filename.data());
+	ifs.read(data, size);
 
 	return buffer;
 }
 
-void writeFile(std::string_view filename, nytl::Span<const std::uint8_t> buffer, bool binary)
-{
-	const static std::string errorMsg = "vpp::writeFile: couldnt open file ";
+void writeFile(std::string_view filename, nytl::Span<const std::byte> buffer,
+		bool binary) {
 
-	auto openmode = std::ios::openmode{};
-	if(binary) openmode = std::ios::binary;
-
+	auto openmode = binary ? std::ios::binary : std::ios::openmode{};
 	std::ofstream ofs(std::string{filename}, openmode);
-	if(!ofs.is_open()) throw std::runtime_error(errorMsg + filename.data());
-
+	ofs.exceptions(std::ostream::failbit | std::ostream::badbit);
 	auto data = reinterpret_cast<const char*>(buffer.data());
 	ofs.write(data, buffer.size());
 }

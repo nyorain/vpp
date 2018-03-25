@@ -7,7 +7,9 @@ tests = [
   'image',
   'objects',
   'submit',
-  'sharedBuffer'
+  'sharedBuffer',
+  'pipeline',
+  'trackedDescriptor'
 ]
 
 foreach test : tests

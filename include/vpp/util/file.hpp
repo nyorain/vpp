@@ -6,21 +6,20 @@
 
 #include <vpp/util/span.hpp> // nytl::Span
 #include <vector> // std::vector
-#include <cstdint> // std::uint8_t
+#include <cstdlib> // std::byte
 #include <string_view> // std::string_view
 
 namespace vpp {
 
 /// Reads the file at the given filepath and returns a raw buffer with its contents.
 /// \param binary Specifies whether the file should be read in binary mode.
-/// \throws std::runtime_error If the given file path does not exist or cannot
-/// be opened.
-std::vector<std::uint8_t> readFile(std::string_view path, bool binary = true);
+/// \throws directly from std::istream on error.
+std::vector<std::byte> readFile(std::string_view path, bool binary = true);
 
 /// Writes the given buffer into the file at the given path.
 /// \param binary Specifies whether the file should be written in binary mode.
-/// \throws std::runtime_error If the given file path does not exist or cannot
-/// be opened.
-void writeFile(std::string_view path, nytl::Span<const std::uint8_t> buffer, bool binary = true);
+/// \throws directly from std::ostream on error.
+void writeFile(std::string_view path, nytl::Span<const std::byte> buffer,
+	bool binary = true);
 
 } // namespace vpp

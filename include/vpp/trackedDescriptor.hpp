@@ -87,6 +87,9 @@ public:
 	void reserve(const TrDsLayout&, unsigned count = 1);
 	TrDs allocate(const TrDsLayout&);
 
+	const auto& pools() const { return pools_; }
+	const auto& pending() const { return pending_; }
+
 private:
 	struct {
 		std::vector<vk::DescriptorPoolSize> types;

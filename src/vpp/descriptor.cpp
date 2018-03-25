@@ -6,6 +6,9 @@
 #include <vpp/vk.hpp>
 
 namespace vpp {
+namespace fwd {
+	const vk::ShaderStageFlags allShaderStages = vk::ShaderStageBits::all;
+} // namespace fwd
 
 // DescriptorSetLayout
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,

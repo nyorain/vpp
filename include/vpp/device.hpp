@@ -27,9 +27,8 @@ using DynamicThreadStorage = ThreadStorage<DynamicStoragePtr>;
 /// When a DeviceLost vulkan error occurs, the program can try to create a new Device object
 /// for the same PhysicalDevice, if this fails again with DeviceLost, then the physical device
 /// is not longer valid.
-/// Notice that Device is one of the few classes that are NOT movable since it is referenced by
+/// Notice that Device is one of the few classes that are not movable since it is referenced by
 /// all resources.
-/// Creating multiple Device objects for the same vk::Device will result in undefined behaviour.
 class Device : public nytl::NonMovable {
 public:
 	/// Creates a new vulkan device from the given device create info.
@@ -141,21 +140,12 @@ public:
 	unsigned int memoryTypeBits(vk::MemoryPropertyFlags mflags,
 		unsigned int typeBits = ~0u) const;
 
-	/// Returns a CommandBufferProvider that can be used to easily allocate command buffers.
-	/// The returned CommandProvider will be specific for the calling thread.
-	/// \sa CommandProvider
+	/// Thread-specific resources. See their respectives classes.
 	CommandAllocator& commandAllocator() const;
-
-	/// Default threadlocal queue submitter for a graphical queue.
-	QueueSubmitter& queueSubmitter() const;
-
-	/// Returns the BufferAllocator for this device and the calling thread.
-	/// \sa BufferAllocator
 	BufferAllocator& bufferAllocator() const;
-
-	/// Returns a deviceMemory allocator for this device and the calling thread.
-	/// \sa DeviceMemoryAllocator
 	DeviceMemoryAllocator& deviceAllocator() const;
+	DescriptorAllocator& descriptorAllocator() const;
+	QueueSubmitter& queueSubmitter() const;
 
 	/// Returns the ThreadStorage object that is used for all thread specific state.
 	/// Can be used to associate custom thread specific objects with this device.
@@ -188,8 +178,8 @@ protected:
 	vk::PhysicalDevice physicalDevice_ {};
 	vk::Device device_ {};
 
-	// Device uses the pimpl idion since it holds internally many (partly 
-	// thread-speciic) object that would pull a lot of huge headers or 
+	// Device uses the pimpl idion since it holds internally many (partly
+	// thread-speciic) object that would pull a lot of huge headers or
 	// are simply more an implementation detail.
 	std::unique_ptr<Impl> impl_;
 };

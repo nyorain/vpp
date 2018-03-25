@@ -3,9 +3,10 @@ Todo list vor vpp
 
 - update this file (cleanup, organize into ideas/fixes)
 - next try at cleaning up move-op mess (document why if not possible)
+- descriptorAllocator: reserve currently always just adds to allocate
+  calls... Could allocate too much
 - offer functionality to select supported extensions/layers from a list
 - QueueSubmitter exception safe (clear pending?)
-- rework/remove bufferOps.inl api?
 - save(PipelineCache) should probably not throw on error
   (return false or errocode overload)
 - way to undo reservation in DescriptorAllocator (?)
@@ -56,6 +57,7 @@ Todo list vor vpp
 low prio / general / ideas
 --------------------------
 
+- make DebugCallback::call non-const? might store data (see tests init.hpp)
 - abstraction over BufferRange/Buffer
 	- they are pretty much the same...
 	- like a temporary wrapper that can be constructed from either one

@@ -129,7 +129,7 @@ protected:
 
 /// Applies multiple descriptor set updates.
 /// May be a bit more efficient than updating them individually.
-void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates);
+void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>>);
 
 /// Alternative vk::DescriptorSetLayoutBinding constructor.
 /// When passed to the DescriptorSetLayout constructor, will automatically
