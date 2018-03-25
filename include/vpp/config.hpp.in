@@ -16,23 +16,3 @@
 // If this macro is enabled vpp will only allow one Device instance but nearly all objects
 // will consume one word less memory. For more information see resource.hpp
 #mesondefine VPP_ONE_DEVICE_OPTIMIZATION
-
-// If this macro is defined, additional checks will be performed (maybe worse performance)
-#if !defined(VPP_DEBUG) && !defined(VPP_NDEBUG)
- #define VPP_DEBUG 1
-#endif
-
-// Opposite of VPP_DEBUG
-#if !defined(VPP_DEBUG) && !defined(VPP_NDEBUG)
- #define VPP_NDEBUG
-#endif
-
-// These macros control if vulkan api calls should be error-checked and if so what should be done
-// when an error occurs.
-#if !defined(VPP_CALL_THROW) && !defined(VPP_CALL_NOCHECK)
- #ifdef VPP_DEBUG
-  #define VPP_CALL_THROW
- #else
-  #define VPP_CALL_NOCHECK
- #endif
-#endif

@@ -1,11 +1,10 @@
 Todo list vor vpp
 =================
 
-- fix config.hpp for vkpp (messed up atm)
 - descriptorAllocator: reserve currently always just adds to allocate
   calls... Could allocate too much
 	- general way to undo reservation in DescriptorAllocator (?)
-- move debug report stuff in debug.hpp to separte file (and remove enums.hpp
+- move debug report stuff in debug.hpp to separate file (and remove enums.hpp
   from debug.hpp)
 	- probably best to implement the handle type switching in some other
 	  way; in source file
@@ -13,11 +12,6 @@ Todo list vor vpp
   Make sure it can be reset (after destruction) e.g. for device lost or
   multiple devices in sequence + example/test
   (create multiple devices and resources)
-- work dependency chaining (-> QueueSubmitter semaphores)
-	- would allow to e.g. let Renderer submission depend on
-	  (staging, so cmdBuf-based) buffer updates
-- memorySize on buffer really ok? (e.g. see sharedBuffer, fill/retrieve)
-	- rather deprecate memoryResource::memorySize?
 - handle problem: memBits (in buffer/sharedBuffer/image) not compatible
   with buffer requirements
   	- solution: might require to be checked/handled by user
@@ -39,6 +33,11 @@ Todo list vor vpp
 low prio / general / ideas
 --------------------------
 
+- memorySize on buffer really ok? (e.g. see sharedBuffer, fill/retrieve)
+	- rather deprecate memoryResource::memorySize?
+- work dependency chaining (-> QueueSubmitter semaphores)
+	- would allow to e.g. let Renderer submission depend on
+	  (staging, so cmdBuf-based) buffer updates
 - offer functionality to select supported extensions/layers from a list
 - renderer: rework/remove RecordMode::all. Any way to get around the invalidate
   extra condition? Or at least rather use onDeman mode by default.
