@@ -97,6 +97,7 @@ public:
 	NonOwned& operator=(NonOwned&& other) {
 		T::release();
 		T::operator=(std::move(other));
+		return *this;
 	}
 };
 
