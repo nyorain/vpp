@@ -8,6 +8,7 @@ project('vpp', ['c', 'cpp'],
 examples = get_option('examples')
 tests = get_option('tests')
 one_device = get_option('one_device')
+codegen = get_option('codegen')
 
 # default arrguments
 # warnings and stuff
@@ -22,16 +23,19 @@ add_project_arguments(
 # dependencies
 dep_threads = dependency('threads')
 dep_dlg = dependency('dlg', fallback: ['dlg', 'dlg_dep'])
-dep_vkpp = dependency('vkpp', fallback: ['vkpp', 'vkpp_dep'])
 dep_vulkan = dependency('vulkan')
 
 deps = [
 	dep_threads,
 	dep_dlg,
-	dep_vkpp,
 	dep_vulkan]
 
-vpp_inc = include_directories('include')
+if codegen
+	dep_vkpp = dependency('vkpp', fallback: ['vkpp', 'vkpp_dep'])
+	deps += [dep_vkpp]
+endif
+
+vpp_inc = [include_directories('include')]
 vpp_inc_private = include_directories('src')
 
 subdir('include/vpp')
