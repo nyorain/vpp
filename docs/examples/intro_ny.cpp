@@ -1,10 +1,10 @@
-// Basic example on how to use ny.
+// Basic example on how to use vpp.
 // We are using here the highest abstraction/utility vpp has to offer,
 // vpp::DefaultRenderer (see vpp/renderer.hpp).
 // We use the ny window library (working on windows, unix (wayland and x11)
 // and android).
 // We already have pre-processed (compiled, parsed as headers) shaders,
-// using glslangValidator and bintoheader (see data/*.h).
+// using glslangValidator (see data/*.h).
 
 // Pretty much all ny code was taken from the basic example (except
 // the vulkan surface creation):
