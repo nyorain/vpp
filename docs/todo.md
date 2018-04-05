@@ -4,14 +4,11 @@ Todo list vor vpp
 - descriptorAllocator: reserve currently always just adds to allocate
   calls... Could allocate too much
 	- general way to undo reservation in DescriptorAllocator (?)
-- move debug report stuff in debug.hpp to separate file (and remove enums.hpp
-  from debug.hpp)
-	- probably best to implement the handle type switching in some other
-	  way; in source file
 - one_device: store device in Device, not Resource.
   Make sure it can be reset (after destruction) e.g. for device lost or
   multiple devices in sequence + example/test
   (create multiple devices and resources)
+- make codestyle consistent everywhere
 - handle problem: memBits (in buffer/sharedBuffer/image) not compatible
   with buffer requirements
   	- solution: might require to be checked/handled by user
@@ -19,22 +16,24 @@ Todo list vor vpp
   		  it correctly?
 - memoryMap: remap smaller range when a certain range is no longer needed?
 - imageOps: really allow extent with depth == 0? also handle it for height == 0?
-- make codestyle consistent everywhere
 - device: cache supported extensions (see e.g. defaults.cpp: could change
   format querying behvaior)
 - write basic docs
-- rework (probably) overcomplicated offset mechanisms (mainly MappedBufferWriter)
-  in bufferOps
-  	- also: maybe best to not put (even if only couple of lines) the whole
-  	  stage buffer allocation handling in header?
 - implement BufferAllocator optimize/shrink
 	- also improve alloc algorithm
+
+- move debug report stuff in debug.hpp to separate file (and remove enums.hpp
+  from debug.hpp)
+	- probably best to implement the handle type switching in some other
+	  way; in source file
 
 low prio / general / ideas
 --------------------------
 
-- memorySize on buffer really ok? (e.g. see sharedBuffer, fill/retrieve)
-	- rather deprecate memoryResource::memorySize?
+- look into simplyfying complicated offset mechanisms (mainly MappedBufferWriter)
+  in bufferOps
+  	- also: maybe best to not put (even if only couple of lines) the whole
+  	  stage buffer allocation handling in header?
 - work dependency chaining (-> QueueSubmitter semaphores)
 	- would allow to e.g. let Renderer submission depend on
 	  (staging, so cmdBuf-based) buffer updates

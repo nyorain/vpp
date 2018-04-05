@@ -20,8 +20,8 @@ namespace vpp {
 /// Does not support compressed image formats.
 /// \param texelSize the size (in bytes) of one texel.
 /// Can e.g. be obtained from formatSize (with the images format).
-vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout, 
-	unsigned int texelSize, unsigned int x, unsigned int y, unsigned int z = 0, 
+vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout,
+	unsigned int texelSize, unsigned int x, unsigned int y, unsigned int z = 0,
 	unsigned int layer = 0);
 
 /// Returns the size of the given format in bits.
@@ -45,26 +45,26 @@ vk::Extent2D blockSize(vk::Format);
 
 /// Fills the given image with the given data by mapping it.
 /// The image must be bound to hostVisible memory.
-/// The image must have a suitable (preinitialized or general) layout and 
+/// The image must have a suitable (preinitialized or general) layout and
 /// linear tiling.
 /// The image must not be in use (you probably have to use a barrier).
 /// \param data Tightly packed data.
 /// The data must be in row-major order and large enough for the given extent.
 /// The size of data will be expected to be exactly
 /// extent.w * extent.h * extent.d * formatSize(format).
-void fillMap(const Image&, vk::Format, const vk::Extent3D& size, 
-	nytl::Span<std::byte> data, const vk::ImageSubresource&, 
+void fillMap(const Image&, vk::Format, const vk::Extent3D& size,
+	nytl::Span<std::byte> data, const vk::ImageSubresource&,
 	const vk::Offset3D& offset = {});
 
 /// Retrieves the contents of the given image by mapping it.
 /// The image must be bound to hostVisible memory.
-/// The image must have a suitable (preinitialized or general) layout and 
-/// linear tiling. 
+/// The image must have a suitable (preinitialized or general) layout and
+/// linear tiling.
 /// The image must not be in use (you probably have to use a barrier).
 /// The returned data will be tightly packed and have the size extent.w *
 /// extent.h * extent.d * formatSize(format).
-std::vector<std::byte> retrieveMap(const Image&, vk::Format, 
-	const vk::Extent3D& size, const vk::ImageSubresource&, 
+std::vector<std::byte> retrieveMap(const Image&, vk::Format,
+	const vk::Extent3D& size, const vk::ImageSubresource&,
 	const vk::Offset3D& offset = {});
 
 
@@ -76,7 +76,7 @@ std::vector<std::byte> retrieveMap(const Image&, vk::Format,
 /// commands are executed on the device.
 /// The image must not be in use (you probably have to use a barrier).
 UploadWork fillStaging(const Image&, vk::Format, vk::ImageLayout,
-	const vk::Extent3D& size, nytl::Span<const std::byte> data, 
+	const vk::Extent3D& size, nytl::Span<const std::byte> data,
 	const vk::ImageSubresource&, const vk::Offset3D& offset = {},
 	QueueSubmitter* = {});
 
@@ -86,17 +86,17 @@ UploadWork fillStaging(const Image&, vk::Format, vk::ImageLayout,
 /// If the command buffer is never submitted, it may be destructed.
 /// The command buffer must be in recording state.
 [[nodiscard]]
-BufferRange fillStaging(vk::CommandBuffer, const Image&, vk::Format, 
-	vk::ImageLayout, const vk::Extent3D& size, nytl::Span<const std::byte> data, 
+SubBuffer fillStaging(vk::CommandBuffer, const Image&, vk::Format,
+	vk::ImageLayout, const vk::Extent3D& size, nytl::Span<const std::byte> data,
 	const vk::ImageSubresource&, const vk::Offset3D& offset = {});
 
 /// Retrieves the contents of the given image by copying in to a staging
-/// buffer. The image must have been created with the transferSrc usage and 
-/// must be in transferDstOptimal or general layout. 
+/// buffer. The image must have been created with the transferSrc usage and
+/// must be in transferDstOptimal or general layout.
 /// The image must not be in use.
 /// The image must not be in use (you probably have to use a barrier).
-DownloadWork retrieveStaging(const Image&, vk::Format, vk::ImageLayout, 
-	const vk::Extent3D& size, const vk::ImageSubresource&, 
+DownloadWork retrieveStaging(const Image&, vk::Format, vk::ImageLayout,
+	const vk::Extent3D& size, const vk::ImageSubresource&,
 	const vk::Offset3D& offset = {}, QueueSubmitter* = {});
 
 /// Records the commands for retrieveStaging (see above) into the
@@ -107,8 +107,8 @@ DownloadWork retrieveStaging(const Image&, vk::Format, vk::ImageLayout,
 /// BufferRange may be destroyed.
 /// The command buffer must be in recording state.
 [[nodiscard]]
-BufferRange retrieveStaging(vk::CommandBuffer, const Image&, vk::Format,
-	vk::ImageLayout, const vk::Extent3D& size, const vk::ImageSubresource&, 
+SubBuffer retrieveStaging(vk::CommandBuffer, const Image&, vk::Format,
+	vk::ImageLayout, const vk::Extent3D& size, const vk::ImageSubresource&,
 	const vk::Offset3D& offset = {});
 
 

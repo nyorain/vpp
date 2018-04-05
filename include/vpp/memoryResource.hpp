@@ -15,13 +15,13 @@ namespace vpp {
 class MemoryResource {
 public:
 	MemoryResource() = default;
-	MemoryResource(MemoryEntry&& entry) 
+	MemoryResource(MemoryEntry&& entry)
 		: memoryEntry_(std::move(entry)) {}
 
 	MemoryResource(MemoryResource&& rhs) noexcept = default;
 	MemoryResource& operator=(MemoryResource&& rhs) noexcept = default;
 
-	/// Checks if this memory resource was initialized yet and if not it 
+	/// Checks if this memory resource was initialized yet and if not it
 	/// will be initialized.
 	void ensureMemory();
 
@@ -31,15 +31,13 @@ public:
 	/// Creates/Updates the memoryMap of the memory this resource is
 	/// bound to and returns a view. Must be bound to hostVisible memory,
 	/// i.e. mappable() must be true.
-	MemoryMapView memoryMap(vk::DeviceSize offset = 0u, 
+	MemoryMapView memoryMap(vk::DeviceSize offset = 0u,
 		vk::DeviceSize size = vk::wholeSize) const;
 
-	// NOTE: deprecate memorySize? probably not something we want to expose,
-	// it might even be removed from memoryEntry at some point
-
 	/// Returns the size this resource takes up in memory.
-	/// Note that this might differ from the real size of the resource
-	/// (e.g. buffer or image data size) due to metadata.
+	/// Note that this often differs from the real size of the resource
+	/// (e.g. buffer or image data size) due to metadata so it should
+	/// not be used as that.
 	vk::DeviceSize memorySize() const { return memoryEntry().size(); }
 	const MemoryEntry& memoryEntry() const { return memoryEntry_; }
 

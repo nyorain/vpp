@@ -18,6 +18,31 @@
 
 namespace vpp {
 
+/// Continous device buffer span that is not owned.
+class BufferSpan : public ResourceReference<BufferSpan> {
+public:
+	BufferSpan() = default;
+	BufferSpan(const SubBuffer&);
+	BufferSpan(const Buffer&, vk::DeviceSize size, vk::DeviceSize offset = 0u);
+	BufferSpan(const SharedBuffer&, vk::DeviceSize size,
+		vk::DeviceSize offset = 0u) = delete;
+
+	MemoryMapView memoryMap() const;
+
+	const auto& buffer() const { return *buffer_; }
+	auto offset() const { return allocation_.offset; }
+	auto end() const { return allocation_.end(); }
+	auto size() const { return allocation_.size; }
+	const auto& allocation() const { return allocation_; }
+
+	const auto& resourceRef() const { return *buffer_; }
+	bool valid() const { return buffer_ && size(); }
+
+protected:
+	const Buffer* buffer_ {};
+	BasicAllocation<vk::DeviceSize> allocation_ {};
+};
+
 /// Specifies the different buffer alignment methods.
 /// For the differences, read
 /// https://www.opengl.org/wiki/Interface_Block_(GLSL)#Memory_layout.
@@ -218,7 +243,7 @@ class DirectBufferWriter :
 	public BufferOperator<DirectBufferWriter>,
 	public ResourceReference<DirectBufferWriter> {
 public:
-	DirectBufferWriter(const Buffer& buf, BufferLayout);
+	DirectBufferWriter(const BufferSpan&, BufferLayout);
 
 	/// Writes size bytes from ptr to the buffer.
 	/// Undefined behaviour if ptr does not point to at least size bytes
@@ -237,22 +262,22 @@ public:
 	const auto& data() const noexcept { return data_; }
 	const auto& copies() const noexcept { return copies_; }
 
-	const auto& resourceRef() const { return buffer_; }
+	const auto& resourceRef() const { return span_; }
 
 protected:
-	const Buffer& buffer_;
+	BufferSpan span_;
 	std::vector<std::byte> data_;
 	std::vector<vk::BufferCopy> copies_; // regions to copy
 };
 
 namespace detail {
 
-UploadWork apply(const Buffer&, BufferRange&& stage,
+UploadWork apply(const BufferSpan& dst, SubBuffer&& stage,
 	nytl::Span<const vk::BufferCopy>, QueueSubmitter&);
-CommandWork<void> apply(const Buffer&, const DirectBufferWriter&,
+CommandWork<void> apply(const BufferSpan& dst, const DirectBufferWriter&,
 	QueueSubmitter&);
-CommandBuffer copyCmdBuf(QueueSubmitter&, const Buffer& buffer,
-	const BufferRange& stage, vk::DeviceSize offset, vk::DeviceSize size);
+CommandBuffer copyCmdBuf(QueueSubmitter&, const BufferSpan& dst,
+	const BufferSpan& stage, vk::DeviceSize size);
 
 } // namespace detail
 
@@ -260,26 +285,19 @@ CommandBuffer copyCmdBuf(QueueSubmitter&, const Buffer& buffer,
 /// Undefined behavior if the buffer is not mappable.
 /// The buffer must not be in use (you will probably need a pipeline barrier).
 template<typename... T>
-void writeMap(const Buffer& buf, BufferLayout layout, const T&... args) {
+void writeMap(const BufferSpan& buf, BufferLayout layout, const T&... args) {
 	MappedBufferWriter writer(buf.memoryMap(), layout);
-	writer.map().flush();
 	writer.add(args...);
+	writer.map().flush();
 }
 
 template<typename... T>
-void writeMap(const BufferRange& buf, BufferLayout layout, const T&... args) {
-	MappedBufferWriter writer(buf.memoryMap(), layout);
-	writer.map().flush();
-	writer.add(args...);
-}
-
-template<typename B, typename... T>
-void writeMap140(const B& buf, const T&... args) {
+void writeMap140(const BufferSpan& buf, const T&... args) {
 	writeMap(buf, BufferLayout::std140, args...);
 }
 
-template<typename B, typename... T>
-void writeMap430(const B& buf, const T&... args) {
+template<typename... T>
+void writeMap430(const BufferSpan& buf, const T&... args) {
 	writeMap(buf, BufferLayout::std430, args...);
 }
 
@@ -292,50 +310,32 @@ void writeMap430(const B& buf, const T&... args) {
 /// The work must be finished before any resources are destroyed.
 /// The passed arguments to write are not needed after the call returns.
 template<typename... T>
-UploadWork writeStaging(QueueSubmitter& qs, vk::DeviceSize offset,
-	vk::DeviceSize maxSize, const Buffer& buf, BufferLayout layout,
-	const T&... args)
-{
-	// TODO: error if neededBufferSize > maxSize, we should probably
-	//  already check/signal this here somehow
-	//  same problem as in readStaging
-	auto size = std::min(maxSize, neededBufferSize(layout, args...));
-	auto stage = buf.device().bufferAllocator().alloc(true, size,
+UploadWork writeStaging(QueueSubmitter& qs, const BufferSpan& span,
+		BufferLayout layout, const T&... args) {
+
+	auto size = neededBufferSize(layout, args...);
+	auto stage = span.device().bufferAllocator().alloc(true, size,
 		vk::BufferUsageBits::transferSrc);
 	MappedBufferWriter writer(stage.memoryMap(), layout, true, stage.offset());
-	writer.offset(offset, false);
+	writer.offset(span.offset(), false);
 	writer.add(args...);
 	writer.map().flush();
-	return detail::apply(buf, std::move(stage), writer.regions(), qs);
+	return detail::apply(span, std::move(stage), writer.regions(), qs);
 }
 
 template<typename... T>
-auto writeStaging(QueueSubmitter& qs, const Buffer& buf,
-	BufferLayout layout, const T&... args) {
-	return writeStaging(qs, 0u, buf.memorySize(), buf, layout, args...);
+auto writeStaging(const BufferSpan& b, BufferLayout layout, const T&... args) {
+	return writeStaging(b.device().queueSubmitter(), b, layout, args...);
 }
 
 template<typename... T>
-auto writeStaging(QueueSubmitter& qs, const BufferRange& buf,
-	BufferLayout layout, const T&... args)
-{
-	return writeStaging(qs, buf.offset(), buf.size(), 
-		buf.buffer(), layout, args...);
-}
-
-template<typename B, typename... T>
-auto writeStaging(const B& buf, BufferLayout layout, const T&... args) {
-	return writeStaging(buf.device().queueSubmitter(), buf, layout, args...);
-}
-
-template<typename B, typename... T>
-auto writeStaging140(const B& buf, const T&... args) {
+auto writeStaging140(const BufferSpan& buf, const T&... args) {
 	return writeStaging(buf.device().queueSubmitter(), buf,
 		BufferLayout::std140, args...);
 }
 
-template<typename B, typename... T>
-auto writeStaging430(const B& buf, const T&... args) {
+template<typename... T>
+auto writeStaging430(const BufferSpan& buf, const T&... args) {
 	return writeStaging(buf.device().queueSubmitter(), buf,
 		BufferLayout::std430, args...);
 }
@@ -349,42 +349,27 @@ auto writeStaging430(const B& buf, const T&... args) {
 /// The work must be finished before any resources are destroyed.
 /// The passed arguments to write are not needed after the call returns.
 template<typename... T>
-CommandWork<void> writeDirect(QueueSubmitter& qs, vk::DeviceSize offset,
-	const Buffer& buf, BufferLayout layout, const T&... args)
-{
-	DirectBufferWriter writer(buf, layout);
-	writer.offset(offset, false);
+CommandWork<void> writeDirect(QueueSubmitter& qs, const BufferSpan& span,
+		BufferLayout layout, const T&... args) {
+
+	DirectBufferWriter writer(span, layout);
 	writer.add(args...);
-	return detail::apply(buf, writer, qs);
+	return detail::apply(span, writer, qs);
 }
 
 template<typename... T>
-auto writeDirect(QueueSubmitter& qs, const Buffer& buf,
-	BufferLayout layout, const T&... args)
-{
-	return writeDirect(qs, 0u, buf, layout, args...);
+auto writeDirect(const BufferSpan& b, BufferLayout layout, const T&... args) {
+	return writeDirect(b.device().queueSubmitter(), b, layout, args...);
 }
 
 template<typename... T>
-auto writeDirect(QueueSubmitter& qs, const BufferRange& buf,
-	BufferLayout layout, const T&... args)
-{
-	return writeDirect(qs, buf.offset(), buf.buffer(), layout, args...);
-}
-
-template<typename B, typename... T>
-auto writeDirect(const B& buf, BufferLayout layout, const T&... args) {
-	return writeDirect(buf.device().queueSubmitter(), buf, layout, args...);
-}
-
-template<typename B, typename... T>
-auto writeDirect140(const B& buf, const T&... args) {
+auto writeDirect140(const BufferSpan& buf, const T&... args) {
 	return writeDirect(buf.device().queueSubmitter(), buf,
 		BufferLayout::std140, args...);
 }
 
-template<typename B, typename... T>
-auto writeDirect430(const B& buf, const T&... args) {
+template<typename... T>
+auto writeDirect430(const BufferSpan& buf, const T&... args) {
 	return writeDirect(buf.device().queueSubmitter(), buf,
 		BufferLayout::std430, args...);
 }
@@ -421,7 +406,7 @@ protected:
 /// If the given arguments don't match the data of the buffer you will
 /// probably get garbage.
 template<typename... T>
-void readMap(const Buffer& buf, BufferLayout layout, T&... args) {
+void readMap(const BufferSpan& buf, BufferLayout layout, T&... args) {
 	auto map = buf.memoryMap();
 	map.invalidate();
 	BufferReader reader(buf.device(), layout, {map.ptr(), map.size()});
@@ -429,20 +414,12 @@ void readMap(const Buffer& buf, BufferLayout layout, T&... args) {
 }
 
 template<typename... T>
-void readMap(const BufferRange& buf, BufferLayout layout, T&... args) {
-	auto map = buf.memoryMap();
-	map.invalidate();
-	BufferReader reader(buf.device(), layout, {map.ptr(), map.size()});
-	reader.add(args...);
-}
-
-template<typename B, typename... T>
-void readMap140(const B& buf, T&... args) {
+void readMap140(const BufferSpan& buf, T&... args) {
 	return readMap(buf, BufferLayout::std140, args...);
 }
 
-template<typename B, typename... T>
-void readMap430(const B& buf, T&... args) {
+template<typename... T>
+void readMap430(const BufferSpan& buf, T&... args) {
 	return readMap(buf, BufferLayout::std430, args...);
 }
 
@@ -456,24 +433,20 @@ void readMap430(const B& buf, T&... args) {
 /// If the given arguments don't match the data of the buffer you will
 /// probably get garbage.
 template<typename... T>
-auto readStaging(QueueSubmitter& qs, vk::DeviceSize offset,
-	vk::DeviceSize maxSize, const Buffer& buf, BufferLayout layout, T&... args)
-{
-	// TODO: error if neededBufferSize > maxSize, we should probably
-	//  already check/signal this here somehow
-	//  same problem as in writeStaging
-	auto size = std::min(maxSize, neededBufferSize(layout, args...));
+auto readStaging(QueueSubmitter& qs, const BufferSpan& buf,
+		BufferLayout layout, T&... args) {
+
+	auto size = neededBufferSize(layout, args...);
 	auto stage = buf.device().bufferAllocator().alloc(true, size,
 		vk::BufferUsageBits::transferDst);
-	auto cmdBuf = detail::copyCmdBuf(qs, buf, stage, offset, size);
+	auto cmdBuf = detail::copyCmdBuf(qs, buf, stage, size);
 
 	class WorkImpl : public CommandWork<void> {
 	public:
-		WorkImpl(QueueSubmitter& qs, CommandBuffer&& cmdBuf, BufferRange&& stage,
+		WorkImpl(QueueSubmitter& qs, CommandBuffer&& cmdBuf, SubBuffer&& stage,
 			BufferLayout layout, T&... xargs) :
 				CommandWork(qs, std::move(cmdBuf)), stage_(std::move(stage)),
-				layout_(layout), args_(xargs...)
-		{
+				layout_(layout), args_(xargs...) {
 		}
 
 		~WorkImpl() {
@@ -488,43 +461,27 @@ auto readStaging(QueueSubmitter& qs, vk::DeviceSize offset,
 			std::apply([&](auto&... args){ reader.add(args...); }, args_);
 		}
 
-		BufferRange stage_;
+		SubBuffer stage_;
 		BufferLayout layout_;
 		std::tuple<T&...> args_;
 	};
 
-	return WorkImpl{qs, std::move(cmdBuf), std::move(stage),
-		layout, args...};
+	return WorkImpl{qs, std::move(cmdBuf), std::move(stage), layout, args...};
 }
 
 template<typename... T>
-auto readStaging(QueueSubmitter& qs, const Buffer& buf,
-	BufferLayout layout, T&... args)
-{
-	return readStaging(qs, 0u, buf.memorySize(), buf, layout, args...);
+auto readStaging(const BufferSpan& buf, BufferLayout layout, T&... args) {
+	return readStaging(buf.device().queueSubmitter(), buf, layout, args...);
 }
 
 template<typename... T>
-auto readStaging(QueueSubmitter& qs, const BufferRange& buf,
-	BufferLayout layout, T&... args)
-{
-	return readStaging(qs, buf.offset(), buf.size(), buf.buffer(),
-		layout, args...);
-}
-
-template<typename B, typename... T>
-auto readStaging(const B& buf, BufferLayout layout, T&... args) {
-	readStaging(buf.device().queueSubmitter(), buf, layout, args...);
-}
-
-template<typename B, typename... T>
-auto readStaging140(const B& buf, T&... args) {
+auto readStaging140(const BufferSpan& buf, T&... args) {
 	return readStaging(buf.device().queueSubmitter(), buf,
 		BufferLayout::std140, args...);
 }
 
-template<typename B, typename... T>
-auto readStaging430(const B& buf, T&... args) {
+template<typename... T>
+auto readStaging430(const BufferSpan& buf, T&... args) {
 	return readStaging(buf.device().queueSubmitter(), buf,
 		BufferLayout::std430, args...);
 }

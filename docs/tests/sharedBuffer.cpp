@@ -34,7 +34,7 @@ TEST(sharedBuf) {
 	EXPECT(alloc5.size, 0u);
 	buf.free(alloc3);
 
-	vpp::BufferRange bufRange(buf, 100u);
+	vpp::SubBuffer bufRange(buf, 100u);
 	EXPECT(&bufRange.buffer(), &buf);
 	EXPECT(bufRange.size(), 100u);
 	EXPECT(bufRange.offset(), 0u);
@@ -44,7 +44,7 @@ TEST(sharedBuf) {
 	EXPECT(bufRange2.size(), 100u);
 	EXPECT(bufRange2.offset(), 0u);
 
-	ERROR(vpp::BufferRange(buf, 1000u), std::runtime_error);
+	ERROR(vpp::SubBuffer(buf, 1000u), std::runtime_error);
 
 	// allocator
 	vpp::BufferAllocator bufAlloc(dev);
@@ -114,14 +114,14 @@ TEST(nonCoherentAtomAlign) {
 	vpp::SharedBuffer buf(dev, {{}, 2048u, vk::BufferUsageBits::uniformBuffer});
 	buf.nonCoherentAtomAlign = true;
 
-	vpp::BufferRange range1(buf, buf.alloc(10u));
+	vpp::SubBuffer range1(buf, buf.alloc(10u));
 	EXPECT(range1.allocation(), (Alloc{0u, 10u}));
 
-	vpp::BufferRange range2(buf, buf.alloc(10u));
+	vpp::SubBuffer range2(buf, buf.alloc(10u));
 	auto offset = vpp::align<vk::DeviceSize>(10u, atomAlign);
 	EXPECT(range2.allocation(), (Alloc{offset, 10u}));
 
-	vpp::BufferRange range3(buf, buf.alloc(100u));
+	vpp::SubBuffer range3(buf, buf.alloc(100u));
 	offset = vpp::align<vk::DeviceSize>(range2.allocation().end(), atomAlign);
 	EXPECT(range3.allocation(), (Alloc{offset, 100u}));
 

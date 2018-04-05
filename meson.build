@@ -54,7 +54,6 @@ if tests
 endif
 
 # pkgconfig
-# test the packageconfig with an external project
 pkg = import('pkgconfig')
 pkg_dirs = ['.']
 pkg.generate(

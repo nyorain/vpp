@@ -11,18 +11,18 @@
 namespace vpp {
 
 /// Returns the memory address for an image for the given parameters.
-vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout, 
-	unsigned int texelSize, unsigned int x, unsigned int y, unsigned int z, 
-	unsigned int layer)
-{
-	return layer * layout.arrayPitch + z * layout.depthPitch + 
+vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout,
+		unsigned int texelSize, unsigned int x, unsigned int y,
+		unsigned int z, unsigned int layer) {
+
+	return layer * layout.arrayPitch + z * layout.depthPitch +
 		y * layout.rowPitch + x * texelSize + layout.offset;
 }
 
 void fillMap(const Image& img, vk::Format format,
-	const vk::Extent3D& size, nytl::Span<std::byte> data, 
-	const vk::ImageSubresource& subres, const vk::Offset3D& offset)
-{
+		const vk::Extent3D& size, nytl::Span<std::byte> data,
+		const vk::ImageSubresource& subres, const vk::Offset3D& offset) {
+
 	auto texSize = formatSize(format);
 
 	dlg_assert(img.vkHandle());
@@ -32,7 +32,7 @@ void fillMap(const Image& img, vk::Format format,
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
 	dlg_assert(data.size() == size.width * size.height * size.depth * texSize);
 	dlg_assert(data.size() <= img.memorySize());
-	
+
 	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
 	auto map = img.memoryEntry().map();
 
@@ -43,7 +43,7 @@ void fillMap(const Image& img, vk::Format format,
 	// copy row (width) after row
 	for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
 		for(unsigned int h = offset.y; h < offset.y + size.height; ++h) {
-			auto ptr = map.ptr() + texelAddress(sresLayout, texSize, 
+			auto ptr = map.ptr() + texelAddress(sresLayout, texSize,
 				offset.x, h, d, subres.arrayLayer);
 			std::memcpy(ptr, data.data() + doffset, texSize * size.width);
 			doffset += size.width * texSize;
@@ -55,10 +55,10 @@ void fillMap(const Image& img, vk::Format format,
 	}
 }
 
-std::vector<std::byte> retrieveMap(const Image& img, vk::Format format, 
-	const vk::Extent3D& size, const vk::ImageSubresource& subres,
-	const vk::Offset3D& offset)
-{
+std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
+		const vk::Extent3D& size, const vk::ImageSubresource& subres,
+		const vk::Offset3D& offset) {
+
 	const auto texSize = formatSize(format);
 	const auto depth = size.depth ? size.depth : 1u;
 	const auto byteSize = texSize * size.width * size.height * depth;
@@ -81,7 +81,7 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 	// copy row (width) after row
 	for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
 		for(unsigned int h = offset.y; h < offset.y + size.height; ++h) {
-			auto ptr = map.ptr() + texelAddress(sresLayout, texSize, 
+			auto ptr = map.ptr() + texelAddress(sresLayout, texSize,
 				offset.x, h, d, subres.arrayLayer);
 			std::memcpy(data.data() + doffset, ptr, size.width);
 			doffset += size.width * texSize;
@@ -91,11 +91,11 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 	return data;
 }
 
-UploadWork fillStaging(const Image& img, vk::Format format, 
-	vk::ImageLayout layout, const vk::Extent3D& size, 
-	nytl::Span<const std::byte> data, const vk::ImageSubresource& subres, 
-	const vk::Offset3D& offset, QueueSubmitter* qsp)
-{
+UploadWork fillStaging(const Image& img, vk::Format format,
+		vk::ImageLayout layout, const vk::Extent3D& size,
+		nytl::Span<const std::byte> data, const vk::ImageSubresource& subres,
+		const vk::Offset3D& offset, QueueSubmitter* qsp) {
+
 	auto& dev = img.device();
 	auto& qs = qsp ? *qsp : dev.queueSubmitter();
 	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
@@ -107,16 +107,16 @@ UploadWork fillStaging(const Image& img, vk::Format format,
 	return {std::move(cmdBuf), qs, std::move(range)};
 }
 
-BufferRange fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
-	vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size, 
-	nytl::Span<const std::byte> data, const vk::ImageSubresource& subres, 
-	const vk::Offset3D& offset)
-{
+SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
+		vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size,
+		nytl::Span<const std::byte> data, const vk::ImageSubresource& subres,
+		const vk::Offset3D& offset) {
+
 	const auto texSize = formatSize(format);
-	const auto depth = size.depth ? size.depth : 1u;	
+	const auto depth = size.depth ? size.depth : 1u;
 
 	dlg_assert(cmdBuf);
-	dlg_assert(layout == vk::ImageLayout::transferDstOptimal || 
+	dlg_assert(layout == vk::ImageLayout::transferDstOptimal ||
 		layout == vk::ImageLayout::general);
 	dlg_assert(img.vkHandle());
 	dlg_assert(texSize > 0);
@@ -139,41 +139,41 @@ BufferRange fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 
 	auto buf = uploadBuffer.buffer().vkHandle();
 	auto boffset = uploadBuffer.offset();
-	vk::ImageSubresourceLayers layers {subres.aspectMask, subres.mipLevel, 
+	vk::ImageSubresourceLayers layers {subres.aspectMask, subres.mipLevel,
 		subres.arrayLayer, 1};
-	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset, 
+	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset,
 		{size.width, size.height, depth}};
 
 	vk::cmdCopyBufferToImage(cmdBuf, buf, img, layout, {region});
 	return uploadBuffer;
 }
 
-DownloadWork retrieveStaging(const Image& img, vk::Format format, 
-	vk::ImageLayout layout, const vk::Extent3D& size, 
-	const vk::ImageSubresource& subres, const vk::Offset3D& offset,
-	QueueSubmitter* qsp)
-{
+DownloadWork retrieveStaging(const Image& img, vk::Format format,
+		vk::ImageLayout layout, const vk::Extent3D& size,
+		const vk::ImageSubresource& subres, const vk::Offset3D& offset,
+		QueueSubmitter* qsp) {
+
 	auto& dev = img.device();
 	auto& qs = qsp ? *qsp : dev.queueSubmitter();
 	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
 
 	vk::beginCommandBuffer(cmdBuf, {});
-	auto range = retrieveStaging(cmdBuf, img, format, layout, size, 
+	auto range = retrieveStaging(cmdBuf, img, format, layout, size,
 		subres, offset);
 	vk::endCommandBuffer(cmdBuf);
 	return {std::move(cmdBuf), qs, std::move(range)};
 }
 
-BufferRange retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
-	vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size, 
-	const vk::ImageSubresource& subres, const vk::Offset3D& offset)
-{
+SubBuffer retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
+		vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size,
+		const vk::ImageSubresource& subres, const vk::Offset3D& offset) {
+
 	const auto texSize = formatSize(format);
-	const auto depth = size.depth ? size.depth : 1u;	
+	const auto depth = size.depth ? size.depth : 1u;
 	const auto byteSize = texSize * size.width * size.height * depth;
 
 	dlg_assert(cmdBuf);
-	dlg_assert(layout == vk::ImageLayout::transferSrcOptimal || 
+	dlg_assert(layout == vk::ImageLayout::transferSrcOptimal ||
 		layout == vk::ImageLayout::general);
 	dlg_assert(img.vkHandle());
 	dlg_assert(texSize > 0);
@@ -189,9 +189,9 @@ BufferRange retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 
 	auto buf = downloadBuffer.buffer().vkHandle();
 	auto boffset = downloadBuffer.offset();
-	vk::ImageSubresourceLayers layers {subres.aspectMask, subres.mipLevel, 
+	vk::ImageSubresourceLayers layers {subres.aspectMask, subres.mipLevel,
 		subres.arrayLayer, 1};
-	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset, 
+	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset,
 		{size.width, size.height, depth}};
 
 	vk::cmdCopyImageToBuffer(cmdBuf, img, layout, buf, {region});
@@ -199,10 +199,10 @@ BufferRange retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 }
 
 void changeLayout(vk::CommandBuffer cmdBuf, vk::Image img,
-	vk::ImageLayout ol, vk::PipelineStageFlags srcs, vk::AccessFlags srca,
-	vk::ImageLayout nl, vk::PipelineStageFlags dsts, vk::AccessFlags dsta,
-	const vk::ImageSubresourceRange& subres)
-{
+		vk::ImageLayout ol, vk::PipelineStageFlags srcs, vk::AccessFlags srca,
+		vk::ImageLayout nl, vk::PipelineStageFlags dsts, vk::AccessFlags dsta,
+		const vk::ImageSubresourceRange& subres) {
+
 	vk::ImageMemoryBarrier barrier;
 	barrier.oldLayout = ol;
 	barrier.newLayout = nl;
@@ -214,10 +214,10 @@ void changeLayout(vk::CommandBuffer cmdBuf, vk::Image img,
 }
 
 CommandWork<void> changeLayout(vk::Image image,
-	vk::ImageLayout ol, vk::PipelineStageFlags srcs, vk::AccessFlags srca,
-	vk::ImageLayout nl, vk::PipelineStageFlags dsts, vk::AccessFlags dsta,
-	const vk::ImageSubresourceRange& subres, QueueSubmitter& qs)
-{
+		vk::ImageLayout ol, vk::PipelineStageFlags srcs, vk::AccessFlags srca,
+		vk::ImageLayout nl, vk::PipelineStageFlags dsts, vk::AccessFlags dsta,
+		const vk::ImageSubresourceRange& subres, QueueSubmitter& qs) {
+
 	auto cmdBuf = qs.device().commandAllocator().get(qs.queue().family());
 	vk::beginCommandBuffer(cmdBuf, {});
 	changeLayout(cmdBuf, image, ol, srcs, srca, nl, dsts, dsta, subres);
@@ -226,10 +226,8 @@ CommandWork<void> changeLayout(vk::Image image,
 }
 
 // Utility functions
-unsigned int formatSizeBits(vk::Format format)
-{
+unsigned int formatSizeBits(vk::Format format) {
 	using namespace vk;
-
 	switch(format) {
 		case Format::undefined: return 0;
 		case Format::r4g4UnormPack8: return 8;
@@ -421,8 +419,7 @@ unsigned int formatSizeBits(vk::Format format)
 	}
 }
 
-unsigned int formatSize(vk::Format format)
-{
+unsigned int formatSize(vk::Format format) {
 	return formatSizeBits(format) / 8;
 }
 

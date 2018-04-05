@@ -12,24 +12,34 @@
 #include <utility> // std::move
 #include <memory> // std::make_unique
 
-// TODO: add more asserts
-
 namespace vpp {
+
+BufferSpan::BufferSpan(const SubBuffer& b) : allocation_(b.allocation()) {
+	if(size()) {
+		buffer_ = &b.buffer();
+	}
+}
+
+BufferSpan::BufferSpan(const Buffer& b, vk::DeviceSize size,
+		vk::DeviceSize offset) : buffer_(&b), allocation_{offset, size} {
+	dlg_assert(size == 0 || b);
+}
+
+MemoryMapView BufferSpan::memoryMap() const {
+	return buffer().memoryMap(offset(), size());
+}
 
 // MappedBufferWriter
 MappedBufferWriter::MappedBufferWriter(MemoryMapView&& view,
 	BufferLayout layout, bool tight, vk::DeviceSize srcOffset) :
 		BufferOperator(layout), view_(std::move(view)), srcOffset_(srcOffset),
-		tight_(tight)
-{
+		tight_(tight) {
 	dlg_assert(view_.valid());
 	regions_.push_back({srcOffset_, 0u, 0u});
 }
 
-void MappedBufferWriter::operate(const void* ptr, vk::DeviceSize size)
-{
-	dlg_assertm(viewOffset_ + size <= view_.size(),
-		"Buffer overflow; Undefined behavior from now");
+void MappedBufferWriter::operate(const void* ptr, vk::DeviceSize size) {
+	dlg_assertm(viewOffset_ + size <= view_.size(), "Buffer overflow");
 	dlg_assertm(size > 0, "Invalid operation");
 
 	offset_ = std::max(offset_, nextOffset_);
@@ -39,8 +49,7 @@ void MappedBufferWriter::operate(const void* ptr, vk::DeviceSize size)
 	regions_.back().size += size;
 }
 
-void MappedBufferWriter::offset(vk::DeviceSize size, bool update)
-{
+void MappedBufferWriter::offset(vk::DeviceSize size, bool update) {
 	if(size == 0) {
 		return;
 	}
@@ -65,31 +74,25 @@ void MappedBufferWriter::offset(vk::DeviceSize size, bool update)
 
 	dlg_assert(viewOffset_ <= view_.size());
 }
-void MappedBufferWriter::alignUniform() noexcept
-{
+void MappedBufferWriter::alignUniform() noexcept {
 	align(device().properties().limits.minUniformBufferOffsetAlignment);
 }
-
-void MappedBufferWriter::alignStorage() noexcept
-{
+void MappedBufferWriter::alignStorage() noexcept {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
-
-void MappedBufferWriter::alignTexel() noexcept
-{
+void MappedBufferWriter::alignTexel() noexcept {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
 
 // DirectBufferWriter
-DirectBufferWriter::DirectBufferWriter(const Buffer& buf, BufferLayout layout) :
-	BufferOperator(layout), buffer_(buf)
-{
-	dlg_assert(buf.vkHandle());
-	copies_.push_back({0u, 0u, 0u});
+DirectBufferWriter::DirectBufferWriter(const BufferSpan& span,
+		BufferLayout layout) : BufferOperator(layout), span_(span) {
+	dlg_assert(span_.valid());
+	offset_ = span.offset();
+	copies_.push_back({0u, span.offset(), 0u});
 }
 
-void DirectBufferWriter::operate(const void* ptr, vk::DeviceSize size)
-{
+void DirectBufferWriter::operate(const void* ptr, vk::DeviceSize size) {
 	dlg_assertm(size > 0, "Invalid operation");
 
 	offset_ = std::max(offset_, nextOffset_);
@@ -99,11 +102,10 @@ void DirectBufferWriter::operate(const void* ptr, vk::DeviceSize size)
 	std::memcpy(&data_[prev], ptr, size);
 	offset_ += size;
 
-	dlg_assertm(offset_ < buffer_.memorySize(), "Buffer overflow");
+	dlg_assertm(offset_ < span_.end(), "Buffer overflow");
 }
 
-void DirectBufferWriter::offset(vk::DeviceSize size, bool update)
-{
+void DirectBufferWriter::offset(vk::DeviceSize size, bool update) {
 	offset_ += size;
 	if(!update) {
 		if(!copies_.empty() && copies_.back().size == 0u) {
@@ -118,33 +120,26 @@ void DirectBufferWriter::offset(vk::DeviceSize size, bool update)
 		std::memset(&data_[prev], 0, size);
 	}
 
-	dlg_assert(offset_ < buffer_.memorySize());
+	dlg_assertm(offset_ < span_.end(), "Buffer overflow");
 }
 
-void DirectBufferWriter::alignUniform() noexcept
-{
+void DirectBufferWriter::alignUniform() noexcept {
 	align(device().properties().limits.minUniformBufferOffsetAlignment);
 }
-
-void DirectBufferWriter::alignStorage() noexcept
-{
+void DirectBufferWriter::alignStorage() noexcept {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
-
-void DirectBufferWriter::alignTexel() noexcept
-{
+void DirectBufferWriter::alignTexel() noexcept {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
 
 // BufferReader
 BufferReader::BufferReader(const Device& dev, BufferLayout layout,
 	nytl::Span<const std::byte> data) :
-		BufferOperator(layout), Resource(dev), data_(data)
-{
+		BufferOperator(layout), Resource(dev), data_(data) {
 }
 
-void BufferReader::operate(void* ptr, vk::DeviceSize size)
-{
+void BufferReader::operate(void* ptr, vk::DeviceSize size) {
 	offset_ = std::max(offset_, nextOffset_);
 	dlg_assertm(size > 0, "Invalid operation");
 	dlg_assertm(offset_ + size <= data_.size(), "Buffer underflow");
@@ -153,63 +148,65 @@ void BufferReader::operate(void* ptr, vk::DeviceSize size)
 	offset_ += size;
 }
 
-void BufferReader::alignUniform() noexcept
-{
+void BufferReader::alignUniform() noexcept {
 	align(device().properties().limits.minUniformBufferOffsetAlignment);
 }
-
-void BufferReader::alignStorage() noexcept
-{
+void BufferReader::alignStorage() noexcept {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
-
-void BufferReader::alignTexel() noexcept
-{
+void BufferReader::alignTexel() noexcept {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
 
 // BufferSizer
 BufferSizer::BufferSizer(const Device& dev, BufferLayout align) :
-	BufferOperator(align), Resource(dev)
-{
+	BufferOperator(align), Resource(dev) {
 }
 
-void BufferSizer::alignUniform() noexcept
-{
+void BufferSizer::alignUniform() noexcept {
 	align(device().properties().limits.minUniformBufferOffsetAlignment);
 }
-
-void BufferSizer::alignStorage() noexcept
-{
+void BufferSizer::alignStorage() noexcept {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
-
-void BufferSizer::alignTexel() noexcept
-{
+void BufferSizer::alignTexel() noexcept {
 	align(device().properties().limits.minTexelBufferOffsetAlignment);
 }
 
 namespace detail {
 
-UploadWork apply(const Buffer& buf, BufferRange&& stage,
-	nytl::Span<const vk::BufferCopy> copies, QueueSubmitter& qs)
-{
+UploadWork apply(const BufferSpan& dst, SubBuffer&& stage,
+		nytl::Span<const vk::BufferCopy> copies, QueueSubmitter& qs) {
+
+	dlg_check({
+		for(auto& copy : copies) {
+			dlg_assert(copy.srcOffset >= stage.offset());
+			dlg_assert(copy.srcOffset + copy.size <= stage.end());
+			dlg_assert(copy.dstOffset >= dst.offset());
+			dlg_assert(copy.dstOffset + copy.size <= dst.end());
+		}
+	});
+
 	auto& dev = stage.device();
 	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
 	vk::beginCommandBuffer(cmdBuf, {});
-	vk::cmdCopyBuffer(cmdBuf, stage.buffer(), buf, copies);
+	vk::cmdCopyBuffer(cmdBuf, stage.buffer(), dst.buffer(), copies);
 	vk::endCommandBuffer(cmdBuf);
 	return {std::move(cmdBuf), qs, std::move(stage)};
 }
 
-CommandWork<void> apply(const Buffer& buf, const DirectBufferWriter& writer,
-	QueueSubmitter& qs)
-{
+CommandWork<void> apply(const BufferSpan& dst,
+		const DirectBufferWriter& writer, QueueSubmitter& qs) {
+
 	auto& dev = writer.device();
 	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
 	vk::beginCommandBuffer(cmdBuf, {});
 	for(auto& copy : writer.copies()) {
-		vk::cmdUpdateBuffer(cmdBuf, buf, copy.dstOffset, copy.size,
+		dlg_assert(copy.srcOffset + copy.size <= writer.data().size());
+		dlg_assert(copy.dstOffset >= dst.offset());
+		dlg_assert(copy.dstOffset + copy.size <= dst.end());
+
+		vk::cmdUpdateBuffer(cmdBuf, dst.buffer(), copy.dstOffset, copy.size,
 			&writer.data()[copy.srcOffset]);
 	}
 
@@ -217,16 +214,17 @@ CommandWork<void> apply(const Buffer& buf, const DirectBufferWriter& writer,
 	return {qs, std::move(cmdBuf)};
 }
 
-CommandBuffer copyCmdBuf(QueueSubmitter& qs, const Buffer& buf,
-	const BufferRange& stage, vk::DeviceSize offset, vk::DeviceSize size)
-{
-	dlg_assert(buf.memorySize() >= size);
+CommandBuffer copyCmdBuf(QueueSubmitter& qs, const BufferSpan& dst,
+		const BufferSpan& stage, vk::DeviceSize size) {
+
+	dlg_assert(dst.valid() && stage.valid());
+	dlg_assert(dst.size() >= size);
 	dlg_assert(stage.size() >= size);
 
 	auto& dev = qs.device();
 	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
 	vk::beginCommandBuffer(cmdBuf, {});
-	vk::cmdCopyBuffer(cmdBuf, buf, stage.buffer(), {{offset,
+	vk::cmdCopyBuffer(cmdBuf, dst.buffer(), stage.buffer(), {{dst.offset(),
 		stage.offset(), size}});
 	vk::endCommandBuffer(cmdBuf);
 	return cmdBuf;

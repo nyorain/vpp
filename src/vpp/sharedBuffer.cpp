@@ -11,43 +11,39 @@
 namespace vpp {
 
 // BufferRange
-BufferRange::BufferRange(SharedBuffer& buf, vk::DeviceSize size,
-	vk::DeviceSize align)
-{
-	dlg_assert(buf.vkHandle());
+SubBuffer::SubBuffer(SharedBuffer& buf, vk::DeviceSize size,
+		vk::DeviceSize align) {
 
+	dlg_assert(buf.vkHandle());
 	auto alloc = buf.alloc(size, align);
 	if(!alloc.size) {
-		throw std::runtime_error("BufferRange: not enough space on shared buffer");
+		throw std::runtime_error("BufferRange: not enough SharedBuffer space");
 	}
 
 	shared_ = &buf;
 	allocation_ = alloc;
 }
 
-BufferRange::BufferRange(SharedBuffer& buf, const Allocation& alloc) :
-	shared_(&buf), allocation_(alloc)
-{
+SubBuffer::SubBuffer(SharedBuffer& buf, const Allocation& alloc) :
+		shared_(&buf), allocation_(alloc) {
+
 	dlg_assert(buf.vkHandle());
 	dlg_assert(alloc.size != 0);
 }
 
-BufferRange::~BufferRange()
-{
+SubBuffer::~SubBuffer() {
 	if(shared_) {
 		shared_->free(allocation_);
 	}
 }
 
-MemoryMapView BufferRange::memoryMap() const
-{
+MemoryMapView SubBuffer::memoryMap() const {
 	// buffer().memoryMap will warn if buffer is not mappable
 	return buffer().memoryMap(offset(), size());
 }
 
-void swap(BufferRange& a, BufferRange& b) noexcept
-{
-	using RR = ResourceReference<BufferRange>;
+void swap(SubBuffer& a, SubBuffer& b) noexcept {
+	using RR = ResourceReference<SubBuffer>;
 	using std::swap;
 	swap(static_cast<RR&>(a), static_cast<RR&>(b));
 	swap(a.shared_, b.shared_);
@@ -55,16 +51,29 @@ void swap(BufferRange& a, BufferRange& b) noexcept
 }
 
 // SharedBuffer
-SharedBuffer::~SharedBuffer()
-{
+SharedBuffer::SharedBuffer(const Device& dev, const vk::BufferCreateInfo& info,
+	unsigned int memBits, vpp::DeviceMemoryAllocator* allocator) :
+		Buffer(dev, info, memBits, allocator), size_(info.size) {
+}
+
+SharedBuffer::SharedBuffer(const Device& dev, const vk::BufferCreateInfo& info,
+	DeviceMemory& mem) : Buffer(dev, info, mem), size_(info.size) {
+}
+
+SharedBuffer::SharedBuffer(DeferTag defer, const Device& dev,
+	const vk::BufferCreateInfo& info, unsigned int memBits,
+	vpp::DeviceMemoryAllocator* alloc) :
+		Buffer(defer, dev, info, memBits, alloc), size_(info.size) {
+}
+
+SharedBuffer::~SharedBuffer() {
 	dlg_assertm(allocations_.empty(), "~SharedBuffer: allocations left");
 }
 
 SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
-	vk::DeviceSize alignment)
-{
+		vk::DeviceSize alignment) {
 	dlg_assert(size > 0);
-	dlg_assertm(alignment == 1 || alignment % 2 == 0, 
+	dlg_assertm(alignment == 1 || alignment % 2 == 0,
 		"Alignment {} not power of 2", alignment);
 
 	// TODO: allocation algorithm can be improved, greedy atm
@@ -89,7 +98,7 @@ SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
 	// last
 	// we don't have to check for nonCoherentAtom end align here
 	auto aligned = vpp::align(old.end(), alignment);
-	if(aligned + size <= memorySize()) {
+	if(aligned + size <= this->size()) {
 		Allocation range = {aligned, size};
 		allocations_.push_back(range);
 		return range;
@@ -98,8 +107,7 @@ SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
 	return {};
 }
 
-void SharedBuffer::free(const Allocation& alloc)
-{
+void SharedBuffer::free(const Allocation& alloc) {
 	auto it = std::find(allocations_.begin(), allocations_.end(), alloc);
 	dlg_assertm(it != allocations_.end(), "free: invalid allocation");
 	allocations_.erase(it);
@@ -107,16 +115,16 @@ void SharedBuffer::free(const Allocation& alloc)
 
 // BufferAllocator
 BufferAllocator::BufferAllocator(const Device& dev) :
-	Resource(dev)
-{
+		Resource(dev) {
 }
 
-// TODO: not sure if alignment reserving is ok this way
-void BufferAllocator::reserve(bool mappable, vk::DeviceSize size, 
-	vk::BufferUsageFlags usage, vk::DeviceSize align, unsigned int memBits)
-{
+// TODO: not sure if alignment reserving is always ok this way
+void BufferAllocator::reserve(bool mappable, vk::DeviceSize size,
+		vk::BufferUsageFlags usage, vk::DeviceSize align,
+		unsigned int memBits) {
+
 	dlg_assert(size > 0);
-	dlg_assertm(align == 1 || align % 2 == 0, 
+	dlg_assertm(align == 1 || align % 2 == 0,
 		"Alignment {} not power of 2", align);
 
 	if(mappable) {
@@ -124,21 +132,22 @@ void BufferAllocator::reserve(bool mappable, vk::DeviceSize size,
 		dlg_assertm(memBits, "reserve: invalid (too few) memBits given");
 	}
 
-	auto& back = reqs_.emplace_back();	
+	auto& back = reqs_.emplace_back();
 	back.size = vpp::align(size, align);
 	back.usage = usage;
 	back.memBits = memBits;
 	back.mappable = mappable;
 }
 
-BufferRange BufferAllocator::alloc(bool mappable, vk::DeviceSize size, 
-	vk::BufferUsageFlags usage, vk::DeviceSize align, unsigned int memBits)
-{
+SubBuffer BufferAllocator::alloc(bool mappable, vk::DeviceSize size,
+		vk::BufferUsageFlags usage, vk::DeviceSize align,
+		unsigned int memBits) {
+
 	dlg_assert(size > 0);
-	dlg_assertm(align == 1 || align % 2 == 0, 
+	dlg_assertm(align == 1 || align % 2 == 0,
 		"Alignment {} not power of 2", align);
 
-	// TODO: 
+	// TODO:
 	// - really dumb algorithm atm, greedy af
 	// - we curently just add all previous reservings... maybe
 	//  subtract currently requested size (only if smaller than
@@ -163,14 +172,14 @@ BufferRange BufferAllocator::alloc(bool mappable, vk::DeviceSize size,
 		if(mappable && !buf.buffer.nonCoherentAtomAlign) {
 			auto props = buf.buffer.memoryEntry().memory()->properties();
 			if(!(props & vk::MemoryPropertyBits::hostCoherent)) {
-				continue;	
+				continue;
 			}
 		}
 
 		auto alloc = buf.buffer.alloc(size, align);
 		if(alloc.size != 0) {
 			dlg_assert(alloc.size == size);
-			return BufferRange(buf.buffer, alloc);
+			return SubBuffer(buf.buffer, alloc);
 		}
 	}
 
@@ -199,34 +208,31 @@ BufferRange BufferAllocator::alloc(bool mappable, vk::DeviceSize size,
 
 	auto alloc = buffers_.back().buffer.alloc(size);
 	dlg_assert(alloc.size == size);
-	return BufferRange(buffers_.back().buffer, alloc);
+	return SubBuffer(buffers_.back().buffer, alloc);
 }
 
-void BufferAllocator::optimize()
-{
+void BufferAllocator::optimize() {
 	dlg_warn("TODO: BufferAllocator::optimize");
 }
 
-void BufferAllocator::shrink()
-{
+void BufferAllocator::shrink() {
 	dlg_warn("TODO: BufferAllocator::shrink");
 }
 
-BufferAllocator::Buffer::Buffer(const Device& dev, 
+BufferAllocator::Buffer::Buffer(const Device& dev,
 	const vk::BufferCreateInfo& info, unsigned int mbits) :
-		buffer(dev, info, mbits), usage(info.usage)
-{
+		buffer(dev, info, mbits), usage(info.usage) {
 }
 
 // utility
-int transferQueueFamily(const Device& dev, const Queue** queue)
-{
-	// we do not only query a valid queue family but a valid queue and then chose its queue
-	// family to ensure that the device has a queue for the queried queue family
+int transferQueueFamily(const Device& dev, const Queue** queue) {
+	// we do not only query a valid queue family but a valid queue and then
+	// chose its queue family to ensure that the device has a queue for the
+	// queried queue family
 	auto* q = dev.queue(vk::QueueBits::transfer);
 	if(!q) {
 		q = dev.queue(vk::QueueBits::graphics);
-	} 
+	}
 	if(!q) {
 		q = dev.queue(vk::QueueBits::compute);
 	}

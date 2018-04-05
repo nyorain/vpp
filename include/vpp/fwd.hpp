@@ -68,10 +68,11 @@ class ViewableImage;
 
 class WorkManager;
 class SharedBuffer;
-class BufferRange;
+class SubBuffer;
 class CommandAllocator;
 class BufferAllocator;
 class QueueSubmitter;
+class BufferSpan;
 
 class TrDsLayout;
 class TrDsPool;

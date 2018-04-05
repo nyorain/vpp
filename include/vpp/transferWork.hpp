@@ -13,15 +13,15 @@
 
 namespace vpp {
 
-/// Utility template base class for all transfer work implementations using 
+/// Utility template base class for all transfer work implementations using
 /// a shared BufferRange for uploading/downloading.
 template<typename T>
 class TransferWork : public CommandWork<T> {
 public:
 	TransferWork(CommandBuffer&& cmdBuf, QueueSubmitter& submitter,
-		BufferRange&& range) : 
-			CommandWork<T>(submitter, std::move(cmdBuf)), 
-			bufferRange(std::move(range)) {}
+		SubBuffer&& buf) :
+			CommandWork<T>(submitter, std::move(cmdBuf)),
+			buffer(std::move(buf)) {}
 	~TransferWork() {
 		if(this->submitter_) {
 			tryFinish(*this, "~TransferWork");
@@ -31,7 +31,7 @@ public:
 	TransferWork(TransferWork&&) noexcept = default;
 	TransferWork& operator=(TransferWork&&) noexcept = default;
 
-	BufferRange bufferRange;
+	SubBuffer buffer;
 };
 
 /// Download work implementation.
@@ -47,7 +47,7 @@ public:
 	nytl::Span<const std::byte> data() override {
 		finish();
 		if(!stagingMap.valid()) {
-			stagingMap = bufferRange.memoryMap();
+			stagingMap = buffer.memoryMap();
 		}
 
 		return {stagingMap.ptr(), stagingMap.size()};

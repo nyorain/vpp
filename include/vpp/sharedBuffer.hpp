@@ -31,7 +31,12 @@ public:
 	bool nonCoherentAtomAlign {false};
 
 public:
-	using Buffer::Buffer;
+	SharedBuffer(const Device&, const vk::BufferCreateInfo&,
+		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+	SharedBuffer(const Device&, const vk::BufferCreateInfo&, DeviceMemory&);
+	SharedBuffer(DeferTag, const Device&, const vk::BufferCreateInfo&,
+		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+
 	~SharedBuffer();
 
 	/// Not movable to allow BufferRanges to reference it.
@@ -47,28 +52,29 @@ public:
 	/// allocation is invalid (i.e. not allocated on this SharedBuffer).
 	void free(const Allocation&);
 
-	/// Returns all current allocations.
 	const auto& allocations() const { return allocations_; }
+	auto size() const { return size_; }
 
 protected:
 	// sorted by position for efficient allocation/release
 	std::vector<Allocation> allocations_;
+	vk::DeviceSize size_;
 };
 
 /// Sub-allocated range of a buffer.
 /// See also SharedBuffer.
-class BufferRange : public ResourceReference<BufferRange> {
+class SubBuffer : public ResourceReference<SubBuffer> {
 public:
 	using Allocation = SharedBuffer::Allocation;
 
 public:
-	BufferRange() = default;
-	BufferRange(SharedBuffer&, vk::DeviceSize size, vk::DeviceSize align = 0u);
-	BufferRange(SharedBuffer&, const Allocation& allocation);
-	~BufferRange();
+	SubBuffer() = default;
+	SubBuffer(SharedBuffer&, vk::DeviceSize size, vk::DeviceSize align = 0u);
+	SubBuffer(SharedBuffer&, const Allocation& allocation);
+	~SubBuffer();
 
-	BufferRange(BufferRange&& rhs) noexcept { swap(*this, rhs); }
-	BufferRange& operator=(BufferRange rhs) noexcept {
+	SubBuffer(SubBuffer&& rhs) noexcept { swap(*this, rhs); }
+	SubBuffer& operator=(SubBuffer rhs) noexcept {
 		swap(*this, rhs);
 		return *this;
 	}
@@ -77,12 +83,13 @@ public:
 	const Allocation& allocation() const { return allocation_; }
 	vk::DeviceSize offset() const { return allocation().offset; }
 	vk::DeviceSize size() const { return allocation().size; }
+	auto end() const { return allocation_.end(); }
 
 	bool mappable() const noexcept { return buffer().mappable(); }
 	MemoryMapView memoryMap() const;
 
 	const SharedBuffer& resourceRef() const { return *shared_; }
-	friend void swap(BufferRange&, BufferRange&) noexcept;
+	friend void swap(SubBuffer&, SubBuffer&) noexcept;
 
 protected:
 	SharedBuffer* shared_ {};
@@ -92,6 +99,7 @@ protected:
 /// Cases in which you might care for buffer alignment:
 ///  - use it with a DrawIndirectCommand at the beginning (align 4)
 ///  - descriptor buffer (align min*BufferOffsetAlignment)
+///  - using it as vertex buffer. Needs component type alignment
 
 /// Allocates BufferRanges on owned SharedBuffers.
 /// Useful to reuse (espeically short-lived) buffers like staging
@@ -118,7 +126,7 @@ public:
 
 	/// Allocates a buffer range with the given requirements.
 	/// If you wish to map the buffer, you have to pass true as mappable.
-	BufferRange alloc(bool mappable, vk::DeviceSize size, vk::BufferUsageFlags,
+	SubBuffer alloc(bool mappable, vk::DeviceSize size, vk::BufferUsageFlags,
 		vk::DeviceSize align = 0u, unsigned int memBits = ~0u);
 
 	/// Optimizes the buffer allocations. Will recreate all unused buffers

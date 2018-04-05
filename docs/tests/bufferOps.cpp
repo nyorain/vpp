@@ -150,9 +150,10 @@ TEST(runtime_size) {
 
 TEST(write_read) {
 	// create a mappable buffer
+	constexpr auto bufSize = 1024;
 	vk::BufferCreateInfo bufInfo;
-	bufInfo.size = 1024;
-	bufInfo.usage = vk::BufferUsageBits::uniformBuffer | 
+	bufInfo.size = bufSize;
+	bufInfo.usage = vk::BufferUsageBits::uniformBuffer |
 		vk::BufferUsageBits::transferSrc;
 	auto bits = globals.device->memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
 	vpp::Buffer buf(*globals.device, bufInfo, bits);
@@ -190,7 +191,7 @@ TEST(write_read) {
 	Vec3f r567;
 	int r8;
 
-	vpp::readMap140(buf, r1, r23, r4, r567, r8);
+	vpp::readMap140({buf, bufSize}, r1, r23, r4, r567, r8);
 
 	EXPECT(r1, 1.f);
 	EXPECT(r23, (Vec2f{2.f, 3.f}));
@@ -199,7 +200,7 @@ TEST(write_read) {
 	EXPECT(r8, 8);
 
 	r1 = {}; r23 = {}; r4 = {}; r567 = {}; r8 = {};
-	vpp::readStaging140(buf, r1, r23, r4, r567, r8);
+	vpp::readStaging140({buf, bufSize}, r1, r23, r4, r567, r8);
 
 	EXPECT(r1, 1.f);
 	EXPECT(r23, (Vec2f{2.f, 3.f}));
@@ -208,7 +209,7 @@ TEST(write_read) {
 	EXPECT(r8, 8);
 }
 
-vpp::BufferRange readWrite(bool mappable, vk::BufferUsageFlags usage, 
+vpp::SubBuffer readWrite(bool mappable, vk::BufferUsageFlags usage,
 	bool direct = false)
 {
 	auto& dev = *globals.device;
@@ -220,7 +221,8 @@ vpp::BufferRange readWrite(bool mappable, vk::BufferUsageFlags usage,
 	std::int32_t c {};
 
 	if(!direct && !mappable) {
-		auto work = vpp::writeStaging140(buf, 42.f, Vec3f {1.f, 2.f, 3.f}, (std::int32_t) -420);
+		auto work = vpp::writeStaging140(buf, 42.f, Vec3f {1.f, 2.f, 3.f},
+			(std::int32_t) -420);
 		auto work2 = std::move(work);
 		work2.finish();
 
@@ -229,10 +231,11 @@ vpp::BufferRange readWrite(bool mappable, vk::BufferUsageFlags usage,
 		vpp::writeMap140(buf, 42.f, Vec3f {1.f, 2.f, 3.f}, (std::int32_t) -420);
 		vpp::readMap140(buf, a, b, c);
 	} else {
-		auto work = vpp::writeDirect140(buf, 42.f, Vec3f {1.f, 2.f, 3.f}, (std::int32_t) -420);
+		auto work = vpp::writeDirect140(buf, 42.f, Vec3f {1.f, 2.f, 3.f},
+			(std::int32_t) -420);
 		auto work2 = std::move(work);
 		work2.finish();
-		
+
 		vpp::readStaging140(buf, a, b, c);
 	}
 
@@ -278,9 +281,9 @@ TEST(bufferOps_overflow) {
 	auto bits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
 	auto usage = BUB::uniformBuffer | BUB::transferDst;
 	vpp::SharedBuffer sbuf(dev, {{}, 1024, usage}, bits);
-	auto range1 = vpp::BufferRange(sbuf, 64);
-	auto range2 = vpp::BufferRange(sbuf, 64);
-	auto range3 = vpp::BufferRange(sbuf, 64);
+	auto range1 = vpp::SubBuffer(sbuf, 64);
+	auto range2 = vpp::SubBuffer(sbuf, 64);
+	auto range3 = vpp::SubBuffer(sbuf, 64);
 
 	std::byte data[65];
 	std::byte data2[60];
