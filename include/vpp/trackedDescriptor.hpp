@@ -87,6 +87,7 @@ protected:
 	};
 
 	const TrDsLayout* layout_ {};
+	std::size_t reservation_ {}; // number of pools in alloc at reserve time
 };
 
 /// Dynamically allocates tracked descriptors.
@@ -102,6 +103,7 @@ public:
 
 	void reserve(nytl::Span<const vk::DescriptorPoolSize>, unsigned count = 1);
 	void reserve(const TrDsLayout&, unsigned count = 1);
+	void unreserve(const TrDsLayout&);
 	TrDs alloc(const TrDsLayout&);
 
 	const auto& pools() const { return pools_; }

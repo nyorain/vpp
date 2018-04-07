@@ -74,25 +74,36 @@ TrDs::TrDs(TrDsPool& pool, const TrDsLayout& layout) :
 TrDs::TrDs(DeferTag, DescriptorAllocator& alloc, const TrDsLayout& layout) :
 		allocator_(&alloc), layout_(&layout) {
 	allocator_->reserve(layout);
+	reservation_ = allocator_->pools().size() + 1;
 }
 
-TrDs::TrDs(DescriptorAllocator& alloc, const TrDsLayout& layout) :
-	TrDs(alloc.alloc(layout)) {
+TrDs::TrDs(DescriptorAllocator& alloc, const TrDsLayout& layout)
+		: TrDs(alloc.alloc(layout)) {
 }
 
 void TrDs::init() {
 	if(vkHandle()) {
-		dlg_warn("TrDs::init: was already initialized");
+		dlg_assert(!reservation_);
 		return;
 	}
 
+	reservation_ = {};
 	dlg_assert(allocator_);
 	dlg_assert(layout_);
 	*this = allocator_->alloc(*layout_);
 }
 
-TrDs::~TrDs()
-{
+TrDs::~TrDs() {
+	if(reservation_) {
+		dlg_assert(!vkHandle());
+		dlg_assert(allocator_ && layout_);
+		if(allocator_->pools().size() + 1 == reservation_) {
+			allocator_->unreserve(*layout_);
+		}
+
+		return;
+	}
+
 	if(!vkHandle()) {
 		return;
 	}
@@ -120,6 +131,7 @@ void swap(TrDs& a, TrDs& b) noexcept
 	swap(static_cast<DescriptorSet&>(a), static_cast<DescriptorSet&>(b));
 	swap(a.pool_, b.pool_);
 	swap(a.layout_, b.layout_);
+	swap(a.reservation_, b.reservation_);
 }
 
 // DescriptorAllocator
@@ -130,7 +142,6 @@ DescriptorAllocator::DescriptorAllocator(const Device& dev) :
 void DescriptorAllocator::reserve(nytl::Span<const vk::DescriptorPoolSize> bs,
 		unsigned count) {
 
-	// we push_back in loop so don't use range-based
 	auto& t = pending_.types;
 	for(auto& b1 : bs) {
 		auto it = std::find_if(t.begin(), t.end(), [&](const auto& b2)
@@ -192,6 +203,21 @@ TrDs DescriptorAllocator::alloc(const TrDsLayout& layout) {
 	pools_.emplace_back(device(), pending_.count, pending_.types);
 	pending_ = {};
 	return {pools_.back(), layout};
+}
+
+void DescriptorAllocator::unreserve(const TrDsLayout& layout) {
+	auto& t = pending_.types;
+	for(auto& b1 : layout.bindings()) {
+		auto it = std::find_if(t.begin(), t.end(), [&](const auto& b2)
+			{ return b2.type == b1.type; });
+
+		dlg_assert(it != t.end());
+		dlg_assert(it->descriptorCount > b1.descriptorCount);
+		it->descriptorCount -= b1.descriptorCount;
+	}
+
+	dlg_assert(pending_.count);
+	pending_.count -= 1;
 }
 
 } // namespace vpp

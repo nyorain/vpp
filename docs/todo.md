@@ -1,12 +1,14 @@
 Todo list vor vpp
 =================
 
-- cancel reservations in DescriptorAllocator?
+- fix TrackedDescriptor/SubBuffer swap (union)
+- improve BufferAllocator/SharedBuffer/DescriptorAllocator algorithms
 - one_device: store device in Device, not Resource.
   Make sure it can be reset (after destruction) e.g. for device lost or
   multiple devices in sequence + example/test
   (create multiple devices and resources)
 - make codestyle consistent everywhere
+	- mainly old sources using old styles (devcice.cpp etc)
 - handle problem: memBits (in buffer/sharedBuffer/image) not compatible
   with buffer requirements
   	- solution: might require to be checked/handled by user
@@ -17,12 +19,12 @@ Todo list vor vpp
 - device: cache supported extensions (see e.g. defaults.cpp: could change
   format querying behvaior)
 - write basic docs
-- improve BufferAllocator/SharedBuffer/DescriptorAllocator algorithms
 
-- move debug report stuff in debug.hpp to separate file (and remove enums.hpp
-  from debug.hpp)
-	- probably best to implement the handle type switching in some other
-	  way; in source file
+- improve debug.hpp
+	- remove enums.hpp from debug.hpp
+		- probably best to implement the handle type switching in some other
+		  way; in source file
+	- use the new debug extension (debug_utils)?
 
 low prio / general / ideas
 --------------------------

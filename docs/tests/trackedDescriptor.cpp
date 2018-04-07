@@ -146,8 +146,19 @@ TEST(devAllocator) {
 	alloc.reserve(layout, 1);
 
 	auto ds2 = vpp::TrDs(vpp::defer, alloc, layout);
+
+	for(auto i = 0u; i < 1000; ++i) {
+		auto tmp = vpp::TrDs(vpp::defer, alloc, layout);
+	}
+
+	for(auto i = 0u; i < 1000; ++i) {
+		auto tmp = vpp::TrDs(vpp::defer, alloc, layout);
+		tmp = {};
+	}
+
 	auto ds = vpp::TrDs(alloc, layout);
 	ds2.init();
 
 	EXPECT(alloc.pools().size(), 1u);
+	EXPECT(alloc.pools()[0].remainingSets() < 1000u, true);
 }
