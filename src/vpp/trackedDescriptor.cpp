@@ -76,6 +76,10 @@ TrDs::TrDs(DeferTag, DescriptorAllocator& alloc, const TrDsLayout& layout) :
 	allocator_->reserve(layout);
 }
 
+TrDs::TrDs(DescriptorAllocator& alloc, const TrDsLayout& layout) :
+	TrDs(alloc.alloc(layout)) {
+}
+
 void TrDs::init() {
 	if(vkHandle()) {
 		dlg_warn("TrDs::init: was already initialized");
@@ -84,7 +88,7 @@ void TrDs::init() {
 
 	dlg_assert(allocator_);
 	dlg_assert(layout_);
-	*this = allocator_->allocate(*layout_);
+	*this = allocator_->alloc(*layout_);
 }
 
 TrDs::~TrDs()
@@ -146,7 +150,7 @@ void DescriptorAllocator::reserve(const TrDsLayout& layout, unsigned count) {
 	reserve(layout.bindings(), count);
 }
 
-TrDs DescriptorAllocator::allocate(const TrDsLayout& layout) {
+TrDs DescriptorAllocator::alloc(const TrDsLayout& layout) {
 	dlg_assert(layout);
 
 	// check if there is a pool with enough free space left

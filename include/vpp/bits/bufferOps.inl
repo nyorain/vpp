@@ -182,7 +182,9 @@ struct BufferApplier<VT, ShaderType::buffer> {
 		typename = decltype(std::declval<T>().size()),
 		typename = decltype(std::declval<T>().data())>
 	static void call(O& op, T&& obj) {
-		op.operate(obj.data(), obj.size());
+		if(obj.size() > 0) {
+			op.operate(obj.data(), obj.size());
+		}
 	}
 
 	template<typename T>

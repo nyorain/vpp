@@ -96,25 +96,22 @@ template<> struct VulkanType<double> : public VulkanTypeScalar64 {};
 template<> struct VulkanType<RawBufferData> : public VulkanTypeBuffer {};
 
 /// Can be used to easily construct raw buffer wrappers around data to fill a buffer
-/// \requires The given obj (or array of objects) must have pod type, otherwise
+/// \requires The given obj (or array of objects) must have standard layout, otherwise
 /// they cannot be converted to raw memory.
 template<typename T,
 	typename = std::enable_if_t<!std::is_pointer_v<T>>,
-	typename = std::enable_if_t<std::is_pod_v<T>>>
-constexpr RawBufferData raw(const T& obj, std::size_t count = 1)
-{
+	typename = std::enable_if_t<std::is_standard_layout_v<T>>>
+constexpr RawBufferData raw(const T& obj, std::size_t count = 1) {
 	auto ptr = reinterpret_cast<const std::byte*>(&obj);
 	return {ptr, count * sizeof(T)};
 }
 
-/// Converts a given container of pod values into a raw data buffer.
+/// Converts a given container of standard layout values into a raw data buffer.
 template<typename C,
 	typename D = decltype(*std::declval<C>().data()),
 	typename = decltype(std::declval<C>().size()),
-	typename = std::enable_if_t<std::is_pod_v<std::remove_reference_t<D>>>,
-	typename = std::enable_if_t<!std::is_pod_v<C>>>
-constexpr RawBufferData raw(const C& container)
-{
-	auto ptr = reinterpret_cast<const std::byte*>(container.data());
-	return {ptr, container.size() * sizeof(std::remove_reference_t<D>)};
+	typename = std::enable_if_t<std::is_standard_layout_v<std::remove_reference_t<D>>>>
+constexpr RawBufferData rawSpan(const C& span) {
+	auto ptr = reinterpret_cast<const std::byte*>(span.data());
+	return {ptr, span.size() * sizeof(std::remove_reference_t<D>)};
 }

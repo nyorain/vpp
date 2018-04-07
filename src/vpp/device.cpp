@@ -254,6 +254,7 @@ void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
 	impl_->tlsBufferAllocatorID = impl_->tls.add();
 	impl_->tlsQueueSubmitterID = impl_->tls.add();
 	impl_->tlsCommandAllocatorID = impl_->tls.add();
+	impl_->tlsDescriptorAllocatorID = impl_->tls.add();
 }
 
 void Device::release()
@@ -328,6 +329,14 @@ unsigned int Device::memoryTypeBits(vk::MemoryPropertyFlags mflags, unsigned int
 	}
 
 	return typeBits;
+}
+
+unsigned int Device::hostMemoryTypes(unsigned int typeBits) const {
+	return memoryTypeBits(vk::MemoryPropertyBits::hostVisible, typeBits);
+}
+
+unsigned int Device::deviceMemoryTypes(unsigned int typeBits) const {
+	return memoryTypeBits(vk::MemoryPropertyBits::deviceLocal, typeBits);
 }
 
 BufferAllocator& Device::bufferAllocator() const

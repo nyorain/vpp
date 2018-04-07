@@ -102,7 +102,7 @@ void DirectBufferWriter::operate(const void* ptr, vk::DeviceSize size) {
 	std::memcpy(&data_[prev], ptr, size);
 	offset_ += size;
 
-	dlg_assertm(offset_ < span_.end(), "Buffer overflow");
+	dlg_assertm(offset_ <= span_.end(), "Buffer overflow");
 }
 
 void DirectBufferWriter::offset(vk::DeviceSize size, bool update) {

@@ -16,19 +16,11 @@ namespace vpp {
 /// See also BufferAllocator.
 /// Also implements a mechanism to make sure all allocations are spaced
 /// according to the devices nonCoherentAtomAlign property.
+/// Keep in mind the vulkan limitations and mechanisms of using buffers
+/// with multiple queue families when sharing one.
 class SharedBuffer : public Buffer {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
-
-	/// Whether the nonCoherentAtomAlign feature is enabled.
-	/// If this is true, will make sure allocations are spaced
-	/// in a way that allows mapping and accessing them independently
-	/// even on non-hostCoherent memory.
-	/// Makes no sense to set on non-hostVisible or hostCoherent memory.
-	/// Note that changing this only affects future allocations, so you
-	/// probably don't want to call this while there are active
-	/// allocations.
-	bool nonCoherentAtomAlign {false};
 
 public:
 	SharedBuffer(const Device&, const vk::BufferCreateInfo&,
@@ -69,7 +61,12 @@ public:
 
 public:
 	SubBuffer() = default;
-	SubBuffer(SharedBuffer&, vk::DeviceSize size, vk::DeviceSize align = 0u);
+	SubBuffer(BufferAllocator&, vk::DeviceSize size,
+		vk::BufferUsageFlags usage, vk::DeviceSize align = 0u,
+		unsigned memoryTypeBits = ~0u);
+	SubBuffer(DeferTag, BufferAllocator&, vk::DeviceSize size,
+		vk::BufferUsageFlags usage, vk::DeviceSize align = 0u,
+		unsigned memoryTypeBits = ~0u);
 	SubBuffer(SharedBuffer&, const Allocation& allocation);
 	~SubBuffer();
 
@@ -78,6 +75,10 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	/// Only has to be called when the SubBuffer was constructed
+	/// with the defer tag. Otherwise has no effect.
+	void init();
 
 	const SharedBuffer& buffer() const { return *shared_; }
 	const Allocation& allocation() const { return allocation_; }
@@ -92,7 +93,11 @@ public:
 	friend void swap(SubBuffer&, SubBuffer&) noexcept;
 
 protected:
-	SharedBuffer* shared_ {};
+	union {
+		BufferAllocator* allocator_ {};
+		SharedBuffer* shared_;
+	};
+
 	Allocation allocation_ {};
 };
 
@@ -104,7 +109,13 @@ protected:
 /// Allocates BufferRanges on owned SharedBuffers.
 /// Useful to reuse (espeically short-lived) buffers like staging
 /// transfer buffers or small buffers like ubos.
+/// Keep in mind that all allocated SubBuffers can only be used
+/// on the same queue family.
 class BufferAllocator : public vpp::Resource {
+public:
+	using Reservation = vk::DeviceSize;
+	using Allocation = std::pair<SharedBuffer&, SharedBuffer::Allocation>;
+
 public:
 	BufferAllocator() = default;
 	BufferAllocator(const Device& dev);
@@ -114,48 +125,44 @@ public:
 	BufferAllocator& operator=(BufferAllocator&&) = default;
 
 	/// Reserves the given requirements.
-	/// The next time alloc is called, these are initialized additionally.
-	/// Can be used to group alloc groups together in a
-	/// deferred-initialization-like manner.
-	/// This does not automatically reserve anything, only
-	/// causes the next buffer that has to be created and matches
-	/// the given requirements to be larger (using the size parameter).
-	/// If you wish to map the buffer, you have to pass true as mappable.
-	void reserve(bool mappable, vk::DeviceSize size, vk::BufferUsageFlags,
-		vk::DeviceSize align = 0u, unsigned int memBits = ~0u);
+	/// Useful to allow grouping many SubBuffers on one Buffer.
+	/// Optionally returns the id associates with the reservation which can
+	/// later be use to allocate or cancel it.
+	void reserve(vk::DeviceSize size, vk::BufferUsageFlags,
+		vk::DeviceSize align = 0u, unsigned int memBits = ~0u,
+		Reservation* id = nullptr);
 
 	/// Allocates a buffer range with the given requirements.
 	/// If you wish to map the buffer, you have to pass true as mappable.
-	SubBuffer alloc(bool mappable, vk::DeviceSize size, vk::BufferUsageFlags,
+	Allocation alloc(Reservation reservation);
+	Allocation alloc(vk::DeviceSize size, vk::BufferUsageFlags,
 		vk::DeviceSize align = 0u, unsigned int memBits = ~0u);
 
-	/// Optimizes the buffer allocations. Will recreate all unused buffers
-	/// as one big buffer. Makes sense to call when no/few buffer rangers
-	/// are allocated but the memory will still be needed.
-	void optimize();
-
-	/// Releases all currently unused shared buffers.
-	void shrink();
+	/// Cancels the given reservation.
+	void cancel(Reservation reservation);
 
 	const auto& buffers() const { return buffers_; }
 
 protected:
 	struct Requirement {
+		Reservation id {};
 		vk::DeviceSize size {};
+		vk::DeviceSize align {};
 		vk::BufferUsageFlags usage {};
 		unsigned int memBits {};
-		bool mappable {};
 	};
 
 	struct Buffer {
 		Buffer(const Device&, const vk::BufferCreateInfo&, unsigned int mbits);
 
 		SharedBuffer buffer;
-		vk::BufferUsageFlags usage;
+		vk::BufferUsageFlags usage {};
 	};
 
 	std::deque<Buffer> buffers_;
 	std::vector<Requirement> reqs_;
+	std::vector<Requirement> reservations_;
+	Reservation id_ {};
 };
 
 /// Returns a queue family that supports graphics, compute or transfer operations

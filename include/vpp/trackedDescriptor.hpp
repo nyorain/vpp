@@ -10,7 +10,9 @@
 namespace vpp {
 
 /// Tracked DescriptorSetLayout, knows it layout.
-class TrDsLayout : public DescriptorSetLayout, public nytl::NonMovable {
+/// NOTE: moving/destructing a TrDsLayout while it is referenced
+/// by a TrDs results in undefined behaviour.
+class TrDsLayout : public DescriptorSetLayout {
 public:
 	TrDsLayout() = default;
 	TrDsLayout(const Device&, nytl::Span<const vk::DescriptorSetLayoutBinding>);
@@ -24,7 +26,9 @@ protected:
 /// Tracked DescriptorPool, knows how many resources it has left.
 /// Always created with the freeDescriptorSet flag since otherwise it makes
 /// no sense tracking the resources.
-class TrDsPool : public DescriptorPool, public nytl::NonMovable {
+/// NOTE: moving/destructing a TrDsPool while it is referenced
+/// by a TrDs results in undefined behaviour.
+class TrDsPool : public DescriptorPool {
 public:
 	TrDsPool() = default;
 	TrDsPool(const Device&, vk::DescriptorPoolCreateInfo);
@@ -46,7 +50,17 @@ protected:
 class TrDs : public DescriptorSet {
 public:
 	TrDs() = default;
+
+	/// Directly allocates a descriptor set with the given layout from
+	/// the given pool.
 	TrDs(TrDsPool&, const TrDsLayout&);
+
+	/// Allocates a descriptor set with given alyout from the given allocator.
+	TrDs(DescriptorAllocator&, const TrDsLayout&);
+
+	/// Reserves the resources needed to allocate a descriptor set with the
+	/// given layout from the given allocator.
+	/// Only a call later to init() will really create the descriptor set.
 	TrDs(DeferTag, DescriptorAllocator&, const TrDsLayout&);
 	~TrDs();
 
@@ -78,6 +92,9 @@ protected:
 /// Dynamically allocates tracked descriptors.
 /// Will create descriptor pools on the fly but try to create as few
 /// as possible.
+/// NOTE: moving/destructing a DescriptorAllocator while there are
+/// DescriptorSets left referencing it or its pools results in undefined
+/// behaviour.
 class DescriptorAllocator : public vpp::Resource {
 public:
 	DescriptorAllocator(const vpp::Device&);
@@ -85,7 +102,7 @@ public:
 
 	void reserve(nytl::Span<const vk::DescriptorPoolSize>, unsigned count = 1);
 	void reserve(const TrDsLayout&, unsigned count = 1);
-	TrDs allocate(const TrDsLayout&);
+	TrDs alloc(const TrDsLayout&);
 
 	const auto& pools() const { return pools_; }
 	const auto& pending() const { return pending_; }

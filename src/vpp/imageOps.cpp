@@ -128,24 +128,24 @@ SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
 	align = std::max<vk::DeviceSize>(align, texSize);
 	align = std::max<vk::DeviceSize>(align, 4u);
-	auto uploadBuffer = img.device().bufferAllocator().alloc(true, data.size(),
-		vk::BufferUsageBits::transferSrc, align);
+	auto stage = SubBuffer(img.device().bufferAllocator(), data.size(),
+		vk::BufferUsageBits::transferSrc, align, img.device().hostMemoryTypes());
 
 	{
-		auto map = uploadBuffer.memoryMap();
+		auto map = stage.memoryMap();
 		map.invalidate();
 		std::memcpy(map.ptr(), data.data(), data.size());
 	}
 
-	auto buf = uploadBuffer.buffer().vkHandle();
-	auto boffset = uploadBuffer.offset();
+	auto buf = stage.buffer().vkHandle();
+	auto boffset = stage.offset();
 	vk::ImageSubresourceLayers layers {subres.aspectMask, subres.mipLevel,
 		subres.arrayLayer, 1};
 	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset,
 		{size.width, size.height, depth}};
 
 	vk::cmdCopyBufferToImage(cmdBuf, buf, img, layout, {region});
-	return uploadBuffer;
+	return stage;
 }
 
 DownloadWork retrieveStaging(const Image& img, vk::Format format,
@@ -184,18 +184,18 @@ SubBuffer retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
 	align = std::max<vk::DeviceSize>(align, texSize);
 	align = std::max<vk::DeviceSize>(align, 4u);
-	auto downloadBuffer = img.device().bufferAllocator().alloc(true, byteSize,
-		vk::BufferUsageBits::transferDst, align);
+	auto stage = SubBuffer {img.device().bufferAllocator(), byteSize,
+		vk::BufferUsageBits::transferDst, align, img.device().hostMemoryTypes()};
 
-	auto buf = downloadBuffer.buffer().vkHandle();
-	auto boffset = downloadBuffer.offset();
+	auto buf = stage.buffer().vkHandle();
+	auto boffset = stage.offset();
 	vk::ImageSubresourceLayers layers {subres.aspectMask, subres.mipLevel,
 		subres.arrayLayer, 1};
 	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset,
 		{size.width, size.height, depth}};
 
 	vk::cmdCopyImageToBuffer(cmdBuf, img, layout, buf, {region});
-	return downloadBuffer;
+	return stage;
 }
 
 void changeLayout(vk::CommandBuffer cmdBuf, vk::Image img,

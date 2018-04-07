@@ -140,6 +140,10 @@ public:
 	unsigned int memoryTypeBits(vk::MemoryPropertyFlags mflags,
 		unsigned int typeBits = ~0u) const;
 
+	// hostVisible/deviceLocal memory types as bitmask
+	unsigned int hostMemoryTypes(unsigned int typeBits = ~0u) const;
+	unsigned int deviceMemoryTypes(unsigned int typeBits = ~0u) const;
+
 	/// Thread-specific resources. See their respectives classes.
 	CommandAllocator& commandAllocator() const;
 	BufferAllocator& bufferAllocator() const;

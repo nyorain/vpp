@@ -34,7 +34,7 @@ TEST(sharedBuf) {
 	EXPECT(alloc5.size, 0u);
 	buf.free(alloc3);
 
-	vpp::SubBuffer bufRange(buf, 100u);
+	vpp::SubBuffer bufRange(buf, buf.alloc(100u));
 	EXPECT(&bufRange.buffer(), &buf);
 	EXPECT(bufRange.size(), 100u);
 	EXPECT(bufRange.offset(), 0u);
@@ -44,19 +44,18 @@ TEST(sharedBuf) {
 	EXPECT(bufRange2.size(), 100u);
 	EXPECT(bufRange2.offset(), 0u);
 
-	ERROR(vpp::SubBuffer(buf, 1000u), std::runtime_error);
-
 	// allocator
 	vpp::BufferAllocator bufAlloc(dev);
-	bufAlloc.reserve(false, 1000u, vk::BufferUsageBits::uniformBuffer);
-	bufAlloc.reserve(false, 10000u, vk::BufferUsageBits::uniformBuffer);
-	bufAlloc.reserve(false, 7u, vk::BufferUsageBits::storageBuffer);
-	bufAlloc.reserve(false, 100u, vk::BufferUsageBits::indexBuffer);
+	bufAlloc.reserve(1000u, vk::BufferUsageBits::uniformBuffer);
+	bufAlloc.reserve(10000u, vk::BufferUsageBits::uniformBuffer);
+	bufAlloc.reserve(7u, vk::BufferUsageBits::storageBuffer);
+	bufAlloc.reserve(100u, vk::BufferUsageBits::indexBuffer);
 	EXPECT(bufAlloc.buffers().size(), 0u);
 
+	auto usage = vk::BufferUsageBits::uniformBuffer |
+			vk::BufferUsageBits::storageBuffer;
 	for(auto i = 0u; i < 100; ++i) {
-		bufAlloc.alloc(false, 11000u, vk::BufferUsageBits::uniformBuffer |
-			vk::BufferUsageBits::storageBuffer);
+		vpp::SubBuffer tmp(bufAlloc, 11000u, usage);
 		EXPECT(bufAlloc.buffers().size(), 1u);
 	}
 }
@@ -109,10 +108,17 @@ TEST(alignment) {
 TEST(nonCoherentAtomAlign) {
 	using Alloc = vpp::SharedBuffer::Allocation;
 	auto& dev = *globals.device;
+	auto coherentBits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostCoherent);
 	auto atomAlign = dev.properties().limits.nonCoherentAtomSize;
+	auto hostNonCoherent = dev.hostMemoryTypes() & ~coherentBits;
 
-	vpp::SharedBuffer buf(dev, {{}, 2048u, vk::BufferUsageBits::uniformBuffer});
-	buf.nonCoherentAtomAlign = true;
+	// not guaranteed to exist
+	if(!hostNonCoherent) {
+		return;
+	}
+
+	vpp::SharedBuffer buf(dev, {{}, 2048u, vk::BufferUsageBits::uniformBuffer},
+		hostNonCoherent);
 
 	vpp::SubBuffer range1(buf, buf.alloc(10u));
 	EXPECT(range1.allocation(), (Alloc{0u, 10u}));
@@ -134,26 +140,25 @@ TEST(mappable) {
 	auto usage = vk::BufferUsageBits::vertexBuffer;
 	auto coherentBits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostCoherent);
 	auto atomAlign = dev.properties().limits.nonCoherentAtomSize;
+	auto hostBits = dev.hostMemoryTypes();
 
 	// just allocate a mappable buffer
-	auto buf1 = allocator.alloc(true, 100u, usage, 128u);
+	auto buf1 = vpp::SubBuffer(allocator, 100u, usage, 128u, hostBits);
 	EXPECT(buf1.allocation().size, 100u);
 	EXPECT(buf1.buffer().mappable(), true);
 	auto props = buf1.buffer().memoryEntry().memory()->properties();
 	auto coherent = (props & vk::MemoryPropertyBits::hostCoherent);
-	EXPECT(buf1.buffer().nonCoherentAtomAlign, !coherent);
 	EXPECT(buf1.offset() % 128u, 0u);
 	if(!coherent) {
 		EXPECT(buf1.offset() % atomAlign, 0u);
 	}
 
 	// allocate mappable buffer on coherent memory
-	auto buf2 = allocator.alloc(true, 1000u, usage, 0u, coherentBits);
+	auto buf2 = vpp::SubBuffer{allocator, 1000u, usage, 0u, coherentBits};
 	EXPECT(buf2.allocation().size, 1000u);
 	EXPECT(buf2.buffer().mappable(), true);
 	auto type = buf2.buffer().memoryEntry().memory()->type();
 	EXPECT((coherentBits & (1 << type)) != 0, true);
-	EXPECT(buf2.buffer().nonCoherentAtomAlign, false);
 
 	auto mapView1 = buf2.memoryMap();
 	auto mapView2 = buf2.memoryMap();
@@ -162,13 +167,13 @@ TEST(mappable) {
 	// allocate mappable buffer on non-coherent memory
 	// there might be vulkan implementations where are all hostVisible
 	// types are also hostCoherent, we cannot do this test there
-	if(dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible) & ~coherentBits) {
-		auto buf3 = allocator.alloc(true, 511u, usage, 0u, ~coherentBits);
+	auto hostNonCoherent = hostBits & ~coherentBits;
+	if(hostNonCoherent) {
+		auto buf3 = vpp::SubBuffer(allocator, 511u, usage, 0u, hostNonCoherent);
 		EXPECT(buf3.allocation().size, 511u);
 		EXPECT(buf3.buffer().mappable(), true);
 		type = buf3.buffer().memoryEntry().memory()->type();
 		EXPECT((~coherentBits & (1 << type)) != 0, true);
-		EXPECT(buf3.buffer().nonCoherentAtomAlign, true);
 		EXPECT(buf3.offset() % atomAlign, 0u);
 	}
 }

@@ -101,12 +101,12 @@ TEST(allocator) {
 	auto defered = vpp::TrDs(vpp::defer, alloc, layout);
 	EXPECT(defered.vkHandle(), vk::DescriptorSet {});
 
-	auto set0 = alloc.allocate(layout);
+	auto set0 = vpp::TrDs(alloc, layout);
 	EXPECT(&set0.layout(), &layout);
 
 	std::vector<vpp::TrDs> sets;
 	for(auto i = 0u; i < 10; ++i) {
-		sets.push_back(alloc.allocate(layout));
+		sets.push_back({alloc, layout});
 		EXPECT(sets.back().vkHandle() != vk::DescriptorSet {}, true);
 		EXPECT(&sets.back().layout(), &layout);
 		EXPECT(&sets.back().pool(), &set0.pool());
@@ -124,10 +124,30 @@ TEST(allocator) {
 	// check that resources are correctly freed and reused
 	sets.clear();
 	for(auto i = 0u; i < 100; ++i) {
-		auto set = alloc.allocate(layout);
+		auto set = vpp::TrDs(alloc, layout);
 		EXPECT(set.vkHandle() != vk::DescriptorSet {}, true);
 		EXPECT(&set.layout(), &layout);
 		EXPECT(&set.pool(), &set0.pool());
 		EXPECT(alloc.pools().size(), 1u);
 	}
+}
+
+TEST(devAllocator) {
+	auto& dev = *globals.device;
+	auto& alloc = dev.descriptorAllocator();
+
+	auto bindings = {
+		vpp::descriptorBinding(vk::DescriptorType::storageBuffer),
+		vpp::descriptorBinding(vk::DescriptorType::combinedImageSampler)
+	};
+
+	auto layout = vpp::TrDsLayout(dev, bindings);
+
+	alloc.reserve(layout, 1);
+
+	auto ds2 = vpp::TrDs(vpp::defer, alloc, layout);
+	auto ds = vpp::TrDs(alloc, layout);
+	ds2.init();
+
+	EXPECT(alloc.pools().size(), 1u);
 }

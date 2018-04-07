@@ -131,8 +131,8 @@ TEST(runtime_size) {
 	EXPECT(sizer430.offset(), 20u * 4u);
 
 	// interpreted as raw buffer
-	sizer140.add(vpp::raw(fvec));
-	sizer430.add(vpp::raw(fvec));
+	sizer140.add(vpp::rawSpan(fvec));
+	sizer430.add(vpp::rawSpan(fvec));
 
 	EXPECT(sizer140.offset(), 20u * 16u + 20u * 4u);
 	EXPECT(sizer430.offset(), 40u * 4u);
@@ -155,7 +155,7 @@ TEST(write_read) {
 	bufInfo.size = bufSize;
 	bufInfo.usage = vk::BufferUsageBits::uniformBuffer |
 		vk::BufferUsageBits::transferSrc;
-	auto bits = globals.device->memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
+	auto bits = globals.device->hostMemoryTypes();
 	vpp::Buffer buf(*globals.device, bufInfo, bits);
 
 	// write to it
@@ -213,8 +213,9 @@ vpp::SubBuffer readWrite(bool mappable, vk::BufferUsageFlags usage,
 	bool direct = false)
 {
 	auto& dev = *globals.device;
+	auto bits = mappable ? dev.hostMemoryTypes() : ~0u;
 	auto size = vpp::neededBufferSize140<float, Vec3f, std::int32_t>();
-	auto buf = dev.bufferAllocator().alloc(mappable, size, usage);
+	auto buf = vpp::SubBuffer(dev.bufferAllocator(), size, usage, 0u, bits);
 
 	float a {};
 	Vec3f b {};
@@ -251,8 +252,8 @@ TEST(buffer_range) {
 
 	auto& dev = *globals.device;
 	auto usage = BUB::storageBuffer | BUB::transferSrc | BUB::transferDst;
-	dev.bufferAllocator().reserve(true, 500, usage);
-	dev.bufferAllocator().reserve(false, 500, usage);
+	dev.bufferAllocator().reserve(500, usage, dev.hostMemoryTypes());
+	dev.bufferAllocator().reserve(500, usage, dev.hostMemoryTypes());
 
 	auto buf1 = readWrite(true, usage);
 	auto buf2 = readWrite(true, usage);
@@ -281,14 +282,15 @@ TEST(bufferOps_overflow) {
 	auto bits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
 	auto usage = BUB::uniformBuffer | BUB::transferDst;
 	vpp::SharedBuffer sbuf(dev, {{}, 1024, usage}, bits);
-	auto range1 = vpp::SubBuffer(sbuf, 64);
-	auto range2 = vpp::SubBuffer(sbuf, 64);
-	auto range3 = vpp::SubBuffer(sbuf, 64);
+	auto range1 = vpp::SubBuffer(sbuf, sbuf.alloc(64u));
+	auto range2 = vpp::SubBuffer(sbuf, sbuf.alloc(64u));
+	auto range3 = vpp::SubBuffer(sbuf, sbuf.alloc(64u));
 
 	std::byte data[65];
 	std::byte data2[60];
 
 	// all of them should trigger a failed assertion
+	dlg_info("-- There should be 3 failed assertion (overflow) below --");
 	vpp::writeMap140(range1, vpp::raw(data));
 	vpp::writeStaging430(range2, vpp::raw(data));
 	vpp::writeStaging140(range3, 1.f, 2.f, 3.f, vpp::raw(data2));

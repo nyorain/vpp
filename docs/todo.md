@@ -1,9 +1,7 @@
 Todo list vor vpp
 =================
 
-- descriptorAllocator: reserve currently always just adds to allocate
-  calls... Could allocate too much
-	- general way to undo reservation in DescriptorAllocator (?)
+- cancel reservations in DescriptorAllocator?
 - one_device: store device in Device, not Resource.
   Make sure it can be reset (after destruction) e.g. for device lost or
   multiple devices in sequence + example/test
@@ -19,8 +17,7 @@ Todo list vor vpp
 - device: cache supported extensions (see e.g. defaults.cpp: could change
   format querying behvaior)
 - write basic docs
-- implement BufferAllocator optimize/shrink
-	- also improve alloc algorithm
+- improve BufferAllocator/SharedBuffer/DescriptorAllocator algorithms
 
 - move debug report stuff in debug.hpp to separate file (and remove enums.hpp
   from debug.hpp)
@@ -30,6 +27,7 @@ Todo list vor vpp
 low prio / general / ideas
 --------------------------
 
+- BufferAllocator optimize/shrink
 - look into simplyfying complicated offset mechanisms (mainly MappedBufferWriter)
   in bufferOps
   	- also: maybe best to not put (even if only couple of lines) the whole

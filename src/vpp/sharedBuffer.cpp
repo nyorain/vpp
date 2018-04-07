@@ -11,19 +11,6 @@
 namespace vpp {
 
 // BufferRange
-SubBuffer::SubBuffer(SharedBuffer& buf, vk::DeviceSize size,
-		vk::DeviceSize align) {
-
-	dlg_assert(buf.vkHandle());
-	auto alloc = buf.alloc(size, align);
-	if(!alloc.size) {
-		throw std::runtime_error("BufferRange: not enough SharedBuffer space");
-	}
-
-	shared_ = &buf;
-	allocation_ = alloc;
-}
-
 SubBuffer::SubBuffer(SharedBuffer& buf, const Allocation& alloc) :
 		shared_(&buf), allocation_(alloc) {
 
@@ -31,9 +18,37 @@ SubBuffer::SubBuffer(SharedBuffer& buf, const Allocation& alloc) :
 	dlg_assert(alloc.size != 0);
 }
 
+SubBuffer::SubBuffer(BufferAllocator& alloc, vk::DeviceSize size,
+		vk::BufferUsageFlags usage, vk::DeviceSize align,
+		unsigned memoryTypeBits) {
+	auto [shared, a] = alloc.alloc(size, usage, align, memoryTypeBits);
+	shared_ = &shared;
+	allocation_ = a;
+}
+
+SubBuffer::SubBuffer(DeferTag, BufferAllocator& alloc, vk::DeviceSize size,
+		vk::BufferUsageFlags usage, vk::DeviceSize align,
+		unsigned memoryTypeBits) : allocator_(&alloc) {
+	 alloc.reserve(size, usage, align, memoryTypeBits, &allocation_.offset);
+}
+
 SubBuffer::~SubBuffer() {
-	if(shared_) {
+	if(allocation_.size > 0) {
+		dlg_assert(shared_);
 		shared_->free(allocation_);
+	} else if(allocation_.offset > 0) {
+		dlg_assert(allocator_);
+		allocator_->cancel(allocation_.offset);
+	}
+}
+
+void SubBuffer::init() {
+	if(allocation_.size == 0u) {
+		dlg_assert(allocator_);
+		dlg_assert(allocation_.offset > 0u);
+		auto [shared, alloc] = allocator_->alloc(offset());
+		shared_ = &shared;
+		allocation_ = alloc;
 	}
 }
 
@@ -77,6 +92,15 @@ SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
 		"Alignment {} not power of 2", alignment);
 
 	// TODO: allocation algorithm can be improved, greedy atm
+
+	// respect the nonCoherentAtomSize if the buffer is allocated on hostVisible
+	// and not hostCoherent memory
+	auto t = memoryEntry().memory()->type();
+	auto flags = device().memoryProperties().memoryTypes[t].propertyFlags;
+	auto nonCoherentAtomAlign =
+		flags & vk::MemoryPropertyBits::hostVisible &&
+		!(flags & vk::MemoryPropertyBits::hostCoherent);
+
 	Allocation old = {0, 0};
 	vk::DeviceSize endAlign = 0u;
 	if(nonCoherentAtomAlign) {
@@ -118,46 +142,68 @@ BufferAllocator::BufferAllocator(const Device& dev) :
 		Resource(dev) {
 }
 
-// TODO: not sure if alignment reserving is always ok this way
-void BufferAllocator::reserve(bool mappable, vk::DeviceSize size,
+void BufferAllocator::reserve(vk::DeviceSize size,
 		vk::BufferUsageFlags usage, vk::DeviceSize align,
-		unsigned int memBits) {
+		unsigned int memBits, Reservation* reservation) {
 
 	dlg_assert(size > 0);
 	dlg_assertm(align == 1 || align % 2 == 0,
 		"Alignment {} not power of 2", align);
-
-	if(mappable) {
-		memBits &= device().memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
-		dlg_assertm(memBits, "reserve: invalid (too few) memBits given");
-	}
 
 	auto& back = reqs_.emplace_back();
-	back.size = vpp::align(size, align);
+
+	back.size = size;
+	back.align = align;
 	back.usage = usage;
 	back.memBits = memBits;
-	back.mappable = mappable;
+
+	if(reservation) {
+		if(++id_ == 0u) {
+			++id_;
+		}
+
+		back.id = id_;
+		*reservation = id_;
+	}
 }
 
-SubBuffer BufferAllocator::alloc(bool mappable, vk::DeviceSize size,
+BufferAllocator::Allocation BufferAllocator::alloc(Reservation reservation) {
+	dlg_assert(reservation);
+
+	auto it = std::find_if(reqs_.begin(), reqs_.end(), [&](const auto& val)
+		{ return val.id == reservation; });
+	bool req = it != reqs_.end();
+	SharedBuffer* rbuf {};
+	SharedBuffer::Allocation ralloc {};
+	if(req) {
+		auto [b, a] = alloc(it->size, it->usage, it->align, it->memBits);
+		rbuf = &b;
+		ralloc = a;
+	}
+
+	auto rit = std::find_if(reservations_.begin(), reservations_.end(),
+		[&](const auto& val) { return val.id == reservation; });
+	dlg_assert(rit != reservations_.end());
+	if(!req) {
+		auto [b, a] = alloc(rit->size, rit->usage, rit->align, rit->memBits);
+		rbuf = &b;
+		ralloc = a;
+	}
+
+	reservations_.erase(rit);
+	return {*rbuf, ralloc};
+}
+
+BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 		vk::BufferUsageFlags usage, vk::DeviceSize align,
 		unsigned int memBits) {
 
 	dlg_assert(size > 0);
+	dlg_assertm(memBits, "invalid (too few) memBits given");
 	dlg_assertm(align == 1 || align % 2 == 0,
 		"Alignment {} not power of 2", align);
 
-	// TODO:
-	// - really dumb algorithm atm, greedy af
-	// - we curently just add all previous reservings... maybe
-	//  subtract currently requested size (only if smaller than
-	//  absolute size or sth.)?
-	// - maybe always use hostCoherent memory types for mappable buffers?
-
-	if(mappable) {
-		memBits &= device().memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
-		dlg_assertm(memBits, "alloc: invalid (too few) memBits given");
-	}
+	// TODO: really dumb algorithm atm, greedy af
 
 	for(auto& buf : buffers_) {
 		auto* mem = buf.buffer.memoryEntry().memory();
@@ -168,18 +214,10 @@ SubBuffer BufferAllocator::alloc(bool mappable, vk::DeviceSize size,
 			continue;
 		}
 
-		// check the buffer is mappable
-		if(mappable && !buf.buffer.nonCoherentAtomAlign) {
-			auto props = buf.buffer.memoryEntry().memory()->properties();
-			if(!(props & vk::MemoryPropertyBits::hostCoherent)) {
-				continue;
-			}
-		}
-
 		auto alloc = buf.buffer.alloc(size, align);
 		if(alloc.size != 0) {
 			dlg_assert(alloc.size == size);
-			return SubBuffer(buf.buffer, alloc);
+			return {buf.buffer, alloc};
 		}
 	}
 
@@ -189,34 +227,39 @@ SubBuffer BufferAllocator::alloc(bool mappable, vk::DeviceSize size,
 	createInfo.size = size;
 	createInfo.usage = usage;
 
-	bool createMappable = mappable;
 	for(auto& req : reqs_) {
+		// TODO: bad idea (greedy)
 		auto mem = memBits & req.memBits;
 		if(mem) {
-			createMappable |= req.mappable;
 			createInfo.usage |= req.usage;
 			createInfo.size += req.size;
 			memBits = mem;
+			req.size = 0u; // mark for removal
+			reservations_.push_back(req);
 		}
 	}
 
-	buffers_.emplace_back(device(), createInfo, memBits);
-	auto props = buffers_.back().buffer.memoryEntry().memory()->properties();
-	if(createMappable && !(props & vk::MemoryPropertyBits::hostCoherent)) {
-		buffers_.back().buffer.nonCoherentAtomAlign = true;
-	}
+	reqs_.erase(std::remove_if(reqs_.begin(), reqs_.end(), [](const auto& r)
+		{ return r.size == 0; }), reqs_.end());
 
+	buffers_.emplace_back(device(), createInfo, memBits);
 	auto alloc = buffers_.back().buffer.alloc(size);
 	dlg_assert(alloc.size == size);
-	return SubBuffer(buffers_.back().buffer, alloc);
+	return {buffers_.back().buffer, alloc};
 }
 
-void BufferAllocator::optimize() {
-	dlg_warn("TODO: BufferAllocator::optimize");
-}
+void BufferAllocator::cancel(Reservation r) {
+	auto it = std::find_if(reqs_.begin(), reqs_.end(), [&](const auto& val)
+		{ return val.id == r; });
+	if(it != reqs_.end()) {
+		reqs_.erase(it);
+		return;
+	}
 
-void BufferAllocator::shrink() {
-	dlg_warn("TODO: BufferAllocator::shrink");
+	auto rit = std::find_if(reservations_.begin(), reservations_.end(),
+		[&](const auto& val) { return val.id == r; });
+	dlg_assert(rit != reservations_.end());
+	reservations_.erase(rit);
 }
 
 BufferAllocator::Buffer::Buffer(const Device& dev,
