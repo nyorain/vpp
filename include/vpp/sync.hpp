@@ -19,9 +19,9 @@ public:
 	~Fence();
 
 	Fence(Fence&& rhs) noexcept { swap(*this, rhs); }
-	Fence& operator=(Fence rhs) noexcept { 
-		swap(*this, rhs); 
-		return *this; 
+	Fence& operator=(Fence rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
 	}
 };
 
@@ -35,9 +35,9 @@ public:
 	~Semaphore();
 
 	Semaphore(Semaphore&& rhs) noexcept { swap(*this, rhs); }
-	Semaphore& operator=(Semaphore rhs) noexcept { 
-		swap(*this, rhs); 
-		return *this; 
+	Semaphore& operator=(Semaphore rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
 	}
 };
 
@@ -51,10 +51,17 @@ public:
 	~Event();
 
 	Event(Event&& rhs) noexcept { swap(*this, rhs); }
-	Event& operator=(Event rhs) noexcept { 
-		swap(*this, rhs); 
-		return *this; 
+	Event& operator=(Event rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
 	}
+};
+
+/// Combines a semaphore and the stage in which it should be signaled/
+/// should be waited upon.
+struct StageSemaphore {
+	vk::Semaphore semaphore;
+	vk::PipelineStageFlags stage;
 };
 
 } // namespace vpp

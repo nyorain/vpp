@@ -17,9 +17,8 @@ namespace fwd {
 	extern const vk::ShaderStageFlags allShaderStages;
 } // namespace fwd
 
-/// Represents a vulkan desciptor set layout which stores information about the structure of a
-/// descriptor set.
-/// Can imagined as the type (description) of which objects can be created (descriptorSets).
+/// Represents a vulkan desciptor set layout which stores information
+/// about the structure of a descriptor set.
 class DescriptorSetLayout : public ResourceHandle<vk::DescriptorSetLayout> {
 public:
 	DescriptorSetLayout() = default;
@@ -36,10 +35,9 @@ public:
 };
 
 /// Represents a vulkan descriptor set.
-/// A descriptor set is basically a set of different data types (uniform & storage buffer or
-/// different image/sampler handles) that can be passed to the pipeline shader stages.
-/// A pipelines can have multiple descriptor sets which theirselfs can have multiple desctiptors
-/// of different types.
+/// Note that this class cannot automatically destroy the DescriptorSet handle
+/// on destruction since the vulkan spec does not allow this per default.
+/// See also the trackedDescriptor api for more functionality.
 class DescriptorSet : public ResourceHandle<vk::DescriptorSet> {
 public:
 	DescriptorSet() = default;

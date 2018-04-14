@@ -3,6 +3,9 @@ Todo list vor vpp
 
 - fix TrackedDescriptor/SubBuffer swap (union)
 - improve BufferAllocator/SharedBuffer/DescriptorAllocator algorithms
+- correct syncs, pipeline barriers support
+	- when a SharedBuffer range is reallocated, does there have to be
+	  a pipeline barrier?
 - one_device: store device in Device, not Resource.
   Make sure it can be reset (after destruction) e.g. for device lost or
   multiple devices in sequence + example/test

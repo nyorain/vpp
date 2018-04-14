@@ -122,12 +122,8 @@ void Renderer::recreate(const vk::Extent2D& size,
 	invalidate();
 }
 
-vk::Result Renderer::render(uint64_t* sid,
-		nytl::Span<const vk::Semaphore> wait,
-		nytl::Span<const vk::PipelineStageFlags> waitStages) {
-
+vk::Result Renderer::render(uint64_t* sid, const RenderInfo& info) {
 	dlg_assert(swapchain_ && commandPool_);
-	dlg_assert(wait.size() == waitStages.size());
 
 	// we use acquireSemaphore_ to acquire the image
 	// this semaphore is always unsignaled
@@ -162,27 +158,33 @@ vk::Result Renderer::render(uint64_t* sid,
 		record(buf);
 	}
 
-	vk::PipelineStageFlags flags = vk::PipelineStageBits::colorAttachmentOutput;
-
 	// note how we use the same semaphore for wait and signal
 	// signal will occur always after wait has finished which
 	// makes this valid
+	waitCache_.clear();
+	waitStageCache_.clear();
+
+	waitCache_.push_back(buf.semaphore.vkHandle());
+	waitStageCache_.push_back(vk::PipelineStageBits::colorAttachmentOutput);
+
+	for(auto w : info.wait) {
+		waitCache_.push_back(w.semaphore);
+		waitStageCache_.push_back(w.stage);
+	}
+
+	signalCache_.clear();
+	signalCache_.push_back(buf.semaphore);
+	signalCache_.insert(signalCache_.end(), info.signal.begin(),
+		info.signal.end());
+
 	vk::SubmitInfo submitInfo;
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &buf.semaphore.vkHandle();
+	submitInfo.pWaitSemaphores = waitCache_.data();
+	submitInfo.pWaitDstStageMask = waitStageCache_.data();
+	submitInfo.waitSemaphoreCount = waitCache_.size();
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &buf.commandBuffer;
-
-	if(!wait.empty()) {
-		waitCache_ = {wait.begin(), wait.end()};
-		waitCache_.push_back(buf.semaphore.vkHandle());
-		waitStageCache_ = {waitStages.begin(), waitStages.end()};
-		waitStageCache_.push_back(flags);
-	} else {
-		submitInfo.pWaitSemaphores = &buf.semaphore.vkHandle();
-		submitInfo.pWaitDstStageMask = &flags;
-	}
+	submitInfo.pSignalSemaphores = signalCache_.data();
+	submitInfo.signalSemaphoreCount = signalCache_.size();
 
 	auto submitID = submitter().add(submitInfo);
 	submitter().submit();
@@ -194,12 +196,9 @@ vk::Result Renderer::render(uint64_t* sid,
 	return swapchain().present(*present_, id, buf.semaphore);
 }
 
-vk::Result Renderer::renderBlock(
-		nytl::Span<const vk::Semaphore> wait,
-		nytl::Span<const vk::PipelineStageFlags> waitStages) {
-
+vk::Result Renderer::renderBlock(const RenderInfo& info) {
 	uint64_t id;
-	auto res = render(&id, wait, waitStages);
+	auto res = render(&id, info);
 	if(res == vk::Result::success) {
 		submitter().wait(id);
 	}

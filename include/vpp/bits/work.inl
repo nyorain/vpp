@@ -5,7 +5,7 @@
 #pragma once
 
 void commandWork_assert(bool, const char* msg);
-void commandWork_updateMoved(QueueSubmitter*, uint64_t, unsigned int, 
+void commandWork_updateMoved(QueueSubmitter*, uint64_t, unsigned int,
 	const vk::CommandBuffer&);
 
 template<typename R>
@@ -33,7 +33,7 @@ CommandWork<R>::~CommandWork()
 template<typename R>
 void CommandWork<R>::init(QueueSubmitter& submitter, const vk::SubmitInfo& info)
 {
-	commandWork_assert(state_ == WorkBase::State::none, 
+	commandWork_assert(state_ == WorkBase::State::none,
 		"already initialized");
 
 	submitter_ = &submitter;
@@ -44,7 +44,7 @@ void CommandWork<R>::init(QueueSubmitter& submitter, const vk::SubmitInfo& info)
 template<typename R>
 void CommandWork<R>::submit()
 {
-	commandWork_assert(state_ != WorkBase::State::none && submitter_ && submitID_, 
+	commandWork_assert(state_ != WorkBase::State::none && submitter_ && submitID_,
 		"submit: invalid");
 
 	if(this->pending()) {
@@ -56,10 +56,10 @@ void CommandWork<R>::submit()
 template<typename R>
 void CommandWork<R>::wait()
 {
-	commandWork_assert(state_ != WorkBase::State::none && submitter_ && submitID_, 
+	commandWork_assert(state_ != WorkBase::State::none && submitter_ && submitID_,
 		"wait: invalid");
 
-	if(!this->executed()) {		
+	if(!this->executed()) {
 		submitter_->wait(submitID_); // will automatically submit if needed
 	}
 

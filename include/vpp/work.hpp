@@ -6,6 +6,7 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/submit.hpp>
+#include <vpp/sync.hpp>
 #include <vpp/commandBuffer.hpp>
 #include <vpp/util/span.hpp>
 
@@ -41,13 +42,13 @@ public:
 	// Submits the work but will not wait for completion of the work
 	// Has no effect if work was already submitted.
 	// Must not be called in invalid state.
-	virtual void submit() = 0; 
+	virtual void submit() = 0;
 
 	// Submits the work if needed and waits until it is completed.
 	// Must not be called in invalid state.
-	virtual void wait() = 0; 
+	virtual void wait() = 0;
 
-	// Will wait for the work to finish and may then execute post-wait 
+	// Will wait for the work to finish and may then execute post-wait
 	// finishing operation like receiving data.
 	// Must not be called in invalid state.
 	virtual void finish() = 0;

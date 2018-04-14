@@ -5,6 +5,7 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
+#include <vpp/queue.hpp>
 #include <vpp/buffer.hpp>
 #include <vpp/work.hpp>
 #include <vpp/memoryMap.hpp>
@@ -272,10 +273,9 @@ protected:
 
 namespace detail {
 
-UploadWork apply(const BufferSpan& dst, SubBuffer&& stage,
-	nytl::Span<const vk::BufferCopy>, QueueSubmitter&);
-CommandWork<void> apply(const BufferSpan& dst, const DirectBufferWriter&,
-	QueueSubmitter&);
+void apply(vk::CommandBuffer, const BufferSpan& dst,
+	SubBuffer&& stage, nytl::Span<const vk::BufferCopy>);
+void apply(vk::CommandBuffer, const BufferSpan&, const DirectBufferWriter&);
 CommandBuffer copyCmdBuf(QueueSubmitter&, const BufferSpan& dst,
 	const BufferSpan& stage, vk::DeviceSize size);
 
@@ -301,16 +301,15 @@ void writeMap430(const BufferSpan& buf, const T&... args) {
 	writeMap(buf, BufferLayout::std430, args...);
 }
 
+
 /// Uses a staging buffer to write the given arguments with the
-/// given layout into the given buffer. Will connect the uploadWork
-/// to the given QueueSubmitter.
+/// given layout into the given buffer.
 /// Note that the buffer must have been created with the transferDst
-/// usage bit set. The buffer must not be in use (you will probably need
-/// a pipeline barrier).
-/// The work must be finished before any resources are destroyed.
-/// The passed arguments to write are not needed after the call returns.
+/// usage bit set. The buffer must not be in use.
+/// The returned SubBuffer must remain valid until the command buffer
+/// has completed execution.
 template<typename... T>
-UploadWork writeStaging(QueueSubmitter& qs, const BufferSpan& span,
+vpp::SubBuffer writeStaging(vk::CommandBuffer cmdb, const BufferSpan& span,
 		BufferLayout layout, const T&... args) {
 
 	auto size = neededBufferSize(layout, args...);
@@ -320,7 +319,19 @@ UploadWork writeStaging(QueueSubmitter& qs, const BufferSpan& span,
 	writer.offset(span.offset(), false);
 	writer.add(args...);
 	writer.map().flush();
-	return detail::apply(span, std::move(stage), writer.regions(), qs);
+	detail::apply(cmdb, span, std::move(stage), writer.regions());
+	return stage;
+}
+
+/// The returned work must be finished before queue submitter or buffer
+/// are destroyed/freed.
+/// The passed arguments to write are not needed after the call returns.
+template<typename... T>
+UploadWork writeStaging(QueueSubmitter& qs, const BufferSpan& span,
+		BufferLayout layout, const T&... args) {
+	auto cmdBuf = qs.device().commandAllocator().get(qs.queue().family());
+	auto stage = writeStaging(cmdBuf, span, layout, args...);
+	return {std::move(cmdBuf), qs, std::move(stage)};
 }
 
 template<typename... T>
@@ -340,21 +351,30 @@ auto writeStaging430(const BufferSpan& buf, const T&... args) {
 		BufferLayout::std430, args...);
 }
 
+
 /// Uses vk::cmdUpdateBuffer to update the given buffer directly with
 /// the given arguments and layout. Should only be used (and only
 /// works) for small updates, i.e. if the update size is smaller
 /// than 2^16 bytes. The buffer must have been created with the transferDst
-/// usage bit set. The buffer must not be in use (you will probably need
-/// a pipeline barrier).
+/// usage bit set. The buffer must not be in use.
 /// The work must be finished before any resources are destroyed.
 /// The passed arguments to write are not needed after the call returns.
 template<typename... T>
-CommandWork<void> writeDirect(QueueSubmitter& qs, const BufferSpan& span,
+void writeDirect(vk::CommandBuffer cmdBuf, const BufferSpan& span,
 		BufferLayout layout, const T&... args) {
-
 	DirectBufferWriter writer(span, layout);
 	writer.add(args...);
-	return detail::apply(span, writer, qs);
+	detail::apply(cmdBuf, span, writer);
+}
+
+/// The buffer and queue submitter must remain valid until the
+/// return work has finished.
+template<typename... T>
+CommandWork<void> writeDirect(QueueSubmitter& qs, const BufferSpan& span,
+		BufferLayout layout, const T&... args) {
+	auto cmdBuf = qs.device().commandAllocator().get(qs.queue().family());
+	writeDirect(cmdBuf, span, layout, args...);
+	return {qs, std::move(cmdBuf)};
 }
 
 template<typename... T>
@@ -423,6 +443,7 @@ void readMap430(const BufferSpan& buf, T&... args) {
 	return readMap(buf, BufferLayout::std430, args...);
 }
 
+
 /// Reads the given buffer using the given layout into the given arguments
 /// by retrieving it from a temporary staging buffer.
 /// The buffer must not be in use (you will probably need a pipeline barrier).
@@ -431,7 +452,7 @@ void readMap430(const BufferSpan& buf, T&... args) {
 /// references) stay valid until the work is finished, then the data
 /// was written into the referenced arguments.
 /// If the given arguments don't match the data of the buffer you will
-/// probably get garbage.
+/// get garbage.
 template<typename... T>
 auto readStaging(QueueSubmitter& qs, const BufferSpan& buf,
 		BufferLayout layout, T&... args) {

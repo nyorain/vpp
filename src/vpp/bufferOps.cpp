@@ -175,8 +175,8 @@ void BufferSizer::alignTexel() noexcept {
 
 namespace detail {
 
-UploadWork apply(const BufferSpan& dst, SubBuffer&& stage,
-		nytl::Span<const vk::BufferCopy> copies, QueueSubmitter& qs) {
+void apply(vk::CommandBuffer cmdBuf, const BufferSpan& dst,
+		SubBuffer&& stage, nytl::Span<const vk::BufferCopy> copies) {
 
 	dlg_check({
 		for(auto& copy : copies) {
@@ -187,19 +187,14 @@ UploadWork apply(const BufferSpan& dst, SubBuffer&& stage,
 		}
 	});
 
-	auto& dev = stage.device();
-	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
 	vk::beginCommandBuffer(cmdBuf, {});
 	vk::cmdCopyBuffer(cmdBuf, stage.buffer(), dst.buffer(), copies);
 	vk::endCommandBuffer(cmdBuf);
-	return {std::move(cmdBuf), qs, std::move(stage)};
 }
 
-CommandWork<void> apply(const BufferSpan& dst,
-		const DirectBufferWriter& writer, QueueSubmitter& qs) {
+void apply(vk::CommandBuffer cmdBuf, const BufferSpan& dst,
+		const DirectBufferWriter& writer) {
 
-	auto& dev = writer.device();
-	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
 	vk::beginCommandBuffer(cmdBuf, {});
 	for(auto& copy : writer.copies()) {
 		dlg_assert(copy.srcOffset + copy.size <= writer.data().size());
@@ -211,7 +206,6 @@ CommandWork<void> apply(const BufferSpan& dst,
 	}
 
 	vk::endCommandBuffer(cmdBuf);
-	return {qs, std::move(cmdBuf)};
 }
 
 CommandBuffer copyCmdBuf(QueueSubmitter& qs, const BufferSpan& dst,

@@ -16,6 +16,12 @@
 
 namespace vpp {
 
+/// Additional (optional) rendering synchronization.
+struct RenderInfo {
+	nytl::Span<const StageSemaphore> wait {};
+	nytl::Span<const vk::Semaphore> signal {};
+};
+
 /// Simple default implementation for rendering onto a surface.
 /// Abstract class, one has to implement the framebuffer initialization
 /// as well as the command buffer recording.
@@ -60,11 +66,6 @@ public:
 	/// when vsync was toggled).
 	void recreate(const vk::Extent2D& size, vk::SwapchainCreateInfoKHR&);
 
-	[[deprecated("Will be removed, use recreate")]]
-	void resize(const vk::Extent2D& size, vk::SwapchainCreateInfoKHR& i) {
-		recreate(size, i);
-	}
-
 	/// Invalidates all recorded command buffers.
 	/// Only if the record mode is RecordMode::all all command buffers
 	/// are re-recorded before this function returns, so with this record
@@ -88,16 +89,12 @@ public:
 	/// and stages (sizes must match!).
 	/// It is allowed to call this function again before the fence completes
 	/// (at least if your frame- and commandbuffers allow it).
-	vk::Result render(uint64_t* submitID = {},
-		nytl::Span<const vk::Semaphore> wait = {},
-		nytl::Span<const vk::PipelineStageFlags> waitStages = {});
+	vk::Result render(uint64_t* submitID = {}, const RenderInfo& = {});
 
 	/// Renders one frame and waits for all frame operations to finish.
 	/// Returns any ocurred rendering error (which might be non-critical
 	/// e.g. a suboptimal swapchain, will not render then nontheless).
-	vk::Result renderBlock(
-		nytl::Span<const vk::Semaphore> wait = {},
-		nytl::Span<const vk::PipelineStageFlags> waitStages = {});
+	vk::Result renderBlock(const RenderInfo& = {});
 
 	/// Changes the record mode.
 	/// Does not invalidate any currently recorded command buffers
@@ -158,6 +155,7 @@ protected:
 
 	std::vector<vk::Semaphore> waitCache_;
 	std::vector<vk::PipelineStageFlags> waitStageCache_;
+	std::vector<vk::Semaphore> signalCache_;
 };
 
 /// Simple default framebuffer handling Renderer implementation.
