@@ -279,6 +279,9 @@ void apply(vk::CommandBuffer, const BufferSpan&, const DirectBufferWriter&);
 CommandBuffer copyCmdBuf(QueueSubmitter&, const BufferSpan& dst,
 	const BufferSpan& stage, vk::DeviceSize size);
 
+void beginCommandBuffer(vk::CommandBuffer);
+void endCommandBuffer(vk::CommandBuffer);
+
 } // namespace detail
 
 /// Uses a MappedBufferWriter to directly write the mappable buffer.
@@ -330,7 +333,9 @@ template<typename... T>
 UploadWork writeStaging(QueueSubmitter& qs, const BufferSpan& span,
 		BufferLayout layout, const T&... args) {
 	auto cmdBuf = qs.device().commandAllocator().get(qs.queue().family());
+	detail::beginCommandBuffer(cmdBuf);
 	auto stage = writeStaging(cmdBuf, span, layout, args...);
+	detail::endCommandBuffer(cmdBuf);
 	return {std::move(cmdBuf), qs, std::move(stage)};
 }
 
@@ -373,7 +378,9 @@ template<typename... T>
 CommandWork<void> writeDirect(QueueSubmitter& qs, const BufferSpan& span,
 		BufferLayout layout, const T&... args) {
 	auto cmdBuf = qs.device().commandAllocator().get(qs.queue().family());
+	detail::beginCommandBuffer(cmdBuf);
 	writeDirect(cmdBuf, span, layout, args...);
+	detail::endCommandBuffer(cmdBuf);
 	return {qs, std::move(cmdBuf)};
 }
 

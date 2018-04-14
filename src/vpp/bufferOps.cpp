@@ -187,15 +187,12 @@ void apply(vk::CommandBuffer cmdBuf, const BufferSpan& dst,
 		}
 	});
 
-	vk::beginCommandBuffer(cmdBuf, {});
 	vk::cmdCopyBuffer(cmdBuf, stage.buffer(), dst.buffer(), copies);
-	vk::endCommandBuffer(cmdBuf);
 }
 
 void apply(vk::CommandBuffer cmdBuf, const BufferSpan& dst,
 		const DirectBufferWriter& writer) {
 
-	vk::beginCommandBuffer(cmdBuf, {});
 	for(auto& copy : writer.copies()) {
 		dlg_assert(copy.srcOffset + copy.size <= writer.data().size());
 		dlg_assert(copy.dstOffset >= dst.offset());
@@ -204,8 +201,6 @@ void apply(vk::CommandBuffer cmdBuf, const BufferSpan& dst,
 		vk::cmdUpdateBuffer(cmdBuf, dst.buffer(), copy.dstOffset, copy.size,
 			&writer.data()[copy.srcOffset]);
 	}
-
-	vk::endCommandBuffer(cmdBuf);
 }
 
 CommandBuffer copyCmdBuf(QueueSubmitter& qs, const BufferSpan& dst,
@@ -222,6 +217,14 @@ CommandBuffer copyCmdBuf(QueueSubmitter& qs, const BufferSpan& dst,
 		stage.offset(), size}});
 	vk::endCommandBuffer(cmdBuf);
 	return cmdBuf;
+}
+
+void beginCommandBuffer(vk::CommandBuffer cmdb) {
+	vk::beginCommandBuffer(cmdb, {});
+}
+
+void endCommandBuffer(vk::CommandBuffer cmdb) {
+	vk::endCommandBuffer(cmdb);
 }
 
 } // namespace detail
