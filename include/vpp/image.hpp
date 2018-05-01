@@ -20,9 +20,9 @@ public:
 	~ImageHandle();
 
 	ImageHandle(ImageHandle&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(ImageHandle rhs) noexcept { 
-		swap(*this, rhs); 
-		return *this; 
+	auto& operator=(ImageHandle rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
 	}
 };
 
@@ -45,7 +45,7 @@ public:
 	///     to allocate enough memory. The DeviceMemory must
 	///     be allocated on a type that is supported for the
 	///     created image (the vulkan spec gives some guarantess there).
-	///   * (4): Will pass ownership of the memory entry which must be 
+	///   * (4): Will pass ownership of the memory entry which must be
 	///     in allocated state and bound to the image.
 	/// - Deferred? See the vpp doc for deferred initialization
 	///   * (1-6) bind the image immediately to memory. For (1,2) this
@@ -59,7 +59,7 @@ public:
 	/// allocate and bind the memory for you, you have to pass the images
 	/// tiling to allow the constructor to keep any granularity
 	/// requirements.
-	Image(const Device&, const vk::ImageCreateInfo&, 
+	Image(const Device&, const vk::ImageCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
 	Image(const Device&, vk::Image, vk::ImageTiling,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
@@ -70,7 +70,7 @@ public:
 	/// Creates the image without any bound memory.
 	/// You have to call the ensureMemory function later on to
 	/// make sure memory is bound to the image.
-	Image(DeferTag, const Device&, const vk::ImageCreateInfo&, 
+	Image(DeferTag, const Device&, const vk::ImageCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
 	Image(DeferTag, const Device&, vk::Image, vk::ImageTiling,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
@@ -93,9 +93,9 @@ public:
 	~ImageView();
 
 	ImageView(ImageView&& rhs) noexcept { swap(*this, rhs); }
-	ImageView& operator=(ImageView rhs) noexcept { 
-		swap(*this, rhs); 
-		return *this; 
+	ImageView& operator=(ImageView rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
 	}
 };
 
@@ -110,8 +110,8 @@ public:
 	/// view. Immediately binds memory to the image.
 	/// The image member can be left empty (nullHandle) in all
 	/// passed ImageViewCreateInfos, it will be set automatically.
-	ViewableImage(const Device&, const vk::ImageCreateInfo&, 
-		const vk::ImageViewCreateInfo&, unsigned int memBits = ~0u, 
+	ViewableImage(const Device&, const vk::ImageCreateInfo&,
+		const vk::ImageViewCreateInfo&, unsigned int memBits = ~0u,
 		vpp::DeviceMemoryAllocator* = {});
 	ViewableImage(const Device& dev, const ViewableImageCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
@@ -121,7 +121,7 @@ public:
 	/// Creates (or transfer ownership of) an image but doesn't bind
 	/// memory to it or create the view. You have to call
 	/// init with the ViewCreateInfo before it can be used in any way.
-	ViewableImage(DeferTag, const Device&, const vk::ImageCreateInfo&, 
+	ViewableImage(DeferTag, const Device&, const vk::ImageCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
 	ViewableImage(DeferTag, Image&&);
 
@@ -137,8 +137,8 @@ public:
 
 	const auto& image() const { return image_; }
 	const auto& imageView() const { return imageView_; }
-	vk::ImageView vkImageView() const { return imageView_; }
-	vk::Image vkImage() const { return image(); }
+	const vk::ImageView& vkImageView() const { return imageView_; }
+	const vk::Image& vkImage() const { return image_; }
 
 	const Image& resourceRef() const { return image_; }
 
@@ -156,9 +156,9 @@ public:
 	~Sampler();
 
 	Sampler(Sampler&& rhs) noexcept { swap(*this, rhs); }
-	Sampler& operator=(Sampler rhs) noexcept { 
-		swap(*this, rhs); 
-		return *this; 
+	Sampler& operator=(Sampler rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
 	}
 };
 

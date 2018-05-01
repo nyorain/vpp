@@ -16,7 +16,7 @@ ImageHandle::ImageHandle(const Device& dev, const vk::ImageCreateInfo& info) :
 }
 
 ImageHandle::ImageHandle(const Device& dev, vk::Image buf) :
-	ResourceHandle(dev, buf)	
+	ResourceHandle(dev, buf)
 {
 }
 
@@ -41,8 +41,8 @@ Image::Image(const Device& dev, vk::Image image, vk::ImageTiling tiling,
 	ensureMemory();
 }
 
-Image::Image(const Device& dev, const vk::ImageCreateInfo& info, 
-	DeviceMemory& mem) : 
+Image::Image(const Device& dev, const vk::ImageCreateInfo& info,
+	DeviceMemory& mem) :
 		ImageHandle(dev, vk::createImage(dev, info))
 {
 	auto reqs = vk::getImageMemoryRequirements(dev, vkHandle());
@@ -58,14 +58,14 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info,
 	memoryEntry_ = {mem, alloc};
 }
 
-Image::Image(const Device& dev, vk::Image image, MemoryEntry&& entry) : 
+Image::Image(const Device& dev, vk::Image image, MemoryEntry&& entry) :
 	ImageHandle(dev, image), MemoryResource(std::move(entry))
 {
 	dlg_assert(memoryEntry().allocated());
 }
 
-Image::Image(DeferTag, const Device& dev, vk::Image image, 
-	vk::ImageTiling tiling, unsigned int memBits, 
+Image::Image(DeferTag, const Device& dev, vk::Image image,
+	vk::ImageTiling tiling, unsigned int memBits,
 	vpp::DeviceMemoryAllocator* alloc) :
 		ImageHandle(dev, image)
 {
@@ -88,12 +88,12 @@ Image::Image(DeferTag, const Device& dev, const vk::ImageCreateInfo& info,
 }
 
 // ImageView
-ImageView::ImageView(const Device& dev, const vk::ImageViewCreateInfo& info) : 
+ImageView::ImageView(const Device& dev, const vk::ImageViewCreateInfo& info) :
 	ImageView(dev, vk::createImageView(dev, info))
 {
 }
 
-ImageView::ImageView(const Device& dev, vk::ImageView view) : 
+ImageView::ImageView(const Device& dev, vk::ImageView view) :
 	ResourceHandle(dev, view)
 {
 }
@@ -106,16 +106,16 @@ ImageView::~ImageView()
 }
 
 // ViewableImage
-ViewableImage::ViewableImage(const Device& dev, 
-	const vk::ImageCreateInfo& imgInfo, const vk::ImageViewCreateInfo& viewInfo, 
-	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) : 
-		ViewableImage({dev, imgInfo, memBits, alloc}, viewInfo)
+ViewableImage::ViewableImage(const Device& dev,
+	const vk::ImageCreateInfo& imgInfo, const vk::ImageViewCreateInfo& viewInfo,
+	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
+		ViewableImage(Image{dev, imgInfo, memBits, alloc}, viewInfo)
 {
 }
 
-ViewableImage::ViewableImage(const Device& dev, 
+ViewableImage::ViewableImage(const Device& dev,
 	const ViewableImageCreateInfo& info, unsigned int memBits,
-	vpp::DeviceMemoryAllocator* alloc) : 
+	vpp::DeviceMemoryAllocator* alloc) :
 		ViewableImage(dev, info.img, info.view, memBits, alloc)
 {
 }
@@ -133,7 +133,7 @@ ViewableImage::ViewableImage(Image&& image, ImageView&& view) :
 }
 
 ViewableImage::ViewableImage(DeferTag, const Device& dev,
-	const vk::ImageCreateInfo& info, unsigned int memBits, 
+	const vk::ImageCreateInfo& info, unsigned int memBits,
 	vpp::DeviceMemoryAllocator* alloc) : image_(dev, info, memBits, alloc)
 {
 }
@@ -158,7 +158,7 @@ Sampler::Sampler(const Device& dev, const vk::SamplerCreateInfo& info) :
 {
 }
 
-Sampler::Sampler(const Device& dev, vk::Sampler sampler) : 
+Sampler::Sampler(const Device& dev, vk::Sampler sampler) :
 	ResourceHandle(dev, sampler)
 {
 }
