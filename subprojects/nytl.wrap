@@ -1,4 +1,4 @@
 [wrap-git]
 directory=nytl
 url=https://github.com/nyorain/nytl.git
-revision=v0.5
+revision=master

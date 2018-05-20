@@ -72,7 +72,7 @@ public:
 
 /// Allows convinient descriptorSet updates.
 /// Does not perform any checking.
-class DescriptorSetUpdate : ResourceReference<DescriptorSetUpdate> {
+class DescriptorSetUpdate : public ResourceReference<DescriptorSetUpdate> {
 public:
 	using BufferInfos = std::vector<vk::DescriptorBufferInfo>;
 	using BufferViewInfos = std::vector<vk::BufferView>;

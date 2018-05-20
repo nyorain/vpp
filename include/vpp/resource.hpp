@@ -117,7 +117,7 @@ template <typename B>
 class ResourceReference {
 public:
 	const Device& device() const noexcept
-		{ return reinterpret_cast<const B&>(*this).resourceRef().device(); }
+		{ return static_cast<const B&>(*this).resourceRef().device(); }
 
 	vk::Instance vkInstance() const noexcept { return device().vkInstance(); }
 	vk::PhysicalDevice vkPhysicalDevice() const noexcept { return device().vkPhysicalDevice(); }
