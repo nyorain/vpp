@@ -6,20 +6,17 @@
 
 namespace vpp {
 
-void MemoryResource::ensureMemory()
-{
-	memoryEntry_.allocate();	
+void MemoryResource::ensureMemory() {
+	memoryEntry_.allocate();
 }
 
-bool MemoryResource::mappable() const
-{
+bool MemoryResource::mappable() const {
 	auto mem = memoryEntry_.memory();
 	return mem && mem->mappable();
 }
 
-MemoryMapView MemoryResource::memoryMap(vk::DeviceSize offset, 
-	vk::DeviceSize size) const
-{
+MemoryMapView MemoryResource::memoryMap(vk::DeviceSize offset,
+		vk::DeviceSize size) const {
 	return memoryEntry_.map(offset, size);
 }
 

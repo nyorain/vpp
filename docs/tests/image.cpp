@@ -53,20 +53,20 @@ TEST(image) {
 	workm.submit();
 	workm.finish();
 
-	vpp::fillMap(img2, vk::Format::r8Unorm, size, 
-		{data.data(), size.width * size.height}, 
+	vpp::fillMap(img2, vk::Format::r8Unorm, size,
+		{data.data(), size.width * size.height},
 		{vk::ImageAspectBits::color});
 
 	auto work1 = vpp::changeLayout(img1,
-		vk::ImageLayout::transferDstOptimal, vk::PipelineStageBits::transfer, 
+		vk::ImageLayout::transferDstOptimal, vk::PipelineStageBits::transfer,
 		vk::AccessBits::transferWrite,
-		vk::ImageLayout::transferSrcOptimal, vk::PipelineStageBits::transfer, 
+		vk::ImageLayout::transferSrcOptimal, vk::PipelineStageBits::transfer,
 		vk::AccessBits::transferRead,
 		{vk::ImageAspectBits::color, 0, 1, 0, 1}, dev.queueSubmitter());
 	auto work2 = std::move(work1);
 	work2.finish();
 
-	auto dataWork1 = vpp::retrieveStaging(img1, 
+	auto dataWork1 = vpp::retrieveStaging(img1,
 		vk::Format::r8g8b8a8Unorm, vk::ImageLayout::transferSrcOptimal,
 		size, {vk::ImageAspectBits::color, 0, 0});
 	auto dataWork2 = std::move(dataWork1);
@@ -91,4 +91,25 @@ TEST(image) {
 	for(auto i = 4u; i < data2.size(); ++i) {
 		EXPECT((unsigned int) data2[i], 0xffu);
 	}
+}
+
+TEST(moving) {
+	auto& dev = *globals.device;
+	auto size = vk::Extent3D {20u, 20u, 1u};
+
+	vk::ImageCreateInfo imgInfo = {
+		{},
+		vk::ImageType::e2d,
+		vk::Format::b8g8r8a8Unorm,
+		size,
+		1, 1,
+		vk::SampleCountBits::e1,
+		vk::ImageTiling::optimal,
+		vk::ImageUsageBits::transferDst | vk::ImageUsageBits::transferSrc,
+		vk::SharingMode::exclusive,
+		0, nullptr, vk::ImageLayout::undefined
+	};
+
+	vpp::Image img1 = {dev, imgInfo};
+	img1 = {};
 }

@@ -13,19 +13,16 @@
 namespace vpp {
 
 // DeviceMemoryHandle
-DeviceMemoryHandle::DeviceMemoryHandle(const Device& dev, 
-	const vk::MemoryAllocateInfo& info) 
-		: DeviceMemoryHandle(dev, vk::allocateMemory(dev, info))
-{
+DeviceMemoryHandle::DeviceMemoryHandle(const Device& dev,
+	const vk::MemoryAllocateInfo& info)
+		: DeviceMemoryHandle(dev, vk::allocateMemory(dev, info)) {
 }
 
-DeviceMemoryHandle::DeviceMemoryHandle(const Device& dev, vk::DeviceMemory mem) 
-	: ResourceHandle(dev, mem)
-{
+DeviceMemoryHandle::DeviceMemoryHandle(const Device& dev, vk::DeviceMemory mem)
+	: ResourceHandle(dev, mem) {
 }
 
-DeviceMemoryHandle::~DeviceMemoryHandle()
-{
+DeviceMemoryHandle::~DeviceMemoryHandle() {
 	if(vkHandle()) {
 		vk::freeMemory(vkDevice(), vkHandle());
 	}
@@ -33,25 +30,22 @@ DeviceMemoryHandle::~DeviceMemoryHandle()
 
 // DeviceMemory
 DeviceMemory::DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info)
-	: DeviceMemoryHandle(dev, info), size_(info.allocationSize), 
-		type_(info.memoryTypeIndex)
-{
+	: DeviceMemoryHandle(dev, info), size_(info.allocationSize),
+		type_(info.memoryTypeIndex) {
 }
 
-DeviceMemory::DeviceMemory(const Device& dev, vk::DeviceMemory mem, 
-	vk::DeviceSize size, unsigned int memoryType) 
-		: DeviceMemoryHandle(dev, mem), size_(size), type_(memoryType)
-{
+DeviceMemory::DeviceMemory(const Device& dev, vk::DeviceMemory mem,
+	vk::DeviceSize size, unsigned int memoryType)
+		: DeviceMemoryHandle(dev, mem), size_(size), type_(memoryType) {
 }
 
-DeviceMemory::~DeviceMemory()
-{
+DeviceMemory::~DeviceMemory() {
 	dlg_assertm(allocations_.empty(), "~DeviceMemory: allocations left");
 }
 
-DeviceMemory::Allocation DeviceMemory::alloc(vk::DeviceSize size, 
-	vk::DeviceSize alignment, AllocationType type)
-{
+DeviceMemory::Allocation DeviceMemory::alloc(vk::DeviceSize size,
+		vk::DeviceSize alignment, AllocationType type) {
+
 	auto allocation = allocatable(size, alignment, type);
 	if(allocation.size > 0) {
 		allocSpecified(allocation, type);
@@ -60,8 +54,7 @@ DeviceMemory::Allocation DeviceMemory::alloc(vk::DeviceSize size,
 	return allocation;
 }
 
-void DeviceMemory::allocSpecified(Allocation a, AllocationType type)
-{
+void DeviceMemory::allocSpecified(Allocation a, AllocationType type) {
 	auto offset = a.offset;
 	auto size = a.size;
 
@@ -75,19 +68,19 @@ void DeviceMemory::allocSpecified(Allocation a, AllocationType type)
 
 	dlg_assertm(it == allocations_.begin() || (it - 1)->allocation.end() <= offset,
 		"Overlapping allocSpecified (before allocation)");
-	dlg_assertm(it == allocations_.end() || it->allocation.offset >= a.end(), 
+	dlg_assertm(it == allocations_.end() || it->allocation.offset >= a.end(),
 		"Overlapping allocSpecified (after allocation)");
 
 	allocations_.insert(it, allocation);
 }
 
-DeviceMemory::Allocation DeviceMemory::allocatable(vk::DeviceSize size, 
-	vk::DeviceSize alignment, AllocationType type) const
-{
+DeviceMemory::Allocation DeviceMemory::allocatable(vk::DeviceSize size,
+		vk::DeviceSize alignment, AllocationType type) const {
+
 	// NOTE: allocation finding algorithm can be improved
 	// atm the allocation with the least waste for alignment or granularity is chosen,
 	// but there may result small gaps between the allocation which will likely never
-	// be used. if an allocation fits a free segment between allocations really 
+	// be used. if an allocation fits a free segment between allocations really
 	// good, it should be chosen.
 	//
 	// --[A: free 10MB]-- || --[alloc]-- || --[B: free 20MB]--
@@ -97,11 +90,11 @@ DeviceMemory::Allocation DeviceMemory::allocatable(vk::DeviceSize size,
 	// if the first allocation had chosen segment A this second allocation would now
 	// fit in B.
 	//
-	// as new measurement the new sizes on both sides divided by the old (bigger) 
-	// size could be a taken in account (smaller = better) since the new sizes 
+	// as new measurement the new sizes on both sides divided by the old (bigger)
+	// size could be a taken in account (smaller = better) since the new sizes
 	// on both sides should be as small as possible. true?
 
-	dlg_assertm(alignment == 1 || alignment % 2 == 0, 
+	dlg_assertm(alignment == 1 || alignment % 2 == 0,
 		"Alignment {} not power of 2", alignment);
 	dlg_assertm(size != 0, "given alloc size 0");
 	dlg_assertm(type != AllocationType::none, "given AllocationType::none");
@@ -110,7 +103,7 @@ DeviceMemory::Allocation DeviceMemory::allocatable(vk::DeviceSize size,
 	auto granularity = device().properties().limits.bufferImageGranularity;
 
 	// checks for best possible allocation
-	// the best allocation wastes the least space for alignment or granularity 
+	// the best allocation wastes the least space for alignment or granularity
 	// reqs
 	Allocation best = {};
 	vk::DeviceSize bestWaste = -1;
@@ -142,9 +135,9 @@ DeviceMemory::Allocation DeviceMemory::allocatable(vk::DeviceSize size,
 		old = &alloc;
 	}
 
-	// check for segment AFTER the last allcation, since the loop just checks 
+	// check for segment AFTER the last allcation, since the loop just checks
 	// the segments between two allocations
-	// just copied from above with the "new allocation" alloc being an empty 
+	// just copied from above with the "new allocation" alloc being an empty
 	// past-end allocation
 	vk::DeviceSize alignedOffset = align(old->allocation.end(), alignment);
 
@@ -163,16 +156,14 @@ DeviceMemory::Allocation DeviceMemory::allocatable(vk::DeviceSize size,
 	return best;
 }
 
-void DeviceMemory::free(const Allocation& alloc)
-{
+void DeviceMemory::free(const Allocation& alloc) {
 	auto it = std::find_if(allocations_.begin(), allocations_.end(),
 		[&](auto& ae) { return ae.allocation == alloc; });
 	dlg_assertm(it != allocations_.end(), "free: invalid allocation");
 	allocations_.erase(it);
 }
 
-vk::DeviceSize DeviceMemory::largestFreeSegment() const noexcept
-{
+vk::DeviceSize DeviceMemory::largestFreeSegment() const noexcept {
 	vk::DeviceSize ret {0};
 	vk::DeviceSize oldend {0};
 
@@ -192,8 +183,7 @@ vk::DeviceSize DeviceMemory::largestFreeSegment() const noexcept
 	return ret;
 }
 
-vk::DeviceSize DeviceMemory::totalFree() const noexcept
-{
+vk::DeviceSize DeviceMemory::totalFree() const noexcept {
 	vk::DeviceSize ret {0};
 	for(auto& alloc : allocations_) {
 		ret += alloc.allocation.size;
@@ -202,8 +192,7 @@ vk::DeviceSize DeviceMemory::totalFree() const noexcept
 	return size() - ret;
 }
 
-MemoryMapView DeviceMemory::map(const Allocation& allocation)
-{
+MemoryMapView DeviceMemory::map(const Allocation& allocation) {
 	if(!mapped()) {
 		memoryMap_.map(*this, allocation);
 	} else {
@@ -213,24 +202,20 @@ MemoryMapView DeviceMemory::map(const Allocation& allocation)
 	return MemoryMapView(memoryMap_, allocation);
 }
 
-vk::MemoryPropertyFlags DeviceMemory::properties() const noexcept
-{
+vk::MemoryPropertyFlags DeviceMemory::properties() const noexcept {
 	return device().memoryProperties().memoryTypes[type()].propertyFlags;
 }
 
-bool DeviceMemory::mappable() const noexcept
-{
+bool DeviceMemory::mappable() const noexcept {
 	return properties() & vk::MemoryPropertyBits::hostVisible;
 }
 
-MemoryMap* DeviceMemory::mapped() noexcept 
-{ 
-	return (memoryMap_.ptr()) ? &memoryMap_ : nullptr; 
+MemoryMap* DeviceMemory::mapped() noexcept {
+	return (memoryMap_.ptr()) ? &memoryMap_ : nullptr;
 }
 
-const MemoryMap* DeviceMemory::mapped() const noexcept 
-{ 
-	return (memoryMap_.ptr()) ? &memoryMap_ : nullptr; 
+const MemoryMap* DeviceMemory::mapped() const noexcept {
+	return (memoryMap_.ptr()) ? &memoryMap_ : nullptr;
 }
 
 } // namespace vpp
