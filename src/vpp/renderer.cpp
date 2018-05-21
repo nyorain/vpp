@@ -129,7 +129,7 @@ vk::Result Renderer::render(uint64_t* sid, const RenderInfo& info) {
 	// this semaphore is always unsignaled
 	std::uint32_t id;
 	auto res = swapchain().acquire(id, acquireSemaphore_);
-	if(res != vk::Result::success) {
+	if(res == vk::Result::errorOutOfDateKHR) {
 		return res;
 	}
 
@@ -193,7 +193,8 @@ vk::Result Renderer::render(uint64_t* sid, const RenderInfo& info) {
 		*sid = submitID;
 	}
 
-	return swapchain().present(*present_, id, buf.semaphore);
+	swapchain().present(*present_, id, buf.semaphore);
+	return vk::Result::success;
 }
 
 vk::Result Renderer::renderBlock(const RenderInfo& info) {
