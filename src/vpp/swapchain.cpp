@@ -27,15 +27,15 @@ void onError(SwapchainPreferences::ErrorAction action, const char* field)
 } // anonymous util namespace
 
 // CreatInfo
-SwapchainPreferences::SwapchainPreferences() : 
-	format(vk::Format::r8g8b8a8Unorm),
+SwapchainPreferences::SwapchainPreferences() :
+	format(vk::Format::r8g8b8a8Srgb),
 	presentMode(vk::PresentModeKHR::mailbox),
 	alpha(vk::CompositeAlphaBitsKHR::opaque),
 	transform(vk::SurfaceTransformBitsKHR::identity),
 	usage(vk::ImageUsageBits::colorAttachment) {}
 
 vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
-	vk::SurfaceKHR surface, const vk::Extent2D& size, 
+	vk::SurfaceKHR surface, const vk::Extent2D& size,
 	const SwapchainPreferences& prefs)
 {
 	// query information
@@ -105,7 +105,7 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 				ret.imageFormat = format.format;
 				ret.imageColorSpace = format.colorSpace;
 				break;
-			} else if(format.format == vk::Format::r8g8b8a8Unorm) {
+			} else if(format.format == vk::Format::r8g8b8a8Srgb) {
 				ret.imageFormat = format.format;
 				ret.imageColorSpace = format.colorSpace;
 			}
@@ -140,7 +140,7 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 	ret.preTransform = surfCaps.currentTransform;
 	auto supTrans = surfCaps.supportedTransforms;
 	if(supTrans & prefs.transform) {
-		ret.preTransform = prefs.transform; 
+		ret.preTransform = prefs.transform;
 	} else if(supTrans & vk::SurfaceTransformBitsKHR::identity) {
 		ret.preTransform = vk::SurfaceTransformBitsKHR::identity;
 	}
@@ -156,7 +156,7 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 	} else {
 		for(auto i : {0, 3, 2, 1}) {
 			if(supAlpha & (1u << i)) {
-				ret.compositeAlpha = 
+				ret.compositeAlpha =
 					static_cast<vk::CompositeAlphaBitsKHR>(1u << i);
 				break;
 			}
@@ -191,7 +191,7 @@ Swapchain::Swapchain(const Device& dev, const vk::SwapchainCreateInfoKHR& info)
 	VKPP_CALL(pfCreateSwapchainKHR(device(), &info, nullptr, &handle_));
 }
 
-Swapchain::Swapchain(const Device& dev, vk::SwapchainKHR swapChain) 
+Swapchain::Swapchain(const Device& dev, vk::SwapchainKHR swapChain)
 	: ResourceHandle(dev, swapChain)
 {
 }
@@ -217,7 +217,7 @@ std::vector<vk::Image> Swapchain::images() const
 	return imgs;
 }
 
-void Swapchain::resize(const vk::Extent2D& size, 
+void Swapchain::resize(const vk::Extent2D& size,
 	vk::SwapchainCreateInfoKHR& info)
 {
 	dlg_assert(info.surface);
@@ -248,11 +248,11 @@ void Swapchain::resize(const vk::Extent2D& size,
 	}
 }
 
-vk::Result Swapchain::acquire(unsigned int& id, vk::Semaphore sem, 
+vk::Result Swapchain::acquire(unsigned int& id, vk::Semaphore sem,
 	vk::Fence fence, std::uint64_t timeout) const
 {
 	VPP_LOAD_PROC(vkDevice(), AcquireNextImageKHR);
-	auto ret = pfAcquireNextImageKHR(device(), vkHandle(), timeout, 
+	auto ret = pfAcquireNextImageKHR(device(), vkHandle(), timeout,
 		sem, fence, &id);
 
 	return ret;

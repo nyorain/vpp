@@ -28,7 +28,7 @@ struct SwapchainPreferences {
 	ErrorAction errorAction {};
 	bool preferCurrentExtent {true}; // ignore the size parameter if possible
 
-	vk::Format format; // = vk::Format::r8g8b8a8Unorm;
+	vk::Format format; // = vk::Format::r8g8b8a8Srgb;
 	vk::PresentModeKHR presentMode; // = vk::PresentModeKHR::mailbox;
 	vk::CompositeAlphaBitsKHR alpha; // = vk::CompositeAlphaBitsKHR::opaque;
 	vk::SurfaceTransformBitsKHR transform; // = vk::SurfaceTransformBitsKHR::identity;
@@ -38,8 +38,8 @@ struct SwapchainPreferences {
 /// Parses the given SwapchainPreferences for the given device and surface
 /// into a valid SwapchainCreateInfo. This has to be done only once,
 /// the returned info can be reused when a swapchain is resized.
-vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device&, 
-	vk::SurfaceKHR, const vk::Extent2D& size, 
+vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device&,
+	vk::SurfaceKHR, const vk::Extent2D& size,
 	const SwapchainPreferences& prefs = {});
 
 /// Swapchain wrapper that (together with SwapchainSettings and its
@@ -55,12 +55,12 @@ public:
 	Swapchain(Swapchain&& rhs) noexcept { swap(*this, rhs); }
 	Swapchain& operator=(Swapchain rhs) noexcept { swap(*this, rhs); return *this; }
 
-	/// Resizes the swapchain to the given size. 
-	/// Should be called if the native window of the underlying surface 
+	/// Resizes the swapchain to the given size.
+	/// Should be called if the native window of the underlying surface
 	/// handle changes it size to make sure the swapchain fills the
 	/// whole window.
 	/// Will automatically update the given size (or currentExtent if valid
-	/// and prefCurrentExtent true) and the oldSwapchain member of the 
+	/// and prefCurrentExtent true) and the oldSwapchain member of the
 	/// given info.
 	/// Will return the really used size.
 	void resize(const vk::Extent2D& size, vk::SwapchainCreateInfoKHR&);
@@ -70,7 +70,7 @@ public:
 		vk::Fence fence = {}, std::uint64_t timeout = UINT64_MAX) const;
 
 	/// Wrapper for vkQueuePresentKHR, will simply forward the result.
-	vk::Result present(const Queue& queue, unsigned int image, 
+	vk::Result present(const Queue& queue, unsigned int image,
 		vk::Semaphore wait = {}) const;
 
 	/// Wrapper around vkGetSwapchainImagesKHR
