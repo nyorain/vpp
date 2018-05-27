@@ -186,7 +186,7 @@ int main(int, char**)
 	// a game would usually not do (since it draws all the time anyways).
 
 	// while(run && ac->pollEvents()) {
-	// 	renderer.renderBlock(); // or just render without blocking
+	// 	renderer.renderSync(); // or just render without blocking
 	// }
 
 	vk::deviceWaitIdle(device);
@@ -255,7 +255,7 @@ void MyWindowListener::draw(const ny::DrawEvent&)
 
 	dlg_info("drawing the window");
 
-	auto res = renderer->renderBlock();
+	auto res = renderer->renderSync();
 	if(res != vk::Result::success) {
 		dlg_warn("swapchain out of date");
 		windowContext->refresh();

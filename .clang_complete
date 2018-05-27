@@ -1,9 +1,9 @@
 -I./include
 -I./src
--I./build/linux/include
--I./build/linux/subprojects/vkpp/include
--I./build/linux/subprojects/ny/include
--I./build/linux/subprojects/vkpp/include
+-I./build/include
+-I./build/subprojects/vkpp/include
+-I./build/subprojects/ny/include
+-I./build/subprojects/vkpp/include
 -I./subprojects/dlg/include
 -I./subprojects/vkpp/include
 -I./subprojects/ny/include

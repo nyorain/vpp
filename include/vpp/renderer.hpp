@@ -73,28 +73,33 @@ public:
 	/// is left unfinished.
 	void invalidate();
 
-	/// Renders one frame. Uses the given QueueSubmitter to submit the
-	/// command buffer, so it must be using a graphical queue.
-	/// Otherwise just uses the devices default QueueSubmitter.
+	/// Renders one frame.
 	/// If submitID is not zero, will set it to the id received from
 	/// the submitter that can be used to track its state and e.g. wait for it
 	/// to complete.
-	/// If acquiring, or presenting to a swapchain image fails, returns the
-	/// error and does not render, otherwise returns vk::Result::Success.
+	/// If acquiring the image fails, returns the error and does not render.
+	/// In this case the submitID (if not null) will be empty.
+	/// If presenting the image fails, returns the error. But since the
+	/// command buffer was then already submitted, will set the submit id
+	/// (if not null). That means that even when it returns a error, you
+	/// have to check (and eventually) wait upon the submit id (or otherwise
+	/// assure that rendering is finished e.g. via deviceIdle).
+	/// Otherwise returns vk::Result::Success.
 	/// Until the rendering completes (which can be tracked via submitID or
-	/// by calling vulkans waitIdle functions), no rendering resources must
+	/// by e.g. calling vulkans waitIdle functions), no rendering resources must
 	/// be invalidated. This means calls to e.g. resize in this time will
 	/// trigger undefined behavior.
 	/// Submitting the rendering command buffer will add the given semaphores
-	/// and stages (sizes must match!).
+	/// and stages from RenderInfo.
 	/// It is allowed to call this function again before the fence completes
 	/// (at least if your frame- and commandbuffers allow it).
-	vk::Result render(uint64_t* submitID = {}, const RenderInfo& = {});
+	vk::Result render(std::optional<uint64_t>* submitID = {},
+		const RenderInfo& = {});
 
 	/// Renders one frame and waits for all frame operations to finish.
-	/// Returns any ocurred rendering error (which might be non-critical
-	/// e.g. a suboptimal swapchain, will not render then nontheless).
-	vk::Result renderBlock(const RenderInfo& = {});
+	/// Internally just calls render and waits for the submit id to finish.
+	/// Returns any error that ocurred in render.
+	vk::Result renderSync(const RenderInfo& = {});
 
 	/// Changes the record mode.
 	/// Does not invalidate any currently recorded command buffers

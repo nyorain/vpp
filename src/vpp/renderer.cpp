@@ -18,8 +18,7 @@ Renderer::Renderer(const Queue& present, QueueSubmitter* submitter,
 	acquireSemaphore_ = {device()};
 }
 
-void Renderer::init(const vk::SwapchainCreateInfoKHR& scInfo)
-{
+void Renderer::init(const vk::SwapchainCreateInfoKHR& scInfo) {
 	dlg_assert(present_ && commandPool_ && acquireSemaphore_);
 	dlg_assert(!swapchain_);
 
@@ -28,8 +27,7 @@ void Renderer::init(const vk::SwapchainCreateInfoKHR& scInfo)
 	invalidate();
 }
 
-void Renderer::invalidate()
-{
+void Renderer::invalidate() {
 	dlg_assert(swapchain_);
 	dlg_assert(commandPool_);
 
@@ -44,8 +42,7 @@ void Renderer::invalidate()
 	}
 }
 
-void Renderer::createBuffers(const vk::Extent2D& size, vk::Format format)
-{
+void Renderer::createBuffers(const vk::Extent2D& size, vk::Format format) {
 	auto images = swapchain().images();
 	auto newCount = images.size();
 
@@ -106,8 +103,8 @@ void Renderer::createBuffers(const vk::Extent2D& size, vk::Format format)
 }
 
 void Renderer::recreate(const vk::Extent2D& size,
-	vk::SwapchainCreateInfoKHR& info)
-{
+		vk::SwapchainCreateInfoKHR& info) {
+
 	dlg_assert(swapchain_);
 	dlg_assert(commandPool_);
 
@@ -122,14 +119,19 @@ void Renderer::recreate(const vk::Extent2D& size,
 	invalidate();
 }
 
-vk::Result Renderer::render(uint64_t* sid, const RenderInfo& info) {
+vk::Result Renderer::render(std::optional<uint64_t>* sid,
+		const RenderInfo& info) {
+
 	dlg_assert(swapchain_ && commandPool_);
+	if(sid) {
+		sid->reset();
+	}
 
 	// we use acquireSemaphore_ to acquire the image
 	// this semaphore is always unsignaled
 	std::uint32_t id;
 	auto res = swapchain().acquire(id, acquireSemaphore_);
-	if(res == vk::Result::errorOutOfDateKHR) {
+	if(res != vk::Result::success) {
 		return res;
 	}
 
@@ -193,22 +195,20 @@ vk::Result Renderer::render(uint64_t* sid, const RenderInfo& info) {
 		*sid = submitID;
 	}
 
-	swapchain().present(*present_, id, buf.semaphore);
-	return vk::Result::success;
+	return swapchain().present(*present_, id, buf.semaphore);
 }
 
-vk::Result Renderer::renderBlock(const RenderInfo& info) {
-	uint64_t id;
+vk::Result Renderer::renderSync(const RenderInfo& info) {
+	std::optional<uint64_t> id;
 	auto res = render(&id, info);
-	if(res == vk::Result::success) {
-		submitter().wait(id);
+	if(id) {
+		submitter().wait(*id);
 	}
 
 	return res;
 }
 
-void Renderer::recordMode(RecordMode nm)
-{
+void Renderer::recordMode(RecordMode nm) {
 	dlg_assert(swapchain_);
 
 	mode_ = nm;
@@ -224,21 +224,21 @@ void Renderer::recordMode(RecordMode nm)
 
 // DefaultRenderer
 void DefaultRenderer::init(vk::RenderPass rp,
-	const vk::SwapchainCreateInfoKHR& scInfo)
-{
+		const vk::SwapchainCreateInfoKHR& scInfo) {
+
 	renderPass_ = rp;
 	Renderer::init(scInfo);
 }
 
 void DefaultRenderer::initBuffers(const vk::Extent2D& size,
-	nytl::Span<RenderBuffer> buffers)
-{
+		nytl::Span<RenderBuffer> buffers) {
+
 	initBuffers(size, buffers, {});
 }
 
 void DefaultRenderer::initBuffers(const vk::Extent2D& size,
-	nytl::Span<RenderBuffer> bufs, std::vector<vk::ImageView> attachments)
-{
+		nytl::Span<RenderBuffer> bufs, std::vector<vk::ImageView> attachments) {
+
 	auto scPos = -1;
 	for(auto i = 0u; i < attachments.size(); ++i) {
 		if(!attachments[i]) {

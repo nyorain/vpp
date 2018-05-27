@@ -1,4 +1,4 @@
 [wrap-git]
 directory=dlg
 url=https://github.com/nyorain/dlg.git
-revision=master
+revision=v0.2.2
