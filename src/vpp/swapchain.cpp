@@ -14,8 +14,7 @@ namespace vpp {
 namespace {
 
 // performc the specifid error action for DefaultSwapchainSettings
-void onError(SwapchainPreferences::ErrorAction action, const char* field)
-{
+void onError(SwapchainPreferences::ErrorAction action, const char* field) {
 	if(action == SwapchainPreferences::ErrorAction::output) {
 		dlg_warnt(("swapchain"), "using different {}", field);
 	} else if(action == SwapchainPreferences::ErrorAction::exception) {
@@ -24,20 +23,42 @@ void onError(SwapchainPreferences::ErrorAction action, const char* field)
 	}
 }
 
+bool srgbFormat(vk::Format f) {
+	switch(f) {
+		case vk::Format::r8g8b8a8Srgb: return true;
+		case vk::Format::b8g8r8a8Srgb: return true;
+		case vk::Format::r8g8b8Srgb: return true;
+		case vk::Format::b8g8r8Srgb: return true;
+		default: return false;
+	}
+}
+
+bool linearFormat(vk::Format f) {
+	switch(f) {
+		case vk::Format::r8g8b8a8Unorm: return true;
+		case vk::Format::b8g8r8a8Unorm: return true;
+		case vk::Format::r8g8b8Unorm: return true;
+		case vk::Format::b8g8r8Unorm: return true;
+		default: return false;
+	}
+}
+
 } // anonymous util namespace
 
 // CreatInfo
 SwapchainPreferences::SwapchainPreferences() :
-	format(vk::Format::r8g8b8a8Srgb),
+	format(preferSrgb ?
+		vk::Format::b8g8r8a8Srgb :
+		vk::Format::b8g8r8a8Unorm),
 	presentMode(vk::PresentModeKHR::mailbox),
 	alpha(vk::CompositeAlphaBitsKHR::opaque),
 	transform(vk::SurfaceTransformBitsKHR::identity),
 	usage(vk::ImageUsageBits::colorAttachment) {}
 
 vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
-	vk::SurfaceKHR surface, const vk::Extent2D& size,
-	const SwapchainPreferences& prefs)
-{
+		vk::SurfaceKHR surface, const vk::Extent2D& size,
+		const SwapchainPreferences& prefs) {
+
 	// query information
 	VPP_LOAD_PROC(dev.vkInstance(), GetPhysicalDeviceSurfacePresentModesKHR);
 	VPP_LOAD_PROC(dev.vkInstance(), GetPhysicalDeviceSurfaceFormatsKHR);
@@ -105,7 +126,10 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 				ret.imageFormat = format.format;
 				ret.imageColorSpace = format.colorSpace;
 				break;
-			} else if(format.format == vk::Format::r8g8b8a8Srgb) {
+			} else if(linearFormat(format.format) && !prefs.preferSrgb) {
+				ret.imageFormat = format.format;
+				ret.imageColorSpace = format.colorSpace;
+			} else if(srgbFormat(format.format) && prefs.preferSrgb) {
 				ret.imageFormat = format.format;
 				ret.imageColorSpace = format.colorSpace;
 			}
@@ -128,12 +152,16 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 		ret.imageExtent = surfCaps.currentExtent;
 	}
 
-	// TODO: configurable?
 	// number of images
-	count = std::max<unsigned int>(surfCaps.minImageCount + 1, 3u);
+	count = std::max<unsigned int>(surfCaps.minImageCount, prefs.minImageCount);
 	if(surfCaps.maxImageCount > 0) {
 		count = std::min<unsigned int>(surfCaps.maxImageCount, count);
 	}
+
+	if(count != prefs.minImageCount) {
+		onError(prefs.errorAction, "minImageCount");
+	}
+
 	ret.minImageCount = count;
 
 	// transform

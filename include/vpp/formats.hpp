@@ -13,7 +13,7 @@ namespace vpp {
 
 /// Various helper for choosing dynamic formats as well as default
 /// ViewableImageCreateInfo constructors.
-/// When choosing formats for your images or texelBuffer, the 
+/// When choosing formats for your images or texelBuffer, the
 /// best way (except for highly variable areas like depth/stencil)
 /// is usually to use a format that is guaranteed to be supported
 /// in the way you need it by the vulkan standard (section 31.3.3).
@@ -23,7 +23,7 @@ bool supportedUsage(vk::FormatFeatureFlags, vk::ImageUsageFlags);
 bool supportedUsage(vk::FormatFeatureFlags, vk::BufferUsageFlags);
 
 /// Returns whether the given format is valid for the given use
-/// case. 
+/// case.
 bool supported(const Device&, vk::Format, const vk::ImageCreateInfo&,
 	vk::FormatFeatureFlags additional = {});
 bool supported(const Device&, vk::Format, vk::BufferUsageFlags,
@@ -31,9 +31,9 @@ bool supported(const Device&, vk::Format, vk::BufferUsageFlags,
 
 /// Selects the first format from the list that supports the given
 /// use case. Returns vk::Format::undefined if none is supported.
-vk::Format findSupported(const Device&, nytl::Span<const vk::Format>, 
+vk::Format findSupported(const Device&, nytl::Span<const vk::Format>,
 	const vk::ImageCreateInfo&, vk::FormatFeatureFlags additional = {});
-vk::Format findSupported(const Device&, nytl::Span<const vk::Format>, 
+vk::Format findSupported(const Device&, nytl::Span<const vk::Format>,
 	vk::BufferUsageFlags, vk::FormatFeatureFlags additional = {});
 
 /// Combines vk::ImageCreateInfo and vk::ImageViewCreatInfo and
@@ -48,7 +48,7 @@ struct ViewableImageCreateInfo {
 	/// Allowed to pass 0 as as third size parameter, will automatically
 	/// be corrected to 1.
 	/// Selects the first available format.
-	/// If the usecase is not supported for any given format returns 
+	/// If the usecase is not supported for any given format returns
 	/// an empty object.
 	static std::optional<ViewableImageCreateInfo> general(
 		const Device& dev, const vk::Extent3D& size,
@@ -60,10 +60,11 @@ struct ViewableImageCreateInfo {
 		vk::ImageCreateFlags = {},
 		vk::FormatFeatureFlags additional = {});
 
-	/// Default color viewable image info. 
+	/// Default color viewable image info.
+	/// NOTE: you might want to use Srgb color format.
 	static std::optional<ViewableImageCreateInfo> color(
 		const Device& dev, const vk::Extent3D& size,
-		vk::ImageUsageFlags = 
+		vk::ImageUsageFlags =
 			vk::ImageUsageBits::transferDst |
 			vk::ImageUsageBits::sampled,
 		nytl::Span<const vk::Format> formats = {
@@ -76,9 +77,9 @@ struct ViewableImageCreateInfo {
 
 	/// Default depth viewable image info.
 	static std::optional<ViewableImageCreateInfo> depth(
-		const Device& dev, const vk::Extent3D& size, 
-		vk::ImageUsageFlags = 
-			vk::ImageUsageBits::depthStencilAttachment | 
+		const Device& dev, const vk::Extent3D& size,
+		vk::ImageUsageFlags =
+			vk::ImageUsageBits::depthStencilAttachment |
 			vk::ImageUsageBits::sampled,
 		nytl::Span<const vk::Format> formats = {
 			vk::Format::d32Sfloat,
@@ -95,7 +96,7 @@ struct ViewableImageCreateInfo {
 	// TODO: depthStencil, stencil, additional color formats (other priorities)
 	// TODO: add memBits to structure? to allow hostVisible/hostCoherent default
 	//  initializers?
-	// TODO: ability to override imageType (that is then included in 
+	// TODO: ability to override imageType (that is then included in
 	//  format checks)?
 };
 

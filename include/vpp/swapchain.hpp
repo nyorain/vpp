@@ -18,7 +18,7 @@ namespace vpp {
 /// Can be used to query a valid SwapchainCreateInfo.
 struct SwapchainPreferences {
 	enum class ErrorAction {
-		none, /// Simply choses another setting.
+		none, /// Simply chooses another setting.
 		output, /// Choses another setting and prints a warning to cerr.
 		exception /// Throws a std::runtime_error
 	};
@@ -27,8 +27,10 @@ struct SwapchainPreferences {
 
 	ErrorAction errorAction {};
 	bool preferCurrentExtent {true}; // ignore the size parameter if possible
+	bool preferSrgb {true}; // choose srgb over unorm formats
+	unsigned minImageCount {2};
 
-	vk::Format format; // = vk::Format::r8g8b8a8Srgb;
+	vk::Format format; // = vk::Format::b8g8r8a8, depends on preferSrgb.
 	vk::PresentModeKHR presentMode; // = vk::PresentModeKHR::mailbox;
 	vk::CompositeAlphaBitsKHR alpha; // = vk::CompositeAlphaBitsKHR::opaque;
 	vk::SurfaceTransformBitsKHR transform; // = vk::SurfaceTransformBitsKHR::identity;
@@ -53,7 +55,10 @@ public:
 	~Swapchain();
 
 	Swapchain(Swapchain&& rhs) noexcept { swap(*this, rhs); }
-	Swapchain& operator=(Swapchain rhs) noexcept { swap(*this, rhs); return *this; }
+	Swapchain& operator=(Swapchain rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
+	}
 
 	/// Resizes the swapchain to the given size.
 	/// Should be called if the native window of the underlying surface

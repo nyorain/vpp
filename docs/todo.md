@@ -3,6 +3,7 @@ Todo list vor vpp
 
 - fix TrackedDescriptor/SubBuffer swap (union)
 - improve BufferAllocator/SharedBuffer/DescriptorAllocator algorithms
+- add glfw/sdl examples (option to use sdl from meson wrap db)
 - correct syncs, pipeline barriers support
 	- when a SharedBuffer range is reallocated, does there have to be
 	  a pipeline barrier?
@@ -20,7 +21,7 @@ Todo list vor vpp
 - memoryMap: remap smaller range when a certain range is no longer needed?
 - imageOps: really allow extent with depth == 0? also handle it for height == 0?
 - device: cache supported extensions (see e.g. defaults.cpp: could change
-  format querying behvaior)
+  format querying behavior)
 - write basic docs
 
 - improve debug.hpp
@@ -28,6 +29,7 @@ Todo list vor vpp
 		- probably best to implement the handle type switching in some other
 		  way; in source file
 	- use the new debug extension (debug_utils)?
+		- how to handle vulkan 1.1? require it at some point?
 
 low prio / general / ideas
 --------------------------
@@ -48,7 +50,6 @@ low prio / general / ideas
   command buffers to record at once. Could be more efficient to do for some
   engines (and they can still fall back to separate recording).
 - GraphicsPipelineInfo: could provide conversion operator
-- add glfw/sdl examples
 - add more assertions everywhere where things are assumed
 	- don't overdo, only if potentially useful when debugging
 	- see work.inl (something like tryFinish probably best)
