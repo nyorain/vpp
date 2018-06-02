@@ -13,7 +13,7 @@ class CustomDebugCallback : public vpp::DebugCallback {
 public:
 	using vpp::DebugCallback::DebugCallback;
 
-	bool call(const CallbackInfo& info) const noexcept override {
+	bool call(const CallbackInfo& info) noexcept override {
 		if(info.flags & vk::DebugReportBitsEXT::error) {
 			++errors;
 		}
@@ -29,9 +29,9 @@ public:
 		return vpp::DebugCallback::call(info);
 	}
 
-	mutable unsigned int performanceWarnings {};
-	mutable unsigned int warnings {};
-	mutable unsigned int errors {};
+	unsigned int performanceWarnings {};
+	unsigned int warnings {};
+	unsigned int errors {};
 };
 
 struct Globals {

@@ -13,6 +13,8 @@ Todo list vor vpp
   (create multiple devices and resources)
 - make codestyle consistent everywhere
 	- mainly old sources using old styles (devcice.cpp etc)
+- clean up usage of nytl
+	- just include it as subproject?
 - handle problem: memBits (in buffer/sharedBuffer/image) not compatible
   with buffer requirements
   	- solution: might require to be checked/handled by user
@@ -34,6 +36,10 @@ Todo list vor vpp
 low prio / general / ideas
 --------------------------
 
+- vpp: better descriptor update overloads.
+  e.g. `uniform(nytl::Span<const BufferRange>);`
+- add overloads to SubBuffer/TrDs that don't take a <>allocator and just
+  use the default one
 - BufferAllocator optimize/shrink
 - look into simplyfying complicated offset mechanisms (mainly MappedBufferWriter)
   in bufferOps
@@ -44,7 +50,7 @@ low prio / general / ideas
 	  (staging, so cmdBuf-based) buffer updates
 - offer functionality to select supported extensions/layers from a list
 - renderer: rework/remove RecordMode::all. Any way to get around the invalidate
-  extra condition? Or at least rather use onDeman mode by default.
+  extra condition? Or at least rather use onDemand mode by default.
   With RecordMode::all we could record all command buffers at once though,
   implement possibility for that, i.e. record member function gets multiple
   command buffers to record at once. Could be more efficient to do for some
@@ -62,13 +68,6 @@ low prio / general / ideas
 		- image constructors (simply copy from buffer constructors in objects.cpp)
 		- etc...
 	- also test coherent atom handling in SharedBuffer
-- make DebugCallback::call non-const? might store data (see tests init.hpp)
-- abstraction over BufferRange/Buffer
-	- they are pretty much the same...
-	- like a temporary wrapper that can be constructed from either one
-	- or allow BufferRange to represent something not borrowed from a shared
-	  buffer
-- PipelineLayout constructor (use range of vk::DescirptorSEtLayout)
 - imageOps: fill: option to use direct update instead of mapping?
 	- probably not worth it, we have to allocate buffer either way...
 	- or is there a way to directly update deviceLocal image?
@@ -92,8 +91,6 @@ low prio / general / ideas
 - dataWork::data: use non-rvalue & modifier?
 	- to disallow something like ```data = retrieve(...)->data```
 	- has multiple problems: sometimes it's probably valid to do this.
-- clean up usage of nytl
-	- just include it as subproject?
 - bufferOps: add raw fill/retrieve calls?
 - rework commandBuffer
 	- don't make commandPools store information
@@ -131,31 +128,18 @@ low prio / general / ideas
 		semaphore synchronization, or by simply waiting on the work before
 		submitting or in which step ever)
 - which information should resources carry around, which not?
-- seperate interface/implementation for header-only interfaces
-	- see: bufferOps, Resource
-	- make it more explicit (make sure to only fill types if sure, see ShaderType::none handling)
-	- __really?__ needs discussion
-- textures (overthink viewable image + sampler)
-	- scope of vpp?
 - general initializer
 	- something about descriptors and descriptor pools
 	- think about buffer/image providers (better not)
 - display class for vkDisplayKHR extension
 	- scope of vpp?
 	- must wait until supported somewhere, for tests
-- pipeline init helper functions (really useful/needed?)
-- pipeline layout constructor (use range of vk::DescirptorSetLayout)
 - queue constness? (maybe make it related to any operations on the queue?)
 - codegen constexpr?
 - write deviceLost handling code snippet example
 - shader stage construction in place?
 	- make it easier to create shader modules that are only once used directly inside
 		a ShaderProgram. Is there any way that keeps a reasonable interface?
-
-- think about include of nytl headers. Should really the namespace be replaced? header guards?
-	projects using nytl outside of vpp should be able to do so (and use it for vpp calls).
-	[range, nonCopyable in utility]
-	- where (if) to use namespace nytl (fwd.hpp? already in the vk headers?)
 
 - further custom exception? like vpp::QueueError if there is no queue that
 	can execute the needed operation
@@ -165,9 +149,7 @@ low prio / general / ideas
 - further examples/snippets/documentation
 - better best physical device querying (vpp/physicalDevice.cpp)
 
-- alternative two step init
-	- safer
-	- see framebuffer, rather unsafe initializattion spliiting
+- alternative two step init: safer, easier to use
 	- create/init methods for buffer and image?
 		- would be consistent at least
 		- make the constructor fully initialize it (like specified in init.hpp?)
@@ -226,7 +208,7 @@ low prio / general / ideas
 //  SharedBuffer class that makes use of sparse memory bindings and
 //  only binds those regions that are currently used by a BufferRange.
 //  Will have different costs than this concept (and this is fine
-//  in most cases, also sparse stuff is only sparingly (i'm sorry) supported)
+//  in most cases, also sparse stuff is only sparingly supported)
 //  so keep this separate.
 
 // NOTE: also implement synchronized versions of these classes?

@@ -11,14 +11,14 @@ namespace vpp {
 namespace {
 
 VKAPI_PTR vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags,
-	vk::DebugReportObjectTypeEXT objType,
-	uint64_t srcObject,
-	size_t location,
-	int32_t msgCode,
-	const char* pLayerPrefix,
-	const char* pMsg,
-	void* pUserData)
-{
+		vk::DebugReportObjectTypeEXT objType,
+		uint64_t srcObject,
+		size_t location,
+		int32_t msgCode,
+		const char* pLayerPrefix,
+		const char* pMsg,
+		void* pUserData) {
+
 	if(!pUserData) {
 		dlg_error("DebugCallback called with nullptr user data");
 		return true;
@@ -28,8 +28,7 @@ VKAPI_PTR vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags,
 	return callback->call({flags, objType, srcObject, location, msgCode, pLayerPrefix, pMsg});
 }
 
-std::string to_string(vk::DebugReportFlagsEXT flags)
-{
+std::string to_string(vk::DebugReportFlagsEXT flags) {
 	static constexpr struct {
 		vk::DebugReportBitsEXT bit;
 		const char* name;
@@ -64,8 +63,7 @@ std::string to_string(vk::DebugReportFlagsEXT flags)
 	return ret;
 }
 
-std::string to_string(vk::DebugReportObjectTypeEXT type)
-{
+std::string to_string(vk::DebugReportObjectTypeEXT type) {
 	switch(type) {
 		case vk::DebugReportObjectTypeEXT::unknown: return "unknown";
 		case vk::DebugReportObjectTypeEXT::instance: return "instance";
@@ -134,7 +132,7 @@ DebugCallback::~DebugCallback() {
 	}
 }
 
-bool DebugCallback::call(const CallbackInfo& info) const noexcept {
+bool DebugCallback::call(const CallbackInfo& info) noexcept {
 	std::string verbose;
 	if(verbose_) {
 		verbose = "\n\tflags: " + to_string(info.flags) + "\n\t";
@@ -197,8 +195,8 @@ vk::Result tagHandle(vk::Device dev, std::uint64_t handle,
 }
 
 bool beginDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf,
-	const char* name, std::array<float, 4> col)
-{
+		const char* name, std::array<float, 4> col) {
+
 	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerBeginEXT);
 	if(!pfCmdDebugMarkerBeginEXT) {
 		return false;
@@ -211,8 +209,7 @@ bool beginDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf,
 	return true;
 }
 
-bool endDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf)
-{
+bool endDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf) {
 	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerEndEXT);
 	if(!pfCmdDebugMarkerEndEXT) {
 		return false;
@@ -223,8 +220,8 @@ bool endDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf)
 }
 
 bool insertDebugMarker(vk::Device dev, vk::CommandBuffer cmdBuf,
-	const char* name, std::array<float, 4> col)
-{
+		const char* name, std::array<float, 4> col) {
+
 	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerInsertEXT);
 	if(!pfCmdDebugMarkerInsertEXT) {
 		return false;

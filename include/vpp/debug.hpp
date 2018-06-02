@@ -66,7 +66,7 @@ public:
 	/// must be threadsafe (reason why it is marked const).
 	/// The default implementation always returns true when the error flag is error and
 	/// false otherwise.
-	virtual bool call(const CallbackInfo& info) const noexcept;
+	virtual bool call(const CallbackInfo& info) noexcept;
 
 protected:
 	vk::Instance instance_ {};
