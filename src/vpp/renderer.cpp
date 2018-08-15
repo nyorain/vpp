@@ -130,7 +130,7 @@ vk::Result Renderer::render(std::optional<uint64_t>* sid,
 	// we use acquireSemaphore_ to acquire the image
 	// this semaphore is always unsignaled
 	std::uint32_t id;
-	auto res = swapchain().acquire(id, acquireSemaphore_);
+	auto res = swapchain().acquire(id, acquireSemaphore_, {}, UINT64_MAX - 1);
 	if(res != vk::Result::success) {
 		return res;
 	}
