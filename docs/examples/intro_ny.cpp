@@ -92,8 +92,7 @@ public:
 	void surfaceDestroyed(const ny::SurfaceDestroyedEvent&) override;
 };
 
-int main(int, char**)
-{
+int main(int, char**) {
 	// ny backend/ac setup
 	auto& backend = ny::Backend::choose();
 	auto ac = backend.createAppContext();
@@ -195,8 +194,8 @@ int main(int, char**)
 
 // MyRenderer
 MyRenderer::MyRenderer(vk::RenderPass rp, vk::SwapchainCreateInfoKHR& scInfo,
-	const vpp::Queue& present) : vpp::DefaultRenderer(present), scInfo_(scInfo)
-{
+	const vpp::Queue& present) : vpp::DefaultRenderer(present),
+		scInfo_(scInfo) {
 	// pipeline
 	pipelineLayout_ = {device(), {}};
 	pipeline_ = createGraphicsPipeline(device(), rp, pipelineLayout_);
@@ -204,8 +203,7 @@ MyRenderer::MyRenderer(vk::RenderPass rp, vk::SwapchainCreateInfoKHR& scInfo,
 	init(rp, scInfo);
 }
 
-void MyRenderer::resize(nytl::Vec2ui size)
-{
+void MyRenderer::resize(nytl::Vec2ui size) {
 	vpp::DefaultRenderer::recreate({size[0], size[1]}, scInfo_);
 }
 
@@ -246,8 +244,7 @@ void MyRenderer::record(const RenderBuffer& buf) {
 }
 
 // MyWindowListener
-void MyWindowListener::draw(const ny::DrawEvent&)
-{
+void MyWindowListener::draw(const ny::DrawEvent&) {
 	if(!renderer) { // should not happen
 		dlg_warn("draw: no renderer");
 		return;
@@ -262,8 +259,7 @@ void MyWindowListener::draw(const ny::DrawEvent&)
 	}
 }
 
-void MyWindowListener::key(const ny::KeyEvent& keyEvent)
-{
+void MyWindowListener::key(const ny::KeyEvent& keyEvent) {
 	std::string name = "<unknown>";
 	if(appContext->keyboardContext()) {
 		auto utf8 = appContext->keyboardContext()->utf8(keyEvent.keycode);
@@ -317,14 +313,12 @@ void MyWindowListener::key(const ny::KeyEvent& keyEvent)
 	}
 }
 
-void MyWindowListener::close(const ny::CloseEvent&)
-{
+void MyWindowListener::close(const ny::CloseEvent&) {
 	dlg_info("Window was closed by server side. Exiting");
 	*run = false;
 }
 
-void MyWindowListener::mouseButton(const ny::MouseButtonEvent& event)
-{
+void MyWindowListener::mouseButton(const ny::MouseButtonEvent& event) {
 	dlg_info("mouseButton {} {} at {}", ny::mouseButtonName(event.button),
 		event.pressed ? "pressed" : "released", event.position);
 	if(event.pressed && event.button == ny::MouseButton::left) {
@@ -358,19 +352,16 @@ void MyWindowListener::mouseButton(const ny::MouseButtonEvent& event)
 	}
 }
 
-void MyWindowListener::focus(const ny::FocusEvent& ev)
-{
+void MyWindowListener::focus(const ny::FocusEvent& ev) {
 	dlg_info("focus: {}", ev.gained);
 }
 
-void MyWindowListener::state(const ny::StateEvent& stateEvent)
-{
+void MyWindowListener::state(const ny::StateEvent& stateEvent) {
 	dlg_info("window state changed: {}", (int) stateEvent.state);
 	toplevelState = stateEvent.state;
 }
 
-void MyWindowListener::resize(const ny::SizeEvent& sizeEvent)
-{
+void MyWindowListener::resize(const ny::SizeEvent& sizeEvent) {
 	dlg_info("window resized to {}", sizeEvent.size);
 	windowSize = sizeEvent.size;
 
@@ -379,20 +370,17 @@ void MyWindowListener::resize(const ny::SizeEvent& sizeEvent)
 	renderer->resize(sizeEvent.size);
 }
 
-void MyWindowListener::surfaceCreated(const ny::SurfaceCreatedEvent& surfaceEvent)
-{
+void MyWindowListener::surfaceCreated(const ny::SurfaceCreatedEvent& surfaceEvent) {
 	// TODO
 }
 
-void MyWindowListener::surfaceDestroyed(const ny::SurfaceDestroyedEvent&)
-{
+void MyWindowListener::surfaceDestroyed(const ny::SurfaceDestroyedEvent&) {
 	// TODO
 }
 
 // utility
 vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
-	vk::PipelineLayout layout)
-{
+		vk::PipelineLayout layout) {
 	// first load the shader modules and create the shader program for our pipeline
 	// if the shaders cannot be found/compiled, this will throw (and end the application)
 	vpp::ShaderModule vertexShader(dev, intro_vert_spv_data);
@@ -443,8 +431,7 @@ vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
 	return {dev, vkPipeline};
 }
 
-vpp::RenderPass createRenderPass(const vpp::Device& dev, vk::Format format)
-{
+vpp::RenderPass createRenderPass(const vpp::Device& dev, vk::Format format) {
 	vk::AttachmentDescription attachment {};
 
 	// color from swapchain

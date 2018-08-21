@@ -9,6 +9,32 @@
 #include <algorithm>
 
 namespace vpp {
+namespace {
+
+/// Returns the offset a SubBuffer with the given usage flags will
+/// be created with.
+vk::DeviceSize usageAlignment(const Device& dev, vk::BufferUsageFlags usage) {
+	vk::DeviceSize ret = 0u;
+
+	auto align = dev.properties().limits.minUniformBufferOffsetAlignment;
+	if(usage & vk::BufferUsageBits::uniformBuffer && align > 0) {
+		ret = std::max(ret, align);
+	}
+
+	align = dev.properties().limits.minTexelBufferOffsetAlignment;
+	if(usage & vk::BufferUsageBits::uniformTexelBuffer && align > 0) {
+		ret = std::max(ret, align);
+	}
+
+	align = dev.properties().limits.minStorageBufferOffsetAlignment;
+	if(usage & vk::BufferUsageBits::storageBuffer && align > 0) {
+		ret = std::max(ret, align);
+	}
+
+	return ret;
+}
+
+} // anon namespace
 
 // BufferRange
 SubBuffer::SubBuffer(SharedBuffer& buf, const Allocation& alloc) :
@@ -19,17 +45,17 @@ SubBuffer::SubBuffer(SharedBuffer& buf, const Allocation& alloc) :
 }
 
 SubBuffer::SubBuffer(BufferAllocator& alloc, vk::DeviceSize size,
-		vk::BufferUsageFlags usage, vk::DeviceSize align,
-		unsigned memoryTypeBits) {
-	auto [shared, a] = alloc.alloc(size, usage, align, memoryTypeBits);
+		vk::BufferUsageFlags usage, unsigned memBits,
+		vk::DeviceSize align) {
+	auto [shared, a] = alloc.alloc(size, usage, memBits, align);
 	shared_ = &shared;
 	allocation_ = a;
 }
 
 SubBuffer::SubBuffer(DeferTag, BufferAllocator& alloc, vk::DeviceSize size,
-		vk::BufferUsageFlags usage, vk::DeviceSize align,
-		unsigned memoryTypeBits) : allocator_(&alloc) {
-	 alloc.reserve(size, usage, align, memoryTypeBits, &allocation_.offset);
+		vk::BufferUsageFlags usage, unsigned memBits,
+		vk::DeviceSize align) : allocator_(&alloc) {
+	 alloc.reserve(size, usage, memBits, align, &allocation_.offset);
 }
 
 SubBuffer::~SubBuffer() {
@@ -143,13 +169,14 @@ BufferAllocator::BufferAllocator(const Device& dev) :
 }
 
 void BufferAllocator::reserve(vk::DeviceSize size,
-		vk::BufferUsageFlags usage, vk::DeviceSize align,
-		unsigned int memBits, Reservation* reservation) {
+		vk::BufferUsageFlags usage, unsigned int memBits,
+		vk::DeviceSize align, Reservation* reservation) {
 
 	dlg_assert(size > 0);
 	dlg_assertm(align == 1 || align % 2 == 0,
 		"Alignment {} not power of 2", align);
 
+	align = std::max(align, usageAlignment(device(), usage));
 	auto& back = reqs_.emplace_back();
 
 	back.size = size;
@@ -195,16 +222,16 @@ BufferAllocator::Allocation BufferAllocator::alloc(Reservation reservation) {
 }
 
 BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
-		vk::BufferUsageFlags usage, vk::DeviceSize align,
-		unsigned int memBits) {
+		vk::BufferUsageFlags usage, unsigned memBits, vk::DeviceSize align) {
 
 	dlg_assert(size > 0);
 	dlg_assertm(memBits, "invalid (too few) memBits given");
 	dlg_assertm(align == 1 || align % 2 == 0,
 		"Alignment {} not power of 2", align);
 
-	// TODO: really dumb algorithm atm, greedy af
+	align = std::max(align, usageAlignment(device(), usage));
 
+	// TODO: really dumb algorithm atm, greedy af
 	for(auto& buf : buffers_) {
 		auto* mem = buf.buffer.memoryEntry().memory();
 		dlg_assert(mem);
@@ -229,9 +256,12 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 
 	for(auto& req : reqs_) {
 		// TODO: bad idea (greedy)
+		// the way we align we might allocate a bit too much but
+		// that shouldn't be a problem
 		auto mem = memBits & req.memBits;
 		if(mem) {
 			createInfo.usage |= req.usage;
+			createInfo.size = vpp::align(createInfo.size, req.align);
 			createInfo.size += req.size;
 			memBits = mem;
 			req.size = 0u; // mark for removal

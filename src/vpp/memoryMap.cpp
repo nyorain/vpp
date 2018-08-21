@@ -16,8 +16,7 @@
 namespace vpp {
 
 // MemoryMap
-MemoryMap::~MemoryMap()
-{
+MemoryMap::~MemoryMap() {
 	try {
 		unmap();
 	} catch(const std::exception& error) {
@@ -25,8 +24,7 @@ MemoryMap::~MemoryMap()
 	}
 }
 
-void MemoryMap::map(const DeviceMemory& memory, const Allocation& alloc)
-{
+void MemoryMap::map(const DeviceMemory& memory, const Allocation& alloc) {
 	unmap();
 
 	dlg_assertm(memory.properties() & vk::MemoryPropertyBits::hostVisible,
@@ -34,11 +32,10 @@ void MemoryMap::map(const DeviceMemory& memory, const Allocation& alloc)
 	memory_ = &memory;
 	allocation_ = alloc;
 	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
+	flush();
 }
 
-void MemoryMap::remap(const Allocation& allocation)
-{
-
+void MemoryMap::remap(const Allocation& allocation) {
 	// new allocation extent
 	auto nbeg = std::min(allocation.offset, allocation_.offset);
 	auto nsize = std::max(allocation.end(), allocation_.end()) - nbeg;
@@ -53,20 +50,18 @@ void MemoryMap::remap(const Allocation& allocation)
 	allocation_ = {nbeg, nsize};
 
 	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
+	invalidate();
 }
 
-vk::MappedMemoryRange MemoryMap::mappedMemoryRange() const noexcept
-{
+vk::MappedMemoryRange MemoryMap::mappedMemoryRange() const noexcept {
 	return {vkMemory(), offset(), size()};
 }
 
-const vk::DeviceMemory& MemoryMap::vkMemory() const noexcept
-{
+const vk::DeviceMemory& MemoryMap::vkMemory() const noexcept {
 	return memory_->vkHandle();
 }
 
-void MemoryMap::flush(const Allocation& range) const
-{
+void MemoryMap::flush(const Allocation& range) const {
 	if(coherent()) {
 		return;
 	}
@@ -78,8 +73,7 @@ void MemoryMap::flush(const Allocation& range) const
 	vk::flushMappedMemoryRanges(vkDevice(), 1, {vkMemory(), o, s});
 }
 
-void MemoryMap::invalidate(const Allocation& range) const
-{
+void MemoryMap::invalidate(const Allocation& range) const {
 	if(coherent()) {
 		return;
 	}
@@ -91,16 +85,15 @@ void MemoryMap::invalidate(const Allocation& range) const
 	vk::invalidateMappedMemoryRanges(vkDevice(), 1, {vkMemory(), o, s});
 }
 
-bool MemoryMap::coherent() const noexcept
-{
+bool MemoryMap::coherent() const noexcept {
 	return memory().properties() & vk::MemoryPropertyBits::hostCoherent;
 }
 
-void MemoryMap::unmap()
-{
+void MemoryMap::unmap() {
 	dlg_assertm(views_ == 0, "unmap: still views for this map");
 
 	if(memory_ && vkMemory() && ptr() && size()) {
+		flush();
 		vk::unmapMemory(memory().vkDevice(), vkMemory());
 	}
 
@@ -110,16 +103,14 @@ void MemoryMap::unmap()
 	views_ = 0;
 }
 
-void MemoryMap::ref() noexcept
-{
+void MemoryMap::ref() noexcept {
 	views_++;
 }
 
-void MemoryMap::unref() noexcept
-{
+void MemoryMap::unref() noexcept {
 	dlg_assertm(views_ > 0, "unref: refcount already zero");
 	views_--;
-	
+
 	if(views_ == 0) {
 		try {
 			unmap();
@@ -131,35 +122,31 @@ void MemoryMap::unref() noexcept
 
 // MemoryMapView
 MemoryMapView::MemoryMapView(MemoryMap& map, const Allocation& allocation)
-	: memoryMap_(&map), allocation_(allocation)
-{
+		: memoryMap_(&map), allocation_(allocation) {
 	dlg_assert(map.valid());
+	dlg_assert(contains(map.allocation(), allocation));
 	dlg_assertm(allocation.size > 0, "MemoryMapView: invalid allocation");
 	memoryMap_->ref();
 }
 
-MemoryMapView::~MemoryMapView()
-{
+MemoryMapView::~MemoryMapView() {
 	if(memoryMap_) {
 		memoryMap_->unref();
 	}
 }
 
-void MemoryMapView::swap(MemoryMapView& lhs) noexcept
-{
+void MemoryMapView::swap(MemoryMapView& lhs) noexcept {
 	using std::swap;
 
 	swap(memoryMap_, lhs.memoryMap_);
 	swap(allocation_, lhs.allocation_);
 }
 
-vk::MappedMemoryRange MemoryMapView::mappedMemoryRange() const noexcept
-{
+vk::MappedMemoryRange MemoryMapView::mappedMemoryRange() const noexcept {
 	return {vkMemory(), offset(), size()};
 }
 
-void MemoryMapView::flush() const
-{
+void MemoryMapView::flush() const {
 	if(coherent()) {
 		return;
 	}
@@ -168,23 +155,20 @@ void MemoryMapView::flush() const
 	vk::flushMappedMemoryRanges(vkDevice(), 1, range);
 }
 
-void MemoryMapView::invalidate() const
-{
+void MemoryMapView::invalidate() const {
 	if(coherent()) {
 		return;
 	}
-	
+
 	auto range = mappedMemoryRange();
 	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);
 }
 
-std::byte* MemoryMapView::ptr() const noexcept
-{
+std::byte* MemoryMapView::ptr() const noexcept {
 	return memoryMap().ptr() + allocation().offset - memoryMap().offset();
 }
 
-bool MemoryMapView::coherent() const noexcept
-{
+bool MemoryMapView::coherent() const noexcept {
 	return memory().properties() & vk::MemoryPropertyBits::hostCoherent;
 }
 

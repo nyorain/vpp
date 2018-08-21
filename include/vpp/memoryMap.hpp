@@ -96,9 +96,9 @@ public:
 	~MemoryMapView();
 
 	MemoryMapView(MemoryMapView&& lhs) noexcept { swap(lhs); }
-	MemoryMapView& operator=(MemoryMapView lhs) noexcept { 
-		swap(lhs); 
-		return *this; 
+	MemoryMapView& operator=(MemoryMapView lhs) noexcept {
+		swap(lhs);
+		return *this;
 	}
 
 	/// Calls flushMappedMemoryRanges, see the vulkan spec.

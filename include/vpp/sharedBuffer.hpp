@@ -61,12 +61,17 @@ public:
 
 public:
 	SubBuffer() = default;
+
+	/// Will automatically make sure that alignment makes sense with
+	/// the given usage flags, e.g. will make sure it's at least
+	/// minUniformBufferOffsetAlignment of the associated physical device
+	/// if usage flags include uniform buffer.
 	SubBuffer(BufferAllocator&, vk::DeviceSize size,
-		vk::BufferUsageFlags usage, vk::DeviceSize align = 0u,
-		unsigned memoryTypeBits = ~0u);
+		vk::BufferUsageFlags usage, unsigned memoryTypeBits = ~0u,
+		vk::DeviceSize align = 0u);
 	SubBuffer(DeferTag, BufferAllocator&, vk::DeviceSize size,
-		vk::BufferUsageFlags usage, vk::DeviceSize align = 0u,
-		unsigned memoryTypeBits = ~0u);
+		vk::BufferUsageFlags usage, unsigned memoryTypeBits = ~0u,
+		vk::DeviceSize align = 0u);
 	SubBuffer(SharedBuffer&, const Allocation& allocation);
 	~SubBuffer();
 
@@ -126,17 +131,18 @@ public:
 
 	/// Reserves the given requirements.
 	/// Useful to allow grouping many SubBuffers on one Buffer.
-	/// Optionally returns the id associates with the reservation which can
+	/// Optionally returns the id associated with the reservation which can
 	/// later be use to allocate or cancel it.
 	void reserve(vk::DeviceSize size, vk::BufferUsageFlags,
-		vk::DeviceSize align = 0u, unsigned int memBits = ~0u,
+		unsigned int memBits = ~0u, vk::DeviceSize align = 0u,
 		Reservation* id = nullptr);
 
 	/// Allocates a buffer range with the given requirements.
-	/// If you wish to map the buffer, you have to pass true as mappable.
+	/// Note that alignment will automatically include physical device
+	/// alignment requirements associated with the given usages.
 	Allocation alloc(Reservation reservation);
 	Allocation alloc(vk::DeviceSize size, vk::BufferUsageFlags,
-		vk::DeviceSize align = 0u, unsigned int memBits = ~0u);
+		unsigned int memBits = ~0u, vk::DeviceSize align = 0u);
 
 	/// Cancels the given reservation.
 	void cancel(Reservation reservation);

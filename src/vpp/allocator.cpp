@@ -49,8 +49,7 @@ void DeviceMemoryAllocator::swap(DeviceMemoryAllocator& a,
 }
 
 void DeviceMemoryAllocator::request(vk::Buffer requestor,
-		const vk::MemoryRequirements& reqs, vk::BufferUsageFlags usage,
-		MemoryEntry& entry) {
+		const vk::MemoryRequirements& reqs, MemoryEntry& entry) {
 
 	dlg_assertm(requestor, "nullHandle requestor buffer");
 	dlg_assertm(reqs.size, "req memory size 0");
@@ -69,11 +68,6 @@ void DeviceMemoryAllocator::request(vk::Buffer requestor,
 	};
 
 	req.buffer = requestor;
-
-	// apply additional device limits alignments
-	// the vulkan spec does not state that this is needed in
-	// vkBindBufferMemory and we will not store the usage.
-	req.alignment = std::max(req.alignment, usageAlignment(device(), usage));
 	requirements_.push_back(req);
 }
 

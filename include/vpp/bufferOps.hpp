@@ -317,7 +317,7 @@ vpp::SubBuffer writeStaging(vk::CommandBuffer cmdb, const BufferSpan& span,
 
 	auto size = neededBufferSize(layout, args...);
 	auto stage = SubBuffer(span.device().bufferAllocator(), size,
-		vk::BufferUsageBits::transferSrc, 0u, span.device().hostMemoryTypes());
+		vk::BufferUsageBits::transferSrc, span.device().hostMemoryTypes());
 	MappedBufferWriter writer(stage.memoryMap(), layout, true, stage.offset());
 	writer.offset(span.offset(), false);
 	writer.add(args...);
@@ -466,7 +466,7 @@ auto readStaging(QueueSubmitter& qs, const BufferSpan& buf,
 
 	auto size = neededBufferSize(layout, args...);
 	auto stage = SubBuffer(buf.device().bufferAllocator(), size,
-		vk::BufferUsageBits::transferDst, 0u, buf.device().hostMemoryTypes());
+		vk::BufferUsageBits::transferDst, buf.device().hostMemoryTypes());
 	auto cmdBuf = detail::copyCmdBuf(qs, buf, stage, size);
 
 	class WorkImpl : public CommandWork<void> {

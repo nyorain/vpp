@@ -193,6 +193,9 @@ vk::DeviceSize DeviceMemory::totalFree() const noexcept {
 }
 
 MemoryMapView DeviceMemory::map(const Allocation& allocation) {
+	// NOTE: any allocation can be mapped, don't get confused
+	// by device limits minMemoryMapAlignment. It's a guarantee for
+	// us, not something we have to fulfill [see spec]
 	if(!mapped()) {
 		memoryMap_.map(*this, allocation);
 	} else {

@@ -89,12 +89,12 @@ TEST(buf) {
 	vpp::DeviceMemoryAllocator allocator(dev);
 	vpp::Buffer buf5(vpp::defer, dev, info, dlBits, &allocator);
 	auto rawBuf3b = vk::createBuffer(dev, info);
-	vpp::Buffer buf5b(vpp::defer, dev, rawBuf3b, info.usage, dlBits, &allocator);
+	vpp::Buffer buf5b(vpp::defer, dev, rawBuf3b, dlBits, &allocator);
 	vpp::Buffer buf6(dev, info, dlBits, &allocator);
 	buf5.init();
 	EXPECT(allocator.memories().size(), 1u);
 
-	vpp::Buffer buf7(dev, rawBuf2, vk::BufferUsageBits::vertexBuffer);
+	vpp::Buffer buf7(dev, rawBuf2);
 
 	auto rawBuf3 = vk::createBuffer(dev, {{}, 123, vk::BufferUsageBits::uniformBuffer});
 	auto reqs = vk::getBufferMemoryRequirements(dev, rawBuf3);

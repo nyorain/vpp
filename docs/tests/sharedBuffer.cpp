@@ -143,7 +143,7 @@ TEST(mappable) {
 	auto hostBits = dev.hostMemoryTypes();
 
 	// just allocate a mappable buffer
-	auto buf1 = vpp::SubBuffer(allocator, 100u, usage, 128u, hostBits);
+	auto buf1 = vpp::SubBuffer(allocator, 100u, usage, hostBits);
 	EXPECT(buf1.allocation().size, 100u);
 	EXPECT(buf1.buffer().mappable(), true);
 	auto props = buf1.buffer().memoryEntry().memory()->properties();
@@ -154,7 +154,7 @@ TEST(mappable) {
 	}
 
 	// allocate mappable buffer on coherent memory
-	auto buf2 = vpp::SubBuffer{allocator, 1000u, usage, 0u, coherentBits};
+	auto buf2 = vpp::SubBuffer{allocator, 1000u, usage, coherentBits};
 	EXPECT(buf2.allocation().size, 1000u);
 	EXPECT(buf2.buffer().mappable(), true);
 	auto type = buf2.buffer().memoryEntry().memory()->type();
@@ -169,7 +169,7 @@ TEST(mappable) {
 	// types are also hostCoherent, we cannot do this test there
 	auto hostNonCoherent = hostBits & ~coherentBits;
 	if(hostNonCoherent) {
-		auto buf3 = vpp::SubBuffer(allocator, 511u, usage, 0u, hostNonCoherent);
+		auto buf3 = vpp::SubBuffer(allocator, 511u, usage, hostNonCoherent);
 		EXPECT(buf3.allocation().size, 511u);
 		EXPECT(buf3.buffer().mappable(), true);
 		type = buf3.buffer().memoryEntry().memory()->type();

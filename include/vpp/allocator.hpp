@@ -37,10 +37,8 @@ public:
 	/// \param reqs The MemoryRequirements queried for the given buffer. Note that
 	/// these can be modified (in a valid way like e.g. unsetting further memory
 	/// type bits) by the caller.
-	/// \param usage The usage flags the buffer was created with and is used for.
-	/// Needed to satisfy certain alignment and padding requirements
 	void request(vk::Buffer requestor, const vk::MemoryRequirements&,
-		vk::BufferUsageFlags, MemoryEntry&);
+		MemoryEntry&);
 
 	/// Requests memory for the given vulkan image and stores a (pending) reference to it into
 	/// the given MemoryEntry.
@@ -49,7 +47,7 @@ public:
 	/// type bits) by the caller.
 	/// \param tiling The ImageTiling for the given image.
 	/// Needed to satisfy certain alignment and padding requirements
-	void request(vk::Image requestor, const vk::MemoryRequirements&, 
+	void request(vk::Image requestor, const vk::MemoryRequirements&,
 		vk::ImageTiling, MemoryEntry&);
 
 	/// Removes the pending memory request for the given entry.
@@ -151,7 +149,7 @@ public:
 
 	/// Will try to map the Memory and return a view to the location where this entry is placed.
 	/// The MemoryEntry must be bound to memory.
-	MemoryMapView map(vk::DeviceSize offset = 0, 
+	MemoryMapView map(vk::DeviceSize offset = 0,
 		vk::DeviceSize size = vk::wholeSize) const;
 
 	/// Returns whether this entry has an associated memory allocation, i.e. if it is currently

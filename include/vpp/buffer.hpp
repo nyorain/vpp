@@ -19,9 +19,9 @@ public:
 	~BufferHandle();
 
 	BufferHandle(BufferHandle&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(BufferHandle rhs) noexcept { 
-		swap(*this, rhs); 
-		return *this; 
+	auto& operator=(BufferHandle rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
 	}
 };
 
@@ -47,7 +47,7 @@ public:
 	///     to allocate enough memory. The DeviceMemory must
 	///     be allocated on a type that is supported for the
 	///     created buffer (the vulkan spec gives some guarantess there).
-	///   * (4): Will pass ownership of the memory entry which must be 
+	///   * (4): Will pass ownership of the memory entry which must be
 	///     in allocated state and bound to the buffer.
 	/// - Deferred? See the vpp doc for deferred initialization
 	///   * (1,2,3) bind the buffer immediately to memory. For (1,2) this
@@ -57,14 +57,10 @@ public:
 	///     ensureMemory is called. Already issues a reserving request
 	///     to the DeviceMemoryAllocator, might result in less
 	///     memory allocations made if multiple resources are created deferred.
-	/// For constructors that receive an already existent Buffer but
-	/// allocate and bind the memory for you, you have to pass the buffers
-	/// usage flags to allow the constructor to choose a valid buffer
-	/// alignment.
-	Buffer(const Device&, const vk::BufferCreateInfo&, 
+	Buffer(const Device&, const vk::BufferCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	Buffer(const Device&, vk::Buffer, vk::BufferUsageFlags,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+	Buffer(const Device&, vk::Buffer, unsigned int memBits = ~0u,
+		vpp::DeviceMemoryAllocator* = {});
 
 	Buffer(const Device&, const vk::BufferCreateInfo&, DeviceMemory&);
 	Buffer(const Device&, vk::Buffer, MemoryEntry&&);
@@ -72,10 +68,10 @@ public:
 	/// Creates the buffer without any bound memory.
 	/// You have to call the ensureMemory function later on to
 	/// make sure memory is bound to the buffer.
-	Buffer(DeferTag, const Device&, const vk::BufferCreateInfo&, 
+	Buffer(DeferTag, const Device&, const vk::BufferCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	Buffer(DeferTag, const Device&, vk::Buffer, vk::BufferUsageFlags,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+	Buffer(DeferTag, const Device&, vk::Buffer, unsigned int memBits = ~0u,
+		vpp::DeviceMemoryAllocator* = {});
 
 	Buffer(Buffer&& rhs) noexcept = default;
 	Buffer& operator=(Buffer&& rhs) noexcept = default;
@@ -95,14 +91,10 @@ public:
 	~BufferView();
 
 	BufferView(BufferView&& rhs) noexcept { swap(*this, rhs); }
-	BufferView& operator=(BufferView rhs) noexcept { 
-		swap(*this, rhs); 
-		return *this; 
+	BufferView& operator=(BufferView rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
 	}
 };
-
-/// Returns the alignment requirement a buffer with the given usages
-/// has for offset in vkBindBufferMemory.
-vk::DeviceSize usageAlignment(const Device&, vk::BufferUsageFlags);
 
 } // namespace vpp

@@ -125,11 +125,12 @@ SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	dlg_assert(data.size() <= img.memorySize());
 	dlg_assert(size.width != 0 && size.height != 0);
 
+	// bufferOfset must be multiple of 4 and image format size
 	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
 	align = std::max<vk::DeviceSize>(align, texSize);
 	align = std::max<vk::DeviceSize>(align, 4u);
 	auto stage = SubBuffer(img.device().bufferAllocator(), data.size(),
-		vk::BufferUsageBits::transferSrc, align, img.device().hostMemoryTypes());
+		vk::BufferUsageBits::transferSrc, img.device().hostMemoryTypes(), align);
 
 	{
 		auto map = stage.memoryMap();
@@ -181,11 +182,12 @@ SubBuffer retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	dlg_assert(byteSize <= img.memorySize());
 	dlg_assert(size.width != 0 && size.height != 0);
 
+	// bufferOfset must be multiple of 4 and image format size
 	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
 	align = std::max<vk::DeviceSize>(align, texSize);
 	align = std::max<vk::DeviceSize>(align, 4u);
 	auto stage = SubBuffer {img.device().bufferAllocator(), byteSize,
-		vk::BufferUsageBits::transferDst, align, img.device().hostMemoryTypes()};
+		vk::BufferUsageBits::transferDst, img.device().hostMemoryTypes(), align};
 
 	auto buf = stage.buffer().vkHandle();
 	auto boffset = stage.offset();
