@@ -391,10 +391,10 @@ vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
 	vpp::nameHandle(dev, fragmentShader.vkHandle(), "triangleFragmentShader");
 #endif
 
-	vpp::GraphicsPipelineInfo pipeInfo(rp, layout, {{
+	vpp::GraphicsPipelineInfo pipeInfo(rp, layout, {{{
 		{vertexShader, vk::ShaderStageBits::vertex},
 		{fragmentShader, vk::ShaderStageBits::fragment}
-	}});
+	}}});
 
 	pipeInfo.assembly.topology = vk::PrimitiveTopology::triangleList;
 

@@ -11,9 +11,8 @@ namespace vpp {
 const vk::CommandBufferLevel primaryCmdBufLevel {vk::CommandBufferLevel::primary};
 
 // CommandPool
-CommandPool::CommandPool(const Device& dev, uint32_t qfam, vk::CommandPoolCreateFlags flags)
-	: ResourceHandle(dev)
-{
+CommandPool::CommandPool(const Device& dev, uint32_t qfam,
+		vk::CommandPoolCreateFlags flags) : ResourceHandle(dev) {
 	vk::CommandPoolCreateInfo info;
 	info.flags = flags;
 	info.queueFamilyIndex = qfam;
@@ -21,15 +20,13 @@ CommandPool::CommandPool(const Device& dev, uint32_t qfam, vk::CommandPoolCreate
 	handle_ = vk::createCommandPool(device(), info);
 }
 
-CommandPool::~CommandPool()
-{
+CommandPool::~CommandPool() {
 	if(vkHandle()) {
 		vk::destroyCommandPool(vkDevice(), vkHandle(), nullptr);
 	}
 }
 
-void swap(CommandPool& a, CommandPool& b) noexcept
-{
+void swap(CommandPool& a, CommandPool& b) noexcept {
 	using std::swap;
 	using RH = ResourceHandle<vk::CommandPool>;
 
@@ -38,8 +35,8 @@ void swap(CommandPool& a, CommandPool& b) noexcept
 	swap(a.qFamily_, b.qFamily_);
 }
 
-std::vector<CommandBuffer> CommandPool::allocate(size_t count, vk::CommandBufferLevel lvl)
-{
+std::vector<CommandBuffer> CommandPool::allocate(size_t count,
+		vk::CommandBufferLevel lvl) {
 	vk::CommandBufferAllocateInfo info;
 	info.commandPool = vkHandle();
 	info.level = lvl;
@@ -58,8 +55,7 @@ std::vector<CommandBuffer> CommandPool::allocate(size_t count, vk::CommandBuffer
 	return ret;
 }
 
-CommandBuffer CommandPool::allocate(vk::CommandBufferLevel lvl)
-{
+CommandBuffer CommandPool::allocate(vk::CommandBufferLevel lvl) {
 	vk::CommandBufferAllocateInfo info;
 	info.commandPool = vkHandle();
 	info.level = lvl;
@@ -73,36 +69,31 @@ CommandBuffer CommandPool::allocate(vk::CommandBufferLevel lvl)
 
 // CommandBuffer
 CommandBuffer::CommandBuffer(const CommandPool& pool)
-	: CommandBuffer(pool, vk::CommandBufferLevel::primary)
-{
+	: CommandBuffer(pool, vk::CommandBufferLevel::primary) {
 }
 
 CommandBuffer::CommandBuffer(const CommandPool& pool, vk::CommandBufferLevel lvl)
-	: ResourceHandle(pool.device()), commandPool_(pool)
-{
+		: ResourceHandle(pool.device()), commandPool_(pool) {
 	vk::allocateCommandBuffers(pool.device(), {pool, lvl, 1u}, handle_);
 }
 
 CommandBuffer::CommandBuffer(const CommandPool& pool, vk::CommandBuffer buf)
-	: ResourceHandle(pool.device(), buf), commandPool_(pool)
-{
+		: ResourceHandle(pool.device(), buf), commandPool_(pool) {
 }
 
-CommandBuffer::CommandBuffer(const Device& dev, 
+CommandBuffer::CommandBuffer(const Device& dev,
 	vk::CommandPool pool, vk::CommandBuffer buf)
-		: ResourceHandle(dev, buf), commandPool_(pool)
-{
+		: ResourceHandle(dev, buf), commandPool_(pool) {
 }
 
 CommandBuffer::~CommandBuffer()
 {
 	if(vkHandle()) {
-		vk::freeCommandBuffers(vkDevice(), commandPool(), {vkHandle()});
+		vk::freeCommandBuffers(vkDevice(), commandPool(), {{vkHandle()}});
 	}
 }
 
-void swap(CommandBuffer& a, CommandBuffer& b) noexcept
-{
+void swap(CommandBuffer& a, CommandBuffer& b) noexcept {
 	using std::swap;
 	using RH = ResourceHandle<vk::CommandBuffer>;
 
@@ -111,14 +102,12 @@ void swap(CommandBuffer& a, CommandBuffer& b) noexcept
 }
 
 // CommandProvider
-CommandAllocator::CommandAllocator(const Device& dev) : Resource(dev)
-{
+CommandAllocator::CommandAllocator(const Device& dev) : Resource(dev) {
 }
 
 // TODO: really use '==' for flags? '&' not enough?
 CommandBuffer CommandAllocator::get(uint32_t family,
-	 vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
-{
+		 vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl) {
 	for(auto& pool : pools_) {
 		if(pool.queueFamily() == family && pool.flags() == flags) {
 			return pool.allocate(lvl);
@@ -130,8 +119,7 @@ CommandBuffer CommandAllocator::get(uint32_t family,
 }
 
 std::vector<CommandBuffer> CommandAllocator::get(uint32_t family, unsigned int count,
-	vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl)
-{
+		vk::CommandPoolCreateFlags flags, vk::CommandBufferLevel lvl) {
 	for(auto& pool : pools_) {
 		if(pool.queueFamily() == family && pool.flags() == flags) {
 			return pool.allocate(count, lvl);

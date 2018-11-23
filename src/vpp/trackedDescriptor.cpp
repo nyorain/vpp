@@ -195,10 +195,10 @@ TrDs DescriptorAllocator::alloc(const TrDsLayout& layout) {
 	// allocate a new pool
 	// reserve the default allocations additionally
 	reserve(layout.bindings(), 1);
-	reserve({
+	reserve({{
 		{vk::DescriptorType::uniformBuffer, 30},
 		{vk::DescriptorType::combinedImageSampler, 20}
-	}, 20);
+	}}, 20);
 
 	pools_.emplace_back(device(), pending_.count, pending_.types);
 	pending_ = {};

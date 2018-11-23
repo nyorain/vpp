@@ -142,7 +142,8 @@ BufferReader::BufferReader(const Device& dev, BufferLayout layout,
 void BufferReader::operate(void* ptr, vk::DeviceSize size) {
 	offset_ = std::max(offset_, nextOffset_);
 	dlg_assertm(size > 0, "Invalid operation");
-	dlg_assertm(offset_ + size <= data_.size(), "Buffer underflow");
+	dlg_assertm(offset_ + size <= vk::DeviceSize(data_.size()),
+		"Buffer underflow");
 
 	std::memcpy(ptr, &data_[offset_], size);
 	offset_ += size;
@@ -213,8 +214,8 @@ CommandBuffer copyCmdBuf(QueueSubmitter& qs, const BufferSpan& dst,
 	auto& dev = qs.device();
 	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
 	vk::beginCommandBuffer(cmdBuf, {});
-	vk::cmdCopyBuffer(cmdBuf, dst.buffer(), stage.buffer(), {{dst.offset(),
-		stage.offset(), size}});
+	vk::cmdCopyBuffer(cmdBuf, dst.buffer(), stage.buffer(), {{{dst.offset(),
+		stage.offset(), size}}});
 	vk::endCommandBuffer(cmdBuf);
 	return cmdBuf;
 }

@@ -18,7 +18,7 @@ namespace vpp {
 /// Will usually choose the one with the best properties like device type, biggest memory and
 /// needed queue families. Can be used if an application has no special needs and just wants
 /// to choose the device that is usual the best.
-vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice>);
+vk::PhysicalDevice choose(nytl::Span<const vk::PhysicalDevice>);
 
 /// Chooses the best physical device that can be used to render on the given surface.
 /// Usually tries to select the best/most powerful physical device.
@@ -26,7 +26,8 @@ vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice>);
 /// rendering on the surface.
 /// The given surface and physical devices must have been retrieved from the
 /// given instance which is needed for querying the surface function pointers.
-vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice>, vk::Instance, vk::SurfaceKHR);
+vk::PhysicalDevice choose(nytl::Span<const vk::PhysicalDevice>, vk::Instance,
+	vk::SurfaceKHR);
 
 /// Returns the name of the given enum value.
 const char* name(vk::PhysicalDeviceType);

@@ -121,7 +121,7 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev,
 	}
 
 	// retrieve the queues and init the device
-	init({{vk::getDeviceQueue(vkDevice(), gfxCompQueueFam, 0), gfxCompQueueFam}});
+	init({{{vk::getDeviceQueue(vkDevice(), gfxCompQueueFam, 0), gfxCompQueueFam}}});
 }
 
 Device::Device(vk::Instance ini, vk::SurfaceKHR surface, const Queue*& present,
@@ -243,7 +243,7 @@ void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
 	impl_->queuesVec.resize(queues.size());
 
 	std::map<unsigned int, unsigned int> queueIds;
-	for(std::size_t i(0); i < queues.size(); ++i) {
+	for(std::size_t i(0); i < std::size_t(queues.size()); ++i) {
 		auto id = queueIds[queues[i].second]++;
 		impl_->queues[i].reset(new Queue(*this, queues[i].first, id, queues[i].second));
 		impl_->queuesVec[i] = impl_->queues[i].get();
@@ -263,31 +263,40 @@ void Device::release()
 	device_ = {};
 }
 
-nytl::Span<const Queue*> Device::queues() const
+nytl::Span<const Queue* const> Device::queues() const
 {
-	return {impl_->queuesVec};
+	return impl_->queuesVec;
 }
 
 const Queue* Device::queue(unsigned int family) const
 {
-	for(auto& queue : queues())
-		if(queue->family() == family) return queue;
+	for(auto& queue : queues()) {
+		if(queue->family() == family) {
+			return queue;
+		}
+	}
 
 	return nullptr;
 }
 
 const Queue* Device::queue(unsigned int family, unsigned int id) const
 {
-	for(auto& queue : queues())
-		if(queue->family() == family && queue->id() == id) return queue;
+	for(auto& queue : queues()) {
+		if(queue->family() == family && queue->id() == id) {
+			return queue;
+		}
+	}
 
 	return nullptr;
 }
 
 const Queue* Device::queue(vk::QueueFlags flags) const
 {
-	for(auto& queue : queues())
-		if(queue->properties().queueFlags & flags) return queue;
+	for(auto& queue : queues()) {
+		if(queue->properties().queueFlags & flags) {
+			return queue;
+		}
+	}
 
 	return nullptr;
 }

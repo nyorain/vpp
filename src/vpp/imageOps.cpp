@@ -31,7 +31,7 @@ void fillMap(const Image& img, vk::Format format,
 	dlg_assert(size.width != 0 && size.height != 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
 	dlg_assert(data.size() == size.width * size.height * size.depth * texSize);
-	dlg_assert(data.size() <= img.memorySize());
+	dlg_assert(vk::DeviceSize(data.size()) <= img.memorySize());
 
 	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
 	auto map = img.memoryEntry().map();
@@ -122,7 +122,7 @@ SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	dlg_assert(texSize > 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
 	dlg_assert(data.size() == texSize * size.width * size.height * depth);
-	dlg_assert(data.size() <= img.memorySize());
+	dlg_assert(vk::DeviceSize(data.size()) <= img.memorySize());
 	dlg_assert(size.width != 0 && size.height != 0);
 
 	// bufferOfset must be multiple of 4 and image format size
@@ -145,7 +145,7 @@ SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset,
 		{size.width, size.height, depth}};
 
-	vk::cmdCopyBufferToImage(cmdBuf, buf, img, layout, {region});
+	vk::cmdCopyBufferToImage(cmdBuf, buf, img, layout, {{region}});
 	return stage;
 }
 
@@ -196,7 +196,7 @@ SubBuffer retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset,
 		{size.width, size.height, depth}};
 
-	vk::cmdCopyImageToBuffer(cmdBuf, img, layout, buf, {region});
+	vk::cmdCopyImageToBuffer(cmdBuf, img, layout, buf, {{region}});
 	return stage;
 }
 
@@ -212,7 +212,7 @@ void changeLayout(vk::CommandBuffer cmdBuf, vk::Image img,
 	barrier.subresourceRange = subres;
 	barrier.srcAccessMask = srca;
 	barrier.dstAccessMask = dsta;
-	vk::cmdPipelineBarrier(cmdBuf, srcs, dsts, {}, {}, {}, {barrier});
+	vk::cmdPipelineBarrier(cmdBuf, srcs, dsts, {}, {}, {}, {{barrier}});
 }
 
 CommandWork<void> changeLayout(vk::Image image,

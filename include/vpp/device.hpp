@@ -96,7 +96,7 @@ public:
 	/// the constructor.
 	/// The returned span and the references queues are guaranteed to be valid until the
 	/// device object is destructed.
-	nytl::Span<const Queue*> queues() const;
+	nytl::Span<const Queue* const> queues() const;
 
 	/// Returns a queue for the given family or nullptr if there is none.
 	/// Searches all queues return from queues().

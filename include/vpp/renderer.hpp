@@ -13,6 +13,7 @@
 #include <vpp/commandBuffer.hpp>
 #include <functional>
 #include <variant>
+#include <vector>
 
 namespace vpp {
 

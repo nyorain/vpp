@@ -67,9 +67,9 @@ struct ViewableImageCreateInfo {
 		vk::ImageUsageFlags =
 			vk::ImageUsageBits::transferDst |
 			vk::ImageUsageBits::sampled,
-		nytl::Span<const vk::Format> formats = {
+		nytl::Span<const vk::Format> formats = {{
 			vk::Format::r8g8b8a8Unorm
-		}, vk::ImageTiling = vk::ImageTiling::optimal,
+		}}, vk::ImageTiling = vk::ImageTiling::optimal,
 		vk::SampleCountBits = vk::SampleCountBits::e1,
 		vk::ImageLayout = vk::ImageLayout::undefined,
 		vk::ImageCreateFlags = {},
@@ -81,13 +81,13 @@ struct ViewableImageCreateInfo {
 		vk::ImageUsageFlags =
 			vk::ImageUsageBits::depthStencilAttachment |
 			vk::ImageUsageBits::sampled,
-		nytl::Span<const vk::Format> formats = {
+		nytl::Span<const vk::Format> formats = {{
 			vk::Format::d32Sfloat,
 			vk::Format::d32SfloatS8Uint,
 			vk::Format::d24UnormS8Uint,
 			vk::Format::d16UnormS8Uint,
 			vk::Format::d16Unorm
-		}, vk::ImageTiling = vk::ImageTiling::optimal,
+			}}, vk::ImageTiling = vk::ImageTiling::optimal,
 		vk::SampleCountBits = vk::SampleCountBits::e1,
 		vk::ImageLayout = vk::ImageLayout::undefined,
 		vk::ImageCreateFlags = {},

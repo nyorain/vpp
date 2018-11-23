@@ -436,7 +436,8 @@ template<typename... T>
 void readMap(const BufferSpan& buf, BufferLayout layout, T&... args) {
 	auto map = buf.memoryMap();
 	map.invalidate();
-	BufferReader reader(buf.device(), layout, {map.ptr(), map.size()});
+	BufferReader reader(buf.device(), layout,
+		{map.ptr(), map.ptr() + map.size()});
 	reader.add(args...);
 }
 

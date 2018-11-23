@@ -7,10 +7,11 @@
 #include <vpp/vk.hpp>
 #include <vector>
 
+using vk::call::call;
+
 namespace vpp {
 
-vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice> phdevs)
-{
+vk::PhysicalDevice choose(nytl::Span<const vk::PhysicalDevice> phdevs) {
 	vk::PhysicalDevice best = {};
 	auto bestScore = 0u;
 
@@ -40,9 +41,8 @@ vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice> phdevs)
 	return best;
 }
 
-vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice> phdevs, 
-	vk::Instance instance, vk::SurfaceKHR surface)
-{
+vk::PhysicalDevice choose(nytl::Span<const vk::PhysicalDevice> phdevs,
+		vk::Instance instance, vk::SurfaceKHR surface) {
 	std::vector<vk::PhysicalDevice> supported;
 	supported.reserve(phdevs.size());
 
@@ -59,29 +59,26 @@ vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice> phdevs,
 	return choose(supported);
 }
 
-const char* name(vk::PhysicalDeviceType type)
-{
+const char* name(vk::PhysicalDeviceType type) {
 	switch(type) {
-		case vk::PhysicalDeviceType::discreteGpu: 
+		case vk::PhysicalDeviceType::discreteGpu:
 			return "discreteGpu";
-		case vk::PhysicalDeviceType::integratedGpu: 
+		case vk::PhysicalDeviceType::integratedGpu:
 			return "integratedGpu";
-		case vk::PhysicalDeviceType::virtualGpu: 
+		case vk::PhysicalDeviceType::virtualGpu:
 			return "virtualGpu";
-		case vk::PhysicalDeviceType::other: 
+		case vk::PhysicalDeviceType::other:
 			return "other";
-		default: 
+		default:
 			return "<unknown>";
 	}
 }
 
-std::array<unsigned int, 3> apiVersion(uint32_t v)
-{
+std::array<unsigned int, 3> apiVersion(uint32_t v) {
 	return {v >> 22, (v >> 12) & 0x3ff, v & 0xfff};
 }
 
-std::string description(vk::PhysicalDevice phdev, const char* sep)
-{
+std::string description(vk::PhysicalDevice phdev, const char* sep) {
 	std::string ret;
 	auto props = vk::getPhysicalDeviceProperties(phdev);
 
@@ -117,8 +114,8 @@ std::string description(vk::PhysicalDevice phdev, const char* sep)
 	return ret;
 }
 
-int findQueueFamily(vk::PhysicalDevice phdev, vk::QueueFlags flags, OptimizeQueueFamily optimize)
-{
+int findQueueFamily(vk::PhysicalDevice phdev, vk::QueueFlags flags,
+		OptimizeQueueFamily optimize) {
 	auto queueProps = vk::getPhysicalDeviceQueueFamilyProperties(phdev);
 
 	auto highestCount = 0u;
@@ -151,10 +148,11 @@ int findQueueFamily(vk::PhysicalDevice phdev, vk::QueueFlags flags, OptimizeQueu
 }
 
 int findQueueFamily(vk::PhysicalDevice phdev, vk::Instance instance, vk::SurfaceKHR surface,
-	vk::QueueFlags flags, OptimizeQueueFamily optimize)
-{
+		vk::QueueFlags flags, OptimizeQueueFamily optimize) {
 	VPP_LOAD_PROC(instance, GetPhysicalDeviceSurfaceSupportKHR);
-	if(!pfGetPhysicalDeviceSurfaceSupportKHR) return -1;
+	if(!pfGetPhysicalDeviceSurfaceSupportKHR) {
+		return -1;
+	}
 
 	auto queueProps = vk::getPhysicalDeviceQueueFamilyProperties(phdev);
 
@@ -165,11 +163,16 @@ int findQueueFamily(vk::PhysicalDevice phdev, vk::Instance instance, vk::Surface
 	// iterate though all families, check if flags and surface are supported
 	// if so, check if better than current optimum value
 	for(auto i = 0u; i < queueProps.size(); ++i) {
-		if((queueProps[i].queueFlags & flags) != flags) continue;
+		if((queueProps[i].queueFlags & flags) != flags) {
+			continue;
+		}
 
 		vk::Bool32 ret;
-		VKPP_CALL(pfGetPhysicalDeviceSurfaceSupportKHR(phdev, i, surface, &ret));
-		if(!ret) continue;
+		VKPP_CHECK(call(pfGetPhysicalDeviceSurfaceSupportKHR, phdev, i,
+			surface, &ret));
+		if(!ret) {
+			continue;
+		}
 
 		if(optimize == OptimizeQueueFamily::none) return i;
 

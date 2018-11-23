@@ -10,6 +10,8 @@
 #include <vpp/image.hpp>
 #include <dlg/dlg.hpp>
 
+using vk::call::call;
+
 namespace vpp {
 namespace {
 
@@ -68,7 +70,7 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 
 	// query formats
 	uint32_t count;
-	VKPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev,
+	VKPP_CHECK(call(pfGetPhysicalDeviceSurfaceFormatsKHR, phdev,
 		surface, &count, nullptr));
 	if(!count) {
 		throw std::runtime_error("vpp::swapchainCreateInfo: "
@@ -76,12 +78,12 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 	}
 
 	std::vector<vk::SurfaceFormatKHR> formats(count);
-	VKPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev,
+	VKPP_CHECK(call(pfGetPhysicalDeviceSurfaceFormatsKHR, phdev,
 		surface, &count, formats.data()));
 
 	// present modes
 	count = 0u;
-	VKPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev,
+	VKPP_CHECK(call(pfGetPhysicalDeviceSurfacePresentModesKHR, phdev,
 		surface, &count, nullptr));
 	if(!count) {
 		throw std::runtime_error("vpp::swapchainCreateInfo: "
@@ -89,12 +91,12 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 	}
 
 	std::vector<vk::PresentModeKHR> modes(count);
-	VKPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev,
+	VKPP_CHECK(call(pfGetPhysicalDeviceSurfacePresentModesKHR, phdev,
 		surface, &count, modes.data()));
 
 	// caps
 	vk::SurfaceCapabilitiesKHR surfCaps;
-	VKPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev,
+	VKPP_CHECK(call(pfGetPhysicalDeviceSurfaceCapabilitiesKHR, phdev,
 		surface, &surfCaps));
 
 
@@ -213,41 +215,38 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 
 // Swapchain
 Swapchain::Swapchain(const Device& dev, const vk::SwapchainCreateInfoKHR& info)
-	: ResourceHandle(dev)
-{
+		: ResourceHandle(dev) {
 	VPP_LOAD_PROC(dev, CreateSwapchainKHR);
-	VKPP_CALL(pfCreateSwapchainKHR(device(), &info, nullptr, &handle_));
+	VKPP_CHECK(call(pfCreateSwapchainKHR, vkDevice(), &info, nullptr, &handle_));
 }
 
 Swapchain::Swapchain(const Device& dev, vk::SwapchainKHR swapChain)
-	: ResourceHandle(dev, swapChain)
-{
+		: ResourceHandle(dev, swapChain) {
 }
 
-Swapchain::~Swapchain()
-{
+Swapchain::~Swapchain() {
 	if(vkHandle()) {
 		VPP_LOAD_PROC(device(), DestroySwapchainKHR);
-		pfDestroySwapchainKHR(device(), vkHandle(), nullptr);
+		call(pfDestroySwapchainKHR, vkDevice(), vkHandle(), nullptr);
 	}
 }
 
-std::vector<vk::Image> Swapchain::images() const
-{
+std::vector<vk::Image> Swapchain::images() const {
 	VPP_LOAD_PROC(vkDevice(), GetSwapchainImagesKHR);
 
 	std::uint32_t c;
-	VKPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &c, nullptr));
+	VKPP_CHECK(call(pfGetSwapchainImagesKHR, vkDevice(), vkHandle(),
+		&c, nullptr));
 
 	std::vector<vk::Image> imgs(c);
-	VKPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &c, imgs.data()));
+	VKPP_CHECK(call(pfGetSwapchainImagesKHR, vkDevice(), vkHandle(), &c,
+		imgs.data()));
 
 	return imgs;
 }
 
 void Swapchain::resize(const vk::Extent2D& size,
-	vk::SwapchainCreateInfoKHR& info)
-{
+		vk::SwapchainCreateInfoKHR& info) {
 	dlg_assert(info.surface);
 
 	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceCapabilitiesKHR);
@@ -255,8 +254,8 @@ void Swapchain::resize(const vk::Extent2D& size,
 	VPP_LOAD_PROC(device(), CreateSwapchainKHR);
 
 	vk::SurfaceCapabilitiesKHR surfCaps;
-	VKPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(),
-		info.surface, &surfCaps));
+	VKPP_CHECK(call(pfGetPhysicalDeviceSurfaceCapabilitiesKHR,
+		vkPhysicalDevice(), info.surface, &surfCaps));
 
 	auto& curr = surfCaps.currentExtent;
 	if(curr.width == 0xFFFFFFFF && curr.height == 0xFFFFFFFF) {
@@ -269,26 +268,24 @@ void Swapchain::resize(const vk::Extent2D& size,
 	}
 
 	info.oldSwapchain = vkHandle();
-	VKPP_CALL(pfCreateSwapchainKHR(device(), &info, nullptr, &handle_));
+	VKPP_CHECK(call(pfCreateSwapchainKHR, vkDevice(), &info, nullptr, &handle_));
 
 	if(info.oldSwapchain) {
-		pfDestroySwapchainKHR(device(), info.oldSwapchain, nullptr);
+		call(pfDestroySwapchainKHR, vkDevice(), info.oldSwapchain, nullptr);
 	}
 }
 
 vk::Result Swapchain::acquire(unsigned int& id, vk::Semaphore sem,
-	vk::Fence fence, std::uint64_t timeout) const
-{
+		vk::Fence fence, std::uint64_t timeout) const {
 	VPP_LOAD_PROC(vkDevice(), AcquireNextImageKHR);
-	auto ret = pfAcquireNextImageKHR(device(), vkHandle(), timeout,
+	auto ret = call(pfAcquireNextImageKHR, vkDevice(), vkHandle(), timeout,
 		sem, fence, &id);
 
 	return ret;
 }
 
 vk::Result Swapchain::present(const Queue& queue, std::uint32_t currentBuffer,
-	vk::Semaphore wait) const
-{
+		vk::Semaphore wait) const {
 	VPP_LOAD_PROC(vkDevice(), QueuePresentKHR);
 
 	vk::PresentInfoKHR presentInfo {};
@@ -302,7 +299,7 @@ vk::Result Swapchain::present(const Queue& queue, std::uint32_t currentBuffer,
 	}
 
 	QueueLock(device(), queue);
-	auto ret = pfQueuePresentKHR(queue, &presentInfo);
+	auto ret = call(pfQueuePresentKHR, queue.vkHandle(), &presentInfo);
 	return ret;
 }
 

@@ -50,7 +50,7 @@ public:
 			stagingMap = buffer.memoryMap();
 		}
 
-		return {stagingMap.ptr(), stagingMap.size()};
+		return stagingMap.cspan();
 	}
 
 	MemoryMapView stagingMap;

@@ -7,6 +7,8 @@
 #include <vpp/fwd.hpp>
 #include <string>
 
+typedef void (VKAPI_PTR *PFN_vkVoidFunction)(void);
+
 namespace vpp {
 
 /// Returns the vulkan api function address for the given function name and instance.
@@ -15,7 +17,7 @@ namespace vpp {
 /// Prefer to use the macro versions to ensure correct casting.
 /// \param except If this is true, throws an exception if the proc could not be loaded.
 /// Otherwise, if in debug mode, outputs an error message if it could not be found.
-vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name, bool except = true);
+PFN_vkVoidFunction vulkanProc(vk::Instance instance, const char* name, bool except = true);
 
 /// Returns the vulkan api function address for the given function name and device..
 /// Internally uses a map to cache the pointers.
@@ -23,7 +25,7 @@ vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name, bool exc
 /// Prefer to use the macro versions to ensure correct casting.
 /// \param except If this is true, throws an exception if the proc could not be loaded.
 /// Otherwise, if in debug mode, outputs an error message if it could not be found.
-vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name, bool except = true);
+PFN_vkVoidFunction vulkanProc(vk::Device device, const char* name, bool except = true);
 
 } // namespace vpp
 
@@ -36,12 +38,12 @@ vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name, bool except 
 /// Examples:
 /// VPP_LOAD_PROC(device, CreateSwapchainKHR)(...);
 #define VPP_PROC(iniOrDev, name) \
-	reinterpret_cast<::vk::Pfn##name>(::vpp::vulkanProc(iniOrDev, "vk"#name))
+	reinterpret_cast<PFN_vk##name>(::vpp::vulkanProc(iniOrDev, "vk"#name))
 
 /// Like VPP_PROC but does not throw an exception if a function could not be loaded,
 /// but instead simply evaluates to nullptr, so direct calling should be used with care.
 #define VPP_PROC_NOTHROW(iniOrDev, name) \
-	reinterpret_cast<::vk::Pfn##name>(::vpp::vulkanProc(iniOrDev, "vk"#name, false))
+	reinterpret_cast<PFN_vk##name>(::vpp::vulkanProc(iniOrDev, "vk"#name, false))
 
 
 /// Macro for storing a vulkan function pointer.
@@ -55,9 +57,9 @@ vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name, bool except 
 /// VPP_LOAD_PROC(instance, DestroySurfaceKHR);
 /// pfDestroySurfaceKHR(...);
 #define VPP_LOAD_PROC(iniOrDev, name) \
-	auto pf##name = reinterpret_cast<::vk::Pfn##name>(::vpp::vulkanProc(iniOrDev, "vk"#name))
+	auto pf##name = reinterpret_cast<PFN_vk##name>(::vpp::vulkanProc(iniOrDev, "vk"#name))
 
 /// Like VPP_PROC but does not throw an exception if a function could not be loaded,
 /// but instead simply evaluates to nullptr, so direct calling should be used with care.
 #define VPP_LOAD_PROC_NOTHROW(iniOrDev, name) \
-	auto pf##name = reinterpret_cast<::vk::Pfn##name>(::vpp::vulkanProc(iniOrDev, "vk"#name, false))
+	auto pf##name = reinterpret_cast<PFN_vk##name>(::vpp::vulkanProc(iniOrDev, "vk"#name, false))

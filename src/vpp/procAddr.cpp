@@ -17,8 +17,8 @@ namespace {
 
 template<typename... A> using um = std::unordered_map<A...>;
 
-um<vk::Instance, um<std::string, vk::PfnVoidFunction>> instanceProcs;
-um<vk::Device, um<std::string, vk::PfnVoidFunction>> deviceProcs;
+um<vk::Instance, um<std::string, PFN_vkVoidFunction>> instanceProcs;
+um<vk::Device, um<std::string, PFN_vkVoidFunction>> deviceProcs;
 
 std::shared_mutex instanceMutex;
 std::shared_mutex deviceMutex;
@@ -27,7 +27,7 @@ std::shared_mutex deviceMutex;
 
 using namespace std::literals::string_literals;
 
-vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name, bool except) {
+PFN_vkVoidFunction vulkanProc(vk::Instance instance, const char* name, bool except) {
 	const static std::string err = "vpp::vulkanProc: Failed to load ini proc ";
 
 	// try to find it
@@ -54,7 +54,7 @@ vk::PfnVoidFunction vulkanProc(vk::Instance instance, const char* name, bool exc
 	return addr;
 }
 
-vk::PfnVoidFunction vulkanProc(vk::Device device, const char* name, bool except) {
+PFN_vkVoidFunction vulkanProc(vk::Device device, const char* name, bool except) {
 	const static std::string err = "vpp::vulkanProc: Failed to load dev proc ";
 
 	// try to find it

@@ -99,7 +99,7 @@ void Renderer::createBuffers(const vk::Extent2D& size, vk::Format format) {
 		buf.valid = false;
 	}
 
-	initBuffers(size, renderBuffers_);
+	initBuffers(size, nytl::Span<RenderBuffer>{renderBuffers_});
 }
 
 void Renderer::recreate(const vk::Extent2D& size,

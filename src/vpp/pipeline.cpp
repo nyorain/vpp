@@ -42,7 +42,8 @@ PipelineCache::PipelineCache(const Device& dev) : ResourceHandle(dev) {
 
 PipelineCache::PipelineCache(const Device& dev,
 		nytl::Span<const std::uint8_t> data) : ResourceHandle(dev) {
-	handle_ = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
+	handle_ = vk::createPipelineCache(dev,
+		{{}, std::size_t(data.size()), data.data()});
 }
 
 PipelineCache::PipelineCache(const Device& dev, std::string_view filename,
@@ -72,7 +73,7 @@ bool save(vk::Device dev, vk::PipelineCache cache, std::string_view file) {
 	auto ptr = reinterpret_cast<const std::byte*>(data.data());
 
 	try {
-		writeFile(file, {ptr, data.size()});
+		writeFile(file, {ptr, ptr + data.size()});
 	} catch(const std::exception& err) {
 		dlg_warn("vpp::save(PipelineCache): {}", err.what());
 		return false;

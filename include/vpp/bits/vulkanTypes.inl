@@ -113,5 +113,5 @@ template<typename C,
 	typename = std::enable_if_t<std::is_standard_layout_v<std::remove_reference_t<D>>>>
 constexpr RawBufferData rawSpan(const C& span) {
 	auto ptr = reinterpret_cast<const std::byte*>(span.data());
-	return {ptr, span.size() * sizeof(std::remove_reference_t<D>)};
+	return {ptr, ptr + (span.size() * sizeof(std::remove_reference_t<D>))};
 }

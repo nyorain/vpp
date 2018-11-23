@@ -7,11 +7,13 @@
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 
+namespace vkc = vk::call;
+
 namespace vpp {
 namespace {
 
-VKAPI_PTR vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags,
-		vk::DebugReportObjectTypeEXT objType,
+VKAPI_PTR vk::Bool32 defaultMessageCallback(VkDebugReportFlagsEXT vkFlags,
+		VkDebugReportObjectTypeEXT vkObjType,
 		uint64_t srcObject,
 		size_t location,
 		int32_t msgCode,
@@ -19,6 +21,8 @@ VKAPI_PTR vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags,
 		const char* pMsg,
 		void* pUserData) {
 
+	auto flags = vk::DebugReportFlagsEXT(static_cast<vk::DebugReportBitsEXT>(vkFlags));
+	auto objType = static_cast<vk::DebugReportObjectTypeEXT>(vkObjType);
 	if(!pUserData) {
 		dlg_error("DebugCallback called with nullptr user data");
 		return true;
@@ -123,12 +127,14 @@ DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flag
 
 	VPP_LOAD_PROC(vkInstance(), CreateDebugReportCallbackEXT);
 	vk::DebugReportCallbackCreateInfoEXT createInfo(flags, &defaultMessageCallback, this);
-	VKPP_CALL(pfCreateDebugReportCallbackEXT(vkInstance(), &createInfo, nullptr, &debugCallback_));
+	VKPP_CHECK(vkc::call(pfCreateDebugReportCallbackEXT, vkInstance(),
+		&createInfo, nullptr, &debugCallback_));
 }
 
 DebugCallback::~DebugCallback() {
 	if(vkCallback()) {
-		VPP_PROC(vkInstance(), DestroyDebugReportCallbackEXT)(vkInstance(), vkCallback(), nullptr);
+		vkc::call(VPP_PROC(vkInstance(), DestroyDebugReportCallbackEXT),
+			vkInstance(), vkCallback(), nullptr);
 	}
 }
 
@@ -173,7 +179,8 @@ vk::Result nameHandle(vk::Device dev, std::uint64_t handle,
 	info.object = handle;
 	info.objectType = type;
 	info.pObjectName = name;
-	return pfDebugMarkerSetObjectNameEXT(dev, &info);
+	return static_cast<vk::Result>(vkc::call(pfDebugMarkerSetObjectNameEXT,
+		dev, &info));
 }
 
 vk::Result tagHandle(vk::Device dev, std::uint64_t handle,
@@ -191,7 +198,8 @@ vk::Result tagHandle(vk::Device dev, std::uint64_t handle,
 	info.pTag = data.data();
 	info.tagSize = data.size();
 	info.tagName = name;
-	return pfDebugMarkerSetObjectTagEXT(dev, &info);
+	return static_cast<vk::Result>(vkc::call(pfDebugMarkerSetObjectTagEXT,
+		dev, &info));
 }
 
 bool beginDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf,
@@ -205,7 +213,7 @@ bool beginDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf,
 	vk::DebugMarkerMarkerInfoEXT markerInfo;
 	markerInfo.color = col;
 	markerInfo.pMarkerName = name;
-	pfCmdDebugMarkerBeginEXT(cmdBuf, &markerInfo);
+	vkc::call(pfCmdDebugMarkerBeginEXT, cmdBuf, &markerInfo);
 	return true;
 }
 
@@ -215,7 +223,7 @@ bool endDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf) {
 		return false;
 	}
 
-	pfCmdDebugMarkerEndEXT(cmdBuf);
+	vkc::call(pfCmdDebugMarkerEndEXT, cmdBuf);
 	return true;
 }
 
@@ -230,7 +238,7 @@ bool insertDebugMarker(vk::Device dev, vk::CommandBuffer cmdBuf,
 	vk::DebugMarkerMarkerInfoEXT markerInfo;
 	markerInfo.color = col;
 	markerInfo.pMarkerName = name;
-	pfCmdDebugMarkerInsertEXT(cmdBuf, &markerInfo);
+	vkc::call(pfCmdDebugMarkerInsertEXT, cmdBuf, &markerInfo);
 	return true;
 }
 

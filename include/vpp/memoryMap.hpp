@@ -49,8 +49,8 @@ public:
 	/// Note that pointer (and span) may change when the memory is remapped.
 	/// So don't store them over a time where a remap might happen.
 	std::byte* ptr() const noexcept { return static_cast<std::byte*>(ptr_); }
-	nytl::Span<std::byte> span() const noexcept { return {ptr(), size()}; }
-	nytl::Span<const std::byte> cspan() const noexcept { return {ptr(), size()}; }
+	nytl::Span<std::byte> span() const noexcept { return {ptr(), ptr() + size()}; }
+	nytl::Span<const std::byte> cspan() const noexcept { return {ptr(), ptr() + size()}; }
 
 	const vk::DeviceMemory& vkMemory() const noexcept;
 	const Allocation& allocation() const noexcept { return allocation_; }
@@ -117,8 +117,8 @@ public:
 	/// Note that pointer (and span) may change when the memory is remapped.
 	/// So don't store them over a time where a remap might happen.
 	std::byte* ptr() const noexcept;
-	nytl::Span<std::byte> span() const noexcept { return {ptr(), size()}; }
-	nytl::Span<const std::byte> cspan() const noexcept { return {ptr(), size()}; }
+	nytl::Span<std::byte> span() const noexcept { return {ptr(), ptr() + size()}; }
+	nytl::Span<const std::byte> cspan() const noexcept { return {ptr(), ptr() + size()}; }
 
 	MemoryMap& memoryMap() const noexcept { return *memoryMap_; }
 	const DeviceMemory& memory() const noexcept { return memoryMap().memory(); }

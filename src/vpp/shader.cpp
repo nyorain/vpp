@@ -20,7 +20,7 @@ vk::ShaderModule loadShaderModule(vk::Device dev, std::string_view filename)
 	}
 
 	auto ptr = reinterpret_cast<const std::uint32_t*>(code.data());
-	return loadShaderModule(dev, {ptr, code.size() / 4});
+	return loadShaderModule(dev, {ptr, ptr + (code.size() / 4)});
 }
 
 vk::ShaderModule loadShaderModule(vk::Device dev, nytl::Span<const std::uint32_t> code)
