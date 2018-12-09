@@ -10,7 +10,10 @@
 namespace vpp {
 
 std::vector<std::byte> readFile(std::string_view filename, bool binary) {
-	auto openmode = binary ? std::ios::binary : std::ios::ate;
+	auto openmode = std::ios::ate;
+	if(binary) {
+		openmode |= std::ios::binary;
+	}
 
 	std::ifstream ifs(std::string{filename}, openmode);
 	ifs.exceptions(std::ostream::failbit | std::ostream::badbit);
