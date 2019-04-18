@@ -10,17 +10,16 @@
 
 namespace vpp {
 
-Renderer::Renderer(const Queue& present, QueueSubmitter* submitter,
-	RecordMode mode) : present_(&present), mode_(mode) {
+void Renderer::init(const vk::SwapchainCreateInfoKHR& scInfo,
+		const Queue& present, QueueSubmitter* submitter, RecordMode mode) {
+	dlg_assertm(!present_, "init was already called");
+
+	present_ = &present;
+	mode_ = mode;
 
 	submitter_ = submitter ? submitter : &device().queueSubmitter();
 	commandPool_ = {device(), submitter_->queue().family()};
 	acquireSemaphore_ = {device()};
-}
-
-void Renderer::init(const vk::SwapchainCreateInfoKHR& scInfo) {
-	dlg_assert(present_ && commandPool_ && acquireSemaphore_);
-	dlg_assert(!swapchain_);
 
 	swapchain_ = {present_->device(), scInfo};
 	createBuffers(scInfo.imageExtent, scInfo.imageFormat);
@@ -224,10 +223,10 @@ void Renderer::recordMode(RecordMode nm) {
 
 // DefaultRenderer
 void DefaultRenderer::init(vk::RenderPass rp,
-		const vk::SwapchainCreateInfoKHR& scInfo) {
-
+		const vk::SwapchainCreateInfoKHR& scInfo, const Queue& present,
+		QueueSubmitter* render, RecordMode mode) {
 	renderPass_ = rp;
-	Renderer::init(scInfo);
+	Renderer::init(scInfo, present, render, mode);
 }
 
 void DefaultRenderer::initBuffers(const vk::Extent2D& size,

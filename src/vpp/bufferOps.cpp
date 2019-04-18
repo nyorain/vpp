@@ -176,7 +176,7 @@ void BufferSizer::alignTexel() noexcept {
 namespace detail {
 
 void apply(vk::CommandBuffer cmdBuf, const BufferSpan& dst,
-		SubBuffer&& stage, nytl::Span<const vk::BufferCopy> copies) {
+		const SubBuffer& stage, nytl::Span<const vk::BufferCopy> copies) {
 
 	dlg_check({
 		for(auto& copy : copies) {

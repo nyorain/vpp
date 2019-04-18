@@ -114,25 +114,25 @@ public:
 	auto& submitter() const { return *submitter_; }
 
 protected:
-	/// Initializes the Renderer into invalid state.
-	/// The deriving class can initialize its own resources, but then
-	/// has to call init before any methods can be used.
-	/// Has no initializing constructor since the init
-	/// function requires the virtual functions.
-	Renderer(const Queue& present, QueueSubmitter* render = {},
-		RecordMode = RecordMode::all);
+	/// Requires to call init before using it.
+	/// Useful for allowing deriving classes to first initialize
+	/// themself, e.g. before command buffer recording.
+	/// Remember that calls to this->device() are invalid until
+	/// init is called as well.
+	Renderer() = default;
 
 	Renderer(Renderer&&) noexcept = default;
 	Renderer& operator=(Renderer&&) noexcept = default;
 
 	/// Creates and initializes the Renderer.
-	/// Only records command buffers if record is passed as true.
-	/// If no rendering queue is given, will choose any queue from
-	/// the associated device with graphics bit set.
-	/// The real size of the swapchain will be returned in size.
+	/// If no rendering queue(submitter) is given, will choose use the
+	/// devices default queue submitter.
 	/// Will also record all command buffers (if the record mode
-	/// is RecrodMode::all).
-	void init(const vk::SwapchainCreateInfoKHR&);
+	/// is RecrodMode::all), so should only be called after record
+	/// is implemented (i.e. should be called from the most derived
+	/// class).
+	void init(const vk::SwapchainCreateInfoKHR&, const Queue& present,
+		QueueSubmitter* render = {}, RecordMode = RecordMode::all);
 
 	/// (Re-)creates the render buffers.
 	void createBuffers(const vk::Extent2D& size, vk::Format swapchainFormat);
@@ -176,7 +176,9 @@ protected:
 
 	/// Like the Renderer::init but additionally stores the
 	/// renderPass to create the framebuffers for.
-	void init(vk::RenderPass, const vk::SwapchainCreateInfoKHR&);
+	void init(vk::RenderPass, const vk::SwapchainCreateInfoKHR&,
+		const Queue& present, QueueSubmitter* render = {},
+		RecordMode = RecordMode::all);
 
 	/// Overrides the default init method with a call to the init function
 	/// below (without additional attachments). You have to override in

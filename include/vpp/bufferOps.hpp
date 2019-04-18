@@ -274,7 +274,7 @@ protected:
 namespace detail {
 
 void apply(vk::CommandBuffer, const BufferSpan& dst,
-	SubBuffer&& stage, nytl::Span<const vk::BufferCopy>);
+	const SubBuffer& stage, nytl::Span<const vk::BufferCopy>);
 void apply(vk::CommandBuffer, const BufferSpan&, const DirectBufferWriter&);
 CommandBuffer copyCmdBuf(QueueSubmitter&, const BufferSpan& dst,
 	const BufferSpan& stage, vk::DeviceSize size);
@@ -322,7 +322,7 @@ vpp::SubBuffer writeStaging(vk::CommandBuffer cmdb, const BufferSpan& span,
 	writer.offset(span.offset(), false);
 	writer.add(args...);
 	writer.map().flush();
-	detail::apply(cmdb, span, std::move(stage), writer.regions());
+	detail::apply(cmdb, span, stage, writer.regions());
 	return stage;
 }
 

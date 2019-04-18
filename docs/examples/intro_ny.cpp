@@ -138,7 +138,6 @@ int main(int, char**) {
 	ws.size = {800u, 500u};
 	ws.vulkan.storeSurface = &reinterpret_cast<std::uintptr_t&>(vkSurface);
 	ws.vulkan.instance = reinterpret_cast<VkInstance>(instance.vkInstance());
-	// ws.initState = ny::ToplevelState::fullscreen;
 	auto wc = ac->createWindowContext(ws);
 
 	// now (if everything went correctly) we have the window (and a
@@ -194,13 +193,11 @@ int main(int, char**) {
 
 // MyRenderer
 MyRenderer::MyRenderer(vk::RenderPass rp, vk::SwapchainCreateInfoKHR& scInfo,
-	const vpp::Queue& present) : vpp::DefaultRenderer(present),
-		scInfo_(scInfo) {
+		const vpp::Queue& present) : vpp::DefaultRenderer(), scInfo_(scInfo) {
 	// pipeline
-	pipelineLayout_ = {device(), {}};
-	pipeline_ = createGraphicsPipeline(device(), rp, pipelineLayout_);
-
-	init(rp, scInfo);
+	pipelineLayout_ = {present.device(), {}};
+	pipeline_ = createGraphicsPipeline(present.device(), rp, pipelineLayout_);
+	init(rp, scInfo, present);
 }
 
 void MyRenderer::resize(nytl::Vec2ui size) {
@@ -370,12 +367,13 @@ void MyWindowListener::resize(const ny::SizeEvent& sizeEvent) {
 	renderer->resize(sizeEvent.size);
 }
 
+// android:
 void MyWindowListener::surfaceCreated(const ny::SurfaceCreatedEvent& surfaceEvent) {
-	// TODO
+	// TODO: set surface
 }
 
 void MyWindowListener::surfaceDestroyed(const ny::SurfaceDestroyedEvent&) {
-	// TODO
+	// TODO: unset surface and stop rendering
 }
 
 // utility
@@ -398,7 +396,7 @@ vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
 
 	pipeInfo.assembly.topology = vk::PrimitiveTopology::triangleList;
 
-	/* NOTE: if we would use a vertex buffer
+	/* NOTE: if we used a vertex buffer
 	constexpr auto stride = (2 + 4) * sizeof(float); // pos (vec2), color(vec4)
 	vk::VertexInputBindingDescription bufferBinding {0,
 		stride, vk::VertexInputRate::vertex};
