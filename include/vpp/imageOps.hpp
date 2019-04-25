@@ -53,7 +53,7 @@ vk::Extent2D blockSize(vk::Format);
 /// The size of data will be expected to be exactly
 /// extent.w * extent.h * extent.d * formatSize(format).
 void fillMap(const Image&, vk::Format, const vk::Extent3D& size,
-	nytl::Span<std::byte> data, const vk::ImageSubresource&,
+	nytl::Span<const std::byte> data, const vk::ImageSubresource&,
 	const vk::Offset3D& offset = {});
 
 /// Retrieves the contents of the given image by mapping it.
