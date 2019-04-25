@@ -20,7 +20,7 @@ vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout,
 }
 
 void fillMap(const Image& img, vk::Format format,
-		const vk::Extent3D& size, nytl::Span<std::byte> data,
+		const vk::Extent3D& size, nytl::Span<const std::byte> data,
 		const vk::ImageSubresource& subres, const vk::Offset3D& offset) {
 
 	auto texSize = formatSize(format);
