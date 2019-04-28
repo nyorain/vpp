@@ -83,7 +83,7 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 		for(unsigned int h = offset.y; h < offset.y + size.height; ++h) {
 			auto ptr = map.ptr() + texelAddress(sresLayout, texSize,
 				offset.x, h, d, subres.arrayLayer);
-			std::memcpy(data.data() + doffset, ptr, size.width);
+			std::memcpy(data.data() + doffset, ptr, size.width * texSize);
 			doffset += size.width * texSize;
 		}
 	}
