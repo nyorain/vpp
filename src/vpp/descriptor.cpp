@@ -105,6 +105,10 @@ void DescriptorSetUpdate::apply() {
 	}
 
 	vk::updateDescriptorSets(device(), writes_, copies_);
+	reset();
+}
+
+void DescriptorSetUpdate::reset() {
 	writes_.clear();
 	copies_.clear();
 	buffers_.clear();
@@ -112,8 +116,7 @@ void DescriptorSetUpdate::apply() {
 	views_.clear();
 }
 
-void apply(nytl::Span<DescriptorSetUpdate> updates)
-{
+void apply(nytl::Span<DescriptorSetUpdate> updates) {
 	if(updates.empty()) {
 		return;
 	}
@@ -130,16 +133,12 @@ void apply(nytl::Span<DescriptorSetUpdate> updates)
 	}
 
 	vk::updateDescriptorSets(updates[0].device(), writes, copies);
-
 	for(auto& update : updates) {
-		update.buffers_.clear();
-		update.images_.clear();
-		update.views_.clear();
+		update.reset();
 	}
 }
 
-void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates)
-{
+void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates) {
 	if(updates.empty()) {
 		return;
 	}
@@ -161,10 +160,7 @@ void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates
 
 	for(auto& updateRef : updates) {
 		auto& update = updateRef.get();
-
-		update.buffers_.clear();
-		update.images_.clear();
-		update.views_.clear();
+		update.reset();
 	}
 }
 

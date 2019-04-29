@@ -109,6 +109,9 @@ public:
 	/// If never called, will be automatically triggered on destruction.
 	void apply();
 
+	/// Resets all queued updates without executing them.
+	void reset();
+
 	/// Skips the given number of descriptors.
 	void skip(unsigned int count = 1) { currentBinding_ += count; };
 	const auto& resourceRef() const { return *set_; }
@@ -125,10 +128,6 @@ protected:
 
 	unsigned int currentBinding_ = 0;
 	const DescriptorSet* set_ {};
-
-	friend void apply(nytl::Span<const std::reference_wrapper<
-		DescriptorSetUpdate>> updates);
-	friend void apply(nytl::Span<DescriptorSetUpdate> updates);
 };
 
 /// Applies multiple descriptor set updates.
