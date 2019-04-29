@@ -72,15 +72,20 @@ public:
 
 /// Allows convinient descriptorSet updates.
 /// Does not perform any checking.
-class DescriptorSetUpdate : public ResourceReference<DescriptorSetUpdate> {
+class DescriptorSetUpdate : public ResourceReference<DescriptorSetUpdate>,
+	public nytl::NonCopyable {
 public:
 	using BufferInfos = std::vector<vk::DescriptorBufferInfo>;
 	using BufferViewInfos = std::vector<vk::BufferView>;
 	using ImageInfos = std::vector<vk::DescriptorImageInfo>;
 
 public:
+	DescriptorSetUpdate() = default;
 	DescriptorSetUpdate(const DescriptorSet& set);
 	~DescriptorSetUpdate();
+
+	DescriptorSetUpdate(DescriptorSetUpdate&&) noexcept = default;
+	DescriptorSetUpdate& operator=(DescriptorSetUpdate&&) noexcept = default;
 
 	/// When the range member of any buffer info is 0 (default constructed), it will
 	/// be automatically set to vk::wholeSize.
@@ -119,15 +124,17 @@ protected:
 	std::vector<std::vector<vk::DescriptorImageInfo>> images_;
 
 	unsigned int currentBinding_ = 0;
-	const DescriptorSet* set_;
+	const DescriptorSet* set_ {};
 
 	friend void apply(nytl::Span<const std::reference_wrapper<
 		DescriptorSetUpdate>> updates);
+	friend void apply(nytl::Span<DescriptorSetUpdate> updates);
 };
 
 /// Applies multiple descriptor set updates.
 /// May be a bit more efficient than updating them individually.
 void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>>);
+void apply(nytl::Span<DescriptorSetUpdate>);
 
 /// Alternative vk::DescriptorSetLayoutBinding constructor.
 /// When passed to the DescriptorSetLayout constructor, will automatically

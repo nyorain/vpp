@@ -112,6 +112,32 @@ void DescriptorSetUpdate::apply() {
 	views_.clear();
 }
 
+void apply(nytl::Span<DescriptorSetUpdate> updates)
+{
+	if(updates.empty()) {
+		return;
+	}
+
+	std::vector<vk::WriteDescriptorSet> writes;
+	std::vector<vk::CopyDescriptorSet> copies;
+
+	for(auto& update : updates) {
+		writes.insert(writes.end(), update.writes_.begin(), update.writes_.end());
+		copies.insert(copies.end(), update.copies_.begin(), update.copies_.end());
+
+		update.writes_.clear();
+		update.copies_.clear();
+	}
+
+	vk::updateDescriptorSets(updates[0].device(), writes, copies);
+
+	for(auto& update : updates) {
+		update.buffers_.clear();
+		update.images_.clear();
+		update.views_.clear();
+	}
+}
+
 void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates)
 {
 	if(updates.empty()) {
