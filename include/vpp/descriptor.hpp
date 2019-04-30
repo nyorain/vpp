@@ -115,6 +115,8 @@ public:
 	/// Skips the given number of descriptors.
 	void skip(unsigned int count = 1) { currentBinding_ += count; };
 	const auto& resourceRef() const { return *set_; }
+	const auto& writes() const { return writes_; }
+	const auto& copies() const { return copies_; }
 
 protected:
 	std::vector<vk::WriteDescriptorSet> writes_;

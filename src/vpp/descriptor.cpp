@@ -125,11 +125,8 @@ void apply(nytl::Span<DescriptorSetUpdate> updates) {
 	std::vector<vk::CopyDescriptorSet> copies;
 
 	for(auto& update : updates) {
-		writes.insert(writes.end(), update.writes_.begin(), update.writes_.end());
-		copies.insert(copies.end(), update.copies_.begin(), update.copies_.end());
-
-		update.writes_.clear();
-		update.copies_.clear();
+		writes.insert(writes.end(), update.writes().begin(), update.writes().end());
+		copies.insert(copies.end(), update.copies().begin(), update.copies().end());
 	}
 
 	vk::updateDescriptorSets(updates[0].device(), writes, copies);
@@ -149,15 +146,11 @@ void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>> updates
 	for(auto& updateRef : updates) {
 		auto& update = updateRef.get();
 
-		writes.insert(writes.end(), update.writes_.begin(), update.writes_.end());
-		copies.insert(copies.end(), update.copies_.begin(), update.copies_.end());
-
-		update.writes_.clear();
-		update.copies_.clear();
+		writes.insert(writes.end(), update.writes().begin(), update.writes().end());
+		copies.insert(copies.end(), update.copies().begin(), update.copies().end());
 	}
 
 	vk::updateDescriptorSets(updates[0].get().device(), writes, copies);
-
 	for(auto& updateRef : updates) {
 		auto& update = updateRef.get();
 		update.reset();
