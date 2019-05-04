@@ -176,19 +176,20 @@ BufferAllocator::Allocation BufferAllocator::alloc(Reservation reservation) {
 	SharedBuffer* rbuf {};
 	SharedBuffer::Allocation ralloc {};
 	if(req) {
-		auto [b, a] = alloc(it->size, it->usage, it->align, it->memBits);
+		Requirement r = *it;
+		reqs_.erase(it);
+		auto [b, a] = alloc(r.size, r.usage, r.align, r.memBits);
 		rbuf = &b;
 		ralloc = a;
+		return {*rbuf, ralloc};
 	}
 
 	auto rit = std::find_if(reservations_.begin(), reservations_.end(),
 		[&](const auto& val) { return val.id == reservation; });
 	dlg_assert(rit != reservations_.end());
-	if(!req) {
-		auto [b, a] = alloc(rit->size, rit->usage, rit->align, rit->memBits);
-		rbuf = &b;
-		ralloc = a;
-	}
+	auto [b, a] = alloc(rit->size, rit->usage, rit->align, rit->memBits);
+	rbuf = &b;
+	ralloc = a;
 
 	reservations_.erase(rit);
 	return {*rbuf, ralloc};
@@ -227,20 +228,21 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 	createInfo.size = size;
 	createInfo.usage = usage;
 
-	for(auto& req : reqs_) {
-		// TODO: bad idea (greedy)
+	// TODO: bad idea (greedy)
+	for(auto it = reqs_.begin(); it != reqs_.end();) {
+		auto req = *it;
 		auto mem = memBits & req.memBits;
 		if(mem) {
 			createInfo.usage |= req.usage;
 			createInfo.size += req.size;
 			memBits = mem;
-			req.size = 0u; // mark for removal
+
 			reservations_.push_back(req);
+			it = reqs_.erase(it);
+		} else {
+			++it;
 		}
 	}
-
-	reqs_.erase(std::remove_if(reqs_.begin(), reqs_.end(), [](const auto& r)
-		{ return r.size == 0; }), reqs_.end());
 
 	buffers_.emplace_back(device(), createInfo, memBits);
 	auto alloc = buffers_.back().buffer.alloc(size);

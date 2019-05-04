@@ -54,7 +54,7 @@ bool supportedUsage(vk::FormatFeatureFlags features, vk::BufferUsageFlags usages
 	return true;
 }
 
-bool supported(const Device& dev, vk::Format format, 
+bool supported(const Device& dev, vk::Format format,
 	const vk::ImageCreateInfo& info, vk::FormatFeatureFlags additional)
 {
 	auto props = vk::getPhysicalDeviceFormatProperties(
@@ -63,7 +63,7 @@ bool supported(const Device& dev, vk::Format format,
 		props.linearTilingFeatures : props.optimalTilingFeatures;
 
 	auto imgProps = vk::getPhysicalDeviceImageFormatProperties(
-		dev.vkPhysicalDevice(), format, info.imageType, info.tiling, 
+		dev.vkPhysicalDevice(), format, info.imageType, info.tiling,
 		info.usage, info.flags);
 
 	return ((features & additional) == additional &&
@@ -71,12 +71,12 @@ bool supported(const Device& dev, vk::Format format,
 		info.extent.width <= imgProps.maxExtent.width &&
 		info.extent.height <= imgProps.maxExtent.height &&
 		info.extent.depth <= imgProps.maxExtent.depth &&
-		info.mipLevels <= imgProps.maxMipLevels && 
+		info.mipLevels <= imgProps.maxMipLevels &&
 		info.arrayLayers <= imgProps.maxArrayLayers &&
 		(imgProps.sampleCounts & info.samples));
 }
 
-bool supported(const Device& dev, vk::Format format, 
+bool supported(const Device& dev, vk::Format format,
 	vk::BufferUsageFlags use, vk::FormatFeatureFlags additional)
 {
 	auto props = vk::getPhysicalDeviceFormatProperties(
@@ -85,7 +85,7 @@ bool supported(const Device& dev, vk::Format format,
 		supportedUsage(props.bufferFeatures, use);
 }
 
-vk::Format findSupported(const Device& dev, nytl::Span<const vk::Format> formats, 
+vk::Format findSupported(const Device& dev, nytl::Span<const vk::Format> formats,
 	const vk::ImageCreateInfo& info, vk::FormatFeatureFlags additional)
 {
 	for(auto format : formats) {
@@ -97,7 +97,7 @@ vk::Format findSupported(const Device& dev, nytl::Span<const vk::Format> formats
 	return vk::Format::undefined;
 }
 
-vk::Format findSupported(const Device& dev, nytl::Span<const vk::Format> formats, 
+vk::Format findSupported(const Device& dev, nytl::Span<const vk::Format> formats,
 	vk::BufferUsageFlags use, vk::FormatFeatureFlags additional)
 {
 	for(auto format : formats) {
@@ -110,9 +110,9 @@ vk::Format findSupported(const Device& dev, nytl::Span<const vk::Format> formats
 }
 
 std::optional<ViewableImageCreateInfo> ViewableImageCreateInfo::general(
-	const Device& dev, const vk::Extent3D& size, 
-	vk::ImageUsageFlags usage, nytl::Span<const vk::Format> formats, 
-	vk::ImageAspectFlags aspect, vk::ImageTiling tiling, 
+	const Device& dev, const vk::Extent3D& size,
+	vk::ImageUsageFlags usage, nytl::Span<const vk::Format> formats,
+	vk::ImageAspectFlags aspect, vk::ImageTiling tiling,
 	vk::SampleCountBits samples, vk::ImageLayout layout,
 	vk::ImageCreateFlags flags, vk::FormatFeatureFlags additional)
 {
@@ -121,8 +121,8 @@ std::optional<ViewableImageCreateInfo> ViewableImageCreateInfo::general(
 	ret.img.extent.width = size.width;
 	ret.img.extent.height = size.height ? size.height : 1u;
 	ret.img.extent.depth = size.depth ? size.depth : 1u;
-	ret.img.imageType = size.depth > 1 ? 
-		vk::ImageType::e3d : size.height > 1 ?
+	ret.img.imageType = size.depth > 0 ?
+		vk::ImageType::e3d : size.height > 0 ?
 		vk::ImageType::e2d : vk::ImageType::e1d;
 	ret.img.initialLayout = layout;
 	ret.img.tiling = tiling;
@@ -136,8 +136,8 @@ std::optional<ViewableImageCreateInfo> ViewableImageCreateInfo::general(
 		return {};
 	}
 
-	ret.view.viewType = size.depth > 1 ? 
-		vk::ImageViewType::e3d : size.height > 1 ?
+	ret.view.viewType = size.depth > 0 ?
+		vk::ImageViewType::e3d : size.height > 0 ?
 		vk::ImageViewType::e2d : vk::ImageViewType::e1d;
 	ret.view.format = ret.img.format;
 	ret.view.components = {}; // identity everywhere
@@ -147,8 +147,8 @@ std::optional<ViewableImageCreateInfo> ViewableImageCreateInfo::general(
 }
 
 std::optional<ViewableImageCreateInfo> ViewableImageCreateInfo::color(
-	const Device& dev, const vk::Extent3D& size, 
-	vk::ImageUsageFlags usage, nytl::Span<const vk::Format> formats, 
+	const Device& dev, const vk::Extent3D& size,
+	vk::ImageUsageFlags usage, nytl::Span<const vk::Format> formats,
 	vk::ImageTiling tiling, vk::SampleCountBits samples,
 	vk::ImageLayout layout, vk::ImageCreateFlags flags,
 	vk::FormatFeatureFlags additional)
@@ -158,8 +158,8 @@ std::optional<ViewableImageCreateInfo> ViewableImageCreateInfo::color(
 }
 
 std::optional<ViewableImageCreateInfo> ViewableImageCreateInfo::depth(
-	const Device& dev, const vk::Extent3D& size, 
-	vk::ImageUsageFlags usage, nytl::Span<const vk::Format> formats, 
+	const Device& dev, const vk::Extent3D& size,
+	vk::ImageUsageFlags usage, nytl::Span<const vk::Format> formats,
 	vk::ImageTiling tiling, vk::SampleCountBits samples,
 	vk::ImageLayout layout, vk::ImageCreateFlags flags,
 	vk::FormatFeatureFlags additional)
