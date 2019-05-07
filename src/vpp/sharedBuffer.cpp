@@ -262,6 +262,7 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 	for(auto it = reservations_.begin(); it != reservations_.end();) {
 		auto reqp = std::get_if<0>(&it->data);
 		if(!reqp) { // reservation, no requirement
+			++it;
 			continue;
 		}
 		auto& req = *reqp;
