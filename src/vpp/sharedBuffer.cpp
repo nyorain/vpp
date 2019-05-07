@@ -168,24 +168,38 @@ BufferAllocator::BufferAllocator(const Device& dev) :
 		Resource(dev) {
 }
 
+BufferAllocator::~BufferAllocator() {
+	// shared buffer will warn if there are remaining allocations
+	// on destruction
+	for(auto& reservation : reservations_) {
+		if(auto* r = std::get_if<1>(&reservation.data); r) {
+			if(r->buffer && r->allocation.size) {
+				r->buffer->free(r->allocation);
+			}
+		}
+	}
+}
+
 void BufferAllocator::reserve(vk::DeviceSize size,
 		vk::BufferUsageFlags usage, unsigned int memBits,
-		vk::DeviceSize align, Reservation* reservation) {
+		vk::DeviceSize align, ReservationID* reservation) {
 
 	dlg_assert(size > 0);
 	dlg_assertm(align == 1 || align % 2 == 0,
 		"Alignment {} not power of 2", align);
 
 	align = std::max(align, usageAlignment(device(), usage));
-	auto& back = reqs_.emplace_back();
+	auto& back = reservations_.emplace_back();
 
-	back.size = size;
-	back.align = align;
-	back.usage = usage;
-	back.memBits = memBits;
+	Requirement req;
+	req.size = size;
+	req.align = align;
+	req.usage = usage;
+	req.memBits = memBits;
+	back.data = {req};
 
 	if(reservation) {
-		if(++id_ == 0u) {
+		if(++id_ == 0u) { // wrap
 			++id_;
 		}
 
@@ -194,31 +208,21 @@ void BufferAllocator::reserve(vk::DeviceSize size,
 	}
 }
 
-BufferAllocator::Allocation BufferAllocator::alloc(Reservation reservation) {
+BufferAllocator::Allocation BufferAllocator::alloc(ReservationID reservation) {
 	dlg_assert(reservation);
+	auto cmp = [&](const auto& val) { return val.id == reservation; };
+	auto it = std::find_if(reservations_.begin(), reservations_.end(), cmp);
+	dlg_assert(it != reservations_.end());
 
-	auto it = std::find_if(reqs_.begin(), reqs_.end(), [&](const auto& val)
-		{ return val.id == reservation; });
-	bool req = it != reqs_.end();
-	SharedBuffer* rbuf {};
-	SharedBuffer::Allocation ralloc {};
-	if(req) {
-		auto [b, a] = alloc(it->size, it->usage, it->align, it->memBits);
-		rbuf = &b;
-		ralloc = a;
+	auto r = std::move(*it);
+	reservations_.erase(it); // important to erase first!
+	if(auto* req = std::get_if<0>(&r.data); req) {
+		auto [buf, a] = alloc(req->size, req->usage, req->memBits, req->align);
+		return {buf, a};
+	} else {
+		auto& res = std::get<1>(r.data);
+		return {*res.buffer, res.allocation};
 	}
-
-	auto rit = std::find_if(reservations_.begin(), reservations_.end(),
-		[&](const auto& val) { return val.id == reservation; });
-	dlg_assert(rit != reservations_.end());
-	if(!req) {
-		auto [b, a] = alloc(rit->size, rit->usage, rit->align, rit->memBits);
-		rbuf = &b;
-		ralloc = a;
-	}
-
-	reservations_.erase(rit);
-	return {*rbuf, ralloc};
 }
 
 BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
@@ -231,6 +235,7 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 
 	align = std::max(align, usageAlignment(device(), usage));
 
+	// check if there is still space available
 	// TODO: really dumb algorithm atm, greedy af
 	for(auto& buf : buffers_) {
 		auto* mem = buf.buffer.memoryEntry().memory();
@@ -254,42 +259,56 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 	createInfo.size = size;
 	createInfo.usage = usage;
 
-	for(auto& req : reqs_) {
-		// TODO: bad idea (greedy)
-		// the way we align we might allocate a bit too much but
-		// that shouldn't be a problem
+	for(auto it = reservations_.begin(); it != reservations_.end();) {
+		auto reqp = std::get_if<0>(&it->data);
+		if(!reqp) { // reservation, no requirement
+			continue;
+		}
+		auto& req = *reqp;
+
+		// TODO: bad, greedy algorithm
 		auto mem = memBits & req.memBits;
 		if(mem) {
+			auto off = vpp::align(createInfo.size, req.align);
 			createInfo.usage |= req.usage;
-			createInfo.size = vpp::align(createInfo.size, req.align);
-			createInfo.size += req.size;
+			createInfo.size = off + req.size;
 			memBits = mem;
-			req.size = 0u; // mark for removal
-			reservations_.push_back(req);
+
+			if(it->id) {
+				// buffer is filled in after creation
+				it->data = Reservation{nullptr, {off, req.size}};
+				++it;
+			} else {
+				it = reservations_.erase(it);
+			}
 		}
 	}
 
-	reqs_.erase(std::remove_if(reqs_.begin(), reqs_.end(), [](const auto& r)
-		{ return r.size == 0; }), reqs_.end());
-
-	buffers_.emplace_back(device(), createInfo, memBits);
-	auto alloc = buffers_.back().buffer.alloc(size);
-	dlg_assert(alloc.size == size);
-	return {buffers_.back().buffer, alloc};
-}
-
-void BufferAllocator::cancel(Reservation r) {
-	auto it = std::find_if(reqs_.begin(), reqs_.end(), [&](const auto& val)
-		{ return val.id == r; });
-	if(it != reqs_.end()) {
-		reqs_.erase(it);
-		return;
+	auto& nbuf = buffers_.emplace_back(device(), createInfo, memBits);
+	auto& allocs = nbuf.buffer.allocations(); // insert them manually
+	allocs.push_back({0, size}); // first entry, the required one
+	for(auto& r : reservations_) {
+		if(auto* res = std::get_if<1>(&r.data); res && !res->buffer) {
+			res->buffer = &nbuf.buffer;
+			allocs.push_back(res->allocation);
+		}
 	}
 
-	auto rit = std::find_if(reservations_.begin(), reservations_.end(),
-		[&](const auto& val) { return val.id == r; });
-	dlg_assert(rit != reservations_.end());
-	reservations_.erase(rit);
+	return {nbuf.buffer, {0, size}};
+}
+
+void BufferAllocator::cancel(ReservationID reservation) {
+	dlg_assert(reservation);
+	auto cmp = [&](const auto& val) { return val.id == reservation; };
+	auto it = std::find_if(reservations_.begin(), reservations_.end(), cmp);
+	dlg_assert(it != reservations_.end());
+	auto r = std::move(*it);
+	reservations_.erase(it);
+
+	// if we already made the reserving allocation, free it!
+	if(auto* req = std::get_if<1>(&r.data); req) {
+		req->buffer->free(req->allocation);
+	}
 }
 
 BufferAllocator::Buffer::Buffer(const Device& dev,

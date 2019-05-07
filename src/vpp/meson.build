@@ -18,6 +18,7 @@ vpp_sources = [
 	'pipeline.cpp',
 	'procAddr.cpp',
 	'queue.cpp',
+	'queryPool.cpp',
 	'renderPass.cpp',
 	'renderer.cpp',
 	'resource.cpp',

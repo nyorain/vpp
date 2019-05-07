@@ -8,6 +8,7 @@
 #include <vpp/buffer.hpp>
 #include <vpp/resource.hpp>
 #include <deque>
+#include <variant>
 
 namespace vpp {
 
@@ -44,6 +45,7 @@ public:
 	/// allocation is invalid (i.e. not allocated on this SharedBuffer).
 	void free(const Allocation&);
 
+	auto& allocations() { return allocations_; }
 	const auto& allocations() const { return allocations_; }
 	auto size() const { return size_; }
 
@@ -108,7 +110,7 @@ protected:
 
 /// Cases in which you might care for buffer alignment:
 ///  - use it with a DrawIndirectCommand at the beginning (align 4)
-///  - descriptor buffer (align min*BufferOffsetAlignment)
+///  - descriptor buffer (align min<BufType>BufferOffsetAlignment)
 ///  - using it as vertex buffer. Needs component type alignment
 
 /// Allocates BufferRanges on owned SharedBuffers.
@@ -118,13 +120,13 @@ protected:
 /// on the same queue family.
 class BufferAllocator : public vpp::Resource {
 public:
-	using Reservation = vk::DeviceSize;
+	using ReservationID = vk::DeviceSize;
 	using Allocation = std::pair<SharedBuffer&, SharedBuffer::Allocation>;
 
 public:
 	BufferAllocator() = default;
 	BufferAllocator(const Device& dev);
-	~BufferAllocator() = default;
+	~BufferAllocator(); // erase reserved allocations before destroying buffers
 
 	BufferAllocator(BufferAllocator&&) = default;
 	BufferAllocator& operator=(BufferAllocator&&) = default;
@@ -135,27 +137,36 @@ public:
 	/// later be use to allocate or cancel it.
 	void reserve(vk::DeviceSize size, vk::BufferUsageFlags,
 		unsigned int memBits = ~0u, vk::DeviceSize align = 0u,
-		Reservation* id = nullptr);
+		ReservationID* id = nullptr);
 
 	/// Allocates a buffer range with the given requirements.
 	/// Note that alignment will automatically include physical device
 	/// alignment requirements associated with the given usages.
-	Allocation alloc(Reservation reservation);
+	Allocation alloc(ReservationID reservation);
 	Allocation alloc(vk::DeviceSize size, vk::BufferUsageFlags,
 		unsigned int memBits = ~0u, vk::DeviceSize align = 0u);
 
 	/// Cancels the given reservation.
-	void cancel(Reservation reservation);
+	void cancel(ReservationID reservation);
 
 	const auto& buffers() const { return buffers_; }
 
 protected:
 	struct Requirement {
-		Reservation id {};
 		vk::DeviceSize size {};
 		vk::DeviceSize align {};
 		vk::BufferUsageFlags usage {};
 		unsigned int memBits {};
+	};
+
+	struct Reservation {
+		SharedBuffer* buffer;
+		SharedBuffer::Allocation allocation;
+	};
+
+	struct Entry {
+		ReservationID id {};
+		std::variant<Requirement, Reservation> data;
 	};
 
 	struct Buffer {
@@ -166,9 +177,8 @@ protected:
 	};
 
 	std::deque<Buffer> buffers_;
-	std::vector<Requirement> reqs_;
-	std::vector<Requirement> reservations_;
-	Reservation id_ {};
+	std::vector<Entry> reservations_;
+	ReservationID id_ {}; // last id for counting
 };
 
 /// Returns a queue family that supports graphics, compute or transfer operations

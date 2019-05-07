@@ -177,3 +177,43 @@ TEST(mappable) {
 		EXPECT(buf3.offset() % atomAlign, 0u);
 	}
 }
+
+TEST(defer) {
+	auto& dev = *globals.device;
+	auto& allocator = dev.bufferAllocator();
+	auto usage = vk::BufferUsageBits::uniformBuffer |
+		vk::BufferUsageBits::vertexBuffer;
+	auto hostBits = dev.hostMemoryTypes();
+	auto devBits = dev.deviceMemoryTypes();
+
+	auto buf1 = vpp::SubBuffer(vpp::defer, allocator, 3251u, usage, hostBits);
+	usage |= vk::BufferUsageBits::transferSrc;
+	auto buf2 = vpp::SubBuffer(vpp::defer, allocator, 6431u, usage, devBits);
+	usage = vk::BufferUsageBits::transferDst;
+	auto buf3 = vpp::SubBuffer(vpp::defer, allocator, 234u, usage, devBits, 32u);
+	usage |= vk::BufferUsageBits::storageBuffer;
+	auto buf4 = vpp::SubBuffer(vpp::defer, allocator, 54u, usage, hostBits);
+	usage = vk::BufferUsageBits::storageTexelBuffer;
+	auto buf5 = vpp::SubBuffer(vpp::defer, allocator, 53221u, usage, devBits);
+
+	buf1.init();
+	buf2.init();
+	buf3.init();
+
+	EXPECT(buf1.size(), 3251u);
+	auto b1m = (1u << buf1.buffer().memoryEntry().memory()->type());
+	EXPECT(((b1m & hostBits) != 0), true);
+	EXPECT(buf2.size(), 6431u);
+	auto b2m = (1u << buf2.buffer().memoryEntry().memory()->type());
+	EXPECT(((b2m & devBits) != 0), true);
+	EXPECT(buf3.size(), 234u);
+
+	auto buf6 = vpp::SubBuffer(vpp::defer, allocator, 2143u, usage, devBits, 2u);
+	buf4.init();
+	buf5.init();
+	buf6.init();
+
+	EXPECT(buf4.size(), 54u);
+	EXPECT(buf5.size(), 53221u);
+	EXPECT(buf6.size(), 2143u);
+}

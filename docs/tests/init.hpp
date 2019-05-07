@@ -65,13 +65,26 @@ void initGlobals() {
 		vpp::description(globals.device->vkPhysicalDevice(), "\n\t"));
 }
 
+unsigned dlgErrors = 0;
+unsigned dlgWarnings = 0;
+void dlgHandler(const struct dlg_origin* origin, const char* string, void* data) {
+	if(origin->level == dlg_level_error) {
+		++dlgErrors;
+	} else if(origin->level == dlg_level_warn) {
+		++dlgWarnings;
+	}
+
+	dlg_default_output(origin, string, data);
+}
+
 int main() {
 	initGlobals();
+	dlg_set_handler(dlgHandler, nullptr);
 
 	auto ret = bugged::Testing::run();
-	ret += globals.debugCallback->performanceWarnings;
-	ret += globals.debugCallback->errors;
-	ret += globals.debugCallback->warnings;
+	// ret += globals.debugCallback->performanceWarnings;
+	ret += globals.debugCallback->errors + dlgErrors;
+	ret += globals.debugCallback->warnings + dlgWarnings;
 
 	globals.device = {};
 	globals.debugCallback = {};

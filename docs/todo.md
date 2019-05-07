@@ -1,12 +1,18 @@
 Todo list vor vpp
 =================
 
-- fix TrackedDescriptor/SubBuffer swap (union)
+- simply writing buffers, especially for raw data...
+- is the whole work concept really useful? and deferred initialization
+  as it currently stands?
+- fix formats.cpp: throws on error (getPhysicalDeviceFormatProperties)
+	- are the formats utility functions even useful though?
+	- also fix the weird 'depth == 1 or depth == 0, whatever' semantics
 - improve BufferAllocator/SharedBuffer/DescriptorAllocator algorithms
 - add glfw/sdl examples (option to use sdl from meson wrap db)
 - correct syncs, pipeline barriers support
 	- when a SharedBuffer range is reallocated, does there have to be
 	  a pipeline barrier?
+- simplify/correct TrackedDescriptor/SubBuffer swap (union)
 - one_device: store device in Device, not Resource.
   Make sure it can be reset (after destruction) e.g. for device lost or
   multiple devices in sequence + example/test
@@ -21,6 +27,8 @@ Todo list vor vpp
   		- then: does sharedBuffer (the hostCoherent checking) implement
   		  it correctly?
 - memoryMap: remap smaller range when a certain range is no longer needed?
+	- might otherwise have undefined behavior, mapping memory while used
+	  on device is undefined, right? even if not used?
 - imageOps: really allow extent with depth == 0? also handle it for height == 0?
 - device: cache supported extensions (see e.g. defaults.cpp: could change
   format querying behavior)
@@ -32,6 +40,8 @@ Todo list vor vpp
 		  way; in source file
 	- use the new debug extension (debug_utils)?
 		- how to handle vulkan 1.1? require it at some point?
+	- cache loaded debug marker functions? require them to be present
+	  if used? we currently just silently fail, probably not expected
 
 low prio / general / ideas
 --------------------------
@@ -68,13 +78,11 @@ low prio / general / ideas
 		- image constructors (simply copy from buffer constructors in objects.cpp)
 		- etc...
 	- also test coherent atom handling in SharedBuffer
-- imageOps: fill: option to use direct update instead of mapping?
-	- probably not worth it, we have to allocate buffer either way...
-	- or is there a way to directly update deviceLocal image?
 - respect optimalBufferCopyRowPitchAlignment somehow
 	- retrieve: probably not possible if we want to guarantee tightly packed data
 	- we could maybe use it when uploading data
 - support for checking max available vs used memory
+	- see vulkan extension
 - support for allocation strategies (mainly DeviceMemoryAllocator),
   support massive preallocations (like allocate pretty much the whole device memory)
 	- allow to explicity allocate memory on a given memory allocator.
@@ -86,12 +94,9 @@ low prio / general / ideas
 - more utility for checking device limits?
 	- differentiate: assumptions and tests/checks
 - physicalDevice: add overload that take already queried physical dev properties
-- fill operations: take std::byte& instead of span?
-	- probably not a good idea, see issue with memorySize(). We should not use it
 - dataWork::data: use non-rvalue & modifier?
 	- to disallow something like ```data = retrieve(...)->data```
 	- has multiple problems: sometimes it's probably valid to do this.
-- bufferOps: add raw fill/retrieve calls?
 - rework commandBuffer
 	- don't make commandPools store information
 - example vulkanType impl for nytl and glm
@@ -111,15 +116,12 @@ low prio / general / ideas
 	- we synchronize things that might not need it, implicit
 - is size value in MemoryEntry really needed?
 	- rather work with some id's or something?
-- add TrackedDescriptor* from kyo
-	- also DescriptorAllocate
 - use using declarations in the derived resource classes to make the
 	protected ResourceHandle constructors visisble
 - pmr for performance critical functions.
 	- Device to store a thread-specific memory resource?
 	- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
 - is there a better way for the Resource::swap mess?
-- generalize TransferBuffer into some shared buffer
 - config: vpp_debug vs vpp_ndebug rather messy now
 	- configurable from build system?
 - work dependencies

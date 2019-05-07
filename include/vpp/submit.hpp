@@ -16,7 +16,8 @@ namespace vpp {
 
 /// Bundles multiple SubmitInfos into few queueSubmit calls.
 /// Can be used to track the submit state using an id.
-/// Is bound to a fixed queue and not synchronized in any way.
+/// Is bound to a fixed queue and not synchronized in any way but
+/// will respect queue locks.
 class QueueSubmitter : public ResourceReference<QueueSubmitter> {
 public:
 	QueueSubmitter() = default;
