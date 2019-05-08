@@ -29,7 +29,6 @@ vpp_sources = [
 	'swapchain.cpp',
 	'sync.cpp',
 	'trackedDescriptor.cpp',
-	'work.cpp',
 	'util/file.cpp']
 
 vpp_lib = library('vpp',

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -10,12 +10,10 @@
 
 namespace vpp {
 
-QueueSubmitter::QueueSubmitter(const Queue& queue) : queue_(&queue)
-{
+QueueSubmitter::QueueSubmitter(const Queue& queue) : queue_(&queue) {
 }
 
-QueueSubmitter::~QueueSubmitter()
-{
+QueueSubmitter::~QueueSubmitter() {
 	// make sure all fences have completed before destroying them
 	std::vector<vk::Fence> fences;
 	for(auto& fence : fences_) {
@@ -30,19 +28,24 @@ QueueSubmitter::~QueueSubmitter()
 	}
 }
 
-uint64_t QueueSubmitter::add(const vk::SubmitInfo& info, unsigned int* specificID)
-{
+uint64_t QueueSubmitter::add(const vk::SubmitInfo& info, unsigned int* sid) {
 	dlg_assert(queue_);
-	if(specificID) {
-		*specificID = pending_.size();
+	if(sid) {
+		*sid = pending_.size();
 	}
 
 	pending_.push_back(info);
 	return id_;
 }
 
-void QueueSubmitter::submit(uint64_t id)
-{
+uint64_t QueueSubmitter::add(const vk::CommandBuffer& cb, unsigned* sid) {
+	vk::SubmitInfo info;
+	info.commandBufferCount = 1u;
+	info.pCommandBuffers = &cb;
+	return add(info, sid);
+}
+
+void QueueSubmitter::submit(uint64_t id) {
 	dlg_assert(queue_);
 	dlg_assert(id != 0);
 	dlg_assert(wrapped_ || id <= id_);
@@ -52,8 +55,7 @@ void QueueSubmitter::submit(uint64_t id)
 	}
 }
 
-bool QueueSubmitter::submitted(uint64_t id) const
-{
+bool QueueSubmitter::submitted(uint64_t id) const {
 	dlg_assert(queue_);
 	dlg_assert(id != 0);
 	dlg_assert(wrapped_ || id <= id_);
@@ -61,8 +63,7 @@ bool QueueSubmitter::submitted(uint64_t id) const
 	return id != id_;
 }
 
-bool QueueSubmitter::completed(uint64_t id) const
-{
+bool QueueSubmitter::completed(uint64_t id) const {
 	dlg_assert(queue_);
 	dlg_assert(id != 0);
 	dlg_assert(wrapped_ || id <= id_);
@@ -88,8 +89,7 @@ bool QueueSubmitter::completed(uint64_t id) const
 	return false;
 }
 
-unsigned int QueueSubmitter::submit()
-{
+unsigned int QueueSubmitter::submit() {
 	// this function has a special focus on exception safety
 	dlg_assert(queue_);
 	if(pending_.empty()) {
@@ -132,8 +132,7 @@ unsigned int QueueSubmitter::submit()
 	return pending.size();
 }
 
-bool QueueSubmitter::wait(uint64_t id, uint64_t timeout)
-{
+bool QueueSubmitter::wait(uint64_t id, uint64_t timeout) {
 	dlg_assert(queue_);
 	dlg_assert(id != 0);
 	dlg_assert(wrapped_ || id <= id_);
@@ -152,14 +151,12 @@ bool QueueSubmitter::wait(uint64_t id, uint64_t timeout)
 	return res == vk::Result::success;
 }
 
-unsigned int QueueSubmitter::pending() const
-{
+unsigned int QueueSubmitter::pending() const {
 	dlg_assert(queue_);
 	return pending_.size();
 }
 
-void QueueSubmitter::update()
-{
+void QueueSubmitter::update() {
 	dlg_assert(queue_);
 	std::vector<vk::Fence> reset;
 	for(auto it = fences_.begin(); it != fences_.end();) {

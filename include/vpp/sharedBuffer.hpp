@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -94,7 +94,8 @@ public:
 	auto end() const { return allocation_.end(); }
 
 	bool mappable() const noexcept { return buffer().mappable(); }
-	MemoryMapView memoryMap() const;
+	MemoryMapView memoryMap(vk::DeviceSize offset = 0,
+		vk::DeviceSize size = vk::wholeSize) const;
 
 	const SharedBuffer& resourceRef() const { return *shared_; }
 	friend void swap(SubBuffer&, SubBuffer&) noexcept;

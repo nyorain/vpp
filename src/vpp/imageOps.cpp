@@ -3,8 +3,8 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/imageOps.hpp>
-#include <vpp/transferWork.hpp> // vpp::transferWork
-#include <vpp/queue.hpp> // vpp::Queue
+#include <vpp/queue.hpp>
+#include <vpp/sharedBuffer.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 
@@ -91,22 +91,6 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 	return data;
 }
 
-UploadWork fillStaging(const Image& img, vk::Format format,
-		vk::ImageLayout layout, const vk::Extent3D& size,
-		nytl::Span<const std::byte> data, const vk::ImageSubresource& subres,
-		const vk::Offset3D& offset, QueueSubmitter* qsp) {
-
-	auto& dev = img.device();
-	auto& qs = qsp ? *qsp : dev.queueSubmitter();
-	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
-
-	vk::beginCommandBuffer(cmdBuf, {});
-	auto range = fillStaging(cmdBuf, img, format, layout, size, data,
-		subres, offset);
-	vk::endCommandBuffer(cmdBuf);
-	return {std::move(cmdBuf), qs, std::move(range)};
-}
-
 SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 		vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size,
 		nytl::Span<const std::byte> data, const vk::ImageSubresource& subres,
@@ -149,22 +133,6 @@ SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	return stage;
 }
 
-DownloadWork retrieveStaging(const Image& img, vk::Format format,
-		vk::ImageLayout layout, const vk::Extent3D& size,
-		const vk::ImageSubresource& subres, const vk::Offset3D& offset,
-		QueueSubmitter* qsp) {
-
-	auto& dev = img.device();
-	auto& qs = qsp ? *qsp : dev.queueSubmitter();
-	auto cmdBuf = dev.commandAllocator().get(qs.queue().family());
-
-	vk::beginCommandBuffer(cmdBuf, {});
-	auto range = retrieveStaging(cmdBuf, img, format, layout, size,
-		subres, offset);
-	vk::endCommandBuffer(cmdBuf);
-	return {std::move(cmdBuf), qs, std::move(range)};
-}
-
 SubBuffer retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 		vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size,
 		const vk::ImageSubresource& subres, const vk::Offset3D& offset) {
@@ -198,33 +166,6 @@ SubBuffer retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 
 	vk::cmdCopyImageToBuffer(cmdBuf, img, layout, buf, {region});
 	return stage;
-}
-
-void changeLayout(vk::CommandBuffer cmdBuf, vk::Image img,
-		vk::ImageLayout ol, vk::PipelineStageFlags srcs, vk::AccessFlags srca,
-		vk::ImageLayout nl, vk::PipelineStageFlags dsts, vk::AccessFlags dsta,
-		const vk::ImageSubresourceRange& subres) {
-
-	vk::ImageMemoryBarrier barrier;
-	barrier.oldLayout = ol;
-	barrier.newLayout = nl;
-	barrier.image = img;
-	barrier.subresourceRange = subres;
-	barrier.srcAccessMask = srca;
-	barrier.dstAccessMask = dsta;
-	vk::cmdPipelineBarrier(cmdBuf, srcs, dsts, {}, {}, {}, {barrier});
-}
-
-CommandWork<void> changeLayout(vk::Image image,
-		vk::ImageLayout ol, vk::PipelineStageFlags srcs, vk::AccessFlags srca,
-		vk::ImageLayout nl, vk::PipelineStageFlags dsts, vk::AccessFlags dsta,
-		const vk::ImageSubresourceRange& subres, QueueSubmitter& qs) {
-
-	auto cmdBuf = qs.device().commandAllocator().get(qs.queue().family());
-	vk::beginCommandBuffer(cmdBuf, {});
-	changeLayout(cmdBuf, image, ol, srcs, srca, nl, dsts, dsta, subres);
-	vk::endCommandBuffer(cmdBuf);
-	return {qs, std::move(cmdBuf)};
 }
 
 // Utility functions

@@ -21,18 +21,9 @@ RenderPass::RenderPass(const Device& dev, vk::RenderPass pass)
 
 RenderPass::~RenderPass()
 {
-	if(vkHandle()) vk::destroyRenderPass(vkDevice(), vkHandle());
+	if(vkHandle()) {
+		vk::destroyRenderPass(vkDevice(), vkHandle());
+	}
 }
 
-// XXX: could make this RAII wrapper for render pass instances later on
-// RenderPassInstance
-RenderPassInstance::RenderPassInstance(vk::CommandBuffer cb, vk::RenderPass rp, vk::Framebuffer fb)
-	: renderPass_(rp), commandBuffer_(cb), framebuffer_(fb)
-{
-}
-
-RenderPassInstance::~RenderPassInstance()
-{
-}
-
-}
+} // namespace vpp

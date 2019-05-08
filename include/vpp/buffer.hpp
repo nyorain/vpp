@@ -97,4 +97,27 @@ public:
 	}
 };
 
+/// Continous non-owned device buffer span.
+class BufferSpan : public ResourceReference<BufferSpan> {
+public:
+	BufferSpan() = default;
+	BufferSpan(const SubBuffer&);
+	BufferSpan(const Buffer&, vk::DeviceSize size, vk::DeviceSize offset = 0u);
+
+	MemoryMapView memoryMap() const;
+
+	const auto& buffer() const { return *buffer_; }
+	auto offset() const { return allocation_.offset; }
+	auto end() const { return allocation_.end(); }
+	auto size() const { return allocation_.size; }
+	const auto& allocation() const { return allocation_; }
+
+	const auto& resourceRef() const { return *buffer_; }
+	bool valid() const { return buffer_ && size(); }
+
+protected:
+	const Buffer* buffer_ {};
+	BasicAllocation<vk::DeviceSize> allocation_ {};
+};
+
 } // namespace vpp

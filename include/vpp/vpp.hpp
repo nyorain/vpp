@@ -35,6 +35,4 @@
 #include <vpp/surface.hpp>
 #include <vpp/swapchain.hpp>
 #include <vpp/sync.hpp>
-#include <vpp/transferWork.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/work.hpp>

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -78,9 +78,12 @@ void SubBuffer::init() {
 	}
 }
 
-MemoryMapView SubBuffer::memoryMap() const {
-	// buffer().memoryMap will warn if buffer is not mappable
-	return buffer().memoryMap(offset(), size());
+MemoryMapView SubBuffer::memoryMap(vk::DeviceSize offset,
+		vk::DeviceSize size) const {
+	size = (size == vk::wholeSize) ? this->size() : size;
+	dlg_assert(offset + size <= this->size());
+	offset += this->offset();
+	return buffer().memoryMap(offset, size);
 }
 
 void swap(SubBuffer& a, SubBuffer& b) noexcept {

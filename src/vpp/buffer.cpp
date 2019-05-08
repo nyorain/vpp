@@ -3,6 +3,7 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/buffer.hpp>
+#include <vpp/sharedBuffer.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 
@@ -87,6 +88,22 @@ BufferView::~BufferView() {
 	if(vkHandle()) {
 		vk::destroyBufferView(device(), vkHandle());
 	}
+}
+
+// BufferSpan
+BufferSpan::BufferSpan(const SubBuffer& b) : allocation_(b.allocation()) {
+	if(size()) {
+		buffer_ = &b.buffer();
+	}
+}
+
+BufferSpan::BufferSpan(const Buffer& b, vk::DeviceSize size,
+		vk::DeviceSize offset) : buffer_(&b), allocation_{offset, size} {
+	dlg_assert(size == 0 || b);
+}
+
+MemoryMapView BufferSpan::memoryMap() const {
+	return buffer().memoryMap(offset(), size());
 }
 
 } // namespace vpp
