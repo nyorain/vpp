@@ -71,7 +71,8 @@ public:
 };
 
 /// Allows convinient descriptorSet updates.
-/// Does not perform any checking.
+/// Does not perform any checking and has the overhead of internally
+/// allocating memory.
 class DescriptorSetUpdate : public ResourceReference<DescriptorSetUpdate>,
 	public nytl::NonCopyable {
 public:
@@ -93,6 +94,17 @@ public:
 	void storage(BufferInfos, int binding = -1, unsigned int elem = 0);
 	void uniformDynamic(BufferInfos, int binding = -1, unsigned int elem = 0);
 	void storageDynamic(BufferInfos, int binding = -1, unsigned int elem = 0);
+
+	// NOTE: we could also just addd a vk::DescriptorBufferInfo conversion
+	// operator to BufferSpan, but this is probably cleaner
+	void uniform(nytl::Span<const BufferSpan>, int binding = -1,
+		unsigned elem = 0);
+	void storage(nytl::Span<const BufferSpan>, int binding = -1,
+		unsigned elem = 0);
+	void uniformDynamic(nytl::Span<const BufferSpan>, int binding = -1,
+		unsigned elem = 0);
+	void storageDynamic(nytl::Span<const BufferSpan>, int binding = -1,
+		unsigned elem = 0);
 
 	void sampler(ImageInfos, int binding = -1, unsigned int elem = 0);
 	void image(ImageInfos, int binding = -1, unsigned int elem = 0);

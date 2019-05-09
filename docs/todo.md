@@ -1,15 +1,15 @@
 Todo list vor vpp
 =================
 
-- remove common `init` syntax for deferred initialization?
+- discuss: remove common `init` syntax for deferred initialization?
 	- or could that be useful somehow?
 - update to new vkpp version
 - improve image ops
   - allow compressed formats. Some way to allow filling a compressed image with
 	  uncompressed data? doing the compressing on the gpu?
-	  support blitting. Test it
+  - support blitting
+  - write tests
   - allow to only pass vk::image where it makes sense
-- vkpp codegen constexpr?
 - rmeove init.hpp? no useful in its current form
 	- introduct new deferred initialization idom from stage?
 	  better for vpp?
@@ -19,7 +19,6 @@ Todo list vor vpp
 - completely abandon ThreadLocalStorage?
 	- when someone uses multiple threads, just use custom allocators
 	  and stuff. They probably alreday have comparable solutions
-- simply writing buffers, especially for raw data...
 - fix formats.cpp: throws on error (getPhysicalDeviceFormatProperties)
 	- fixing the throw probably requires vkpp changes. Maybe two
 	  function headers, one throwing and one not?
@@ -55,8 +54,6 @@ Todo list vor vpp
 - device: cache supported extensions (see e.g. defaults.cpp: could change
   format querying behavior)
 - write basic docs
-- vpp: better descriptor update overloads.
-  e.g. `uniform(nytl::Span<const BufferRange>);`
 - improve debug.hpp
 	- remove enums.hpp from debug.hpp if possible
 		- probably best to implement the handle type switching in some other
@@ -96,6 +93,9 @@ Todo list vor vpp
 low prio / general / ideas
 --------------------------
 
+- DescriptorUpdate: any chance to avoid memory allocation? maybe just
+  provide another mechanism for more convenient update definition like
+  vpp::descriptorBinding; allow to group them somehow
 - memoryMap: remap smaller range when a certain range is no longer needed?
 	- might otherwise have undefined behavior, mapping memory while used
 	  on device is undefined, right? even if not used? read in spec

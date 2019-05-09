@@ -3,6 +3,7 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/descriptor.hpp>
+#include <vpp/sharedBuffer.hpp>
 #include <vpp/vk.hpp>
 
 namespace vpp {
@@ -239,6 +240,63 @@ void DescriptorSetUpdate::storageDynamic(BufferInfos buffers, int binding,
 	writes_.emplace_back(*set_, binding, elem, buffers_.back().size(),
 		vk::DescriptorType::storageBufferDynamic, nullptr,
 		buffers_.back().data(), nullptr);
+}
+
+void DescriptorSetUpdate::uniform(nytl::Span<const BufferSpan> bufs, int binding,
+		unsigned elem) {
+	std::vector<vk::DescriptorBufferInfo> infos;
+	infos.reserve(bufs.size());
+	for(const auto& b : bufs) {
+		vk::DescriptorBufferInfo info;
+		info.buffer = b.buffer();
+		info.offset = b.offset();
+		info.range = b.size();
+		infos.push_back(info);
+	}
+
+	uniform(std::move(infos), binding, elem);
+}
+void DescriptorSetUpdate::storage(nytl::Span<const BufferSpan> bufs, int binding,
+		unsigned elem) {
+	std::vector<vk::DescriptorBufferInfo> infos;
+	infos.reserve(bufs.size());
+	for(const auto& b : bufs) {
+		vk::DescriptorBufferInfo info;
+		info.buffer = b.buffer();
+		info.offset = b.offset();
+		info.range = b.size();
+		infos.push_back(info);
+	}
+
+	storage(std::move(infos), binding, elem);
+}
+void DescriptorSetUpdate::uniformDynamic(nytl::Span<const BufferSpan> bufs,
+		int binding, unsigned elem) {
+	std::vector<vk::DescriptorBufferInfo> infos;
+	infos.reserve(bufs.size());
+	for(const auto& b : bufs) {
+		vk::DescriptorBufferInfo info;
+		info.buffer = b.buffer();
+		info.offset = b.offset();
+		info.range = b.size();
+		infos.push_back(info);
+	}
+
+	uniformDynamic(std::move(infos), binding, elem);
+}
+void DescriptorSetUpdate::storageDynamic(nytl::Span<const BufferSpan> bufs,
+		int binding, unsigned elem) {
+	std::vector<vk::DescriptorBufferInfo> infos;
+	infos.reserve(bufs.size());
+	for(const auto& b : bufs) {
+		vk::DescriptorBufferInfo info;
+		info.buffer = b.buffer();
+		info.offset = b.offset();
+		info.range = b.size();
+		infos.push_back(info);
+	}
+
+	storageDynamic(std::move(infos), binding, elem);
 }
 
 void DescriptorSetUpdate::sampler(ImageInfos images, int binding,
