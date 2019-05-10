@@ -9,24 +9,21 @@
 #include <memory>
 #include <dlg/dlg.hpp>
 
-class CustomDebugCallback : public vpp::DebugCallback {
+class CustomDebugCallback : public vpp::DebugMessenger {
 public:
-	using vpp::DebugCallback::DebugCallback;
+	using vpp::DebugMessenger::DebugMessenger;
 
-	bool call(const CallbackInfo& info) noexcept override {
-		if(info.flags & vk::DebugReportBitsEXT::error) {
+	void call(MsgSeverity severity, MsgTypeFlags types,
+			const Data& data) noexcept override {
+		if(severity == MsgSeverity::error) {
 			++errors;
 		}
 
-		if(info.flags & vk::DebugReportBitsEXT::warning) {
+		if(severity == MsgSeverity::warning) {
 			++warnings;
 		}
 
-		if(info.flags & vk::DebugReportBitsEXT::performanceWarning) {
-			++performanceWarnings;
-		}
-
-		return vpp::DebugCallback::call(info);
+		return vpp::DebugMessenger::call(severity, types, data);
 	}
 
 	unsigned int performanceWarnings {};
@@ -45,7 +42,7 @@ static Globals globals;
 void initGlobals() {
 	constexpr const char* iniExtensions[] = {
 		VK_KHR_SURFACE_EXTENSION_NAME,
-		VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+		VK_EXT_DEBUG_UTILS_EXTENSION_NAME
 	};
 
 	constexpr auto layer = "VK_LAYER_LUNARG_standard_validation";

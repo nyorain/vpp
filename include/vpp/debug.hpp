@@ -1,164 +1,170 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #pragma once
 
 #include <vpp/fwd.hpp>
+#include <vpp/resource.hpp>
 #include <vpp/util/nonCopyable.hpp>
 #include <vpp/util/span.hpp>
-#include <vkpp/enums.hpp>
 
 #include <vector> // std::vector
 #include <cstdint> // std::uint64_t
 
 namespace vpp {
 
-/// Vulkan DebugCallback base class.
-/// Requires VK_EXT_debug_report to be enabled in instance.
-/// By default this will just dump the received information for the given flags
-/// to the standard output. Custom implementations can derive from this class
-/// and override the call member to handle debug callbacks in a custom way.
-/// Making DebugCallback virtual is reasonable regarding performance
-/// since no DebugCallback should be created when using a release build.
-/// NonMovable since it registers a pointer to itself as callback user data.
-class DebugCallback : public nytl::NonMovable {
+// Vulkan DebugMessenger base class.
+// Requires VK_EXT_debug_utils to be enabled in instance.
+// By default this will just dump the received information for the given flags
+// to the standard output. Custom implementations can derive from this class
+// and override the call member to handle debug callbacks in a custom way.
+// Making DebugCallback virtual is reasonable regarding performance
+// since no DebugCallback should be created when using a release build.
+// NonMovable since it registers a pointer to itself as callback user data.
+class DebugMessenger : public nytl::NonMovable {
 public:
-	struct CallbackInfo {
-		vk::DebugReportFlagsEXT flags;
-		vk::DebugReportObjectTypeEXT objectType;
-		uint64_t srcObject;
-		size_t location;
-		int32_t messageCode;
-		const char* layer;
-		const char* message;
-	};
-public:
-	/// Returns error | warning | performanceWarning.
-	/// Used as default debug report flags.
-	/// Additional options would be e.g. information or debug.
-	static vk::DebugReportFlagsEXT defaultFlags();
+	// god, these names are long.
+	using Data = vk::DebugUtilsMessengerCallbackDataEXT;
+	using MsgSeverity = vk::DebugUtilsMessageSeverityBitsEXT;
+	using MsgSeverityFlags = vk::DebugUtilsMessageSeverityFlagsEXT;
+	using MsgType = vk::DebugUtilsMessageTypeBitsEXT;
+	using MsgTypeFlags = vk::DebugUtilsMessageTypeFlagsEXT;
 
-	/// Returns all possible bits.
-	static vk::DebugReportFlagsEXT allBits();
+	// Returns error | warning.
+	// Used as default debug report flags.
+	// Additional options would be verbose or info.
+	static MsgSeverityFlags defaultSeverity();
 
-	/// The default flags for which to return a validation error,
-	/// i.e. make the vulkan call fail. Returns only the error flag.
-	static vk::DebugReportFlagsEXT defaultErrorFlags();
+	// The default types for which to receive messages.
+	// Returns general | performance | validation, i.e. all possible types.
+	static MsgTypeFlags defaultTypes();
 
 public:
-	DebugCallback(vk::Instance instance,
-		vk::DebugReportFlagsEXT flags = defaultFlags(), bool verbose = false,
-		vk::DebugReportFlagsEXT errorFlags = defaultErrorFlags());
-	virtual ~DebugCallback();
+	DebugMessenger(vk::Instance instance,
+		MsgSeverityFlags severity = defaultSeverity(),
+		MsgTypeFlags type = defaultTypes());
+	virtual ~DebugMessenger();
 
 	vk::Instance vkInstance() const { return instance_; }
-	vk::DebugReportCallbackEXT vkCallback() const { return debugCallback_; }
+	vk::DebugUtilsMessengerEXT vkMessenger() const { return messenger_; }
 
-	/// This function is called from within the debug callback.
-	/// It is expected to handle (e.g. simply output) the debug information in some way.
-	/// Custom debug callbacks can override this function.
-	/// Note that this function is not allowed to throw any exceptions since it
-	/// is a callback from potential non C++ code.
-	/// If this function returns false, the vulkan api call that triggered it
-	/// will return a valiation failed error code.
-	/// Note that this function might be called from multiple threads and therefore
-	/// must be threadsafe (reason why it is marked const).
-	/// The default implementation always returns true when the error flag is error and
-	/// false otherwise.
-	virtual bool call(const CallbackInfo& info) noexcept;
+	// This function is called from within the debug callback.
+	// It is expected to handle (e.g. simply output) the debug information in
+	// some way. Custom debug callbacks can override this function.
+	// Note that this function is not allowed to throw any exceptions since it
+	// is a callback from potential non C++ code.
+	// Will always be called from the thread in which the vulkan call takes
+	// place, so might be called from multiple threads over time.
+	// See the VK_EXT_debug_utils documentation for more details.
+	virtual void call(MsgSeverity severity,
+		MsgTypeFlags type, const Data& data) noexcept;
 
 protected:
 	vk::Instance instance_ {};
-	vk::DebugReportCallbackEXT debugCallback_ {};
-	vk::DebugReportFlagsEXT errorFlags_ {};
-	bool verbose_ {};
+	vk::DebugUtilsMessengerEXT messenger_ {};
 };
 
-/// - Debug marker utitlity -
-/// Require VK_EXT_debug_marker in instance, will have no effect otherwise
-/// and return vk::Result::errorExtensionNotPresent.
-namespace detail {
-
+// Useful for obtaining vk::ObjectType from a vk:: Handle.
 // specialized in debug.cpp for supported types.
-template<typename T> struct DebugHandleType;
+template<typename T> struct HandleType;
+template<typename T> constexpr auto handleType = HandleType<T>::value;
 template<typename T> constexpr auto debugReportHandleType =
-	detail::DebugHandleType<T>::value;
-
-} // namespace detail
+	HandleType<T>::reportValue;
 
 // when VPP_NO_DEBUG_MARKER is defined, all debug marker functions
 // will be empty stubs. Useful in release builds.
 #ifndef VPP_NO_DEBUG_MARKER
 
-/// Set the name of the given handle.
-/// Also see the templated version below.
-vk::Result nameHandle(vk::Device, std::uint64_t handle,
-	vk::DebugReportObjectTypeEXT, const char* name);
+// Require VK_EXT_debug_utils respectively in instance,
+// will have no effect otherwise and return vk::Result::errorExtensionNotPresent.
 
-/// Sets the tag of the given handle.
-/// Also see the templated version below.
+// Set the name of the given handle.
+// Also see the templated version below.
+vk::Result nameHandle(vk::Device, std::uint64_t handle,
+	vk::ObjectType, const char* name);
+
+// Sets the tag of the given handle.
+// Also see the templated version below.
 vk::Result tagHandle(vk::Device, std::uint64_t handle,
-	vk::DebugReportObjectTypeEXT, std::uint64_t name,
+	vk::ObjectType, std::uint64_t name,
 	nytl::Span<const std::byte> data);
 
-/// Return false if the extension (its function) could not be loaded.
-bool beginDebugRegion(vk::CommandBuffer, const char* name,
+// Return false if the extension (its function) could not be loaded.
+bool beginDebugLabel(vk::CommandBuffer, const char* name,
 	std::array<float, 4> col = {});
-bool endDebugRegion(vk::CommandBuffer);
-bool insertDebugMarker(vk::CommandBuffer, const char* name,
+bool endDebugLabel(vk::CommandBuffer);
+bool insertDebugLabel(vk::CommandBuffer, const char* name,
 	std::array<float, 4> col = {});
 
 template<typename T>
-vk::Result nameHandle(vk::Device dev,T handle, const char* name) {
-	return nameHandle(dev, (std::uint64_t) handle,
-		detail::debugReportHandleType<T>, name);
+vk::Result nameHandle(vk::Device dev, const T& handle, const char* name) {
+	return nameHandle(dev, (std::uint64_t) handle, handleType<T>, name);
 }
 
 template<typename T>
-vk::Result tagHandle(vk::Device dev, T handle, std::uint64_t name,
+vk::Result nameHandle(const ResourceHandle<T>& handle, const char* name) {
+	return nameHandle(handle.device(), handle.vkHandle(), name);
+}
+
+template<typename T>
+vk::Result tagHandle(vk::Device dev, const T& handle, std::uint64_t name,
 		nytl::Span<const std::byte> d) {
-	return tagHandle(dev, (std::uint64_t) handle,
-		detail::debugReportHandleType<T>, name, d);
+	return tagHandle(dev, (std::uint64_t) handle, handleType<T>, name, d);
+}
+
+template<typename T>
+vk::Result tagHandle(const ResourceHandle<T>& handle, std::uint64_t name,
+		nytl::Span<const std::byte> d) {
+	return tagHandle(handle.device(), handle.vkHandle(), handleType<T>, name, d);
 }
 
 #else // VPP_NO_DEBUG_MARKER
 
 inline vk::Result nameHandle(vk::Device, std::uint64_t,
-		vk::DebugReportObjectTypeEXT, const char*) {
+		vk::ObjectType, const char*) {
 	return vk::Result::errorExtensionNotPresent;
 }
-
 inline vk::Result tagHandle(vk::Device, std::uint64_t,
-		vk::DebugReportObjectTypeEXT, std::uint64_t,
+		vk::ObjectType, std::uint64_t, nytl::Span<const std::byte>) {
+	return vk::Result::errorExtensionNotPresent;
+}
+inline bool beginDebugLabel(vk::CommandBuffer, const char*,
+		std::array<float, 4> = {}) {
+	return false;
+}
+inline bool endDebugLabel(vk::CommandBuffer) {
+	return false;
+}
+inline bool insertDebugLabel(vk::CommandBuffer, const char*,
+		std::array<float, 4> = {}) {
+	return false;
+}
+template<typename T>
+vk::Result tagHandle(vk::Device, const T&, std::uint64_t,
 		nytl::Span<const std::byte>) {
 	return vk::Result::errorExtensionNotPresent;
 }
-
-inline bool beginDebugRegion(vk::CommandBuffer, const char*,
-		std::array<float, 4> = {}) {
-	return false;
-}
-
-inline bool endDebugRegion(vk::CommandBuffer) {
-	return false;
-}
-
-inline bool insertDebugMarker(vk::CommandBuffer, const char*,
-		std::array<float, 4> = {}) {
-	return false;
-}
-
 template<typename T>
-vk::Result tagHandle(vk::Device, T, std::uint64_t, nytl::Span<const std::byte>) {
-	return vk::Result::errorExtensionNotPresent;
-}
-
-template<typename T>
-vk::Result nameHandle(vk::Device, T, const char*) {
+vk::Result nameHandle(vk::Device, const T&, const char*) {
 	return vk::Result::errorExtensionNotPresent;
 }
 
 #endif
+
+// RAII wrapper around a command buffer debug label.
+class DebugLabel {
+public:
+	DebugLabel() = default;
+	DebugLabel(vk::CommandBuffer, const char* name,
+		std::array<float, 4> color);
+	~DebugLabel();
+
+	DebugLabel(DebugLabel&&) noexcept = default;
+	DebugLabel& operator=(DebugLabel&&) noexcept = default;
+
+protected:
+	vk::CommandBuffer cb_ {};
+};
 
 } // namespace vpp

@@ -21,7 +21,7 @@
 #include <vpp/renderer.hpp> // vpp::DefaultRenderer
 #include <vpp/pipeline.hpp> // vpp::GraphicsPipeline
 #include <vpp/instance.hpp> // vpp::Instance
-#include <vpp/debug.hpp> // vpp::DebugCallback
+#include <vpp/debug.hpp> // vpp::DebugMessenger
 #include <vpp/device.hpp> // vpp::Device
 #include <vpp/renderPass.hpp> // vpp::RenderPass
 #include <vpp/pipelineInfo.hpp> // vpp::GraphicsPipelineInfo
@@ -100,7 +100,7 @@ int main(int, char**) {
 	// vulkan setup since ny needs the instance to create a surface
 	auto iniExtensions = ac->vulkanExtensions();
 	iniExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-	iniExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+	iniExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
 	// enables all default layers
 	constexpr const char* layers[] = {
@@ -126,7 +126,7 @@ int main(int, char**) {
 	// create a debug callback for our instance and the default layers
 	// the default implementation will just output to std::cerr when a debug callback
 	// is received
-	vpp::DebugCallback debugCallback(instance);
+	vpp::DebugMessenger debugMessenger(instance);
 
 	// create the ny window and vukan surface
 	vk::SurfaceKHR vkSurface {};

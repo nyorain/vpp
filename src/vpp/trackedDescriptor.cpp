@@ -128,12 +128,30 @@ TrDs::~TrDs() {
 	vk::freeDescriptorSets(device(), pool(), 1, vkHandle());
 }
 
-void swap(TrDs& a, TrDs& b) noexcept
-{
+void swap(TrDs& a, TrDs& b) noexcept {
 	using std::swap;
 
 	swap(static_cast<DescriptorSet&>(a), static_cast<DescriptorSet&>(b));
-	swap(a.pool_, b.pool_);
+
+	// union swap
+	if(a.reservation_) {
+		if(b.reservation_) {
+			swap(a.allocator_, b.allocator_);
+		} else {
+			auto tmp = b.pool_;
+			b.allocator_ = a.allocator_;
+			a.pool_ = tmp;
+		}
+	} else {
+		if(b.reservation_) {
+			auto tmp = b.allocator_;
+			b.pool_ = a.pool_;
+			a.allocator_ = tmp;
+		} else {
+			swap(a.pool_, b.pool_);
+		}
+	}
+
 	swap(a.layout_, b.layout_);
 	swap(a.reservation_, b.reservation_);
 }

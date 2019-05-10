@@ -1,7 +1,6 @@
 Todo list vor vpp
 =================
 
-- update to new vkpp version
 - improve image ops
   - allow compressed formats. Some way to allow filling a compressed image with
 	  uncompressed data? doing the compressing on the gpu?
@@ -10,9 +9,9 @@ Todo list vor vpp
   - allow to only pass vk::image where it makes sense
 - rmeove init.hpp? no useful in its current form
 	- introduct new deferred initialization idom from stage?
-	  better for vpp?
+	  better for vpp? there are some classes (e.g. TrDs) that have to use
+	  additional reservation members only for that purpose
 	- anyways, init.hpp was pretty much *never* used
-- fix/rework physical device with needed utility from stage
 - pack all simple RAII wrappers into vpp/handles.hpp?
 - completely abandon ThreadLocalStorage?
 	- when someone uses multiple threads, just use custom allocators
@@ -29,7 +28,6 @@ Todo list vor vpp
 	- when a SharedBuffer range is reallocated, does there have to be
 	  a pipeline barrier? should probably be left to user to synchronize
 	  before destruction of SubBuffer, but document that somewhere!
-- simplify/correct TrackedDescriptor/SubBuffer swap (union)
 - one_device: store device in Device, not Resource.
   Make sure it can be reset (after destruction) e.g. for device lost or
   multiple devices in sequence + example/test
@@ -52,40 +50,12 @@ Todo list vor vpp
 - device: cache supported extensions (see e.g. defaults.cpp: could change
   format querying behavior)
 - write basic docs
-- improve debug.hpp
-	- remove enums.hpp from debug.hpp if possible
-		- probably best to implement the handle type switching in some other
-		  way; in source file
-		  we could probably forward declare the template in the header
-		  and the implement it for all supported types in the source
-		  file. When one passes an unsupported handle, compiler generates
-		  unresolved symbol
-	- also allow to directly tag vpp raii wrappers. Maybe overload
-	  that takes a ResourceHandle and simply forwards with vkHandle()?
-	- use the new debug extension (debug_utils)?
-		- how to handle vulkan 1.1? require it at some point?
-		  vkpp has an optional dynamic dispatch layer, if an application
-		  wants to support vulkan 1.0 they can always use that instead
-		  of linking to 1.1 symbols. And yes, we probably can just
-		  require 1.1 headers at some point
-	- cache loaded debug marker functions? require them to be present
-	  if used? we currently just silently fail, probably not expected
-	- how does vpp expect applications to use them? do a manual check
-	  if debug is supported every time? probably bad idea.
-	  maybe silent fail is ok? or implement two functions, one that
-	  expects functions to be avilalbe, the other one to silently (maybe
-	  return bool) fail
 - rework commandBuffer
 	- don't make commandPools store information
 	- split in "smart" pools and command buffers and simple raii handles
-- procAddr: test if local cache really faster than load it every time?
-	- in doubt: remove local cache.
-	  see -> DynamicDispacher per vpp::Device
 - is size value in MemoryEntry really needed?
 	- completely abolish memory size?
 - External constructors for all resources (construct them from existing handles)
-- config: vpp_debug vs vpp_ndebug rather messy now
-	- configurable from build system?
 - update readme
 
 low prio / general / ideas
