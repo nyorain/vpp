@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -29,9 +29,9 @@ public:
 	~CommandPool();
 
 	CommandPool(CommandPool&& rhs) noexcept { swap(*this, rhs); }
-	CommandPool& operator=(CommandPool rhs) noexcept { 
-		swap(*this, rhs); 
-		return *this; 
+	CommandPool& operator=(CommandPool rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
 	}
 
 	CommandBuffer allocate(vk::CommandBufferLevel lvl = primaryCmdBufLevel);
@@ -62,9 +62,9 @@ public:
 	~CommandBuffer();
 
 	CommandBuffer(CommandBuffer&& rhs) noexcept { swap(*this, rhs); }
-	CommandBuffer& operator=(CommandBuffer rhs) noexcept { 
-		swap(*this, rhs); 
-		return *this; 
+	CommandBuffer& operator=(CommandBuffer rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
 	}
 
 	const vk::CommandPool& commandPool() const { return commandPool_; }
@@ -81,12 +81,12 @@ public:
 	CommandAllocator(const Device& dev);
 	~CommandAllocator() = default;
 
-	/// Allocates a commandBuffer for the calling thread that matches 
+	/// Allocates a commandBuffer for the calling thread that matches
 	/// the given requirements.
 	CommandBuffer get(uint32_t qfamily, vk::CommandPoolCreateFlags = {},
 		vk::CommandBufferLevel = primaryCmdBufLevel);
 
-	/// Allocates multiple commandBuffers for the calling thread with 
+	/// Allocates multiple commandBuffers for the calling thread with
 	/// the given requirements.
 	/// Might be more efficient than multiple calls to get.
 	std::vector<CommandBuffer> get(uint32_t qfamily, unsigned int count,

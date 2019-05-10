@@ -11,9 +11,9 @@ namespace vpp {
 
 vpp::SubBuffer fillStaging(vk::CommandBuffer cb, const BufferSpan& span,
 		nytl::Span<const std::byte> data) {
-	dlg_assert(data.size() <= span.size());
+	dlg_assert(vk::DeviceSize(data.size()) <= span.size());
 	auto& dev = span.device();
-	vpp::SubBuffer stage = {dev.bufferAllocator(), data.size(),
+	vpp::SubBuffer stage = {dev.bufferAllocator(), vk::DeviceSize(data.size()),
 		vk::BufferUsageBits::transferSrc, dev.hostMemoryTypes()};
 	auto map = stage.memoryMap(0, data.size());
 	std::memcpy(map.ptr(), data.data(), data.size());
@@ -22,14 +22,14 @@ vpp::SubBuffer fillStaging(vk::CommandBuffer cb, const BufferSpan& span,
 	copy.dstOffset = span.offset();
 	copy.srcOffset = stage.offset();
 	copy.size = data.size();
-	vk::cmdCopyBuffer(cb, stage.buffer(), span.buffer(), {copy});
+	vk::cmdCopyBuffer(cb, stage.buffer(), span.buffer(), {{copy}});
 
 	return stage;
 }
 
 void fillDirect(vk::CommandBuffer cb, const BufferSpan& span,
 		nytl::Span<const std::byte> data) {
-	dlg_assert(data.size() <= span.size());
+	dlg_assert(vk::DeviceSize(data.size()) <= span.size());
 	vk::cmdUpdateBuffer(cb, span.buffer(), span.offset(), data.size(),
 		data.data());
 }
@@ -43,7 +43,7 @@ vpp::SubBuffer readStaging(vk::CommandBuffer cb, const BufferSpan& src) {
 	copy.dstOffset = stage.offset();
 	copy.srcOffset = src.offset();
 	copy.size = src.size();
-	vk::cmdCopyBuffer(cb, src.buffer(), stage.buffer(), {copy});
+	vk::cmdCopyBuffer(cb, src.buffer(), stage.buffer(), {{copy}});
 
 	return stage;
 }

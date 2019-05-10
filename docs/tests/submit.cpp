@@ -71,7 +71,7 @@ TEST(wait) {
 
 	auto cmdBuf1 = dev.commandAllocator().get(queue.family());
 	vk::beginCommandBuffer(cmdBuf1, {});
-	vk::cmdWaitEvents(cmdBuf1, {event1}, vk::PipelineStageBits::host,
+	vk::cmdWaitEvents(cmdBuf1, {{event1.vkHandle()}}, vk::PipelineStageBits::host,
 		vk::PipelineStageBits::topOfPipe, {}, {}, {});
 	vk::endCommandBuffer(cmdBuf1);
 
@@ -93,7 +93,7 @@ TEST(wait) {
 	const vk::PipelineStageFlags stage = vk::PipelineStageBits::topOfPipe;
 	submitInfo = {
 		1, &semaphore.vkHandle(), &stage,
-		1, &cmdBuf2.vkHandle()	
+		1, &cmdBuf2.vkHandle()
 	};
 
 	EXPECT(submitter.add(submitInfo), id);

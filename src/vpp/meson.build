@@ -16,7 +16,6 @@ vpp_sources = [
 	'memoryResource.cpp',
 	'physicalDevice.cpp',
 	'pipeline.cpp',
-	'procAddr.cpp',
 	'queue.cpp',
 	'queryPool.cpp',
 	'renderPass.cpp',

@@ -7,28 +7,32 @@
 
 namespace vpp {
 
-Instance::Instance(const vk::InstanceCreateInfo& info)
-{
+Instance::Instance(const vk::InstanceCreateInfo& info) {
 	instance_ = vk::createInstance(info);
+
+	// init vkpp dynamic dispatch
+	// required for all used extensions inside vkpp
+	vk::dispatch.init(instance_);
 }
 
-Instance::Instance(vk::Instance instance) : instance_(instance)
-{
+Instance::Instance(vk::Instance instance) : instance_(instance) {
 }
 
-Instance::~Instance()
-{
-	if(instance_) vk::destroyInstance(instance_);
+Instance::~Instance() {
+	if(instance_) {
+		vk::destroyInstance(instance_);
+	}
 }
 
-Instance::Instance(Instance&& lhs) noexcept : instance_(lhs.instance_)
-{
+Instance::Instance(Instance&& lhs) noexcept : instance_(lhs.instance_) {
 	lhs.instance_ = {};
 }
 
-Instance& Instance::operator=(Instance&& lhs) noexcept
-{
-	if(instance_) vk::destroyInstance(instance_);
+Instance& Instance::operator=(Instance&& lhs) noexcept {
+	if(instance_) {
+		vk::destroyInstance(instance_);
+	}
+
 	instance_ = lhs.instance_;
 	lhs.instance_ = {};
 	return *this;

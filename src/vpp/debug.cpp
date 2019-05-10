@@ -3,15 +3,14 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/debug.hpp>
-#include <vpp/procAddr.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 
 namespace vpp {
 namespace {
 
-VKAPI_PTR vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags,
-		vk::DebugReportObjectTypeEXT objType,
+VKAPI_PTR vk::Bool32 defaultMessageCallback(VkDebugReportFlagsEXT flags,
+		VkDebugReportObjectTypeEXT objType,
 		uint64_t srcObject,
 		size_t location,
 		int32_t msgCode,
@@ -25,7 +24,10 @@ VKAPI_PTR vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags,
 	}
 
 	auto callback = static_cast<DebugCallback*>(pUserData);
-	return callback->call({flags, objType, srcObject, location, msgCode, pLayerPrefix, pMsg});
+	auto vflags = static_cast<vk::DebugReportBitsEXT>(flags);
+	auto vobjType = static_cast<vk::DebugReportObjectTypeEXT>(objType);
+	return callback->call({vflags, vobjType, srcObject, location, msgCode,
+		pLayerPrefix, pMsg});
 }
 
 std::string to_string(vk::DebugReportFlagsEXT flags) {
@@ -121,14 +123,18 @@ DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flag
 		bool verbose, vk::DebugReportFlagsEXT error) :
 		instance_(instance), errorFlags_(error), verbose_(verbose) {
 
-	VPP_LOAD_PROC(vkInstance(), CreateDebugReportCallbackEXT);
+	if(!vk::dispatch.vkCreateDebugReportCallbackEXT) {
+		auto msg = "vpp::DebugCallback: VK_EXT_debug_report not enabled";
+		throw std::runtime_error(msg);
+	}
+
 	vk::DebugReportCallbackCreateInfoEXT createInfo(flags, &defaultMessageCallback, this);
-	VKPP_CALL(pfCreateDebugReportCallbackEXT(vkInstance(), &createInfo, nullptr, &debugCallback_));
+	debugCallback_ = vk::createDebugReportCallbackEXT(vkInstance(), createInfo);
 }
 
 DebugCallback::~DebugCallback() {
 	if(vkCallback()) {
-		VPP_PROC(vkInstance(), DestroyDebugReportCallbackEXT)(vkInstance(), vkCallback(), nullptr);
+		vk::destroyDebugReportCallbackEXT(vkInstance(), vkCallback());
 	}
 }
 
@@ -163,9 +169,7 @@ bool DebugCallback::call(const CallbackInfo& info) noexcept {
 // debug report
 vk::Result nameHandle(vk::Device dev, std::uint64_t handle,
 		vk::DebugReportObjectTypeEXT type, const char* name) {
-
-	VPP_LOAD_PROC_NOTHROW(dev, DebugMarkerSetObjectNameEXT);
-	if(!pfDebugMarkerSetObjectNameEXT) {
+	if(!vk::dispatch.vkDebugMarkerSetObjectNameEXT) {
 		return vk::Result::errorExtensionNotPresent;
 	}
 
@@ -173,15 +177,14 @@ vk::Result nameHandle(vk::Device dev, std::uint64_t handle,
 	info.object = handle;
 	info.objectType = type;
 	info.pObjectName = name;
-	return pfDebugMarkerSetObjectNameEXT(dev, &info);
+	return vk::debugMarkerSetObjectNameEXT(dev, info);
 }
 
 vk::Result tagHandle(vk::Device dev, std::uint64_t handle,
 		vk::DebugReportObjectTypeEXT type, std::uint64_t name,
 		nytl::Span<const std::byte> data) {
 
-	VPP_LOAD_PROC_NOTHROW(dev, DebugMarkerSetObjectTagEXT);
-	if(!pfDebugMarkerSetObjectTagEXT) {
+	if(!vk::dispatch.vkDebugMarkerSetObjectTagEXT) {
 		return vk::Result::errorExtensionNotPresent;
 	}
 
@@ -191,47 +194,85 @@ vk::Result tagHandle(vk::Device dev, std::uint64_t handle,
 	info.pTag = data.data();
 	info.tagSize = data.size();
 	info.tagName = name;
-	return pfDebugMarkerSetObjectTagEXT(dev, &info);
+	return vk::debugMarkerSetObjectTagEXT(dev, info);
 }
 
-bool beginDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf,
-		const char* name, std::array<float, 4> col) {
-
-	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerBeginEXT);
-	if(!pfCmdDebugMarkerBeginEXT) {
+bool beginDebugRegion(vk::CommandBuffer cmdBuf, const char* name,
+		std::array<float, 4> col) {
+	if(!vk::dispatch.vkCmdDebugMarkerBeginEXT) {
 		return false;
 	}
 
 	vk::DebugMarkerMarkerInfoEXT markerInfo;
 	markerInfo.color = col;
 	markerInfo.pMarkerName = name;
-	pfCmdDebugMarkerBeginEXT(cmdBuf, &markerInfo);
+	vk::cmdDebugMarkerBeginEXT(cmdBuf, markerInfo);
 	return true;
 }
 
-bool endDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf) {
-	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerEndEXT);
-	if(!pfCmdDebugMarkerEndEXT) {
+bool endDebugRegion(vk::CommandBuffer cmdBuf) {
+	if(!vk::dispatch.vkCmdDebugMarkerEndEXT) {
 		return false;
 	}
 
-	pfCmdDebugMarkerEndEXT(cmdBuf);
+	vk::cmdDebugMarkerEndEXT(cmdBuf);
 	return true;
 }
 
-bool insertDebugMarker(vk::Device dev, vk::CommandBuffer cmdBuf,
+bool insertDebugMarker(vk::CommandBuffer cmdBuf,
 		const char* name, std::array<float, 4> col) {
 
-	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerInsertEXT);
-	if(!pfCmdDebugMarkerInsertEXT) {
+	if(!vk::dispatch.vkCmdDebugMarkerInsertEXT) {
 		return false;
 	}
 
 	vk::DebugMarkerMarkerInfoEXT markerInfo;
 	markerInfo.color = col;
 	markerInfo.pMarkerName = name;
-	pfCmdDebugMarkerInsertEXT(cmdBuf, &markerInfo);
+	vk::cmdDebugMarkerInsertEXT(cmdBuf, markerInfo);
 	return true;
 }
 
+// spezialization of DebugHandleType
+namespace detail {
+
+#define DebugHandleSpec(handle, name) \
+	template<> struct DebugHandleType<handle> { \
+		static constexpr auto value = vk::DebugReportObjectTypeEXT::name; \
+	}
+
+DebugHandleSpec(vk::Instance, instance);
+DebugHandleSpec(vk::PhysicalDevice, physicalDevice);
+DebugHandleSpec(vk::Device, device);
+DebugHandleSpec(vk::CommandBuffer, commandBuffer);
+DebugHandleSpec(vk::CommandPool, commandPool);
+DebugHandleSpec(vk::Queue, queue);
+DebugHandleSpec(vk::Image, image);
+DebugHandleSpec(vk::ImageView, imageView);
+DebugHandleSpec(vk::Buffer, buffer);
+DebugHandleSpec(vk::BufferView, bufferView);
+DebugHandleSpec(vk::Framebuffer, framebuffer);
+DebugHandleSpec(vk::Sampler, sampler);
+DebugHandleSpec(vk::DeviceMemory, deviceMemory);
+DebugHandleSpec(vk::DescriptorSetLayout, descriptorSetLayout);
+DebugHandleSpec(vk::DescriptorSet, descriptorSet);
+DebugHandleSpec(vk::DescriptorPool, descriptorPool);
+DebugHandleSpec(vk::PipelineLayout, pipelineLayout);
+DebugHandleSpec(vk::Pipeline, pipeline);
+DebugHandleSpec(vk::PipelineCache, pipelineCache);
+DebugHandleSpec(vk::RenderPass, renderPass);
+DebugHandleSpec(vk::Semaphore, semaphore);
+DebugHandleSpec(vk::Fence, fence);
+DebugHandleSpec(vk::Event, event);
+DebugHandleSpec(vk::QueryPool, queryPool);
+DebugHandleSpec(vk::ShaderModule, shaderModule);
+DebugHandleSpec(vk::SurfaceKHR, surfaceKHR);
+DebugHandleSpec(vk::SwapchainKHR, swapchainKHR);
+DebugHandleSpec(vk::DebugReportCallbackEXT, debugReportCallbackEXT);
+DebugHandleSpec(vk::DisplayKHR, displayKHR);
+DebugHandleSpec(vk::DisplayModeKHR, displayModeKHR);
+
+#undef DebugHandleSpec
+
+} // namespace detail
 } // namespace vpp

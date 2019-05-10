@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -43,10 +43,9 @@ struct Device::QueueDeleter {
 };
 
 // Device
-Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreateInfo& info)
-	: instance_(ini), physicalDevice_(phdev)
-{
-	// (void) vk::getPhysicalDeviceQueueFamilyProperties(phdev);
+Device::Device(vk::Instance ini, vk::PhysicalDevice phdev,
+		const vk::DeviceCreateInfo& info) : instance_(ini), phdev_(phdev) {
+
 	device_ = vk::createDevice(vkPhysicalDevice(), info);
 
 	// we can assume that info.pQueueCreateInfo contains for every
@@ -65,8 +64,7 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, const vk::DeviceCreat
 
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 	nytl::Span<const std::pair<unsigned int, unsigned int>> queues)
-		: instance_(ini), physicalDevice_(phdev), device_(device)
-{
+		: instance_(ini), phdev_(phdev), device_(device) {
 	std::vector<std::pair<vk::Queue, unsigned int>> queuePairs;
 	queuePairs.reserve(queues.size());
 	for(auto& q : queues) {
@@ -79,20 +77,19 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev, vk::Device device,
 	nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
-		: instance_(ini), physicalDevice_(phdev), device_(device)
-{
+		: instance_(ini), phdev_(phdev), device_(device) {
 	init(queues);
 }
 
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev,
-	nytl::Span<const char* const> extensions) : instance_(ini), physicalDevice_(phdev)
-{
+	nytl::Span<const char* const> extensions) :
+		instance_(ini), phdev_(phdev) {
 	if(!phdev) {
 		auto phdevs = vk::enumeratePhysicalDevices(ini);
-		physicalDevice_ = choose(phdevs);
+		phdev_ = choose(phdevs);
 	}
 
-	if(!physicalDevice_) {
+	if(!phdev_) {
 		throw std::runtime_error("vpp::Device: could not find physical device");
 	}
 
@@ -121,20 +118,20 @@ Device::Device(vk::Instance ini, vk::PhysicalDevice phdev,
 	}
 
 	// retrieve the queues and init the device
-	init({{vk::getDeviceQueue(vkDevice(), gfxCompQueueFam, 0), gfxCompQueueFam}});
+	auto queue = vk::getDeviceQueue(vkDevice(), gfxCompQueueFam, 0);
+	init({{{queue, gfxCompQueueFam}}});
 }
 
 Device::Device(vk::Instance ini, vk::SurfaceKHR surface, const Queue*& present,
-	nytl::Span<const char* const> extensions) : instance_(ini)
-{
+		nytl::Span<const char* const> extensions) : instance_(ini) {
 	// find a physical device
 	auto phdevs = vk::enumeratePhysicalDevices(vkInstance());
-	auto phdev = choose(phdevs, vkInstance(), surface);
+	auto phdev = choose(phdevs, surface);
 	if(!phdev) {
 		throw std::runtime_error("vpp::Device: could not find a valid physical device");
 	}
 
-	physicalDevice_ = phdev;
+	phdev_ = phdev;
 
 	// find present, graphics and compute queue
 	// if there is a queue family for all 3, create only one queue for the family
@@ -143,13 +140,13 @@ Device::Device(vk::Instance ini, vk::SurfaceKHR surface, const Queue*& present,
 	int gfxCompQueueFam = -1;
 
 	auto gfxCompFlags = vk::QueueBits::graphics | vk::QueueBits::compute;
-	auto allRound = findQueueFamily(phdev, vkInstance(), surface, gfxCompFlags);
+	auto allRound = findQueueFamily(phdev, surface, gfxCompFlags);
 
 	if(allRound != -1) {
 		presentQueueFam = allRound;
 		gfxCompQueueFam = allRound;
 	} else {
-		presentQueueFam = findQueueFamily(phdev, vkInstance(), surface);
+		presentQueueFam = findQueueFamily(phdev, surface);
 		gfxCompQueueFam = findQueueFamily(phdev, gfxCompFlags);
 	}
 
@@ -208,8 +205,7 @@ Device::Device(vk::Instance ini, vk::SurfaceKHR surface, const Queue*& present,
 	present = queue(presentQueueFam);
 }
 
-Device::~Device()
-{
+Device::~Device() {
 	// make sure there are no pending command buffers and stuff
 	vk::deviceWaitIdle(*this);
 
@@ -230,8 +226,7 @@ Device::~Device()
 	}
 }
 
-void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
-{
+void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues) {
 	// init impl and properties
 	impl_ = std::make_unique<Impl>();
 	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());
@@ -243,7 +238,7 @@ void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
 	impl_->queuesVec.resize(queues.size());
 
 	std::map<unsigned int, unsigned int> queueIds;
-	for(std::size_t i(0); i < queues.size(); ++i) {
+	for(auto i = 0; i < queues.size(); ++i) {
 		auto id = queueIds[queues[i].second]++;
 		impl_->queues[i].reset(new Queue(*this, queues[i].first, id, queues[i].second));
 		impl_->queuesVec[i] = impl_->queues[i].get();
@@ -257,8 +252,7 @@ void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues)
 	impl_->tlsDescriptorAllocatorID = impl_->tls.add();
 }
 
-void Device::release()
-{
+void Device::release() {
 	impl_.reset();
 	device_ = {};
 }
@@ -268,47 +262,51 @@ nytl::Span<const Queue*> Device::queues() const
 	return {impl_->queuesVec};
 }
 
-const Queue* Device::queue(unsigned int family) const
-{
-	for(auto& queue : queues())
-		if(queue->family() == family) return queue;
+const Queue* Device::queue(unsigned int family) const {
+	for(auto& queue : queues()) {
+		if(queue->family() == family) {
+			return queue;
+		}
+	}
 
 	return nullptr;
 }
 
-const Queue* Device::queue(unsigned int family, unsigned int id) const
-{
-	for(auto& queue : queues())
-		if(queue->family() == family && queue->id() == id) return queue;
+const Queue* Device::queue(unsigned int family, unsigned int id) const {
+	for(auto& queue : queues()) {
+		if(queue->family() == family && queue->id() == id) {
+			return queue;
+		}
+	}
 
 	return nullptr;
 }
 
-const Queue* Device::queue(vk::QueueFlags flags) const
-{
-	for(auto& queue : queues())
-		if(queue->properties().queueFlags & flags) return queue;
+const Queue* Device::queue(vk::QueueFlags flags) const {
+	for(auto& queue : queues()) {
+		if(queue->properties().queueFlags & flags) {
+			return queue;
+		}
+	}
 
 	return nullptr;
 }
 
-const vk::QueueFamilyProperties& Device::queueFamilyProperties(unsigned int qFamily) const
-{
+const vk::QueueFamilyProperties& Device::queueFamilyProperties(
+		unsigned int qFamily) const {
 	return impl_->qFamilyProperties[qFamily];
 }
 
-const vk::PhysicalDeviceMemoryProperties& Device::memoryProperties() const
-{
+const vk::PhysicalDeviceMemoryProperties& Device::memoryProperties() const {
 	return impl_->memoryProperties;
 }
 
-const vk::PhysicalDeviceProperties& Device::properties() const
-{
+const vk::PhysicalDeviceProperties& Device::properties() const {
 	return impl_->physicalDeviceProperties;
 }
 
-int Device::memoryType(vk::MemoryPropertyFlags mflags, unsigned int typeBits) const
-{
+int Device::memoryType(vk::MemoryPropertyFlags mflags,
+		unsigned int typeBits) const {
 	for(auto i = 0u; i < memoryProperties().memoryTypeCount; ++i) {
 		if(typeBits & (1 << i)) {
 			if((memoryProperties().memoryTypes[i].propertyFlags & mflags) == mflags)
@@ -319,8 +317,8 @@ int Device::memoryType(vk::MemoryPropertyFlags mflags, unsigned int typeBits) co
 	return -1;
 }
 
-unsigned int Device::memoryTypeBits(vk::MemoryPropertyFlags mflags, unsigned int typeBits) const
-{
+unsigned int Device::memoryTypeBits(vk::MemoryPropertyFlags mflags,
+		unsigned int typeBits) const {
 	for(auto i = 0u; i < memoryProperties().memoryTypeCount; ++i) {
 		if(typeBits & (1 << i)) {
 			if((memoryProperties().memoryTypes[i].propertyFlags & mflags) != mflags)
@@ -339,8 +337,7 @@ unsigned int Device::deviceMemoryTypes(unsigned int typeBits) const {
 	return memoryTypeBits(vk::MemoryPropertyBits::deviceLocal, typeBits);
 }
 
-BufferAllocator& Device::bufferAllocator() const
-{
+BufferAllocator& Device::bufferAllocator() const {
 	auto ptr = impl_->tls.get(impl_->tlsBufferAllocatorID); // DynamicStoragePtr*
 	if(!ptr->get()) {
 		auto storage = new ValueStorage<BufferAllocator>(*this);
@@ -351,8 +348,7 @@ BufferAllocator& Device::bufferAllocator() const
 	return static_cast<ValueStorage<BufferAllocator>*>(ptr->get())->value;
 }
 
-DeviceMemoryAllocator& Device::deviceAllocator() const
-{
+DeviceMemoryAllocator& Device::deviceAllocator() const {
 	auto ptr = impl_->tls.get(impl_->tlsDeviceAllocatorID); // DynamicStoragePtr*
 	if(!ptr->get()) {
 		auto storage = new ValueStorage<DeviceMemoryAllocator>(*this);
@@ -363,8 +359,7 @@ DeviceMemoryAllocator& Device::deviceAllocator() const
 	return static_cast<ValueStorage<DeviceMemoryAllocator>*>(ptr->get())->value;
 }
 
-CommandAllocator& Device::commandAllocator() const
-{
+CommandAllocator& Device::commandAllocator() const {
 	auto ptr = impl_->tls.get(impl_->tlsCommandAllocatorID); // DynamicStoragePtr*
 	if(!ptr->get()) {
 		auto storage = new ValueStorage<CommandAllocator>(*this);
@@ -375,8 +370,7 @@ CommandAllocator& Device::commandAllocator() const
 	return static_cast<ValueStorage<CommandAllocator>*>(ptr->get())->value;
 }
 
-DescriptorAllocator& Device::descriptorAllocator() const
-{
+DescriptorAllocator& Device::descriptorAllocator() const {
 	auto ptr = impl_->tls.get(impl_->tlsDescriptorAllocatorID); // DynamicStoragePtr*
 	if(!ptr->get()) {
 		auto storage = new ValueStorage<DescriptorAllocator>(*this);
@@ -387,8 +381,7 @@ DescriptorAllocator& Device::descriptorAllocator() const
 	return static_cast<ValueStorage<DescriptorAllocator>*>(ptr->get())->value;
 }
 
-QueueSubmitter& Device::queueSubmitter() const
-{
+QueueSubmitter& Device::queueSubmitter() const {
 	auto ptr = impl_->tls.get(impl_->tlsQueueSubmitterID); // DynamicStoragePtr*
 	if(!ptr->get()) {
 		auto storage = new ValueStorage<QueueSubmitter>(*queue(vk::QueueBits::graphics));
@@ -399,13 +392,11 @@ QueueSubmitter& Device::queueSubmitter() const
 	return static_cast<ValueStorage<QueueSubmitter>*>(ptr->get())->value;
 }
 
-DynamicThreadStorage& Device::threadStorage() const
-{
+DynamicThreadStorage& Device::threadStorage() const {
 	return impl_->tls;
 }
 
-std::shared_mutex& Device::sharedQueueMutex() const
-{
+std::shared_mutex& Device::sharedQueueMutex() const {
 	return impl_->sharedQueueMutex;
 }
 

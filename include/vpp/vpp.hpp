@@ -24,7 +24,6 @@
 #include <vpp/memoryResource.hpp>
 #include <vpp/physicalDevice.hpp>
 #include <vpp/pipeline.hpp>
-#include <vpp/procAddr.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/renderPass.hpp>
 #include <vpp/renderer.hpp>

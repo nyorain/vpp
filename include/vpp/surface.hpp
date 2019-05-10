@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -36,18 +36,7 @@ protected:
 	vk::SurfaceKHR surface_ {};
 };
 
-// free utility functions
-bool queueFamilySupported(vk::Instance, vk::SurfaceKHR, vk::PhysicalDevice, unsigned int qFamily);
-std::vector<unsigned int> supportedQueueFamilies(vk::Instance, vk::SurfaceKHR, vk::PhysicalDevice);
-vk::SurfaceCapabilitiesKHR capabilities(vk::Instance, vk::SurfaceKHR, vk::PhysicalDevice);
-std::vector<vk::SurfaceFormatKHR> formats(vk::Instance, vk::SurfaceKHR, vk::PhysicalDevice);
-std::vector<vk::PresentModeKHR> presentModes(vk::Instance, vk::SurfaceKHR, vk::PhysicalDevice);
-
-// overloads for surface class that don't take an additional instance parameter
-bool queueFamilySupported(const Surface& surface, vk::PhysicalDevice, unsigned int qFamily);
-std::vector<unsigned int> supportedQueueFamilies(const Surface& surface, vk::PhysicalDevice);
-vk::SurfaceCapabilitiesKHR capabilities(const Surface& surface, vk::PhysicalDevice);
-std::vector<vk::SurfaceFormatKHR> formats(const Surface& surface, vk::PhysicalDevice);
-std::vector<vk::PresentModeKHR> presentModes(const Surface& surface, vk::PhysicalDevice);
+std::vector<unsigned int> supportedQueueFamilies(vk::SurfaceKHR,
+	vk::PhysicalDevice);
 
 } // namespace vpp

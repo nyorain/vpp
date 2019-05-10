@@ -54,7 +54,7 @@ TEST(image) {
 		barrier.dstAccessMask = vk::AccessBits::transferWrite;
 		barrier.subresourceRange = {vk::ImageAspectBits::color, 0, 1, 0, 1};
 		vk::cmdPipelineBarrier(cb, vk::PipelineStageBits::topOfPipe,
-			vk::PipelineStageBits::transfer, {}, {}, {}, {barrier});
+			vk::PipelineStageBits::transfer, {}, {}, {}, {{barrier}});
 
 		auto stage = vpp::fillStaging(cb, img1, vk::Format::r8g8b8a8Unorm,
 			vk::ImageLayout::transferDstOptimal, size, data,
@@ -80,7 +80,7 @@ TEST(image) {
 		barrier.dstAccessMask = vk::AccessBits::transferRead;
 		barrier.subresourceRange = {vk::ImageAspectBits::color, 0, 1, 0, 1};
 		vk::cmdPipelineBarrier(cb, vk::PipelineStageBits::transfer,
-			vk::PipelineStageBits::transfer, {}, {}, {}, {barrier});
+			vk::PipelineStageBits::transfer, {}, {}, {}, {{barrier}});
 
 		auto stage = vpp::retrieveStaging(cb, img1, vk::Format::r8g8b8a8Unorm,
 			vk::ImageLayout::transferSrcOptimal, size,

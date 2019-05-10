@@ -80,7 +80,7 @@ bool QueueSubmitter::completed(uint64_t id) const {
 
 	auto status = vk::getFenceStatus(device(), it->fence);
 	if(status == vk::Result::success) {
-		vk::resetFences(device(), {it->fence});
+		vk::resetFences(device(), {{it->fence.vkHandle()}});
 		unusedFences_.emplace_back(std::move(it->fence));
 		fences_.erase(it);
 		return true;
@@ -147,7 +147,7 @@ bool QueueSubmitter::wait(uint64_t id, uint64_t timeout) {
 
 	auto fh = it->fence.vkHandle();
 	dlg_assert(fh);
-	auto res = vk::waitForFences(device(), {fh}, false, timeout);
+	auto res = vk::waitForFences(device(), {{fh}}, false, timeout);
 	return res == vk::Result::success;
 }
 

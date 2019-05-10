@@ -33,11 +33,11 @@ TEST(basic) {
 	EXPECT(layout2.bindings()[0].type, vk::DescriptorType::storageBuffer);
 
 	// pool
-	auto pool = vpp::TrDsPool(dev, 3, {
+	auto pool = vpp::TrDsPool(dev, 3, {{
 		{vk::DescriptorType::uniformBuffer, 4},
 		{vk::DescriptorType::storageBuffer, 3},
 		{vk::DescriptorType::combinedImageSampler, 20}
-	});
+	}});
 
 	EXPECT(pool.remainingSets(), 3u);
 	EXPECT(pool.remaining().size(), 3u);

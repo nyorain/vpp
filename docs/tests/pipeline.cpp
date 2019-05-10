@@ -94,10 +94,10 @@ TEST(defaultCreate) {
 	auto vert = vpp::ShaderModule(dev, dummy_vert_spv);
 	auto frag = vpp::ShaderModule(dev, dummy_frag_spv);
 
-	auto info = vpp::GraphicsPipelineInfo(rp, layout, {{
+	auto info = vpp::GraphicsPipelineInfo(rp, layout, {{{
 		{vert, vk::ShaderStageBits::vertex},
 		{frag, vk::ShaderStageBits::fragment}
-	}});
+	}}});
 
 	constexpr auto cacheName = "graphicsPipelineCache.bin";
 	vpp::PipelineCache cache(dev, cacheName);

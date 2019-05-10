@@ -1,3 +1,7 @@
+// Copyright (c) 2016-2019 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/trackedDescriptor.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
@@ -195,10 +199,10 @@ TrDs DescriptorAllocator::alloc(const TrDsLayout& layout) {
 	// allocate a new pool
 	// reserve the default allocations additionally
 	reserve(layout.bindings(), 1);
-	reserve({
+	reserve({{
 		{vk::DescriptorType::uniformBuffer, 30},
 		{vk::DescriptorType::combinedImageSampler, 20}
-	}, 20);
+	}}, 20);
 
 	pools_.emplace_back(device(), pending_.count, pending_.types);
 	pending_ = {};

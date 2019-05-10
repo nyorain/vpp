@@ -1,8 +1,6 @@
 Todo list vor vpp
 =================
 
-- discuss: remove common `init` syntax for deferred initialization?
-	- or could that be useful somehow?
 - update to new vkpp version
 - improve image ops
   - allow compressed formats. Some way to allow filling a compressed image with
@@ -93,6 +91,8 @@ Todo list vor vpp
 low prio / general / ideas
 --------------------------
 
+- discuss: remove common `init` syntax for deferred initialization?
+	- or could that be useful somehow?
 - DescriptorUpdate: any chance to avoid memory allocation? maybe just
   provide another mechanism for more convenient update definition like
   vpp::descriptorBinding; allow to group them somehow
