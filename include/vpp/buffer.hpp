@@ -1,29 +1,14 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #pragma once
 
 #include <vpp/fwd.hpp>
+#include <vpp/handles.hpp> // vpp::BufferHandle
 #include <vpp/memoryResource.hpp> // vpp::MemoryResource
 
 namespace vpp {
-
-/// RAII vk::Buffer wrapper.
-/// Does not handle any additional functionality
-class BufferHandle : public ResourceHandle<vk::Buffer> {
-public:
-	BufferHandle() = default;
-	BufferHandle(const Device&, const vk::BufferCreateInfo&);
-	BufferHandle(const Device&, vk::Buffer);
-	~BufferHandle();
-
-	BufferHandle(BufferHandle&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(BufferHandle rhs) noexcept {
-		swap(*this, rhs);
-		return *this;
-	}
-};
 
 /// Combines Buffer and MemoryResource, i.e. a buffer that knows
 /// its bound memory. Does not support sparse memory bindings.
@@ -82,23 +67,8 @@ public:
 	void init() { ensureMemory(); }
 };
 
-/// RAII wrapper around a vulkan buffer view.
-class BufferView : public ResourceHandle<vk::BufferView> {
-public:
-	BufferView() = default;
-	BufferView(const Device&, const vk::BufferViewCreateInfo&);
-	BufferView(const Device&, vk::BufferView);
-	~BufferView();
-
-	BufferView(BufferView&& rhs) noexcept { swap(*this, rhs); }
-	BufferView& operator=(BufferView rhs) noexcept {
-		swap(*this, rhs);
-		return *this;
-	}
-};
-
 /// Continous non-owned device buffer span.
-class BufferSpan : public ResourceReference<BufferSpan> {
+class BufferSpan {
 public:
 	BufferSpan() = default;
 	BufferSpan(const SubBuffer&);
@@ -112,7 +82,10 @@ public:
 	auto size() const { return allocation_.size; }
 	const auto& allocation() const { return allocation_; }
 
-	const auto& resourceRef() const { return *buffer_; }
+	const auto& device() const { return buffer_->device(); }
+	auto vkDevice() const { return device().vkDevice(); }
+	auto vkInstance() const { return device().vkInstance(); }
+	auto vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
 	bool valid() const { return buffer_ && size(); }
 
 protected:

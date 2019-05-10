@@ -3,7 +3,8 @@
 #include <vpp/image.hpp>
 #include <vpp/imageOps.hpp>
 #include <vpp/submit.hpp>
-#include <vpp/commandBuffer.hpp>
+#include <vpp/handles.hpp>
+#include <vpp/commandAllocator.hpp>
 #include <vpp/queue.hpp>
 #include <vpp/sharedBuffer.hpp>
 

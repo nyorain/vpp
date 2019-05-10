@@ -5,7 +5,7 @@
 #include <vpp/device.hpp>
 #include <vpp/vk.hpp>
 #include <vpp/queue.hpp>
-#include <vpp/commandBuffer.hpp>
+#include <vpp/commandAllocator.hpp>
 #include <vpp/submit.hpp>
 #include <vpp/sharedBuffer.hpp>
 #include <vpp/physicalDevice.hpp>
@@ -41,6 +41,13 @@ struct Device::Impl {
 struct Device::QueueDeleter {
 	void operator()(Queue* q) { delete q; }
 };
+
+#ifdef VPP_ONE_DEVICE_OPTIMIZATION
+Device* globalDevice = nullptr;
+Device* Device::instance() {
+	return globalDevice;
+}
+#endif
 
 // Device
 Device::Device(vk::Instance ini, vk::PhysicalDevice phdev,
@@ -224,9 +231,25 @@ Device::~Device() {
 	if(vkDevice()) {
 		vk::destroyDevice(device_, nullptr);
 	}
+
+#ifdef VPP_ONE_DEVICE_OPTIMIZATION
+	dlg_assert(globalDevice == this);
+	globalDevice = nullptr;
+#endif
 }
 
 void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues) {
+#ifdef VPP_ONE_DEVICE_OPTIMIZATION
+	if(globalDevice) {
+		dlg_assert(globalDevice != this); // this is probably a vpp error then
+		auto msg = "vpp::Device: there already is a Device object, but vpp"
+			"was compiled with VPP_ONE_DEVICE_OPTIMIZATION, so only one"
+			"instance is allowed";
+		throw std::logic_error(msg);
+	}
+	globalDevice = this;
+#endif
+
 	// init impl and properties
 	impl_ = std::make_unique<Impl>();
 	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());

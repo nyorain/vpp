@@ -32,6 +32,7 @@ vk::PhysicalDevice choose(nytl::Span<vk::PhysicalDevice>, vk::SurfaceKHR);
 // Returns the name of the given enum value.
 const char* name(vk::PhysicalDeviceType);
 
+
 // Returns the version (major, minor, patch) of the given driverVersion (from
 // vk::PhysicalDeviceProperties)
 std::array<unsigned int, 3> apiVersion(uint32_t driverVersion);
@@ -68,5 +69,11 @@ int findQueueFamily(vk::PhysicalDevice, vk::QueueFlags,
 // family returns -1.
 int findQueueFamily(vk::PhysicalDevice, vk::SurfaceKHR, vk::QueueFlags = {},
 	OptimizeQueueFamily optimize = {});
+
+// Returns the queue families of the given physical device that are supported
+// to present on the given surface (queried with the generic present support
+// functions).
+std::vector<unsigned int> supportedQueueFamilies(vk::SurfaceKHR,
+	vk::PhysicalDevice);
 
 } // namespace vpp

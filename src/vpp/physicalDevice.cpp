@@ -195,4 +195,18 @@ int findQueueFamily(vk::PhysicalDevice phdev,
 	return best;
 }
 
+std::vector<unsigned int> supportedQueueFamilies(vk::SurfaceKHR surf,
+		vk::PhysicalDevice phdev) {
+	std::uint32_t count;
+	vk::getPhysicalDeviceQueueFamilyProperties(phdev, count, nullptr);
+	std::vector<unsigned int> ret;
+	for(auto i = 0u; i < count; ++i) {
+		if(vk::getPhysicalDeviceSurfaceSupportKHR(phdev, i, surf)) {
+			ret.push_back(i);
+		}
+	}
+
+	return ret;
+}
+
 } // namespace vpp

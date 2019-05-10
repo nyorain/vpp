@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -10,21 +10,6 @@
 #include <utility> // std::move
 
 namespace vpp {
-
-// BufferHandle
-BufferHandle::BufferHandle(const Device& dev, const vk::BufferCreateInfo& info) :
-		ResourceHandle(dev, vk::createBuffer(dev, info)) {
-}
-
-BufferHandle::BufferHandle(const Device& dev, vk::Buffer buf) :
-		ResourceHandle(dev, buf) {
-}
-
-BufferHandle::~BufferHandle() {
-	if(vkHandle()) {
-		vk::destroyBuffer(device(), vkHandle());
-	}
-}
 
 // Buffer
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info,
@@ -73,21 +58,6 @@ Buffer::Buffer(DeferTag, const Device& dev, vk::Buffer buffer,
 Buffer::Buffer(DeferTag, const Device& dev, const vk::BufferCreateInfo& info,
 	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
 		Buffer(defer, dev, vk::createBuffer(dev, info), memBits, alloc) {
-}
-
-// BufferView
-BufferView::BufferView(const Device& dev, const vk::BufferViewCreateInfo& info) :
-		BufferView(dev, vk::createBufferView(dev, info)) {
-}
-
-BufferView::BufferView(const Device& dev, vk::BufferView view) :
-		ResourceHandle(dev, view) {
-}
-
-BufferView::~BufferView() {
-	if(vkHandle()) {
-		vk::destroyBufferView(device(), vkHandle());
-	}
 }
 
 // BufferSpan

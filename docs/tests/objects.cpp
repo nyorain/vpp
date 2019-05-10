@@ -1,14 +1,12 @@
 #include "init.hpp"
 
 #include <vpp/allocator.hpp>
-#include <vpp/commandBuffer.hpp>
+#include <vpp/commandAllocator.hpp>
 #include <vpp/memory.hpp>
 #include <vpp/sharedBuffer.hpp>
-#include <vpp/sync.hpp>
+#include <vpp/handles.hpp>
 #include <vpp/formats.hpp>
-#include <vpp/framebuffer.hpp>
 #include <vpp/image.hpp>
-#include <vpp/renderPass.hpp>
 #include <vpp/vpp.hpp>
 
 // test just instanciates all vpp objects
@@ -34,12 +32,12 @@ TEST(mem) {
 TEST(cmd) {
 	auto& dev = *globals.device;
 
-	auto commandPool = vpp::CommandPool{dev, 0};
+	auto commandPool = vpp::CommandPool{dev, 0u};
 	auto cmdBuf1 = vpp::CommandBuffer(commandPool);
 	auto cmdBuf2 = vpp::CommandBuffer(commandPool, vk::CommandBufferLevel::secondary);
 
 	auto cmdBufsRaw = vk::allocateCommandBuffers(dev, {commandPool,
-		vk::CommandBufferLevel::primary, 2});
+		vk::CommandBufferLevel::primary, 2u});
 	auto cmdBuf3 = vpp::CommandBuffer(commandPool, cmdBufsRaw[0]);
 	auto cmdBuf4 = vpp::CommandBuffer(dev, commandPool, cmdBufsRaw[1]);
 

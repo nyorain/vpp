@@ -7,14 +7,19 @@
 #include <vpp/fwd.hpp>
 #include <vpp/image.hpp>
 #include <vpp/queue.hpp>
-#include <vpp/framebuffer.hpp>
-#include <vpp/sync.hpp>
+#include <vpp/handles.hpp>
 #include <vpp/swapchain.hpp>
-#include <vpp/commandBuffer.hpp>
 #include <functional>
 #include <variant>
 
 namespace vpp {
+
+/// Combines a semaphore and the stage in which it should be signaled/
+/// should be waited upon.
+struct StageSemaphore {
+	vk::Semaphore semaphore;
+	vk::PipelineStageFlags stage;
+};
 
 /// Additional (optional) rendering synchronization.
 struct RenderInfo {
@@ -29,9 +34,9 @@ struct RenderInfo {
 /// Internally uses a swapchain.
 /// Remember that the Renderer destructor will destroy all commandbuffers
 /// and fences so it must be assured that no submission is left unfinished.
-class Renderer : public ResourceReference<Renderer> {
+class Renderer {
 public:
-	/// When to record command buffers.
+	/// Defines when to record command buffers.
 	enum class RecordMode {
 		all, /// Re-records all command buffer when invalidated, default
 		onDemand, /// Records command buffers when needed
@@ -110,7 +115,7 @@ public:
 
 	const auto& swapchain() const { return swapchain_; }
 	auto recordMode() const { return mode_; }
-	const auto& resourceRef() const { return *present_; }
+	const auto& device() const { return present_->device(); }
 	auto& submitter() const { return *submitter_; }
 
 protected:

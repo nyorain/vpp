@@ -9,24 +9,6 @@
 
 namespace vpp {
 
-// ImageHandle
-ImageHandle::ImageHandle(const Device& dev, const vk::ImageCreateInfo& info) :
-	ResourceHandle(dev, vk::createImage(dev, info))
-{
-}
-
-ImageHandle::ImageHandle(const Device& dev, vk::Image buf) :
-	ResourceHandle(dev, buf)
-{
-}
-
-ImageHandle::~ImageHandle()
-{
-	if(vkHandle()) {
-		vk::destroyImage(device(), vkHandle());
-	}
-}
-
 // Image
 Image::Image(const Device& dev, const vk::ImageCreateInfo& info,
 	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
@@ -85,24 +67,6 @@ Image::Image(DeferTag, const Device& dev, const vk::ImageCreateInfo& info,
 	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
 		Image(defer, dev, vk::createImage(dev, info), info.tiling, memBits, alloc)
 {
-}
-
-// ImageView
-ImageView::ImageView(const Device& dev, const vk::ImageViewCreateInfo& info) :
-	ImageView(dev, vk::createImageView(dev, info))
-{
-}
-
-ImageView::ImageView(const Device& dev, vk::ImageView view) :
-	ResourceHandle(dev, view)
-{
-}
-
-ImageView::~ImageView()
-{
-	if(vkHandle()) {
-		vk::destroyImageView(device(), vkHandle());
-	}
 }
 
 // ViewableImage

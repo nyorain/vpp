@@ -23,8 +23,13 @@ static VkBool32 messengerCallback(
 	auto vseverity = static_cast<vk::DebugUtilsMessageSeverityBitsEXT>(severity);
 	auto vtype = static_cast<vk::DebugUtilsMessageTypeBitsEXT>(type);
 
+	// NOTE: gcc 8 warns here because of the memcpy and since
+	// vdebugData isn't trivial (cannot be made trivial due to sType
+	// initializer). But memcpy doesn't require that types are trivial,
+	// only trivially copyable and vdebugData is that, so we cheat
+	// the warning by casting to void*
 	vk::DebugUtilsMessengerCallbackDataEXT vdebugData;
-	std::memcpy(&vdebugData, debugData, sizeof(vdebugData));
+	std::memcpy((void*) &vdebugData, debugData, sizeof(vdebugData));
 	messenger->call(vseverity, vtype, vdebugData);
 	return false;
 }

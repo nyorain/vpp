@@ -31,7 +31,7 @@ void MemoryMap::map(const DeviceMemory& memory, const Allocation& alloc) {
 		"Trying to map unmappable memory");
 	memory_ = &memory;
 	allocation_ = alloc;
-	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
+	ptr_ = vk::mapMemory(device(), vkMemory(), offset(), size(), {});
 	flush();
 }
 
@@ -46,10 +46,10 @@ void MemoryMap::remap(const Allocation& allocation) {
 	}
 
 	// else remap the memory
-	vk::unmapMemory(vkDevice(), vkMemory());
+	vk::unmapMemory(device(), vkMemory());
 	allocation_ = {nbeg, nsize};
 
-	ptr_ = vk::mapMemory(vkDevice(), vkMemory(), offset(), size(), {});
+	ptr_ = vk::mapMemory(device(), vkMemory(), offset(), size(), {});
 	invalidate();
 }
 
@@ -70,7 +70,7 @@ void MemoryMap::flush(const Allocation& range) const {
 	auto s = range.size == vk::wholeSize ? size() : range.size;
 	dlg_assert(s <= size());
 
-	vk::flushMappedMemoryRanges(vkDevice(), 1, {vkMemory(), o, s});
+	vk::flushMappedMemoryRanges(device(), 1, {vkMemory(), o, s});
 }
 
 void MemoryMap::invalidate(const Allocation& range) const {
@@ -82,7 +82,7 @@ void MemoryMap::invalidate(const Allocation& range) const {
 	auto s = range.size == vk::wholeSize ? size() : range.size;
 	dlg_assert(s <= size());
 
-	vk::invalidateMappedMemoryRanges(vkDevice(), 1, {vkMemory(), o, s});
+	vk::invalidateMappedMemoryRanges(device(), 1, {vkMemory(), o, s});
 }
 
 bool MemoryMap::coherent() const noexcept {
@@ -94,7 +94,7 @@ void MemoryMap::unmap() {
 
 	if(memory_ && vkMemory() && ptr() && size()) {
 		flush();
-		vk::unmapMemory(memory().vkDevice(), vkMemory());
+		vk::unmapMemory(memory().device(), vkMemory());
 	}
 
 	memory_ = nullptr;
@@ -118,6 +118,10 @@ void MemoryMap::unref() noexcept {
 			dlg_warnt(("MemoryMap::unref"), "unmap: ", error.what());
 		}
 	}
+}
+
+const Device& MemoryMap::device() const noexcept {
+	return memory_->device();
 }
 
 // MemoryMapView
@@ -152,7 +156,7 @@ void MemoryMapView::flush() const {
 	}
 
 	auto range = mappedMemoryRange();
-	vk::flushMappedMemoryRanges(vkDevice(), 1, range);
+	vk::flushMappedMemoryRanges(device(), 1, range);
 }
 
 void MemoryMapView::invalidate() const {
@@ -161,7 +165,7 @@ void MemoryMapView::invalidate() const {
 	}
 
 	auto range = mappedMemoryRange();
-	vk::invalidateMappedMemoryRanges(vkDevice(), 1, range);
+	vk::invalidateMappedMemoryRanges(device(), 1, range);
 }
 
 std::byte* MemoryMapView::ptr() const noexcept {

@@ -12,7 +12,6 @@ Todo list vor vpp
 	  better for vpp? there are some classes (e.g. TrDs) that have to use
 	  additional reservation members only for that purpose
 	- anyways, init.hpp was pretty much *never* used
-- pack all simple RAII wrappers into vpp/handles.hpp?
 - completely abandon ThreadLocalStorage?
 	- when someone uses multiple threads, just use custom allocators
 	  and stuff. They probably alreday have comparable solutions
@@ -24,18 +23,6 @@ Todo list vor vpp
 	- are the formats utility functions even useful though?
 	- also fix the weird 'depth == 1 or depth == 0, whatever' semantics
 - add glfw/sdl examples (option to use sdl from meson wrap db)
-- correct syncs, pipeline barriers support
-	- when a SharedBuffer range is reallocated, does there have to be
-	  a pipeline barrier? should probably be left to user to synchronize
-	  before destruction of SubBuffer, but document that somewhere!
-- one_device: store device in Device, not Resource.
-  Make sure it can be reset (after destruction) e.g. for device lost or
-  multiple devices in sequence + example/test
-  (create multiple devices and resources)
-  	- cleanup resource.hpp, ifdef confusing atm
-	  maybe split the two implementations into two files
-- make codestyle consistent everywhere
-	- mainly old sources using old styles (devcice.cpp etc)
 - clean up usage of nytl
 	- just include it as subproject?
 	  or remove it? c++20 has span
@@ -50,9 +37,6 @@ Todo list vor vpp
 - device: cache supported extensions (see e.g. defaults.cpp: could change
   format querying behavior)
 - write basic docs
-- rework commandBuffer
-	- don't make commandPools store information
-	- split in "smart" pools and command buffers and simple raii handles
 - is size value in MemoryEntry really needed?
 	- completely abolish memory size?
 - External constructors for all resources (construct them from existing handles)
@@ -69,6 +53,7 @@ low prio / general / ideas
 - memoryMap: remap smaller range when a certain range is no longer needed?
 	- might otherwise have undefined behavior, mapping memory while used
 	  on device is undefined, right? even if not used? read in spec
+	- but this will invalidate the pointer, no probably can't be done
 - improve BufferAllocator/SharedBuffer/DescriptorAllocator algorithms
 	- general descriptor algorithms
 - add debug barrier from vulkan sync wiki
@@ -76,8 +61,6 @@ low prio / general / ideas
   for debugging/temporary workarounds?
 	- clearly mark them as inefficient and not good for production code
 	  though... not sure if worth it
-- add overloads to SubBuffer/TrDs that don't take a <>allocator and just
-  use the default one
 - BufferAllocator optimize/shrink
 	- basic defragmentation?
 - offer functionality to select supported extensions/layers from a list
@@ -102,7 +85,7 @@ low prio / general / ideas
 		- queue
 		- image constructors (simply copy from buffer constructors in objects.cpp)
 		- etc...
-- respect optimalBufferCopyRowPitchAlignment somehow
+- honor optimalBufferCopyRowPitchAlignment somehow
 	- retrieve: probably not possible if we want to guarantee tightly packed data
 	- we could maybe use it when uploading data
 - support for checking max available vs used memory

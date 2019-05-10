@@ -3,8 +3,8 @@
 
 #include <vpp/shader.hpp>
 #include <vpp/pipeline.hpp>
-#include <vpp/pipelineInfo.hpp>
-#include <vpp/renderPass.hpp>
+#include <vpp/pipeline.hpp>
+#include <vpp/handles.hpp>
 
 uint32_t dummy_vert_spv[] = {
 	119734787, 65536, 524289, 62, 0, 131089, 1, 393227, 1, 1280527431, 1685353262,

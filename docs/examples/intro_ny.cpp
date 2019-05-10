@@ -20,11 +20,10 @@
 
 #include <vpp/renderer.hpp> // vpp::DefaultRenderer
 #include <vpp/pipeline.hpp> // vpp::GraphicsPipeline
-#include <vpp/instance.hpp> // vpp::Instance
+#include <vpp/handles.hpp> // vpp::Instance, vpp::RenderPass, ...
 #include <vpp/debug.hpp> // vpp::DebugMessenger
 #include <vpp/device.hpp> // vpp::Device
-#include <vpp/renderPass.hpp> // vpp::RenderPass
-#include <vpp/pipelineInfo.hpp> // vpp::GraphicsPipelineInfo
+#include <vpp/pipeline.hpp> // vpp::GraphicsPipelineInfo
 #include <vpp/vk.hpp> // vulkan commands
 
 #include <ny/backend.hpp> // ny::Backend

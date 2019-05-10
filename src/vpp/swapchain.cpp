@@ -5,7 +5,7 @@
 #include <vpp/swapchain.hpp>
 #include <vpp/vk.hpp>
 #include <vpp/queue.hpp>
-#include <vpp/surface.hpp>
+#include <vpp/handles.hpp>
 #include <vpp/image.hpp>
 #include <dlg/dlg.hpp>
 

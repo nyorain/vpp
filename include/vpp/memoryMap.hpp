@@ -5,19 +5,20 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/resource.hpp> // vpp::ResourceReference
+#include <vpp/device.hpp>
 #include <vpp/util/allocation.hpp> // vpp::Allocation
+#include <vpp/util/span.hpp> // Span
 
 namespace vpp {
 
-/// Represents a mapped range of a vulkan DeviceMemory.
-/// There shall never be more than one MemoryMap object for on DeviceMemory object.
-/// The MemoryMap class is usually never used directly, but rather accessed through a
-/// MemoryMapView.
-/// Instances of this class cannot be created manually but must be indirectly
-/// retrieved by a DeviceMemory object.
-/// This class is not threadsafe.
-class MemoryMap : public ResourceReference<MemoryMap> {
+// Represents a mapped range of a vulkan DeviceMemory.
+// There must never be more than one MemoryMap object for on DeviceMemory object.
+// The MemoryMap class is usually never used directly, but rather accessed
+// through a MemoryMapView.
+// Instances of this class cannot be created manually but must be indirectly
+// retrieved by a DeviceMemory object.
+// This class is not threadsafe.
+class MemoryMap {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
 
@@ -62,8 +63,7 @@ public:
 	bool coherent() const noexcept;
 
 	vk::MappedMemoryRange mappedMemoryRange() const noexcept;
-
-	const DeviceMemory& resourceRef() const noexcept { return *memory_; }
+	const Device& device() const noexcept;
 
 protected:
 	friend class MemoryMapView;
@@ -85,11 +85,11 @@ protected:
 	void* ptr_ {nullptr};
 };
 
-/// A view into a mapped memory range.
-/// Makes it possible to write/read from multiple allocations on a mapped memory.
-/// Objects are always retrieved by a DeviceMemory object.
-/// This class is not threadsafe.
-class MemoryMapView : public ResourceReference<MemoryMapView> {
+// A view into a mapped memory range.
+// Makes it possible to write/read from multiple allocations on a mapped memory.
+// Objects are always retrieved by a DeviceMemory object.
+// This class is not threadsafe.
+class MemoryMapView {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
 
@@ -134,7 +134,7 @@ public:
 
 	vk::MappedMemoryRange mappedMemoryRange() const noexcept;
 
-	const MemoryMap& resourceRef() const noexcept { return *memoryMap_; }
+	const Device& device() const noexcept { return memoryMap_->device(); }
 	void swap(MemoryMapView& lhs) noexcept;
 
 protected:

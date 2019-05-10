@@ -12,11 +12,11 @@ namespace vpp {
 
 /// Returns the memory address for an image texel.
 /// Does not support compressed image formats.
-/// layout: The queried layout of the image, obtained via
+/// - layout: The queried layout of the image, obtained via
 ///   vk::getImageSubresourceLayout.
-/// texelSize: The size (in bytes) of one texel.
+/// - texelSize: The size (in bytes) of one texel.
 ///   Can e.g. be obtained from formatSize (with the images format).
-/// x,y,z,layer: The coordinates of the texel which address should be returned.
+/// - x,y,z,layer: The coordinates of the texel which address should be returned.
 vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout,
 	unsigned int texelSize, unsigned int x, unsigned int y, unsigned int z = 0,
 	unsigned int layer = 0);
@@ -36,16 +36,15 @@ unsigned int formatSize(vk::Format);
 /// For vk::Format::undefined, {0, 0} is returned
 vk::Extent2D blockSize(vk::Format);
 
-
 /// Fills the given image with the given data by mapping it.
 /// The image must be bound to hostVisible memory.
 /// The image must have a suitable (preinitialized or general) layout and
 /// linear tiling.
 /// The image must not be in use (you probably have to use a barrier).
-/// \param data Tightly packed data.
-/// The data must be in row-major order and large enough for the given extent.
-/// The size of data will be expected to be exactly
-/// extent.w * extent.h * extent.d * formatSize(format).
+/// - data: Tightly packed data.
+///   Must be in row-major order and large enough for the given extent.
+///   The size of data will be expected to equal exactly:
+///   extent.w * extent.h * extent.d * formatSize(format)
 void fillMap(const Image&, vk::Format, const vk::Extent3D& size,
 	nytl::Span<const std::byte> data, const vk::ImageSubresource&,
 	const vk::Offset3D& offset = {});
@@ -55,30 +54,33 @@ void fillMap(const Image&, vk::Format, const vk::Extent3D& size,
 /// The image must have a suitable (preinitialized or general) layout and
 /// linear tiling.
 /// The image must not be in use (you probably have to use a barrier).
-/// The returned data will be tightly packed and have the size extent.w *
-/// extent.h * extent.d * formatSize(format).
+/// The returned data will be tightly packed.
 std::vector<std::byte> retrieveMap(const Image&, vk::Format,
 	const vk::Extent3D& size, const vk::ImageSubresource&,
 	const vk::Offset3D& offset = {});
 
-
-/// Records the command for fillStaging (see above) into the given
+/// Records the command for fillStaging into the given
 /// command buffer. The returned BufferRange must stay valid until
 /// the command buffer has completed execution.
 /// If the command buffer is never submitted, it may be destructed.
 /// The command buffer must be in recording state.
+/// - data: Tightly packed data.
+///   Must be in row-major order and large enough for the given extent.
+///   The size of data will be expected to equal exactly:
+///   extent.w * extent.h * extent.d * formatSize(format)
 [[nodiscard]]
 SubBuffer fillStaging(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, const vk::Extent3D& size, nytl::Span<const std::byte> data,
 	const vk::ImageSubresource&, const vk::Offset3D& offset = {});
 
-/// Records the commands for retrieveStaging (see above) into the
+/// Records the commands for retrieveStaging into the
 /// given command buffer. The returned, mappable buffer range will hold
 /// the given images data when the given command buffer finishes
 /// execution. The BufferRange must stay valid until the commandbuffer
 /// finishes execution. If the commandbuffer is never submitted, the
 /// BufferRange may be destroyed.
 /// The command buffer must be in recording state.
+/// The returned data will be tightly packed.
 [[nodiscard]]
 SubBuffer retrieveStaging(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, const vk::Extent3D& size, const vk::ImageSubresource&,

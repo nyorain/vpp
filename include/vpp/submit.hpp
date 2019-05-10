@@ -5,8 +5,8 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/resource.hpp>
-#include <vpp/sync.hpp>
+#include <vpp/queue.hpp>
+#include <vpp/handles.hpp>
 #include <vpp/util/span.hpp>
 
 #include <deque>
@@ -18,7 +18,7 @@ namespace vpp {
 /// Can be used to track the submit state using an id.
 /// Is bound to a fixed queue and not synchronized in any way but
 /// will respect queue locks.
-class QueueSubmitter : public ResourceReference<QueueSubmitter> {
+class QueueSubmitter {
 public:
 	QueueSubmitter() = default;
 	QueueSubmitter(const Queue& queue);
@@ -83,7 +83,7 @@ public:
 	auto& pendingInfos() { return pending_; }
 
 	const auto& queue() const { return *queue_; }
-	const auto& resourceRef() const { return *queue_; }
+	const Device& device() const { return queue().device(); }
 
 protected:
 	std::vector<vk::SubmitInfo> pending_;

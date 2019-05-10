@@ -10,9 +10,25 @@ namespace vpp {
 
 // TrDsLayout
 TrDsLayout::TrDsLayout(const Device& dev,
-	nytl::Span<const vk::DescriptorSetLayoutBinding> xbindings) :
-		DescriptorSetLayout(dev, xbindings) {
+	const vk::DescriptorSetLayoutCreateInfo& info) :
+		DescriptorSetLayout(dev, info) {
+	init({info.pBindings, info.bindingCount});
+}
 
+TrDsLayout::TrDsLayout(const Device& dev,
+	nytl::Span<vk::DescriptorSetLayoutBinding> bindings) :
+		DescriptorSetLayout(dev, bindings) {
+	init(bindings);
+}
+
+TrDsLayout::TrDsLayout(const Device& dev,
+	std::initializer_list<vk::DescriptorSetLayoutBinding> xbindings) :
+		DescriptorSetLayout(dev, xbindings) {
+	init(xbindings);
+}
+
+void TrDsLayout::init(nytl::Span<const vk::DescriptorSetLayoutBinding> xbindings) {
+	bindings_.reserve(xbindings.size());
 	for(auto& b : xbindings) {
 		auto it = std::find_if(bindings_.begin(), bindings_.end(),
 			[&](const auto& s) { return s.type == b.descriptorType; });
@@ -62,7 +78,8 @@ TrDs::TrDs(TrDsPool& pool, const TrDsLayout& layout) :
 	dlg_assert(layout);
 
 	// remove from pool
-	// TODO: throw when there are not enough resources left?
+	// TODO: throw when there are not enough resources left instead
+	//   of just asserting it?
 	auto& rem = pool.remaining_;
 	for(auto& binding : layout.bindings()) {
 		auto it = std::find_if(rem.begin(), rem.end(), [&](const auto& s)
@@ -213,9 +230,10 @@ TrDs DescriptorAllocator::alloc(const TrDsLayout& layout) {
 		}
 	}
 
-	// TODO: use a better allocation strat
 	// allocate a new pool
 	// reserve the default allocations additionally
+	// TODO: use a better allocation strat, depending on what was
+	//  previously allocated
 	reserve(layout.bindings(), 1);
 	reserve({{
 		{vk::DescriptorType::uniformBuffer, 30},

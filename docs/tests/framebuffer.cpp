@@ -1,8 +1,7 @@
 #include "init.hpp"
 
 #include <vpp/formats.hpp>
-#include <vpp/framebuffer.hpp>
-#include <vpp/renderPass.hpp>
+#include <vpp/handles.hpp>
 #include <vpp/image.hpp>
 
 // we create a renderpass and a framebuffer for it (as simple
@@ -51,7 +50,7 @@ TEST(framebuffer) {
 	};
 
 	vk::RenderPassCreateInfo rpInfo;
-	vpp::RenderPass renderPass {dev, {{}, 
+	vpp::RenderPass renderPass {dev, {{},
 		2, attachments,
 		1, &subpass,
 	}};

@@ -15,11 +15,15 @@ namespace vpp {
 class TrDsLayout : public DescriptorSetLayout {
 public:
 	TrDsLayout() = default;
-	TrDsLayout(const Device&, nytl::Span<const vk::DescriptorSetLayoutBinding>);
+	TrDsLayout(const Device&, const vk::DescriptorSetLayoutCreateInfo&);
+	TrDsLayout(const Device&, nytl::Span<vk::DescriptorSetLayoutBinding>);
+	TrDsLayout(const Device&,
+		std::initializer_list<vk::DescriptorSetLayoutBinding>);
 
 	const auto& bindings() const { return bindings_; }
 
 protected:
+	void init(nytl::Span<const vk::DescriptorSetLayoutBinding>);
 	std::vector<vk::DescriptorPoolSize> bindings_;
 };
 

@@ -5,26 +5,10 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
+#include <vpp/handles.hpp> // vpp::ImageHandle, vpp::ImageView
 #include <vpp/memoryResource.hpp> // vpp::MemoryResource
 
 namespace vpp {
-
-// image header
-/// RAII vk::Image wrapper.
-/// Does not handle any additional functionality
-class ImageHandle : public ResourceHandle<vk::Image> {
-public:
-	ImageHandle() = default;
-	ImageHandle(const Device&, const vk::ImageCreateInfo&);
-	ImageHandle(const Device&, vk::Image);
-	~ImageHandle();
-
-	ImageHandle(ImageHandle&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(ImageHandle rhs) noexcept {
-		swap(*this, rhs);
-		return *this;
-	}
-};
 
 class Image : public ImageHandle, public MemoryResource {
 public:
@@ -84,25 +68,10 @@ public:
 	void init() { ensureMemory(); }
 };
 
-/// RAII wrapper around a vulkan image view.
-class ImageView : public ResourceHandle<vk::ImageView> {
-public:
-	ImageView() = default;
-	ImageView(const Device&, const vk::ImageViewCreateInfo&);
-	ImageView(const Device&, vk::ImageView);
-	~ImageView();
-
-	ImageView(ImageView&& rhs) noexcept { swap(*this, rhs); }
-	ImageView& operator=(ImageView rhs) noexcept {
-		swap(*this, rhs);
-		return *this;
-	}
-};
-
 /// Combines a vulkan image and an imageView for it.
 /// Can be e.g. used for textures or framebuffer attachments.
 /// See also ViewableImageCreateInfo for default initializers.
-class ViewableImage : public ResourceReference<ViewableImage> {
+class ViewableImage {
 public:
 	ViewableImage() = default;
 
@@ -140,7 +109,10 @@ public:
 	const vk::ImageView& vkImageView() const { return imageView_; }
 	const vk::Image& vkImage() const { return image_; }
 
-	const Image& resourceRef() const { return image_; }
+	const Device& device() const { return image_.device(); }
+	auto vkDevice() const { return device().vkDevice(); }
+	auto vkInstance() const { return device().vkInstance(); }
+	auto vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
 
 protected:
 	Image image_;

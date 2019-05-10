@@ -1,8 +1,8 @@
 #include "init.hpp"
 #include <vpp/submit.hpp>
-#include <vpp/commandBuffer.hpp>
+#include <vpp/commandAllocator.hpp>
 #include <vpp/queue.hpp>
-#include <vpp/sync.hpp>
+#include <vpp/handles.hpp>
 
 #include <thread>
 #include <chrono>

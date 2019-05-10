@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -6,6 +6,7 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
+#include <vpp/handles.hpp>
 #include <vpp/util/span.hpp>
 #include <vpp/util/nonCopyable.hpp>
 
@@ -17,64 +18,10 @@ namespace fwd {
 	extern const vk::ShaderStageFlags allShaderStages;
 } // namespace fwd
 
-/// Represents a vulkan desciptor set layout which stores information
-/// about the structure of a descriptor set.
-class DescriptorSetLayout : public ResourceHandle<vk::DescriptorSetLayout> {
-public:
-	DescriptorSetLayout() = default;
-	DescriptorSetLayout(const Device&,
-		nytl::Span<const vk::DescriptorSetLayoutBinding>);
-	DescriptorSetLayout(const Device&, vk::DescriptorSetLayout);
-	~DescriptorSetLayout();
-
-	DescriptorSetLayout(DescriptorSetLayout&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(DescriptorSetLayout rhs) noexcept {
-		swap(*this, rhs);
-		return *this;
-	}
-};
-
-/// Represents a vulkan descriptor set.
-/// Note that this class cannot automatically destroy the DescriptorSet handle
-/// on destruction since the vulkan spec does not allow this per default.
-/// See also the trackedDescriptor api for more functionality.
-class DescriptorSet : public ResourceHandle<vk::DescriptorSet> {
-public:
-	DescriptorSet() = default;
-	DescriptorSet(const DescriptorPool&, const DescriptorSetLayout&);
-	DescriptorSet(const DescriptorPool&, vk::DescriptorSetLayout);
-	DescriptorSet(vk::DescriptorPool, const DescriptorSetLayout&);
-	DescriptorSet(const Device&, vk::DescriptorPool, vk::DescriptorSetLayout);
-	DescriptorSet(const Device&, vk::DescriptorSet);
-	~DescriptorSet() = default;
-
-	DescriptorSet(DescriptorSet&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(DescriptorSet rhs) noexcept {
-		swap(*this, rhs);
-		return *this;
-	}
-};
-
-/// RAII vulkan descriptor pool wrapper.
-class DescriptorPool : public ResourceHandle<vk::DescriptorPool> {
-public:
-	DescriptorPool() = default;
-	DescriptorPool(const Device&, const vk::DescriptorPoolCreateInfo&);
-	DescriptorPool(const Device&, vk::DescriptorPool);
-	~DescriptorPool();
-
-	DescriptorPool(DescriptorPool&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(DescriptorPool rhs) noexcept {
-		swap(*this, rhs);
-		return *this;
-	}
-};
-
 /// Allows convinient descriptorSet updates.
 /// Does not perform any checking and has the overhead of internally
 /// allocating memory.
-class DescriptorSetUpdate : public ResourceReference<DescriptorSetUpdate>,
-	public nytl::NonCopyable {
+class DescriptorSetUpdate : public nytl::NonCopyable {
 public:
 	using BufferInfos = std::vector<vk::DescriptorBufferInfo>;
 	using BufferViewInfos = std::vector<vk::BufferView>;
@@ -126,7 +73,12 @@ public:
 
 	/// Skips the given number of descriptors.
 	void skip(unsigned int count = 1) { currentBinding_ += count; };
-	const auto& resourceRef() const { return *set_; }
+
+	const auto& device() const { return set_->device(); }
+	auto vkDevice() const { return device().vkDevice(); }
+	auto vkInstance() const { return device().vkInstance(); }
+	auto vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
+
 	const auto& writes() const { return writes_; }
 	const auto& copies() const { return copies_; }
 

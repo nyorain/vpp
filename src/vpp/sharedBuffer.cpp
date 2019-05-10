@@ -87,11 +87,36 @@ MemoryMapView SubBuffer::memoryMap(vk::DeviceSize offset,
 }
 
 void swap(SubBuffer& a, SubBuffer& b) noexcept {
-	using RR = ResourceReference<SubBuffer>;
 	using std::swap;
-	swap(static_cast<RR&>(a), static_cast<RR&>(b));
-	swap(a.shared_, b.shared_);
+
+	// union swap
+	if(a.size()) {
+		if(b.size()) {
+			swap(a.shared_, b.shared_);
+		} else {
+			auto tmp = b.allocator_;
+			b.allocator_ = a.allocator_;
+			a.allocator_ = tmp;
+		}
+	} else {
+		if(b.size()) {
+			auto tmp = b.shared_;
+			b.allocator_ = a.allocator_;
+			a.shared_ = tmp;
+		} else {
+			swap(a.allocator_, b.allocator_);
+		}
+	}
+
 	swap(a.allocation_, b.allocation_);
+}
+
+const Device& SubBuffer::device() const {
+	if(allocation_.size) {
+		return shared_->device();
+	} else {
+		return allocator_->device();
+	}
 }
 
 // SharedBuffer

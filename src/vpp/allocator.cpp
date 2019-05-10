@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -188,8 +188,9 @@ void DeviceMemoryAllocator::allocate(const MemoryEntry& entry) {
 		return;
 	}
 
-	// finding free memory failed, so query the memory type with the most requests and on
-	// which the given entry can be allocated and then alloc and bind all reqs for this type
+	// finding free memory failed, so query the memory type with the most
+	// requests and on which the given entry can be allocated and then alloc
+	// and bind all reqs for this type
 	auto type = findBestType(req->memoryTypes);
 	allocate(type);
 }
@@ -235,8 +236,9 @@ void DeviceMemoryAllocator::allocate(unsigned int type,
 	std::vector<std::pair<Requirement*, unsigned int>> offsets;
 	offsets.reserve(requirements.size());
 
-	// iterate through all reqs and place the ones that may be allocated on the given type
-	// there. First all linear resources, then all optimal resources.
+	// iterate through all reqs and place the ones that may be allocated on the
+	// given type there. First all linear resources, then all optimal
+	// resources.
 	for(auto& req : requirements) {
 		if(req->type == RequirementType::optimalImage) {
 			applyGran = true;
@@ -248,7 +250,8 @@ void DeviceMemoryAllocator::allocate(unsigned int type,
 		offset += req->size;
 	}
 
-	// apply granularity if there were already resources placed and there are ones to be placed
+	// apply granularity if there were already resources placed and there are
+	// ones to be placed
 	if(offset > 0 && applyGran && gran) {
 		offset = vpp::align(offset, gran);
 	}
@@ -267,8 +270,8 @@ void DeviceMemoryAllocator::allocate(unsigned int type,
 		offset += req->size;
 	}
 
-	// now the needed size is known and the requirements to be allocated have their offsets
-	// the last offset value now equals the needed size
+	// now the needed size is known and the requirements to be allocated have
+	// their offsets the last offset value now equals the needed size
 	auto info = vk::MemoryAllocateInfo {offset, type};
 	auto& mem = memories_.emplace_back(device(), info);
 
@@ -296,9 +299,9 @@ std::unordered_map<unsigned int, std::vector<DeviceMemoryAllocator::Requirement*
 DeviceMemoryAllocator::queryTypes() {
 	// XXX: probably one of the places where a custom host allocator would
 	//  really speed things up
-	// XXX: this implementation does not always return the best result, but its
-	//  complexity is quadratic (in the number of requirements) and the
-	//  problem is NP-complete.
+	// XXX: this implementation does not always return the best result, but the
+	//  algorithms complexity is quadratic (in the number of requirements) and
+	//  the problem is NP-complete so good enough i guess.
 
 	// this function implements an algorithm to choose the best type for
 	// each requirement from its typebits, so that in the end there will
@@ -312,8 +315,8 @@ DeviceMemoryAllocator::queryTypes() {
 	// map holding the current count of the different types
 	std::unordered_map<unsigned int, std::vector<Requirement*>> occurences;
 
-	// function to count the occurences of the different memory types and store them in
-	// the occurences map
+	// function to count the occurences of the different memory types and store
+	// them in the occurences map
 	auto countOccurences = [&]() {
 		occurences.clear();
 		for(auto& req : requirements_) {
@@ -376,23 +379,24 @@ DeviceMemoryAllocator::queryTypes() {
 				req->memoryTypes &= ~(1 << bestID);
 
 			// erase the occurences for bestID
-			// this is the only change to occurences so it does not have to be recounted
+			// this is the only change to occurences so it does not have to be
+			// recounted
 			occurences.erase(bestID);
 		} else {
-			// set the requirements typebits to 0, indicating that it has a matching type
-			// this makes it no longer have any effect on countOccurences which makes sense,
-			// since we "removed" it
-			// one could alternatively really remove this from the requirements_ vector, but
-			// this would be less efficient
+			// set the requirements typebits to 0, indicating that it has a
+			// matching type this makes it no longer have any effect on
+			// countOccurences which makes sense, since we "removed" it.
+			// one could alternatively really remove this from the
+			// requirements_ vector, but this would be less efficient
 			for(auto& req : it->second) req->memoryTypes = 0;
 
 			// insert the requirements that will be allocated on bestID into ret
 			ret.emplace(bestID, std::move(it->second));
 
 			// explicitly remove the occurences for the chosen bit.
-			// the other references to the now removed since type found requirements
-			// stay, but sice their memoryTypes member is 0, they will no
-			// longer be counted
+			// the other references to the now removed since type found
+			// requirements stay, but sice their memoryTypes member is 0, they
+			// will no longer be counted
 			occurences.erase(bestID);
 
 			// the occurences have to be recounted since the occurences for type
@@ -520,11 +524,11 @@ MemoryMapView MemoryEntry::map(vk::DeviceSize offset,
 	return mem->map({alloc.offset + offset, size});
 }
 
-Resource& MemoryEntry::resourceRef() const noexcept {
+const Device& MemoryEntry::device() const noexcept {
 	if(allocated()) {
-		return *memory_;
+		return memory_->device();
 	} else {
-		return *allocator_;
+		return allocator_->device();
 	}
 }
 

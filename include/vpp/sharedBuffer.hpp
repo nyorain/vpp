@@ -55,9 +55,11 @@ protected:
 	vk::DeviceSize size_;
 };
 
-/// Sub-allocated range of a buffer.
-/// See also SharedBuffer.
-class SubBuffer : public ResourceReference<SubBuffer> {
+/// Sub-allocated range of a buffer. See also SharedBuffer.
+/// Before destructing a SubBuffer, i.e. before returning that allocated
+/// range to the SharedBuffer, it must be ensured that all writes and
+/// reads to/from it have finished, usually a pipeline barrier is required.
+class SubBuffer {
 public:
 	using Allocation = SharedBuffer::Allocation;
 
@@ -97,7 +99,7 @@ public:
 	MemoryMapView memoryMap(vk::DeviceSize offset = 0,
 		vk::DeviceSize size = vk::wholeSize) const;
 
-	const SharedBuffer& resourceRef() const { return *shared_; }
+	const Device& device() const;
 	friend void swap(SubBuffer&, SubBuffer&) noexcept;
 
 protected:

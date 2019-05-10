@@ -6,7 +6,6 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
-#include <vpp/submit.hpp>
 #include <vpp/util/nonCopyable.hpp> // nytl::NonCopyable
 
 #include <mutex> // std::mutex
@@ -21,9 +20,9 @@ public:
 	/// Return the queueFamily of this queue
 	unsigned int family() const noexcept { return family_; }
 
-	/// Returns the id of this queue which is unique under all queues with the 
-	/// same family. E.g. if there are two queues of family A and one queue of 
-	/// family B, the queues of family A wiill have the ids {0, 1} while the 
+	/// Returns the id of this queue which is unique under all queues with the
+	/// same family. E.g. if there are two queues of family A and one queue of
+	/// family B, the queues of family A wiill have the ids {0, 1} while the
 	/// queue of family B will have the id 0.
 	/// Gives every Queue object (for one device) a unique identification if used
 	/// together with the family.
@@ -32,10 +31,10 @@ public:
 	/// Returns the properties of the queue family of this queue.
 	const auto& properties() const noexcept { return *properties_; }
 
-	/// The queue must be locked before performing any operations 
+	/// The queue must be locked before performing any operations
 	/// (such as presenting or sparse binding) on the queue.
-	/// Note that locking the queues mutex is not enough for submitting 
-	/// command buffers to the queue, since while submitting, no operation 
+	/// Note that locking the queues mutex is not enough for submitting
+	/// command buffers to the queue, since while submitting, no operation
 	/// on any other queue is allowed.
 	/// Prefer to use the vpp::QueueLock class over using the plain mutex.
 	std::mutex& mutex() const noexcept { return mutex_; }

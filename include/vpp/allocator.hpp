@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -17,12 +17,12 @@
 
 namespace vpp {
 
-/// Makes it possible to allocate a few vk::DeviceMemory objects for many buffers/images.
-/// Basically a memory pool that can be used in an asynchronous manner to allocate as few
-/// different memory objects as possible. Will also reuse freed memory.
-/// Can be used manually, but since the buffer and image (memoryResource)
-/// classes already use it, manual usage is usually not required.
-/// The api is nonetheless exposed publicly.
+/// Makes it possible to allocate a few vk::DeviceMemory objects for many
+/// buffers/images. Basically a memory pool that can be used in an
+/// asynchronous manner to allocate as few different memory objects as
+/// possible. Will also reuse freed memory.  Can be used manually, but since
+/// the buffer and image (memoryResource) classes already use it, manual usage
+/// is usually not required. The api is nonetheless exposed publicly.
 class DeviceMemoryAllocator : public Resource {
 public:
 	DeviceMemoryAllocator() = default;
@@ -32,21 +32,21 @@ public:
 	DeviceMemoryAllocator(DeviceMemoryAllocator&&) noexcept;
 	DeviceMemoryAllocator& operator=(DeviceMemoryAllocator) noexcept;
 
-	/// Requests memory for the given buffer and stores a (pending) reference to it into
-	/// the given MemoryEntry.
-	/// \param reqs The MemoryRequirements queried for the given buffer. Note that
-	/// these can be modified (in a valid way like e.g. unsetting further memory
-	/// type bits) by the caller.
+	/// Requests memory for the given buffer and stores a (pending) reference
+	/// to it into the given MemoryEntry.
+	/// - reqs: The MemoryRequirements queried for the given buffer. Note that
+	///   these can be modified (in a valid way like e.g. unsetting further
+	///   memory type bits) by the caller.
 	void request(vk::Buffer requestor, const vk::MemoryRequirements&,
 		MemoryEntry&);
 
-	/// Requests memory for the given vulkan image and stores a (pending) reference to it into
-	/// the given MemoryEntry.
-	/// \param reqs The MemoryRequirements queried for the given image. Note that
-	/// these can be modified (in a valid way like e.g. unsetting further memory
-	/// type bits) by the caller.
-	/// \param tiling The ImageTiling for the given image.
-	/// Needed to satisfy certain alignment and padding requirements
+	/// Requests memory for the given vulkan image and stores a (pending)
+	/// reference to it into the given MemoryEntry.
+	/// - reqs: The MemoryRequirements queried for the given image. Note that
+	///   these can be modified (in a valid way like e.g. unsetting further
+	///   memory type bits) by the caller.
+	/// - tiling: The ImageTiling for the given image.
+	///   Needed to satisfy certain alignment and padding requirements
 	void request(vk::Image requestor, const vk::MemoryRequirements&,
 		vk::ImageTiling, MemoryEntry&);
 
@@ -66,10 +66,10 @@ public:
 	/// This will finish all pending memory requests.
 	void allocate();
 
-	/// Makes sure that the given entry has associated memory, i.e. finishes its memory request
-	/// and removes it from the internal list of pending entries.
-	/// Prefer the allocate overload without parameters that allocates all pending
-	/// memory request since it might be more efficient overall.
+	/// Makes sure that the given entry has associated memory, i.e. finishes
+	/// its memory request and removes it from the internal list of pending
+	/// entries. Prefer the allocate overload without parameters that allocates
+	/// all pending memory request since it might be more efficient overall.
 	/// Will have no effect if the old entry is not found other than outputting
 	/// a warning if in debug mode.
 	void allocate(const MemoryEntry&);
@@ -127,15 +127,16 @@ protected:
 	std::deque<DeviceMemory> memories_; // list of owned memory objects
 };
 
-/// Represents an entry on a vulkan device memory which will be dynamically and asynchronously
-/// allocated by a DeviceMemoryAllocator.
+/// Represents an entry on a vulkan device memory which will be dynamically and
+/// asynchronously allocated by a DeviceMemoryAllocator.
 /// Objects of this type may have 3 states:
 /// - invalid (defaulted constructed or moved from, no associated memory)
 /// - pending (waiting for associated DeviceMemoryAllocator to allocate memory)
-/// - bound (referencing an associated DeviceMemory object on which the Entry is bound)
-/// Will automatically free the associated memory allocation (if any) on destruction or
-/// unregister the pending memory request from the DeviceMemoryAllocator.
-class MemoryEntry : public ResourceReference<MemoryEntry> {
+/// - bound (referencing a DeviceMemory object on which the Entry is bound)
+/// Will automatically free the associated memory allocation (if any) on
+/// destruction or unregister the pending memory request from the
+/// DeviceMemoryAllocator.
+class MemoryEntry {
 public:
 	using Allocation = DeviceMemory::Allocation;
 
@@ -147,19 +148,19 @@ public:
 	MemoryEntry(MemoryEntry&& other) noexcept;
 	MemoryEntry& operator=(MemoryEntry&& other) noexcept;
 
-	/// Will try to map the Memory and return a view to the location where this entry is placed.
-	/// The MemoryEntry must be bound to memory.
+	/// Will try to map the Memory and return a view to the location where this
+	/// entry is placed.  The MemoryEntry must be bound to memory.
 	MemoryMapView map(vk::DeviceSize offset = 0,
 		vk::DeviceSize size = vk::wholeSize) const;
 
-	/// Returns whether this entry has an associated memory allocation, i.e. if it is currently
-	/// in a bound state.
+	/// Returns whether this entry has an associated memory allocation, i.e. if
+	/// it is currently in a bound state.
 	bool allocated() const noexcept { return (allocation_.size > 0); }
 
 	/// Assures that there is memory allocated and associated with this entry.
-	/// Will have no effect if the entry already has an associated memory allocation.
-	/// Results in undefined behavior if this MemoryEntry is in an invalid state, i.e.
-	/// if it has no associated DeviceMemoryAllocator.
+	/// Will have no effect if the entry already has an associated memory
+	/// allocation. Results in undefined behavior if this MemoryEntry is in an
+	/// invalid state, i.e.  if it has no associated DeviceMemoryAllocator.
 	void allocate() const { if(!allocated()) allocator_->allocate(*this); }
 
 	auto* memory() const noexcept { return allocated() ? memory_ : nullptr; }
@@ -168,16 +169,20 @@ public:
 	auto size() const noexcept { return allocation_.size; }
 	const Allocation& allocation() const noexcept { return allocation_; }
 
-	Resource& resourceRef() const noexcept;
+	const Device& device() const noexcept;
+	auto vkDevice() const { return device().vkDevice(); }
+	auto vkInstance() const { return device().vkInstance(); }
+	auto vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
 
 protected:
 	friend class DeviceMemoryAllocator;
 
-	// if there is an allocation associated with this entry (the allocation size is > 0)
-	// the memory member will be active, otherwise the allocator.
-	// so by default the allocator_ var will simple hold a nullptr and the allocation an empty
-	// allocation {0, 0}. The allocation signals that is it not yet allocated and the
-	// nullptr allocator var that it is invalid (i.e. not yet associated with an allocator).
+	// if there is an allocation associated with this entry (the allocation
+	// size is > 0) the memory member will be active, otherwise the allocator.
+	// so by default the allocator_ var will simple hold a nullptr and the
+	// allocation an empty allocation {0, 0}. The allocation signals that is it
+	// not yet allocated and the nullptr allocator var that it is invalid (i.e.
+	// not yet associated with an allocator).
 	union {
 		DeviceMemoryAllocator* allocator_ {};
 		DeviceMemory* memory_;

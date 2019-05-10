@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -11,22 +11,6 @@
 #include <stdexcept> // std::runtime_error
 
 namespace vpp {
-
-// DeviceMemoryHandle
-DeviceMemoryHandle::DeviceMemoryHandle(const Device& dev,
-	const vk::MemoryAllocateInfo& info)
-		: DeviceMemoryHandle(dev, vk::allocateMemory(dev, info)) {
-}
-
-DeviceMemoryHandle::DeviceMemoryHandle(const Device& dev, vk::DeviceMemory mem)
-	: ResourceHandle(dev, mem) {
-}
-
-DeviceMemoryHandle::~DeviceMemoryHandle() {
-	if(vkHandle()) {
-		vk::freeMemory(vkDevice(), vkHandle());
-	}
-}
 
 // DeviceMemory
 DeviceMemory::DeviceMemory(const Device& dev, const vk::MemoryAllocateInfo& info)
