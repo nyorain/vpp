@@ -89,7 +89,7 @@ TEST(defaultCreate) {
 	auto& dev = *globals.device;
 
 	auto rp = createRenderPass(dev, vk::Format::b8g8r8a8Unorm);
-	auto layout = vpp::PipelineLayout(dev, {});
+	auto layout = vpp::PipelineLayout(dev, vk::PipelineLayoutCreateInfo {});
 
 	auto vert = vpp::ShaderModule(dev, dummy_vert_spv);
 	auto frag = vpp::ShaderModule(dev, dummy_frag_spv);
