@@ -191,11 +191,11 @@ public:
 class DescriptorSet : public ResourceHandle<vk::DescriptorSet> {
 public:
 	DescriptorSet() = default;
+	DescriptorSet(const Device&, vk::DescriptorSet);
 	DescriptorSet(const DescriptorPool&, const DescriptorSetLayout&);
 	DescriptorSet(const DescriptorPool&, vk::DescriptorSetLayout);
 	DescriptorSet(vk::DescriptorPool, const DescriptorSetLayout&);
 	DescriptorSet(const Device&, vk::DescriptorPool, vk::DescriptorSetLayout);
-	DescriptorSet(const Device&, vk::DescriptorSet);
 	~DescriptorSet() = default;
 
 	DescriptorSet(DescriptorSet&& rhs) noexcept { swap(*this, rhs); }
@@ -209,8 +209,8 @@ public:
 class DescriptorPool : public ResourceHandle<vk::DescriptorPool> {
 public:
 	DescriptorPool() = default;
-	DescriptorPool(const Device&, const vk::DescriptorPoolCreateInfo&);
 	DescriptorPool(const Device&, vk::DescriptorPool);
+	DescriptorPool(const Device&, const vk::DescriptorPoolCreateInfo&);
 	~DescriptorPool();
 
 	DescriptorPool(DescriptorPool&& rhs) noexcept { swap(*this, rhs); }
@@ -224,6 +224,7 @@ public:
 class PipelineLayout : public ResourceHandle<vk::PipelineLayout> {
 public:
 	PipelineLayout() = default;
+	PipelineLayout(const Device& dev, vk::PipelineLayout);
 	PipelineLayout(const Device& dev, const vk::PipelineLayoutCreateInfo& info);
 	PipelineLayout(const Device& dev,
 		nytl::Span<const vk::DescriptorSetLayout> layouts,
@@ -241,7 +242,8 @@ public:
 class Pipeline : public ResourceHandle<vk::Pipeline> {
 public:
 	Pipeline() = default;
-	Pipeline(const Device& dev, vk::Pipeline pipeline) : ResourceHandle(dev, pipeline) {}
+	Pipeline(const Device& dev, vk::Pipeline pipeline) :
+		ResourceHandle(dev, pipeline) {}
 	~Pipeline();
 
 	Pipeline(Pipeline&& rhs) noexcept { swap(*this, rhs); }
@@ -256,6 +258,8 @@ public:
 class PipelineCache : public ResourceHandle<vk::PipelineCache> {
 public:
 	PipelineCache() = default;
+	PipelineCache(const Device& dev, vk::PipelineCache);
+
 	/// Creates an empty pipeline cache
 	PipelineCache(const Device& dev);
 
@@ -331,8 +335,8 @@ protected:
 class ImageHandle : public ResourceHandle<vk::Image> {
 public:
 	ImageHandle() = default;
-	ImageHandle(const Device&, const vk::ImageCreateInfo&);
 	ImageHandle(const Device&, vk::Image);
+	ImageHandle(const Device&, const vk::ImageCreateInfo&);
 	~ImageHandle();
 
 	ImageHandle(ImageHandle&& rhs) noexcept { swap(*this, rhs); }
@@ -346,8 +350,8 @@ public:
 class ImageView : public ResourceHandle<vk::ImageView> {
 public:
 	ImageView() = default;
-	ImageView(const Device&, const vk::ImageViewCreateInfo&);
 	ImageView(const Device&, vk::ImageView);
+	ImageView(const Device&, const vk::ImageViewCreateInfo&);
 	~ImageView();
 
 	ImageView(ImageView&& rhs) noexcept { swap(*this, rhs); }
@@ -362,8 +366,8 @@ public:
 class BufferHandle : public ResourceHandle<vk::Buffer> {
 public:
 	BufferHandle() = default;
-	BufferHandle(const Device&, const vk::BufferCreateInfo&);
 	BufferHandle(const Device&, vk::Buffer);
+	BufferHandle(const Device&, const vk::BufferCreateInfo&);
 	~BufferHandle();
 
 	BufferHandle(BufferHandle&& rhs) noexcept { swap(*this, rhs); }
@@ -377,8 +381,8 @@ public:
 class BufferView : public ResourceHandle<vk::BufferView> {
 public:
 	BufferView() = default;
-	BufferView(const Device&, const vk::BufferViewCreateInfo&);
 	BufferView(const Device&, vk::BufferView);
+	BufferView(const Device&, const vk::BufferViewCreateInfo&);
 	~BufferView();
 
 	BufferView(BufferView&& rhs) noexcept { swap(*this, rhs); }
@@ -393,8 +397,8 @@ public:
 class DeviceMemoryHandle : public ResourceHandle<vk::DeviceMemory> {
 public:
 	DeviceMemoryHandle() = default;
-	DeviceMemoryHandle(const Device&, const vk::MemoryAllocateInfo&);
 	DeviceMemoryHandle(const Device&, vk::DeviceMemory);
+	DeviceMemoryHandle(const Device&, const vk::MemoryAllocateInfo&);
 	~DeviceMemoryHandle();
 
 	DeviceMemoryHandle(DeviceMemoryHandle&& rhs) { swap(*this, rhs); }

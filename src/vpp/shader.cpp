@@ -33,14 +33,16 @@ vk::ShaderModule loadShaderModule(vk::Device dev,
 }
 
 // ShaderModule
-ShaderModule::ShaderModule(const Device& dev, std::string_view filename)
-		: ResourceHandle(dev) {
-	handle_ = loadShaderModule(dev, filename);
+ShaderModule::ShaderModule(const Device& dev, vk::ShaderModule module) :
+	ResourceHandle(dev, module) {
+}
+ShaderModule::ShaderModule(const Device& dev, std::string_view filename) :
+	ResourceHandle(dev, loadShaderModule(dev, filename)) {
 }
 
 ShaderModule::ShaderModule(const Device& dev,
-		nytl::Span<const std::uint32_t> code) : ResourceHandle(dev) {
-	handle_ = loadShaderModule(dev, code);
+	nytl::Span<const std::uint32_t> code) :
+		ResourceHandle(dev, loadShaderModule(dev, code)) {
 }
 
 ShaderModule::~ShaderModule() {

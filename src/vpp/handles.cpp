@@ -131,6 +131,10 @@ DescriptorPool::~DescriptorPool() {
 }
 
 // PipelineLayout
+PipelineLayout::PipelineLayout(const Device& dev, vk::PipelineLayout layout) :
+	ResourceHandle(dev, layout) {
+}
+
 PipelineLayout::PipelineLayout(const Device& dev,
 		const vk::PipelineLayoutCreateInfo& info) : ResourceHandle(dev) {
 	handle_ = vk::createPipelineLayout(dev, info);
@@ -155,6 +159,10 @@ PipelineLayout::~PipelineLayout() {
 }
 
 // PipelineCache
+PipelineCache::PipelineCache(const Device& dev, vk::PipelineCache cache) :
+	ResourceHandle(dev, cache) {
+}
+
 PipelineCache::PipelineCache(const Device& dev) : ResourceHandle(dev) {
 	handle_ = vk::createPipelineCache(dev, {});
 }

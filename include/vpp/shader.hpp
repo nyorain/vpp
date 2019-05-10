@@ -18,6 +18,7 @@ namespace vpp {
 class ShaderModule : public ResourceHandle<vk::ShaderModule> {
 public:
 	ShaderModule() = default;
+	ShaderModule(const Device& dev, vk::ShaderModule);
 
 	// Throws std::runtime_error if the given file cannot be read or has
 	// an invalid size.

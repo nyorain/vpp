@@ -1,25 +1,22 @@
 Todo list vor vpp
 =================
 
+- when vkpp has error handling update: fix try/catch/swallowed error
+  in swapchain acquire/present and formats.cpp (get format properties)
+
+- update readme
 - improve image ops
   - allow compressed formats. Some way to allow filling a compressed image with
 	  uncompressed data? doing the compressing on the gpu?
   - support blitting
   - write tests
-  - allow to only pass vk::image where it makes sense
-    nah, `vpp::NonOwned<vpp::Image>(dev, image)` should be ok
+	- imageOps: really allow extent with depth == 0? also handle it for height == 0?
+		- fix consistency with formats.hpp
 - rmeove init.hpp? no useful in its current form
 	- introduct new deferred initialization idom from stage?
 	  better for vpp? there are some classes (e.g. TrDs) that have to use
 	  additional reservation members only for that purpose
 	- anyways, init.hpp was pretty much *never* used
-- fix formats.cpp: throws on error (getPhysicalDeviceFormatProperties)
-	- fixing the throw probably requires vkpp changes. Maybe two
-	  function headers, one throwing and one not?
-	  	- while at it, maybe provide wrappers for dynamically loaded
-		  functions somehow? maybe add dynamic dispatcher to vpp::Device?
-	- are the formats utility functions even useful though?
-	- also fix the weird 'depth == 1 or depth == 0, whatever' semantics
 - add glfw/sdl examples (option to use sdl from meson wrap db)
 - handle problem: memBits (in buffer/sharedBuffer/image) not compatible
   with buffer requirements?
@@ -27,19 +24,14 @@ Todo list vor vpp
   		- then: does sharedBuffer (the hostCoherent checking) implement
   		  it correctly? probably not, we assume that all memory types
 		  can be used by buffer (when we create a new one; alloc algorithm)
-- imageOps: really allow extent with depth == 0? also handle it for height == 0?
-	- fix consistency with formats.hpp
-- device: cache supported extensions (see e.g. defaults.cpp: could change
-  format querying behavior)
 - write basic docs
 - is size value in MemoryEntry really needed?
 	- completely abolish memory size?
-- External constructors for all resources (construct them from existing handles)
-- update readme
 
 low prio / general / ideas
 --------------------------
 
+- device: cache supported extensions?
 - when using c++20, switch to std::span (nytl::Span should be fully compatble
   at the moment) and completely abolish using the nytl namespace.
   import NonCopyable/NonMovable into vpp namespace, maybe even completely 

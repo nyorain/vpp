@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -22,10 +22,12 @@ namespace vpp {
 bool supportedUsage(vk::FormatFeatureFlags, vk::ImageUsageFlags);
 bool supportedUsage(vk::FormatFeatureFlags, vk::BufferUsageFlags);
 
-/// Returns whether the given format is valid for the given use
-/// case.
-bool supported(const Device&, vk::Format, const vk::ImageCreateInfo&,
+/// Returns whether the format of the given ImageCreateInfo supports the
+/// other parameters.
+bool supported(const Device&, const vk::ImageCreateInfo&,
 	vk::FormatFeatureFlags additional = {});
+
+/// Returns whether the given format is valid for the given use case.
 bool supported(const Device&, vk::Format, vk::BufferUsageFlags,
 	vk::FormatFeatureFlags additional = {});
 
@@ -36,68 +38,24 @@ vk::Format findSupported(const Device&, nytl::Span<const vk::Format>,
 vk::Format findSupported(const Device&, nytl::Span<const vk::Format>,
 	vk::BufferUsageFlags, vk::FormatFeatureFlags additional = {});
 
+/// Returns the number of mipmap levels needed for a full mipmap
+/// chain for an image with the given extent.
+unsigned mipmapLevels(const vk::Extent2D& extent);
+
 /// Combines vk::ImageCreateInfo and vk::ImageViewCreatInfo and
 /// offers default initializers.
 struct ViewableImageCreateInfo {
 	vk::ImageCreateInfo img {}; // info to create the image
 	vk::ImageViewCreateInfo view {}; // info to create the view
 
-	/// General function for creating a valid CreateInfo.
-	/// All required settings must be given as arguments, uses
-	/// the defaults seen here.
-	/// Allowed to pass 0 as as third size parameter, will automatically
-	/// be corrected to 1.
-	/// Selects the first available format.
-	/// If the usecase is not supported for any given format returns
-	/// an empty object.
-	static std::optional<ViewableImageCreateInfo> general(
-		const Device& dev, const vk::Extent3D& size,
-		vk::ImageUsageFlags, nytl::Span<const vk::Format> formats,
-		vk::ImageAspectFlags,
-		vk::ImageTiling = vk::ImageTiling::optimal,
-		vk::SampleCountBits = vk::SampleCountBits::e1,
-		vk::ImageLayout = vk::ImageLayout::undefined,
-		vk::ImageCreateFlags = {},
-		vk::FormatFeatureFlags additional = {});
+	ViewableImageCreateInfo() = default;
 
-	/// Default color viewable image info.
-	/// NOTE: you might want to use Srgb color format.
-	static std::optional<ViewableImageCreateInfo> color(
-		const Device& dev, const vk::Extent3D& size,
-		vk::ImageUsageFlags =
-			vk::ImageUsageBits::transferDst |
-			vk::ImageUsageBits::sampled,
-		nytl::Span<const vk::Format> formats = {{
-			vk::Format::r8g8b8a8Unorm
-		}}, vk::ImageTiling = vk::ImageTiling::optimal,
-		vk::SampleCountBits = vk::SampleCountBits::e1,
-		vk::ImageLayout = vk::ImageLayout::undefined,
-		vk::ImageCreateFlags = {},
-		vk::FormatFeatureFlags additional = {});
-
-	/// Default depth viewable image info.
-	static std::optional<ViewableImageCreateInfo> depth(
-		const Device& dev, const vk::Extent3D& size,
-		vk::ImageUsageFlags =
-			vk::ImageUsageBits::depthStencilAttachment |
-			vk::ImageUsageBits::sampled,
-		nytl::Span<const vk::Format> formats = {{
-			vk::Format::d32Sfloat,
-			vk::Format::d32SfloatS8Uint,
-			vk::Format::d24UnormS8Uint,
-			vk::Format::d16UnormS8Uint,
-			vk::Format::d16Unorm
-		}}, vk::ImageTiling = vk::ImageTiling::optimal,
-		vk::SampleCountBits = vk::SampleCountBits::e1,
-		vk::ImageLayout = vk::ImageLayout::undefined,
-		vk::ImageCreateFlags = {},
-		vk::FormatFeatureFlags additional = {});
-
-	// TODO: depthStencil, stencil, additional color formats (other priorities)
-	// TODO: add memBits to structure? to allow hostVisible/hostCoherent default
-	//  initializers?
-	// TODO: ability to override imageType (that is then included in
-	//  format checks)?
+	/// 2D default constructor, 1 layer, 1 sample
+	ViewableImageCreateInfo(vk::Format format,
+		vk::ImageAspectBits aspect, vk::Extent2D size,
+		vk::ImageUsageBits usage,
+		vk::ImageTiling tiling = vk::ImageTiling::optimal,
+		uint32_t mipLevels = 1u);
 };
 
 } // namespace vpp
