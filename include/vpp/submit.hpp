@@ -24,6 +24,9 @@ public:
 	QueueSubmitter(const Queue& queue);
 	~QueueSubmitter();
 
+	QueueSubmitter(QueueSubmitter&&) = default;
+	QueueSubmitter& operator=(QueueSubmitter&&) = default;
+
 	/// Adds a submission.
 	/// Returns the id associated with this submission. The id
 	/// will usually not be unique.

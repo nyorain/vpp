@@ -7,14 +7,12 @@ Todo list vor vpp
   - support blitting
   - write tests
   - allow to only pass vk::image where it makes sense
+    nah, `vpp::NonOwned<vpp::Image>(dev, image)` should be ok
 - rmeove init.hpp? no useful in its current form
 	- introduct new deferred initialization idom from stage?
 	  better for vpp? there are some classes (e.g. TrDs) that have to use
 	  additional reservation members only for that purpose
 	- anyways, init.hpp was pretty much *never* used
-- completely abandon ThreadLocalStorage?
-	- when someone uses multiple threads, just use custom allocators
-	  and stuff. They probably alreday have comparable solutions
 - fix formats.cpp: throws on error (getPhysicalDeviceFormatProperties)
 	- fixing the throw probably requires vkpp changes. Maybe two
 	  function headers, one throwing and one not?
@@ -23,9 +21,6 @@ Todo list vor vpp
 	- are the formats utility functions even useful though?
 	- also fix the weird 'depth == 1 or depth == 0, whatever' semantics
 - add glfw/sdl examples (option to use sdl from meson wrap db)
-- clean up usage of nytl
-	- just include it as subproject?
-	  or remove it? c++20 has span
 - handle problem: memBits (in buffer/sharedBuffer/image) not compatible
   with buffer requirements?
   	- solution: might require to be checked/handled by user
@@ -45,6 +40,10 @@ Todo list vor vpp
 low prio / general / ideas
 --------------------------
 
+- when using c++20, switch to std::span (nytl::Span should be fully compatble
+  at the moment) and completely abolish using the nytl namespace.
+  import NonCopyable/NonMovable into vpp namespace, maybe even completely 
+  remove all nytl traces from it. 
 - discuss: remove common `init` syntax for deferred initialization?
 	- or could that be useful somehow?
 - DescriptorUpdate: any chance to avoid memory allocation? maybe just

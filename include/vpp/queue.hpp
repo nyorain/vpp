@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -6,7 +6,7 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
-#include <vpp/util/nonCopyable.hpp> // nytl::NonCopyable
+#include <vpp/util/nonCopyable.hpp> // nytl::NonMovable
 
 #include <mutex> // std::mutex
 #include <shared_mutex> // std::shared_mutex
@@ -15,7 +15,8 @@ namespace vpp {
 
 /// Represents a vulkan device queue.
 /// Cannot be created or destroyed, must be received by the device class.
-class Queue final : public Resource, public nytl::NonMovable {
+/// Provides synchronization mechanisms.
+class Queue : public Resource, public nytl::NonMovable {
 public:
 	/// Return the queueFamily of this queue
 	unsigned int family() const noexcept { return family_; }
@@ -42,16 +43,17 @@ public:
 	vk::Queue vkHandle() const noexcept { return queue_; }
 	operator vk::Queue() const noexcept { return queue_; }
 
-private:
-	friend class Device;
-	Queue(const Device&, vk::Queue, unsigned int fam, unsigned int id);
+protected:
+	Queue() = default;
 	~Queue() = default;
 
+	void init(const Device&, vk::Queue, unsigned int fam, unsigned int id);
+
 private:
-	const vk::Queue queue_;
+	vk::Queue queue_;
 	const vk::QueueFamilyProperties* properties_;
-	const unsigned int family_;
-	const unsigned int id_;
+	unsigned int family_;
+	unsigned int id_;
 	mutable std::mutex mutex_;
 };
 

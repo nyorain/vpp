@@ -10,7 +10,7 @@
 #include <vpp/sharedBuffer.hpp>
 #include <vpp/physicalDevice.hpp>
 #include <vpp/trackedDescriptor.hpp>
-#include <vpp/util/threadStorage.hpp>
+#include <dlg/dlg.hpp>
 
 #include <map> // std::map
 #include <vector> // std::map
@@ -18,35 +18,42 @@
 
 namespace vpp {
 
+// to be able to construct and destroy Queue
+// users of vpp shouldn't be able to do that naturally, since it
+// doesn't make sense.
+struct DevQueue : public Queue {
+	using Queue::Queue;
+	using Queue::init;
+};
+
+static_assert(sizeof(DevQueue) == sizeof(Queue));
+
 // order here is important
 struct Device::Impl {
 	vk::PhysicalDeviceProperties physicalDeviceProperties;
 	vk::PhysicalDeviceMemoryProperties memoryProperties;
 
 	std::vector<vk::QueueFamilyProperties> qFamilyProperties;
-	std::vector<std::unique_ptr<Queue, Device::QueueDeleter>> queues;
-	std::vector<const Queue*> queuesVec; // cache vector for queues() function
+	std::unique_ptr<DevQueue[]> queues;
+	unsigned queueCount;
 	std::shared_mutex sharedQueueMutex;
 
-	DynamicThreadStorage tls;
-	unsigned int tlsDeviceAllocatorID {};
-	unsigned int tlsBufferAllocatorID {};
-	unsigned int tlsQueueSubmitterID {};
-	unsigned int tlsCommandAllocatorID {};
-	unsigned int tlsDescriptorAllocatorID {};
+	// using std::optional since classes are non movable
+	DeviceMemoryAllocator devAllocator;
+	BufferAllocator bufferAllocator;
+	QueueSubmitter queueSubmitter;
+	std::optional<CommandAllocator> commandAllocator;
+	std::optional<DescriptorAllocator> dsAllocator;
 };
 
-// used so the Queue destructor can be made not public and Device a friend.
-// The Device class is the only one that creates/destroys/owns queues.
-struct Device::QueueDeleter {
-	void operator()(Queue* q) { delete q; }
-};
-
+// device instance if optimization is enabled
 #ifdef VPP_ONE_DEVICE_OPTIMIZATION
+
 Device* globalDevice = nullptr;
 Device* Device::instance() {
 	return globalDevice;
 }
+
 #endif
 
 // Device
@@ -216,11 +223,6 @@ Device::~Device() {
 	// make sure there are no pending command buffers and stuff
 	vk::deviceWaitIdle(*this);
 
-	// the fact that we have to do this probably shows that
-	// the whole thread-specific stuff isn't the best design but
-	// anyways... make sure we have a sane destruction order.
-	threadStorage().remove(impl_->tlsBufferAllocatorID);
-
 	// it is important to first reset the stored objects that
 	// depend on the vulkan device to be valid before actually destroying the
 	// vulkan device.
@@ -252,27 +254,31 @@ void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues) {
 
 	// init impl and properties
 	impl_ = std::make_unique<Impl>();
-	impl_->physicalDeviceProperties = vk::getPhysicalDeviceProperties(vkPhysicalDevice());
-	impl_->memoryProperties = vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
-	impl_->qFamilyProperties = vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
+	impl_->physicalDeviceProperties =
+		vk::getPhysicalDeviceProperties(vkPhysicalDevice());
+	impl_->memoryProperties =
+		vk::getPhysicalDeviceMemoryProperties(vkPhysicalDevice());
+	impl_->qFamilyProperties =
+		vk::getPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice());
 
 	// init queues
-	impl_->queues.resize(queues.size());
-	impl_->queuesVec.resize(queues.size());
-
+	impl_->queues = std::make_unique<DevQueue[]>(queues.size());
+	impl_->queueCount = queues.size();
 	std::map<unsigned int, unsigned int> queueIds;
 	for(auto i = 0; i < queues.size(); ++i) {
 		auto id = queueIds[queues[i].second]++;
-		impl_->queues[i].reset(new Queue(*this, queues[i].first, id, queues[i].second));
-		impl_->queuesVec[i] = impl_->queues[i].get();
+		impl_->queues[i].init(*this, queues[i].first, id, queues[i].second);
 	}
 
 	// init thread local storage and providers
-	impl_->tlsDeviceAllocatorID = impl_->tls.add();
-	impl_->tlsBufferAllocatorID = impl_->tls.add();
-	impl_->tlsQueueSubmitterID = impl_->tls.add();
-	impl_->tlsCommandAllocatorID = impl_->tls.add();
-	impl_->tlsDescriptorAllocatorID = impl_->tls.add();
+	impl_->devAllocator = {*this};
+	impl_->bufferAllocator = {*this};
+
+	auto q = queue(vk::QueueBits::graphics);
+	dlg_assert(q);
+	impl_->queueSubmitter = {*q};
+	impl_->commandAllocator.emplace(*this);
+	impl_->dsAllocator.emplace(*this);
 }
 
 void Device::release() {
@@ -280,15 +286,16 @@ void Device::release() {
 	device_ = {};
 }
 
-nytl::Span<const Queue*> Device::queues() const
-{
-	return {impl_->queuesVec};
+nytl::Span<const Queue> Device::queues() const {
+	auto ptr = impl_->queues.get();
+	auto size = impl_->queueCount;
+	return {ptr, ptr + size};
 }
 
 const Queue* Device::queue(unsigned int family) const {
 	for(auto& queue : queues()) {
-		if(queue->family() == family) {
-			return queue;
+		if(queue.family() == family) {
+			return &queue;
 		}
 	}
 
@@ -297,8 +304,8 @@ const Queue* Device::queue(unsigned int family) const {
 
 const Queue* Device::queue(unsigned int family, unsigned int id) const {
 	for(auto& queue : queues()) {
-		if(queue->family() == family && queue->id() == id) {
-			return queue;
+		if(queue.family() == family && queue.id() == id) {
+			return &queue;
 		}
 	}
 
@@ -307,8 +314,8 @@ const Queue* Device::queue(unsigned int family, unsigned int id) const {
 
 const Queue* Device::queue(vk::QueueFlags flags) const {
 	for(auto& queue : queues()) {
-		if(queue->properties().queueFlags & flags) {
-			return queue;
+		if(queue.properties().queueFlags & flags) {
+			return &queue;
 		}
 	}
 
@@ -361,62 +368,23 @@ unsigned int Device::deviceMemoryTypes(unsigned int typeBits) const {
 }
 
 BufferAllocator& Device::bufferAllocator() const {
-	auto ptr = impl_->tls.get(impl_->tlsBufferAllocatorID); // DynamicStoragePtr*
-	if(!ptr->get()) {
-		auto storage = new ValueStorage<BufferAllocator>(*this);
-		ptr->reset(storage);
-		return storage->value;
-	}
-
-	return static_cast<ValueStorage<BufferAllocator>*>(ptr->get())->value;
+	return impl_->bufferAllocator;
 }
 
 DeviceMemoryAllocator& Device::deviceAllocator() const {
-	auto ptr = impl_->tls.get(impl_->tlsDeviceAllocatorID); // DynamicStoragePtr*
-	if(!ptr->get()) {
-		auto storage = new ValueStorage<DeviceMemoryAllocator>(*this);
-		ptr->reset(storage);
-		return storage->value;
-	}
-
-	return static_cast<ValueStorage<DeviceMemoryAllocator>*>(ptr->get())->value;
+	return impl_->devAllocator;
 }
 
 CommandAllocator& Device::commandAllocator() const {
-	auto ptr = impl_->tls.get(impl_->tlsCommandAllocatorID); // DynamicStoragePtr*
-	if(!ptr->get()) {
-		auto storage = new ValueStorage<CommandAllocator>(*this);
-		ptr->reset(storage);
-		return storage->value;
-	}
-
-	return static_cast<ValueStorage<CommandAllocator>*>(ptr->get())->value;
+	return *impl_->commandAllocator;
 }
 
 DescriptorAllocator& Device::descriptorAllocator() const {
-	auto ptr = impl_->tls.get(impl_->tlsDescriptorAllocatorID); // DynamicStoragePtr*
-	if(!ptr->get()) {
-		auto storage = new ValueStorage<DescriptorAllocator>(*this);
-		ptr->reset(storage);
-		return storage->value;
-	}
-
-	return static_cast<ValueStorage<DescriptorAllocator>*>(ptr->get())->value;
+	return *impl_->dsAllocator;
 }
 
 QueueSubmitter& Device::queueSubmitter() const {
-	auto ptr = impl_->tls.get(impl_->tlsQueueSubmitterID); // DynamicStoragePtr*
-	if(!ptr->get()) {
-		auto storage = new ValueStorage<QueueSubmitter>(*queue(vk::QueueBits::graphics));
-		ptr->reset(storage);
-		return storage->value;
-	}
-
-	return static_cast<ValueStorage<QueueSubmitter>*>(ptr->get())->value;
-}
-
-DynamicThreadStorage& Device::threadStorage() const {
-	return impl_->tls;
+	return impl_->queueSubmitter;
 }
 
 std::shared_mutex& Device::sharedQueueMutex() const {

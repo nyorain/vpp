@@ -3,7 +3,6 @@
 #include <vpp/fwd.hpp>
 #include <vkpp/span.hpp>
 
-namespace vpp
-{
+namespace vpp {
 	// using nytl::Span;
 }

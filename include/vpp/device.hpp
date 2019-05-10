@@ -14,16 +14,10 @@
 
 namespace vpp {
 
-// Taken from vpp/util/threadStorage.hpp
-using DynamicStoragePtr = std::unique_ptr<DynamicStorageBase>;
-using DynamicThreadStorage = ThreadStorage<DynamicStoragePtr>;
-
 /// Represents a Vulkan Device.
 /// The central objects that all resources are created from.
 /// Holds important device-related resources such as queried properties and
-/// queues, as well as thread local storage with thread-specific managers and
-/// providers.  Allows applications and vpp classes to associate thread-specific
-/// variables with the device (it can be used for pseudo-threadlocal storage).
+/// queues, as well as default allocators.
 /// When a DeviceLost vulkan error occurs, the program can try to create a new
 /// Device object for the same PhysicalDevice, if this fails again with
 /// DeviceLost, then the physical device is not longer valid.
@@ -107,7 +101,7 @@ public:
 	/// only return the queues given to the constructor.
 	/// The returned span and the references queues are guaranteed to be valid
 	/// until the device object is destructed.
-	nytl::Span<const Queue*> queues() const;
+	nytl::Span<const Queue> queues() const;
 
 	/// Returns a queue for the given family or nullptr if there is none.
 	/// Searches all queues return from queues().
@@ -157,16 +151,15 @@ public:
 	unsigned int hostMemoryTypes(unsigned int typeBits = ~0u) const;
 	unsigned int deviceMemoryTypes(unsigned int typeBits = ~0u) const;
 
-	/// Thread-specific resources. See their respectives classes.
+	/// Default allocators and managers.
+	/// Note that these are not thread specific or synchronized in any way,
+	/// so if you work with multiple threads you either need to synchronize
+	/// access to those or use multiple allocators (probably the best idea).
 	CommandAllocator& commandAllocator() const;
 	BufferAllocator& bufferAllocator() const;
 	DeviceMemoryAllocator& deviceAllocator() const;
 	DescriptorAllocator& descriptorAllocator() const;
 	QueueSubmitter& queueSubmitter() const;
-
-	/// Returns the ThreadStorage object that is used for all thread specific state.
-	/// Can be used to associate custom thread specific objects with this device.
-	DynamicThreadStorage& threadStorage() const;
 
 	/// Returns the shared mutex for all queues.
 	/// Should not be used directly, but rather using a QueueLock object.
@@ -193,9 +186,9 @@ protected:
 	vk::PhysicalDevice phdev_ {};
 	vk::Device device_ {};
 
-	/// Device uses the pimpl idion since it holds internally many (partly
-	/// thread-speciic) object that would pull a lot of huge headers or
-	/// are simply more an implementation detail.
+	// Device uses the pimpl idion since it holds internally many object that
+	// would pull a lot of headers (that in turn often use Device) or are
+	// simply more an implementation detail.
 	std::unique_ptr<Impl> impl_;
 };
 
