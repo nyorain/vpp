@@ -23,26 +23,27 @@ void fillMap(const Image& img, vk::Format format,
 		const vk::Extent3D& size, nytl::Span<const std::byte> data,
 		const vk::ImageSubresource& subres, const vk::Offset3D& offset) {
 
+	// make it work for 2d images that specify a depth of zero
+	auto depth = size.depth ? size.depth : 1u;
+	auto height = size.height ? size.height : 1u;
 	auto texSize = formatSize(format);
 
 	dlg_assert(img.vkHandle());
 	dlg_assert(img.mappable());
 	dlg_assert(texSize > 0);
-	dlg_assert(size.width != 0 && size.height != 0);
+	dlg_assert(size.width != 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
-	dlg_assert(data.size() == size.width * size.height * size.depth * texSize);
+	dlg_assert(data.size() == size.width * height * depth * texSize);
 	dlg_assert(vk::DeviceSize(data.size()) <= img.memorySize());
 
 	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
 	auto map = img.memoryEntry().map();
 
-	// make it work for 2d images that specify a depth of zero
-	auto depth = size.depth ? size.depth : 1u;
 	auto doffset = 0u; // current data offset
 
 	// copy row (width) after row
 	for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
-		for(unsigned int h = offset.y; h < offset.y + size.height; ++h) {
+		for(unsigned int h = offset.y; h < offset.y + height; ++h) {
 			auto ptr = map.ptr() + texelAddress(sresLayout, texSize,
 				offset.x, h, d, subres.arrayLayer);
 			std::memcpy(ptr, data.data() + doffset, texSize * size.width);
@@ -61,7 +62,8 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 
 	const auto texSize = formatSize(format);
 	const auto depth = size.depth ? size.depth : 1u;
-	const auto byteSize = texSize * size.width * size.height * depth;
+	auto height = size.height ? size.height : 1u;
+	const auto byteSize = texSize * size.width * height * depth;
 
 	dlg_assert(img.vkHandle());
 	dlg_assert(img.mappable());
@@ -69,7 +71,7 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 	dlg_assert(byteSize > 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
 	dlg_assert(byteSize <= img.memorySize());
-	dlg_assert(size.width != 0 && size.height != 0);
+	dlg_assert(size.width != 0);
 
 	std::vector<std::byte> data(byteSize);
 	auto map = img.memoryMap();
@@ -80,7 +82,7 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 
 	// copy row (width) after row
 	for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
-		for(unsigned int h = offset.y; h < offset.y + size.height; ++h) {
+		for(unsigned int h = offset.y; h < offset.y + height; ++h) {
 			auto ptr = map.ptr() + texelAddress(sresLayout, texSize,
 				offset.x, h, d, subres.arrayLayer);
 			std::memcpy(data.data() + doffset, ptr, size.width * texSize);
@@ -98,6 +100,7 @@ SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 
 	const auto texSize = formatSize(format);
 	const auto depth = size.depth ? size.depth : 1u;
+	const auto height = size.height ? size.height : 1u;
 
 	dlg_assert(cmdBuf);
 	dlg_assert(layout == vk::ImageLayout::transferDstOptimal ||
@@ -105,9 +108,9 @@ SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	dlg_assert(img.vkHandle());
 	dlg_assert(texSize > 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
-	dlg_assert(data.size() == texSize * size.width * size.height * depth);
+	dlg_assert(data.size() == texSize * size.width * height * depth);
 	dlg_assert(vk::DeviceSize(data.size()) <= img.memorySize());
-	dlg_assert(size.width != 0 && size.height != 0);
+	dlg_assert(size.width != 0);
 
 	// bufferOfset must be multiple of 4 and image format size
 	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
@@ -127,7 +130,7 @@ SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	vk::ImageSubresourceLayers layers {subres.aspectMask, subres.mipLevel,
 		subres.arrayLayer, 1};
 	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset,
-		{size.width, size.height, depth}};
+		{size.width, height, depth}};
 
 	vk::cmdCopyBufferToImage(cmdBuf, buf, img, layout, {{region}});
 	return stage;
@@ -139,7 +142,8 @@ SubBuffer retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 
 	const auto texSize = formatSize(format);
 	const auto depth = size.depth ? size.depth : 1u;
-	const auto byteSize = texSize * size.width * size.height * depth;
+	const auto height = size.height ? size.height : 1u;
+	const auto byteSize = texSize * size.width * height * depth;
 
 	dlg_assert(cmdBuf);
 	dlg_assert(layout == vk::ImageLayout::transferSrcOptimal ||
@@ -148,7 +152,7 @@ SubBuffer retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	dlg_assert(texSize > 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
 	dlg_assert(byteSize <= img.memorySize());
-	dlg_assert(size.width != 0 && size.height != 0);
+	dlg_assert(size.width != 0);
 
 	// bufferOfset must be multiple of 4 and image format size
 	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
@@ -162,7 +166,7 @@ SubBuffer retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	vk::ImageSubresourceLayers layers {subres.aspectMask, subres.mipLevel,
 		subres.arrayLayer, 1};
 	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset,
-		{size.width, size.height, depth}};
+		{size.width, height, depth}};
 
 	vk::cmdCopyImageToBuffer(cmdBuf, img, layout, buf, {{region}});
 	return stage;

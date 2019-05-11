@@ -5,14 +5,7 @@ Todo list vor vpp
   in swapchain acquire/present and formats.cpp (get format properties)
 
 - update readme
-- improve image ops
-  - allow compressed formats. Some way to allow filling a compressed image with
-	  uncompressed data? doing the compressing on the gpu?
-  - support blitting
-  - write tests
-	- imageOps: really allow extent with depth == 0? also handle it for height == 0?
-		- fix consistency with formats.hpp
-- rmeove init.hpp? no useful in its current form
+- remove init.hpp? no useful in its current form
 	- introduct new deferred initialization idom from stage?
 	  better for vpp? there are some classes (e.g. TrDs) that have to use
 	  additional reservation members only for that purpose
@@ -24,9 +17,22 @@ Todo list vor vpp
   		- then: does sharedBuffer (the hostCoherent checking) implement
   		  it correctly? probably not, we assume that all memory types
 		  can be used by buffer (when we create a new one; alloc algorithm)
-- write basic docs
 - is size value in MemoryEntry really needed?
 	- completely abolish memory size?
+
+important, later:
+- allow compressed formats in image ops.
+  Shouldn't be too complicated except that we might have to adjust
+  the address calculation in fill/retrieve Map and make sure to
+  align correctly (in staging). See vulkan spec, has nice
+  address/requirements definitions
+  	- can we provide blitting utility?
+	  maybe just move the initializon from stage here and fix it up
+	  for spec correctness
+- honor optimalBufferCopyRowPitchAlignment somehow
+	- retrieve: probably not possible if we want to guarantee tightly packed data
+	- we could maybe use it when uploading data, just pass as alignment
+	  to the stage buffer
 
 low prio / general / ideas
 --------------------------
@@ -41,10 +47,6 @@ low prio / general / ideas
 - DescriptorUpdate: any chance to avoid memory allocation? maybe just
   provide another mechanism for more convenient update definition like
   vpp::descriptorBinding; allow to group them somehow
-- memoryMap: remap smaller range when a certain range is no longer needed?
-	- might otherwise have undefined behavior, mapping memory while used
-	  on device is undefined, right? even if not used? read in spec
-	- but this will invalidate the pointer, no probably can't be done
 - improve BufferAllocator/SharedBuffer/DescriptorAllocator algorithms
 	- general descriptor algorithms
 - add debug barrier from vulkan sync wiki
@@ -76,9 +78,6 @@ low prio / general / ideas
 		- queue
 		- image constructors (simply copy from buffer constructors in objects.cpp)
 		- etc...
-- honor optimalBufferCopyRowPitchAlignment somehow
-	- retrieve: probably not possible if we want to guarantee tightly packed data
-	- we could maybe use it when uploading data
 - support for checking max available vs used memory
 	- see vulkan extension
 - support for allocation strategies (mainly DeviceMemoryAllocator),
@@ -99,7 +98,7 @@ low prio / general / ideas
 - pmr for performance critical functions.
 	- Device to store a thread-specific memory resource?
 	- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
-- is there a better way for the Resource::swap mess?
+- document the swap/move idiom used by resource and subclasses
 - display class for vkDisplayKHR extension
 - queue constness? (maybe make it related to any operations on the queue?)
 - write deviceLost handling code snippet example
@@ -111,38 +110,3 @@ low prio / general / ideas
 	- think about some functionality to handle device lost (how to deal with it?)
 - further examples/snippets/documentation
 - better best physical device querying (vpp/physicalDevice.cpp)
-
-- docs
-
-/// General documentation for vpp two-step-initiazation classes.
-/// Constructors shall always either fully construct the object or be default constructors.
-/// This way users of classes can always be sure that constructing the object with arguments
-/// will initialize it wihtout having to look into some documentation.
-
-/// For two-step-initiazation only the two member functions create(...) and init(...) will
-/// be used on a default constructed object. Calling create() for an object that was
-/// not default constructed and since then unchanged, calling init() for an object
-/// on that create() was not called before, or calling one of the functions
-/// more than one time is usually undefined behaviour.
-/// It therefore might work but class writers are encouraged throw an exception in such
-/// a case.
-/// Both functions can be const but are not required to be so.
-/// There might also be mutliple overloads of both functions, taking 0 or more arguments.
-/// Classes should try to avoid redundant information in the both functions,
-/// e.g. if both of them need certain information they should simply take it as paramter
-/// in create and then store it (if this does not introduce an unacceptable overheat).
-
-/// If one wants to re-two-step-initialized an already initialized object, it must first
-/// move assign (or copy assign if available) with a default constructed object and then
-/// call the two functions.
-/// Using an uninitialized object will result in undefined behaviour. This time class
-/// authors are explicitly encouraged to NOT check for this case, since that would result
-/// in high overheads, so this will likely lead to a memory error e.g. when dereferencing
-/// an nullptr.
-/// Destructors (as an exception) should work for default constructed object as well,
-/// i.e. they must not assume that the destructing object was ever valid.
-
-/// Classes should generally avoid having something like a destroy method (and if, then protected).
-/// In move operators the destructor can be directly called.
-/// Usually classes implement a free friend swap function for themselves and then use it
-/// for the move operator.

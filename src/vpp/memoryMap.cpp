@@ -134,6 +134,11 @@ MemoryMapView::MemoryMapView(MemoryMap& map, const Allocation& allocation)
 }
 
 MemoryMapView::~MemoryMapView() {
+	// NOTE: theortically, we could now reduce the mapped range but
+	// this would alter the data pointer and is therefore not possible.
+	// Having memory mapped that is used on the device seems to be ok
+	// per spec though, as long as it's not accessed on the host at
+	// the same time (and when the view is destroyed, it won't be).
 	if(memoryMap_) {
 		memoryMap_->unref();
 	}

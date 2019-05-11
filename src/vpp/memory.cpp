@@ -147,6 +147,13 @@ void DeviceMemory::free(const Allocation& alloc) {
 	allocations_.erase(it);
 }
 
+void DeviceMemory::free(vk::DeviceSize offset) {
+	auto it = std::find_if(allocations_.begin(), allocations_.end(),
+		[&](auto& ae) { return ae.allocation.offset == offset; });
+	dlg_assertm(it != allocations_.end(), "free: invalid offset");
+	allocations_.erase(it);
+}
+
 vk::DeviceSize DeviceMemory::largestFreeSegment() const noexcept {
 	vk::DeviceSize ret {0};
 	vk::DeviceSize oldend {0};

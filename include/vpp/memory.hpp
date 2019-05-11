@@ -70,6 +70,7 @@ public:
 	/// Frees the given allocation. Undefined behavior if the
 	/// allocation is invalid (i.e. not allocated on this Memory).
 	void free(const Allocation& alloc);
+	void free(vk::DeviceSize offset);
 
 	/// Tests if an allocation for the given requirements can be made.
 	/// Will return an empty (size = 0) allocation if it is not possible.
