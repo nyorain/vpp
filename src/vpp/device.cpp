@@ -39,9 +39,9 @@ struct Device::Impl {
 	std::shared_mutex sharedQueueMutex;
 
 	// using std::optional since classes are non movable
-	DeviceMemoryAllocator devAllocator;
-	BufferAllocator bufferAllocator;
 	QueueSubmitter queueSubmitter;
+	std::optional<DeviceMemoryAllocator> devAllocator;
+	std::optional<BufferAllocator> bufferAllocator;
 	std::optional<CommandAllocator> commandAllocator;
 	std::optional<DescriptorAllocator> dsAllocator;
 };
@@ -271,8 +271,8 @@ void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues) {
 	}
 
 	// init thread local storage and providers
-	impl_->devAllocator = {*this};
-	impl_->bufferAllocator = {*this};
+	impl_->devAllocator.emplace(*this);
+	impl_->bufferAllocator.emplace(*this);
 
 	auto q = queue(vk::QueueBits::graphics);
 	dlg_assert(q);
@@ -368,11 +368,11 @@ unsigned int Device::deviceMemoryTypes(unsigned int typeBits) const {
 }
 
 BufferAllocator& Device::bufferAllocator() const {
-	return impl_->bufferAllocator;
+	return *impl_->bufferAllocator;
 }
 
 DeviceMemoryAllocator& Device::deviceAllocator() const {
-	return impl_->devAllocator;
+	return *impl_->devAllocator;
 }
 
 CommandAllocator& Device::commandAllocator() const {

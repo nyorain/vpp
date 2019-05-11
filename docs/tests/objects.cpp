@@ -25,8 +25,11 @@ TEST(mem) {
 	auto mem2 = vpp::DeviceMemory(dev, rawMem2, 14u, 0u);
 
 	auto allocator = vpp::DeviceMemoryAllocator(dev);
-	auto memEntry = vpp::MemoryEntry(mem1, mem1.alloc(10u, 0u, vpp::AllocationType::linear));
-	auto memEntry2 = std::move(memEntry);
+	vk::BufferCreateInfo bufInfo;
+	bufInfo.size = 256u;
+	bufInfo.usage = vk::BufferUsageBits::storageBuffer;
+	auto buf = vpp::Buffer(dev, bufInfo, mem1);
+	auto buf2 = std::move(buf);
 }
 
 TEST(cmd) {
@@ -84,12 +87,16 @@ TEST(buf) {
 	vpp::Buffer buf3(dev, info);
 	vpp::Buffer buf4(dev, info, hvBits);
 
+	vpp::Buffer::InitData initData5;
+	vpp::Buffer::InitData initData5b;
+
 	vpp::DeviceMemoryAllocator allocator(dev);
-	vpp::Buffer buf5(vpp::defer, dev, info, dlBits, &allocator);
+	vpp::Buffer buf5(initData5, dev, info, dlBits, &allocator);
 	auto rawBuf3b = vk::createBuffer(dev, info);
-	vpp::Buffer buf5b(vpp::defer, dev, rawBuf3b, dlBits, &allocator);
+	vpp::Buffer buf5b(initData5b, dev, rawBuf3b, dlBits, &allocator);
 	vpp::Buffer buf6(dev, info, dlBits, &allocator);
-	buf5.init();
+	buf5.init(initData5);
+	buf5b.init(initData5b);
 	EXPECT(allocator.memories().size(), 1u);
 
 	vpp::Buffer buf7(dev, rawBuf2);
@@ -100,8 +107,7 @@ TEST(buf) {
 	vpp::DeviceMemory mem(dev, {12000, type});
 	auto memAlloc = mem.alloc(reqs.size, reqs.alignment, vpp::AllocationType::linear);
 	vk::bindBufferMemory(dev, rawBuf3, mem, memAlloc.offset);
-	vpp::MemoryEntry entry(mem, memAlloc);
-	vpp::Buffer buf8(dev, rawBuf3, std::move(entry));
+	vpp::Buffer buf8(dev, rawBuf3, mem, memAlloc.offset);
 
 	vpp::Buffer buf9(dev, info, mem);
 	auto buf10 = std::move(buf9);

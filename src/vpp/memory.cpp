@@ -150,7 +150,7 @@ void DeviceMemory::free(const Allocation& alloc) {
 void DeviceMemory::free(vk::DeviceSize offset) {
 	auto it = std::find_if(allocations_.begin(), allocations_.end(),
 		[&](auto& ae) { return ae.allocation.offset == offset; });
-	dlg_assertm(it != allocations_.end(), "free: invalid offset");
+	dlg_assertm(it != allocations_.end(), "free: invalid offset {}", offset);
 	allocations_.erase(it);
 }
 

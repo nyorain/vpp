@@ -29,8 +29,8 @@ public:
 	///     to allocate enough memory. The DeviceMemory must
 	///     be allocated on a type that is supported for the
 	///     created image (the vulkan spec gives some guarantess there).
-	///   * (4): Will pass ownership of the memory entry which must be
-	///     in allocated state and bound to the image.
+	///   * (4): Will pass ownership of the allocated memory span which must
+	///     be bound to the image.
 	/// - Deferred? See the vpp doc for deferred initialization
 	///   * (1-6) bind the image immediately to memory. For (1,2) this
 	///     means to immediately allocate memory, which might result
@@ -49,29 +49,31 @@ public:
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
 
 	Image(const Device&, const vk::ImageCreateInfo&, DeviceMemory&);
-	Image(const Device&, vk::Image, MemoryEntry&&);
+	Image(const Device&, vk::Image, DeviceMemory&, vk::DeviceSize memOffset);
 
 	/// Creates the image without any bound memory.
 	/// You have to call the ensureMemory function later on to
 	/// make sure memory is bound to the image.
-	Image(DeferTag, const Device&, const vk::ImageCreateInfo&,
+	Image(InitData&, const Device&, const vk::ImageCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	Image(DeferTag, const Device&, vk::Image, vk::ImageTiling,
+	Image(InitData&, const Device&, vk::Image, vk::ImageTiling,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
 
 	Image(Image&& rhs) noexcept = default;
 	Image& operator=(Image&& rhs) noexcept = default;
 
-	/// To be called when the image was initialized with
-	/// a deferred constructor. Will make sure the image
-	/// has bound memory.
-	void init() { ensureMemory(); }
+	/// When the two-step deferred constructor was used, this function
+	/// will allocate the memory for this resource.
+	void init(InitData& data);
 };
 
 /// Combines a vulkan image and an imageView for it.
 /// Can be e.g. used for textures or framebuffer attachments.
 /// See also ViewableImageCreateInfo for default initializers.
 class ViewableImage {
+public:
+	using InitData = Image::InitData;
+
 public:
 	ViewableImage() = default;
 
@@ -84,25 +86,26 @@ public:
 		vpp::DeviceMemoryAllocator* = {});
 	ViewableImage(const Device& dev, const ViewableImageCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	ViewableImage(Image&&, const vk::ImageViewCreateInfo&);
+	ViewableImage(Image&&, vk::ImageViewCreateInfo);
 	ViewableImage(Image&&, ImageView&&);
 
 	/// Creates (or transfer ownership of) an image but doesn't bind
 	/// memory to it or create the view. You have to call
 	/// init with the ViewCreateInfo before it can be used in any way.
-	ViewableImage(DeferTag, const Device&, const vk::ImageCreateInfo&,
+	ViewableImage(InitData&, const Device&, const vk::ImageCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	ViewableImage(DeferTag, Image&&);
+	ViewableImage(InitData&, Image&&);
 
 	~ViewableImage() = default;
 
 	ViewableImage(ViewableImage&&) noexcept = default;
 	ViewableImage& operator=(ViewableImage&&) noexcept = default;
 
-	/// If the Viewable image was constructed with a deferred constructor.
-	/// This will assure the image has bound memory and create the image view.
-	/// Will automatically set the image of the createInfo.
-	void init(vk::ImageViewCreateInfo);
+	/// If the Viewable image was constructed with a deferred constructor,
+	/// this will finish the initialization process.
+	/// Will assure that the image has bound memory and create the image view.
+	/// Will automatically set the image of the CreateImageViewInfo.
+	void init(InitData&, vk::ImageViewCreateInfo);
 
 	const auto& image() const { return image_; }
 	const auto& imageView() const { return imageView_; }
@@ -117,21 +120,6 @@ public:
 protected:
 	Image image_;
 	ImageView imageView_;
-};
-
-/// RAII wrapper for a vulkan sampler.
-class Sampler : public ResourceHandle<vk::Sampler> {
-public:
-	Sampler() = default;
-	Sampler(const Device&, const vk::SamplerCreateInfo&);
-	Sampler(const Device&, vk::Sampler);
-	~Sampler();
-
-	Sampler(Sampler&& rhs) noexcept { swap(*this, rhs); }
-	Sampler& operator=(Sampler rhs) noexcept {
-		swap(*this, rhs);
-		return *this;
-	}
 };
 
 } // namespace vpp

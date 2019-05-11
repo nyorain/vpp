@@ -27,12 +27,12 @@ public:
 	SharedBuffer(const Device&, const vk::BufferCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
 	SharedBuffer(const Device&, const vk::BufferCreateInfo&, DeviceMemory&);
-	SharedBuffer(DeferTag, const Device&, const vk::BufferCreateInfo&,
+	SharedBuffer(InitData&, const Device&, const vk::BufferCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
 
 	~SharedBuffer();
 
-	/// Not movable to allow BufferRanges to reference it.
+	/// Not movable to allow SubBuffer to reference it.
 	SharedBuffer(SharedBuffer&&) noexcept = delete;
 	SharedBuffer& operator=(SharedBuffer&&) noexcept = delete;
 
@@ -124,7 +124,12 @@ protected:
 class BufferAllocator : public vpp::Resource {
 public:
 	using ReservationID = vk::DeviceSize;
-	using Allocation = std::pair<SharedBuffer&, SharedBuffer::Allocation>;
+
+	/// Allocated span on a buffer object.
+	struct Allocation {
+		SharedBuffer& buffer;
+		SharedBuffer::Allocation allocation;
+	};
 
 public:
 	BufferAllocator() = default;

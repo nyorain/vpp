@@ -96,14 +96,14 @@ protected:
 
 /// Dynamically allocates tracked descriptors.
 /// Will create descriptor pools on the fly but try to create as few
-/// as possible.
-/// NOTE: moving/destructing a DescriptorAllocator while there are
-/// DescriptorSets left referencing it or its pools results in undefined
-/// behaviour.
+/// as possible. Can't be moved since TrDs objects might reference it.
 class DescriptorAllocator : public vpp::Resource {
 public:
 	DescriptorAllocator(const vpp::Device&);
 	~DescriptorAllocator() = default;
+
+	DescriptorAllocator(DescriptorAllocator&&) = delete;
+	DescriptorAllocator& operator=(DescriptorAllocator&&) = delete;
 
 	void reserve(nytl::Span<const vk::DescriptorPoolSize>, unsigned count = 1);
 	void reserve(const TrDsLayout&, unsigned count = 1);

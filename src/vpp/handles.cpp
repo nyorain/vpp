@@ -479,4 +479,19 @@ DeviceMemoryHandle::~DeviceMemoryHandle() {
 	}
 }
 
+// Sampler
+Sampler::Sampler(const Device& dev, const vk::SamplerCreateInfo& info) :
+	Sampler(dev, vk::createSampler(dev, info)) {
+}
+
+Sampler::Sampler(const Device& dev, vk::Sampler sampler) :
+	ResourceHandle(dev, sampler) {
+}
+
+Sampler::~Sampler() {
+	if(vkHandle()) {
+		vk::destroySampler(device(), vkHandle());
+	}
+}
+
 } // namespace vpp

@@ -146,7 +146,7 @@ TEST(mappable) {
 	auto buf1 = vpp::SubBuffer(allocator, 100u, usage, hostBits);
 	EXPECT(buf1.allocation().size, 100u);
 	EXPECT(buf1.buffer().mappable(), true);
-	auto props = buf1.buffer().memoryEntry().memory()->properties();
+	auto props = buf1.buffer().memory().properties();
 	auto coherent = (props & vk::MemoryPropertyBits::hostCoherent);
 	EXPECT(buf1.offset() % 128u, 0u);
 	if(!coherent) {
@@ -157,7 +157,7 @@ TEST(mappable) {
 	auto buf2 = vpp::SubBuffer{allocator, 1000u, usage, coherentBits};
 	EXPECT(buf2.allocation().size, 1000u);
 	EXPECT(buf2.buffer().mappable(), true);
-	auto type = buf2.buffer().memoryEntry().memory()->type();
+	auto type = buf2.buffer().memory().type();
 	EXPECT((coherentBits & (1 << type)) != 0, true);
 
 	auto mapView1 = buf2.memoryMap();
@@ -172,7 +172,7 @@ TEST(mappable) {
 		auto buf3 = vpp::SubBuffer(allocator, 511u, usage, hostNonCoherent);
 		EXPECT(buf3.allocation().size, 511u);
 		EXPECT(buf3.buffer().mappable(), true);
-		type = buf3.buffer().memoryEntry().memory()->type();
+		type = buf3.buffer().memory().type();
 		EXPECT((~coherentBits & (1 << type)) != 0, true);
 		EXPECT(buf3.offset() % atomAlign, 0u);
 	}
@@ -201,10 +201,10 @@ TEST(defer) {
 	buf3.init();
 
 	EXPECT(buf1.size(), 3251u);
-	auto b1m = (1u << buf1.buffer().memoryEntry().memory()->type());
+	auto b1m = (1u << buf1.buffer().memory().type());
 	EXPECT(((b1m & hostBits) != 0), true);
 	EXPECT(buf2.size(), 6431u);
-	auto b2m = (1u << buf2.buffer().memoryEntry().memory()->type());
+	auto b2m = (1u << buf2.buffer().memory().type());
 	EXPECT(((b2m & devBits) != 0), true);
 	EXPECT(buf3.size(), 234u);
 

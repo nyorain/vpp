@@ -1,15 +1,15 @@
 Todo list vor vpp
 =================
 
-- when vkpp has error handling update: fix try/catch/swallowed error
-  in swapchain acquire/present and formats.cpp (get format properties)
-
 - update readme
 - remove init.hpp? no useful in its current form
 	- introduct new deferred initialization idom from stage?
 	  better for vpp? there are some classes (e.g. TrDs) that have to use
 	  additional reservation members only for that purpose
 	- anyways, init.hpp was pretty much *never* used
+- InitData destructor?
+	- e.g. memory resource: cancel reservation? guess that makes sense
+- re add shared buffer tests (commented out atm)
 - add glfw/sdl examples (option to use sdl from meson wrap db)
 - handle problem: memBits (in buffer/sharedBuffer/image) not compatible
   with buffer requirements?
@@ -17,10 +17,12 @@ Todo list vor vpp
   		- then: does sharedBuffer (the hostCoherent checking) implement
   		  it correctly? probably not, we assume that all memory types
 		  can be used by buffer (when we create a new one; alloc algorithm)
-- is size value in MemoryEntry really needed?
-	- completely abolish memory size?
 
 important, later:
+- improve DeviceMemoryAllocator (cache data structures for fewer allocations,
+  improve allocation algorithm)
+- when vkpp has error handling update: fix try/catch/swallowed error
+  in swapchain acquire/present and formats.cpp (get format properties)
 - allow compressed formats in image ops.
   Shouldn't be too complicated except that we might have to adjust
   the address calculation in fill/retrieve Map and make sure to

@@ -21,10 +21,8 @@ enum class AllocationType {
 };
 
 /// DeviceMemory class that keeps track of its allocated and freed areas.
-/// Makes it easy to reuse memory as well as bind multiple memoryRequestors to one allocation.
-/// Note that there are additional rules for allocating device memory on vulkan (like e.g. needed
-/// offsets between image and buffer allocations) which are not checked/stored by this class, this
-/// has to be done externally.
+/// Makes it easy to reuse memory as well as bind multiple memoryRequestors to
+/// one allocation.
 class DeviceMemory : public DeviceMemoryHandle {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
@@ -39,8 +37,8 @@ public:
 		unsigned int memoryType);
 	~DeviceMemory();
 
-	/// DeviceMemory is NonMovable to allow memory resources to keep references
-	/// to the DeviceMemory object (e.g. to free it on destruction).
+	/// DeviceMemory is not movable to allow memory resources to keep references
+	/// to the DeviceMemory object (to free it on destruction).
 	DeviceMemory(DeviceMemory&&) noexcept = delete;
 	DeviceMemory& operator=(DeviceMemory&&) noexcept = delete;
 

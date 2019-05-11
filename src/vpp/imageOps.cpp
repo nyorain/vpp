@@ -34,10 +34,11 @@ void fillMap(const Image& img, vk::Format format,
 	dlg_assert(size.width != 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
 	dlg_assert(data.size() == size.width * height * depth * texSize);
-	dlg_assert(vk::DeviceSize(data.size()) <= img.memorySize());
 
 	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
-	auto map = img.memoryEntry().map();
+	auto mapSize = texelAddress(sresLayout, texSize, size.width + 1,
+		height - 1, depth - 1, subres.arrayLayer);
+	auto map = img.memoryMap(0, mapSize);
 
 	auto doffset = 0u; // current data offset
 
@@ -70,14 +71,16 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 	dlg_assert(texSize > 0);
 	dlg_assert(byteSize > 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
-	dlg_assert(byteSize <= img.memorySize());
 	dlg_assert(size.width != 0);
 
 	std::vector<std::byte> data(byteSize);
-	auto map = img.memoryMap();
-	map.invalidate();
 
 	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
+	auto mapSize = texelAddress(sresLayout, texSize, size.width + 1,
+		height - 1, depth - 1, subres.arrayLayer);
+	auto map = img.memoryMap(0, mapSize);
+	map.invalidate();
+
 	auto doffset = 0u; // dataOffset
 
 	// copy row (width) after row
@@ -109,7 +112,6 @@ SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	dlg_assert(texSize > 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
 	dlg_assert(data.size() == texSize * size.width * height * depth);
-	dlg_assert(vk::DeviceSize(data.size()) <= img.memorySize());
 	dlg_assert(size.width != 0);
 
 	// bufferOfset must be multiple of 4 and image format size
@@ -151,7 +153,6 @@ SubBuffer retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	dlg_assert(img.vkHandle());
 	dlg_assert(texSize > 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
-	dlg_assert(byteSize <= img.memorySize());
 	dlg_assert(size.width != 0);
 
 	// bufferOfset must be multiple of 4 and image format size

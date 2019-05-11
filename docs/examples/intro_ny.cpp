@@ -194,7 +194,7 @@ int main(int, char**) {
 MyRenderer::MyRenderer(vk::RenderPass rp, vk::SwapchainCreateInfoKHR& scInfo,
 		const vpp::Queue& present) : vpp::DefaultRenderer(), scInfo_(scInfo) {
 	// pipeline
-	pipelineLayout_ = {present.device(), {}};
+	pipelineLayout_ = {present.device(), vk::PipelineLayoutCreateInfo {}};
 	pipeline_ = createGraphicsPipeline(present.device(), rp, pipelineLayout_);
 	init(rp, scInfo, present);
 }

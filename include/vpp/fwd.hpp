@@ -32,7 +32,6 @@ struct DeferTag {};
 constexpr DeferTag defer {};
 
 class Resource;
-class WorkBase;
 
 class Buffer;
 class Image;
@@ -48,6 +47,7 @@ class DescriptorSet;
 class DescriptorPool;
 class DescriptorSetLayout;
 class Framebuffer;
+class QueryPool;
 class RenderPass;
 class CommandPool;
 class CommandBuffer;
@@ -56,6 +56,10 @@ class PipelineLayout;
 class Fence;
 class Semaphore;
 class Event;
+class BufferHandle;
+class ImageHandle;
+class BufferView;
+class Sampler;
 
 class Instance;
 class Device;
@@ -63,10 +67,8 @@ class Queue;
 class Renderer;
 class DefaultRenderer;
 class DeviceMemoryAllocator;
-class MemoryEntry;
 class ViewableImage;
 
-class WorkManager;
 class SharedBuffer;
 class SubBuffer;
 class CommandAllocator;
@@ -80,13 +82,5 @@ class TrDs;
 class DescriptorAllocator;
 
 struct ViewableImageCreateInfo;
-
-template<typename T> class CommandWork;
-template<typename T> class TransferWork;
-class DownloadWork;
-class UploadWork;
-
-template<typename T> class ThreadStorage;
-struct DynamicStorageBase;
 
 } // namespace vpp

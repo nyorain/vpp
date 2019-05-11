@@ -5,25 +5,35 @@
 #pragma once
 
 #include <vpp/fwd.hpp>
+#include <vpp/memory.hpp>
 #include <vpp/allocator.hpp>
 #include <utility>
 
 namespace vpp {
 
-/// Represents a resource that might be bound to memory and keeps track
+/// Represents a resource that might be bound to memory span and keeps track
 /// of this memory. Does not support any kind of sparse bindings.
 class MemoryResource {
 public:
+	struct InitData {
+		DeviceMemoryAllocator* allocator {};
+		DeviceMemoryAllocator::ReservationID reservation {};
+	};
+
+public:
 	MemoryResource() = default;
-	MemoryResource(MemoryEntry&& entry)
-		: memoryEntry_(std::move(entry)) {}
+	MemoryResource(DeviceMemory&, vk::DeviceSize offset);
+	~MemoryResource();
 
-	MemoryResource(MemoryResource&& rhs) noexcept = default;
-	MemoryResource& operator=(MemoryResource&& rhs) noexcept = default;
+	MemoryResource(MemoryResource&& rhs) noexcept { swap(*this, rhs); }
+	MemoryResource& operator=(MemoryResource rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
+	}
 
-	/// Checks if this memory resource was initialized yet and if not it
-	/// will be initialized.
-	void ensureMemory();
+	/// When the two-step deferred constructor was used, this function
+	/// will allocate the memory for this resource.
+	void init(InitData& data);
 
 	/// Returns whether this resource is bound to hostVisible memory.
 	bool mappable() const;
@@ -31,18 +41,17 @@ public:
 	/// Creates/Updates the memoryMap of the memory this resource is
 	/// bound to and returns a view. Must be bound to hostVisible memory,
 	/// i.e. mappable() must be true.
-	MemoryMapView memoryMap(vk::DeviceSize offset = 0u,
-		vk::DeviceSize size = vk::wholeSize) const;
+	MemoryMapView memoryMap(vk::DeviceSize offset,
+		vk::DeviceSize size) const;
 
-	/// Returns the size this resource takes up in memory.
-	/// Note that this often differs from the real size of the resource
-	/// (e.g. buffer or image data size) due to metadata so it should
-	/// not be used as that.
-	vk::DeviceSize memorySize() const { return memoryEntry().size(); }
-	const MemoryEntry& memoryEntry() const { return memoryEntry_; }
+	DeviceMemory& memory() const { return *memory_; }
+	vk::DeviceSize memoryOffset() const { return offset_; }
+
+	friend void swap(MemoryResource& a, MemoryResource& b);
 
 protected:
-	MemoryEntry memoryEntry_;
+	DeviceMemory* memory_ {};
+	vk::DeviceSize offset_ {};
 };
 
 } // namespace vpp

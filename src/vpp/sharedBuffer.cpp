@@ -129,10 +129,10 @@ SharedBuffer::SharedBuffer(const Device& dev, const vk::BufferCreateInfo& info,
 	DeviceMemory& mem) : Buffer(dev, info, mem), size_(info.size) {
 }
 
-SharedBuffer::SharedBuffer(DeferTag defer, const Device& dev,
+SharedBuffer::SharedBuffer(InitData& data, const Device& dev,
 	const vk::BufferCreateInfo& info, unsigned int memBits,
 	vpp::DeviceMemoryAllocator* alloc) :
-		Buffer(defer, dev, info, memBits, alloc), size_(info.size) {
+		Buffer(data, dev, info, memBits, alloc), size_(info.size) {
 }
 
 SharedBuffer::~SharedBuffer() {
@@ -149,7 +149,7 @@ SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
 
 	// respect the nonCoherentAtomSize if the buffer is allocated on hostVisible
 	// and not hostCoherent memory
-	auto t = memoryEntry().memory()->type();
+	auto t = memory().type();
 	auto flags = device().memoryProperties().memoryTypes[t].propertyFlags;
 	auto nonCoherentAtomAlign =
 		flags & vk::MemoryPropertyBits::hostVisible &&
@@ -266,11 +266,10 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 	// check if there is still space available
 	// TODO: really dumb algorithm atm, greedy af
 	for(auto& buf : buffers_) {
-		auto* mem = buf.buffer.memoryEntry().memory();
-		dlg_assert(mem);
+		auto& mem = buf.buffer.memory();
 
 		// check buffer has use and memBits we need
-		if((buf.usage & usage) != usage || !(memBits & (1 << mem->type()))) {
+		if((buf.usage & usage) != usage || !(memBits & (1 << mem.type()))) {
 			continue;
 		}
 
@@ -296,6 +295,8 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 		auto& req = *reqp;
 
 		// TODO: bad, greedy algorithm
+		// TODO: we also just assume here that the buffer can be allocated on
+		// any memory type...
 		auto mem = memBits & req.memBits;
 		if(mem) {
 			auto off = vpp::align(createInfo.size, req.align);

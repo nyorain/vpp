@@ -408,4 +408,19 @@ public:
 	}
 };
 
+/// RAII wrapper for a vulkan sampler.
+class Sampler : public ResourceHandle<vk::Sampler> {
+public:
+	Sampler() = default;
+	Sampler(const Device&, vk::Sampler);
+	Sampler(const Device&, const vk::SamplerCreateInfo&);
+	~Sampler();
+
+	Sampler(Sampler&& rhs) noexcept { swap(*this, rhs); }
+	Sampler& operator=(Sampler rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
+	}
+};
+
 } // namespace vpp

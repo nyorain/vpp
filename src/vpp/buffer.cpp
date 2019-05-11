@@ -18,9 +18,10 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info,
 }
 
 Buffer::Buffer(const Device& dev, vk::Buffer buffer,
-	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
-		Buffer(defer, dev, buffer, memBits, alloc) {
-	ensureMemory();
+		unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) {
+	InitData data;
+	*this = {data, dev, buffer, memBits, alloc};
+	init(data);
 }
 
 Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info,
@@ -32,15 +33,17 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info,
 		throw std::runtime_error("Failed to alloc from memory");
 	}
 
-	memoryEntry_ = {mem, alloc};
+	MemoryResource::memory_ = &mem;
+	MemoryResource::offset_ = alloc.offset;
 }
 
-Buffer::Buffer(const Device& dev, vk::Buffer buffer, MemoryEntry&& entry) :
-		BufferHandle(dev, buffer), MemoryResource(std::move(entry)) {
-	dlg_assert(memoryEntry().allocated());
+Buffer::Buffer(const Device& dev, vk::Buffer buffer, DeviceMemory& mem,
+	vk::DeviceSize memOffset) :
+		BufferHandle(dev, buffer),
+		MemoryResource(mem, memOffset) {
 }
 
-Buffer::Buffer(DeferTag, const Device& dev, vk::Buffer buffer,
+Buffer::Buffer(InitData& data, const Device& dev, vk::Buffer buffer,
 	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
 		BufferHandle(dev, buffer) {
 	dlg_assert(buffer);
@@ -51,13 +54,19 @@ Buffer::Buffer(DeferTag, const Device& dev, vk::Buffer buffer,
 	dlg_assertm(reqs.memoryTypeBits, "No memory type bits left");
 	dlg_assert(reqs.size > 0);
 
-	auto& allocr = alloc ? *alloc : dev.deviceAllocator();
-	allocr.request(vkHandle(), reqs, memoryEntry_);
+	data.allocator = alloc ? alloc : &dev.deviceAllocator();
+	data.allocator->reserve(AllocationType::linear, reqs, &data.reservation);
 }
 
-Buffer::Buffer(DeferTag, const Device& dev, const vk::BufferCreateInfo& info,
-	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
-		Buffer(defer, dev, vk::createBuffer(dev, info), memBits, alloc) {
+Buffer::Buffer(InitData& data, const Device& dev,
+	const vk::BufferCreateInfo& info, unsigned int memBits,
+	vpp::DeviceMemoryAllocator* alloc) :
+		Buffer(data, dev, vk::createBuffer(dev, info), memBits, alloc) {
+}
+
+void Buffer::init(InitData& data) {
+	MemoryResource::init(data);
+	vk::bindBufferMemory(device(), vkHandle(), memory(), memoryOffset());
 }
 
 // BufferSpan

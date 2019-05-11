@@ -32,8 +32,8 @@ public:
 	///     to allocate enough memory. The DeviceMemory must
 	///     be allocated on a type that is supported for the
 	///     created buffer (the vulkan spec gives some guarantess there).
-	///   * (4): Will pass ownership of the memory entry which must be
-	///     in allocated state and bound to the buffer.
+	///   * (4): Will pass ownership of the allocated memory span which must
+	///     be bound to the buffer.
 	/// - Deferred? See the vpp doc for deferred initialization
 	///   * (1,2,3) bind the buffer immediately to memory. For (1,2) this
 	///     means to immediately request memory, which might result
@@ -48,23 +48,22 @@ public:
 		vpp::DeviceMemoryAllocator* = {});
 
 	Buffer(const Device&, const vk::BufferCreateInfo&, DeviceMemory&);
-	Buffer(const Device&, vk::Buffer, MemoryEntry&&);
+	Buffer(const Device&, vk::Buffer, DeviceMemory&, vk::DeviceSize memOffset);
 
 	/// Creates the buffer without any bound memory.
 	/// You have to call the ensureMemory function later on to
 	/// make sure memory is bound to the buffer.
-	Buffer(DeferTag, const Device&, const vk::BufferCreateInfo&,
+	Buffer(InitData&, const Device&, const vk::BufferCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	Buffer(DeferTag, const Device&, vk::Buffer, unsigned int memBits = ~0u,
+	Buffer(InitData&, const Device&, vk::Buffer, unsigned int memBits = ~0u,
 		vpp::DeviceMemoryAllocator* = {});
 
 	Buffer(Buffer&& rhs) noexcept = default;
 	Buffer& operator=(Buffer&& rhs) noexcept = default;
 
-	/// To be called when the buffer was initialized with
-	/// a deferred constructor. Will make sure the buffer
-	/// has bound memory.
-	void init() { ensureMemory(); }
+	/// When the two-step deferred constructor was used, this function
+	/// will allocate the memory for this resource.
+	void init(InitData& data);
 };
 
 /// Continous non-owned device buffer span.
