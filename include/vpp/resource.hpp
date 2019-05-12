@@ -35,6 +35,12 @@ public:
 	const Handle& vkHandle() const noexcept { return handle_; }
 	operator const Handle&() const noexcept { return vkHandle(); }
 
+	Handle release() {
+		auto ret = handle_;
+		handle_ = {};
+		return ret;
+	}
+
 protected:
 	ResourceHandle() = default;
 	ResourceHandle(const Device& dev, const Handle& h = {}) :
@@ -44,7 +50,6 @@ protected:
 	ResourceHandle(ResourceHandle&& other) noexcept = delete;
 	ResourceHandle& operator=(ResourceHandle&& other) noexcept = delete;
 
-	void release() { handle_ = {}; }
 	friend void swap(ResourceHandle<Handle>& a,
 			ResourceHandle<Handle>& b) noexcept {
 		using std::swap;

@@ -6,7 +6,7 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/memory.hpp>
-#include <vpp/allocator.hpp>
+#include <vpp/devMemAllocator.hpp>
 #include <utility>
 
 namespace vpp {
@@ -16,6 +16,7 @@ namespace vpp {
 class MemoryResource {
 public:
 	struct InitData {
+		~InitData();
 		DeviceMemoryAllocator* allocator {};
 		DeviceMemoryAllocator::ReservationID reservation {};
 	};

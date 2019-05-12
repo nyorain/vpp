@@ -1,29 +1,20 @@
 Todo list vor vpp
 =================
 
-- update readme
-- remove init.hpp? no useful in its current form
-	- introduct new deferred initialization idom from stage?
-	  better for vpp? there are some classes (e.g. TrDs) that have to use
-	  additional reservation members only for that purpose
-	- anyways, init.hpp was pretty much *never* used
-- InitData destructor?
-	- e.g. memory resource: cancel reservation? guess that makes sense
+- port remaining vpp::defer resources to new InitData idiom
 - re add shared buffer tests (commented out atm)
+- update readme
 - add glfw/sdl examples (option to use sdl from meson wrap db)
-- handle problem: memBits (in buffer/sharedBuffer/image) not compatible
-  with buffer requirements?
-  	- solution: might require to be checked/handled by user
-  		- then: does sharedBuffer (the hostCoherent checking) implement
-  		  it correctly? probably not, we assume that all memory types
-		  can be used by buffer (when we create a new one; alloc algorithm)
 
 important, later:
-- improve DeviceMemoryAllocator (cache data structures for fewer allocations,
-  improve allocation algorithm)
 - when vkpp has error handling update: fix try/catch/swallowed error
   in swapchain acquire/present and formats.cpp (get format properties)
+- improve DeviceMemoryAllocator (cache data structures for fewer allocations,
+  improve allocation algorithm)
 - allow compressed formats in image ops.
+  we can also allow compression on the fly, vkCmdCopyImage supports it
+  might be too complex to do/not a nice abstract, make sure it stays
+  inside vpp scope
   Shouldn't be too complicated except that we might have to adjust
   the address calculation in fill/retrieve Map and make sure to
   align correctly (in staging). See vulkan spec, has nice

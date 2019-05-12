@@ -94,14 +94,27 @@ protected:
 	bool findMem(Requirement& req, Reservation& info);
 	std::vector<Requirement>::iterator findReq(ReservationID);
 	std::vector<Reservation>::iterator findRes(ReservationID);
-	std::unordered_map<unsigned int, std::vector<Requirement*>> queryTypes();
+	void queryTypes(); // returned in tmpTypeMap_
 	unsigned int findBestType(uint32_t typeBits) const;
+
+	// needed in alloc algorithm, cached vector of it below
+	struct PendingReservation {
+		ReservationID id;
+		DeviceMemory::Allocation allocation;
+		AllocationType type;
+	};
 
 protected:
 	std::vector<Reservation> reservations_;
 	std::vector<Requirement> requirements_;
 	std::deque<DeviceMemory> memories_; // list of owned memory objects
 	ReservationID lastReservation_ {};
+
+	// cache for algorithms
+	std::vector<Requirement> tmpRequirements_;
+	std::vector<PendingReservation> tmpReservations_;
+	std::array<std::vector<Requirement*>, 32> tmpOccurences_;
+	std::array<std::vector<Requirement*>, 32> tmpTypeMap_;
 };
 
 } // namespace vpp

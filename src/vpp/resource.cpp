@@ -4,6 +4,7 @@
 
 #include <vpp/resource.hpp>
 #include <vpp/device.hpp>
+#include <stdexcept>
 
 namespace vpp {
 
@@ -15,7 +16,7 @@ void Resource::init(const Device& dev) {
 	}
 
 	auto msg = "vpp::Resource: invalid device instance (compiled with"
-		"VPP_ONE_DEVICE_OPTIMIZATION)"
+		"VPP_ONE_DEVICE_OPTIMIZATION)";
 	throw std::logic_error(msg);
 }
 

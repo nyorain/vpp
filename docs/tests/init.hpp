@@ -26,7 +26,6 @@ public:
 		return vpp::DebugMessenger::call(severity, types, data);
 	}
 
-	unsigned int performanceWarnings {};
 	unsigned int warnings {};
 	unsigned int errors {};
 };
@@ -79,11 +78,11 @@ int main() {
 	dlg_set_handler(dlgHandler, nullptr);
 
 	auto ret = bugged::Testing::run();
-	// ret += globals.debugCallback->performanceWarnings;
+	globals.device = {};
+
 	ret += globals.debugCallback->errors + dlgErrors;
 	ret += globals.debugCallback->warnings + dlgWarnings;
 
-	globals.device = {};
 	globals.debugCallback = {};
 	globals.instance = {};
 

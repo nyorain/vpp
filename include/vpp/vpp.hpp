@@ -4,7 +4,6 @@
 #include <vpp/util/file.hpp>
 #include <vpp/util/allocation.hpp>
 
-#include <vpp/allocator.hpp>
 #include <vpp/buffer.hpp>
 #include <vpp/bufferOps.hpp>
 #include <vpp/commandAllocator.hpp>
@@ -12,6 +11,7 @@
 #include <vpp/debug.hpp>
 #include <vpp/descriptor.hpp>
 #include <vpp/device.hpp>
+#include <vpp/devMemAllocator.hpp>
 #include <vpp/formats.hpp>
 #include <vpp/fwd.hpp>
 #include <vpp/handles.hpp>

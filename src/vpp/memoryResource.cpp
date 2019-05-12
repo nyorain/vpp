@@ -7,11 +7,19 @@
 
 namespace vpp {
 
+MemoryResource::InitData::~InitData() {
+	if(allocator) {
+		dlg_assert(reservation);
+		allocator->cancel(reservation);
+	}
+}
+
 void MemoryResource::init(InitData& data) {
 	dlg_assert(data.allocator && data.reservation);
 	auto [mem, alloc] = data.allocator->alloc(data.reservation);
 	memory_ = &mem;
 	offset_ = alloc.offset;
+	data = {};
 }
 
 MemoryResource::~MemoryResource() {

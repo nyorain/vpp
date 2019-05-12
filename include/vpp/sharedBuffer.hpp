@@ -26,6 +26,8 @@ public:
 public:
 	SharedBuffer(const Device&, const vk::BufferCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+	SharedBuffer(const Device&, vk::Buffer, vk::DeviceSize size,
+		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
 	SharedBuffer(const Device&, const vk::BufferCreateInfo&, DeviceMemory&);
 	SharedBuffer(InitData&, const Device&, const vk::BufferCreateInfo&,
 		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
@@ -161,6 +163,7 @@ public:
 
 protected:
 	struct Requirement {
+		ReservationID id {};
 		vk::DeviceSize size {};
 		vk::DeviceSize align {};
 		vk::BufferUsageFlags usage {};
@@ -168,25 +171,29 @@ protected:
 	};
 
 	struct Reservation {
-		SharedBuffer* buffer;
-		SharedBuffer::Allocation allocation;
-	};
-
-	struct Entry {
 		ReservationID id {};
-		std::variant<Requirement, Reservation> data;
+		SharedBuffer* buffer {};
+		SharedBuffer::Allocation allocation {};
 	};
 
 	struct Buffer {
-		Buffer(const Device&, const vk::BufferCreateInfo&, unsigned int mbits);
+		Buffer(const Device&, vpp::BufferHandle, unsigned int mbits,
+			vk::DeviceSize size, vk::BufferUsageFlags usage);
 
 		SharedBuffer buffer;
 		vk::BufferUsageFlags usage {};
 	};
 
+protected:
+	// deque since not movable
 	std::deque<Buffer> buffers_;
-	std::vector<Entry> reservations_;
+	std::vector<Reservation> reservations_;
+	std::vector<Requirement> requirements_;
 	ReservationID id_ {}; // last id for counting
+
+	// cache for alloc algorithm
+	std::vector<Requirement> tmpRequirements_;
+	std::vector<Reservation> tmpReservations_;
 };
 
 /// Returns a queue family that supports graphics, compute or transfer operations

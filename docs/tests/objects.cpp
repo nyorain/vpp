@@ -1,6 +1,6 @@
 #include "init.hpp"
 
-#include <vpp/allocator.hpp>
+#include <vpp/devMemAllocator.hpp>
 #include <vpp/commandAllocator.hpp>
 #include <vpp/memory.hpp>
 #include <vpp/sharedBuffer.hpp>

@@ -1,9 +1,9 @@
 vpp_sources = [
-	'allocator.cpp',
 	'buffer.cpp',
 	'bufferOps.cpp',
 	'commandAllocator.cpp',
 	'debug.cpp',
+	'devMemAllocator.cpp',
 	'descriptor.cpp',
 	'device.cpp',
 	'formats.cpp',

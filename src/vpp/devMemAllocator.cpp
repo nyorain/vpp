@@ -2,7 +2,7 @@
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
-#include <vpp/allocator.hpp>
+#include <vpp/devMemAllocator.hpp>
 #include <vpp/buffer.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
@@ -73,9 +73,6 @@ bool DeviceMemoryAllocator::findMem(Requirement& req, Reservation& info) {
 		info.id = req.id;
 		info.memory = &mem;
 		info.allocation = alloc;
-		if(info.id) {
-			reservations_.push_back(info);
-		}
 
 		return true;
 	}
@@ -103,6 +100,7 @@ void DeviceMemoryAllocator::alloc() {
 	Reservation res;
 	for(auto it = requirements_.begin(); it != requirements_.end();) {
 		if(findMem(*it, res)) {
+			reservations_.push_back(res);
 			it = requirements_.erase(it);
 		} else {
 			++it;
@@ -115,15 +113,17 @@ void DeviceMemoryAllocator::alloc() {
 	}
 
 	// otherwise allocate remaining type on new memoeries
-	const auto& map = queryTypes();
-	for(auto& type : map) {
-		std::vector<Requirement> reqs;
-		reqs.reserve(type.second.size());
-		for(auto& t : type.second) {
+	queryTypes();
+	auto& typeMap = tmpTypeMap_; // set by queryTypes
+	auto& reqs = tmpRequirements_;
+	for(auto i = 0u; i < 32; ++i) {
+		reqs.clear();
+		reqs.reserve(typeMap[i].size());
+		for(auto& t : typeMap[i]) {
 			reqs.push_back(*t);
 		}
 
-		allocate(type.first, reqs);
+		allocate(i, reqs);
 	}
 
 	requirements_.clear(); // all requirements were allocated
@@ -131,6 +131,7 @@ void DeviceMemoryAllocator::alloc() {
 
 DeviceMemoryAllocator::Allocation
 DeviceMemoryAllocator::alloc(ReservationID id) {
+
 	auto rit = findRes(id);
 	if(rit != reservations_.end()) {
 		auto ret = Allocation{*rit->memory, rit->allocation};
@@ -173,7 +174,9 @@ void DeviceMemoryAllocator::allocate(unsigned int type) {
 	dlg_assertlm(dlg_level_debug, !requirements_.empty(),
 		"allocate called without pending requests for type");
 
-	std::vector<Requirement> reqs;
+	auto& reqs = tmpRequirements_;
+	reqs.clear();
+	reqs.reserve(requirements_.size());
 	for(auto it = requirements_.begin(); it != requirements_.end();) {
 		if(!supportsType(*it, type)) {
 			++it;
@@ -197,13 +200,10 @@ void DeviceMemoryAllocator::allocate(unsigned int type,
 	vk::DeviceSize offset = 0;
 	bool applyGran = false;
 
-	struct PendingReservation {
-		ReservationID id;
-		DeviceMemory::Allocation allocation;
-		AllocationType type;
-	};
-
-	std::vector<PendingReservation> reservations;
+	// holds the reservations we must patch and store after creating
+	// the memory object
+	auto& reservations = tmpReservations_;
+	reservations.clear();
 	reservations.reserve(requirements.size());
 
 	// iterate through all reqs and place the ones that may be allocated on the
@@ -264,13 +264,8 @@ void DeviceMemoryAllocator::allocate(unsigned int type,
 	}
 }
 
-std::unordered_map<unsigned int, std::vector<DeviceMemoryAllocator::Requirement*>>
+void
 DeviceMemoryAllocator::queryTypes() {
-	// XXX: we could use std::array<..., 32> (or vector) instead of the
-	//  unordered maps since we know that there aren't more memory types
-	//  maybe cache in object to make sure we don't allocate every time...
-	// XXX: probably one of the places where a custom host allocator would
-	//  really speed things up
 	// XXX: this implementation does not always return the best result, but the
 	//  algorithms complexity is quadratic (in the number of requirements) and
 	//  the problem is NP-complete so good enough i guess.
@@ -281,23 +276,27 @@ DeviceMemoryAllocator::queryTypes() {
 
 	dlg_assertm(!requirements_.empty(), "queryTypes: no pending requirements");
 
-	// vector to return, holds requirements that have a type
-	std::unordered_map<unsigned int, std::vector<Requirement*>> ret;
+	// tmpTypeMap_: returned information, holds for each type the requirements
+	//   that should be allocated on it
+	auto& typeMap = tmpTypeMap_;
+	for(auto i = 0u; i < 32; ++i) {
+		typeMap[i].clear();
+	}
 
-	// map holding the current count of the different types
-	std::unordered_map<unsigned int, std::vector<Requirement*>> occurences;
+	// tmpOccurences_: map holding the current count of the different types
+	auto& occurences = tmpOccurences_; // will be cleared in first countOccurences
+	auto numOccurences = 0u; // total number in occurences
 
 	// function to count the occurences of the different memory types and store
 	// them in the occurences map
 	auto countOccurences = [&]() {
-		occurences.clear();
-		for(auto& req : requirements_) {
-			for(auto i = 0u; i < 32; ++i) {
+		numOccurences = 0u;
+		for(auto i = 0u; i < 32; ++i) {
+			occurences[i].clear();
+			for(auto& req : requirements_) {
 				if(supportsType(req, i)) {
-					std::vector<Requirement*> vec({&req});
-					auto it = occurences.find(i);
-					if(it != occurences.cend()) it->second.push_back(&req);
-					else occurences.emplace(i, std::vector<Requirement*>{&req});
+					++numOccurences;
+					occurences[i].push_back(&req);
 				}
 			}
 		}
@@ -307,7 +306,7 @@ DeviceMemoryAllocator::queryTypes() {
 	countOccurences();
 
 	// while there are requirements left that have not been moved into ret
-	while(!occurences.empty()) {
+	while(numOccurences > 0) {
 
 		// find the least occuring type
 		// bestID is after this the memory type with the fewest requirements
@@ -316,10 +315,10 @@ DeviceMemoryAllocator::queryTypes() {
 		// holds memory type with the least requirements atm, updated in
 		// each iteration
 		std::uint32_t bestID = 0u;
-		for(auto& occ : occurences) {
-			if(occ.second.size() < best) {
-				best = occ.second.size();
-				bestID = occ.first;
+		for(auto i = 0u; i < 32; ++i) {
+			if(occurences[i].size() < best) {
+				best = occurences[i].size();
+				bestID = i;
 			}
 		}
 
@@ -340,8 +339,7 @@ DeviceMemoryAllocator::queryTypes() {
 		// assiocated with it and sorted out. otherwise the type wont be
 		// considered for allocations any further.
 		bool canBeRemoved = true;
-		auto it = occurences.find(bestID);
-		for(auto& req : it->second) {
+		for(auto& req : occurences[bestID]) {
 			if(!othersSupported(*req, bestID)) {
 				canBeRemoved = false;
 				break;
@@ -354,32 +352,29 @@ DeviceMemoryAllocator::queryTypes() {
 		if(canBeRemoved) {
 			// remove the bestID type bit from all requirement type bits,
 			// to reduce the problems complexity
-			for(auto& req : it->second) {
+			for(auto& req : occurences[bestID]) {
 				req->memoryTypes &= ~(1 << bestID);
 			}
 
 			// erase the occurences for bestID
 			// this is the only change to occurences so it does not have to be
 			// recounted
-			occurences.erase(bestID);
+			numOccurences -= occurences[bestID].size();
+			occurences[bestID].clear();
 		} else {
 			// set the requirements typebits to 0, indicating that it has a
 			// matching type this makes it no longer have any effect on
 			// countOccurences which makes sense, since we "removed" it.
 			// one could alternatively really remove this from the
-			// requirements_ vector, but this would be less efficient
-			for(auto& req : it->second) {
+			// requirements_ vector, but this would be less efficient, the
+			// vector will be cleared for all later on.
+			for(auto& req : occurences[bestID]) {
 				req->memoryTypes = 0;
 			}
 
 			// insert the requirements that will be allocated on bestID into ret
-			ret.emplace(bestID, std::move(it->second));
-
-			// explicitly remove the occurences for the chosen bit.
-			// the other references to the now removed since type found
-			// requirements stay, but sice their memoryTypes member is 0, they
-			// will no longer be counted
-			occurences.erase(bestID);
+			auto& o = occurences[bestID];
+			typeMap[bestID].insert(typeMap[bestID].end(), o.begin(), o.end());
 
 			// the occurences have to be recounted since the occurences for type
 			// bits other than best bestID (which will have 0 now) do not
@@ -387,8 +382,6 @@ DeviceMemoryAllocator::queryTypes() {
 			countOccurences();
 		}
 	}
-
-	return ret;
 }
 
 // greedy, simply returns the type with the most requirements.
