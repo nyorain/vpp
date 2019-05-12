@@ -134,7 +134,7 @@ unsigned mipmapLevels(const vk::Extent2D& extent) {
 
 ViewableImageCreateInfo::ViewableImageCreateInfo(vk::Format format,
 		vk::ImageAspectBits aspect, vk::Extent2D size,
-		vk::ImageUsageBits usage, vk::ImageTiling tiling,
+		vk::ImageUsageFlags usage, vk::ImageTiling tiling,
 		uint32_t mipLevels) {
 	img.extent = {size.width, size.height, 1u};
 	img.imageType = vk::ImageType::e2d;

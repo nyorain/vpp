@@ -53,7 +53,7 @@ struct ViewableImageCreateInfo {
 	/// 2D default constructor, 1 layer, 1 sample
 	ViewableImageCreateInfo(vk::Format format,
 		vk::ImageAspectBits aspect, vk::Extent2D size,
-		vk::ImageUsageBits usage,
+		vk::ImageUsageFlags usage,
 		vk::ImageTiling tiling = vk::ImageTiling::optimal,
 		uint32_t mipLevels = 1u);
 };

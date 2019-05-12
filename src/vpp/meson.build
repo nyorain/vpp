@@ -3,6 +3,7 @@ vpp_sources = [
 	'bufferOps.cpp',
 	'commandAllocator.cpp',
 	'debug.cpp',
+	'debugReport.cpp',
 	'devMemAllocator.cpp',
 	'descriptor.cpp',
 	'device.cpp',
