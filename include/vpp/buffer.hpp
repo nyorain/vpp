@@ -63,6 +63,7 @@ public:
 
 	/// When the two-step deferred constructor was used, this function
 	/// will allocate the memory for this resource.
+	/// Otherwise undefined behaviour.
 	void init(InitData& data);
 };
 

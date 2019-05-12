@@ -92,51 +92,43 @@ TrDs::TrDs(TrDsPool& pool, const TrDsLayout& layout) :
 	--pool.remainingSets_;
 }
 
-TrDs::TrDs(DeferTag, DescriptorAllocator& alloc, const TrDsLayout& layout) :
-		allocator_(&alloc), layout_(&layout) {
-	allocator_->reserve(layout);
-	reservation_ = allocator_->pools().size() + 1;
+TrDs::TrDs(InitData& data, DescriptorAllocator& alloc,
+		const TrDsLayout& layout) : layout_(&layout) {
+	data.allocator = &alloc;
+	data.layout = &layout;
+	alloc.reserve(layout);
+	data.reservation = alloc.pools().size() + 1;
 }
 
 TrDs::TrDs(DescriptorAllocator& alloc, const TrDsLayout& layout)
 		: TrDs(alloc.alloc(layout)) {
 }
 
-void TrDs::init() {
-	if(vkHandle()) {
-		dlg_assert(!reservation_);
-		return;
-	}
-
-	reservation_ = {};
-	dlg_assert(allocator_);
+void TrDs::init(InitData& data) {
+	dlg_assert(data.allocator && data.reservation);
+	dlg_assert(!vkHandle());
 	dlg_assert(layout_);
-	*this = allocator_->alloc(*layout_);
+
+	*this = data.allocator->alloc(*layout_);
+	data = {};
 }
 
 TrDs::~TrDs() {
-	if(reservation_) {
-		dlg_assert(!vkHandle());
-		dlg_assert(allocator_ && layout_);
-		if(allocator_->pools().size() + 1 == reservation_) {
-			allocator_->unreserve(*layout_);
-		}
-
-		return;
-	}
-
 	if(!vkHandle()) {
 		return;
 	}
 
-	dlg_assert(layout_);
-	dlg_assert(pool_);
+	dlg_assert(layout_ && layout_->vkHandle());
+	dlg_assert(pool_ && pool_->vkHandle());
 
-	// add bindings to pool
+	// add bindings back to pool
 	auto& rem = pool().remaining_;
 	for(auto& binding : layout().bindings()) {
 		auto it = std::find_if(rem.begin(), rem.end(), [&](const auto& s)
 			{ return s.type == binding.type; });
+		// NOTE: this assertion often fails when the layout was destroyed
+		// before this object was (which is obviously an error). There is
+		// pretty much no valid reason it could fail.
 		dlg_assert(it != rem.end());
 		it->descriptorCount += binding.descriptorCount;
 	}
@@ -149,28 +141,20 @@ void swap(TrDs& a, TrDs& b) noexcept {
 	using std::swap;
 
 	swap(static_cast<DescriptorSet&>(a), static_cast<DescriptorSet&>(b));
+	swap(a.layout_, b.layout_);
+	swap(a.pool_, b.pool_);
+}
 
-	// union swap
-	if(a.reservation_) {
-		if(b.reservation_) {
-			swap(a.allocator_, b.allocator_);
-		} else {
-			auto tmp = b.pool_;
-			b.allocator_ = a.allocator_;
-			a.pool_ = tmp;
-		}
-	} else {
-		if(b.reservation_) {
-			auto tmp = b.allocator_;
-			b.pool_ = a.pool_;
-			a.allocator_ = tmp;
-		} else {
-			swap(a.pool_, b.pool_);
+TrDs::InitData::~InitData() {
+	if(allocator) {
+		dlg_assert(reservation && layout);
+		// if this is the case, no descriptor pool containing descriptors
+		// for this reservation was created and we can simply remove the
+		// reservation again
+		if(allocator->pools().size() + 1 == reservation) {
+			allocator->unreserve(*layout);
 		}
 	}
-
-	swap(a.layout_, b.layout_);
-	swap(a.reservation_, b.reservation_);
 }
 
 // DescriptorAllocator

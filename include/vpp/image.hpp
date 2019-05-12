@@ -64,6 +64,7 @@ public:
 
 	/// When the two-step deferred constructor was used, this function
 	/// will allocate the memory for this resource.
+	/// Otherwise undefined behaviour.
 	void init(InitData& data);
 };
 
@@ -72,6 +73,8 @@ public:
 /// See also ViewableImageCreateInfo for default initializers.
 class ViewableImage {
 public:
+	/// NOTE: we could require the ImageViewCreateInfo in the deferred
+	/// constructor as well and store it in InitData.
 	using InitData = Image::InitData;
 
 public:

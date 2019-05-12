@@ -57,62 +57,6 @@ protected:
 	vk::DeviceSize size_;
 };
 
-/// Sub-allocated range of a buffer. See also SharedBuffer.
-/// Before destructing a SubBuffer, i.e. before returning that allocated
-/// range to the SharedBuffer, it must be ensured that all writes and
-/// reads to/from it have finished, usually a pipeline barrier is required.
-class SubBuffer {
-public:
-	using Allocation = SharedBuffer::Allocation;
-
-public:
-	SubBuffer() = default;
-
-	/// Will automatically make sure that alignment makes sense with
-	/// the given usage flags, e.g. will make sure it's at least
-	/// minUniformBufferOffsetAlignment of the associated physical device
-	/// if usage flags include uniform buffer.
-	SubBuffer(BufferAllocator&, vk::DeviceSize size,
-		vk::BufferUsageFlags usage, unsigned memoryTypeBits = ~0u,
-		vk::DeviceSize align = 0u);
-	SubBuffer(DeferTag, BufferAllocator&, vk::DeviceSize size,
-		vk::BufferUsageFlags usage, unsigned memoryTypeBits = ~0u,
-		vk::DeviceSize align = 0u);
-	SubBuffer(SharedBuffer&, const Allocation& allocation);
-	~SubBuffer();
-
-	SubBuffer(SubBuffer&& rhs) noexcept { swap(*this, rhs); }
-	SubBuffer& operator=(SubBuffer rhs) noexcept {
-		swap(*this, rhs);
-		return *this;
-	}
-
-	/// Only has to be called when the SubBuffer was constructed
-	/// with the defer tag. Otherwise has no effect.
-	void init();
-
-	const SharedBuffer& buffer() const { return *shared_; }
-	const Allocation& allocation() const { return allocation_; }
-	vk::DeviceSize offset() const { return allocation().offset; }
-	vk::DeviceSize size() const { return allocation().size; }
-	auto end() const { return allocation_.end(); }
-
-	bool mappable() const noexcept { return buffer().mappable(); }
-	MemoryMapView memoryMap(vk::DeviceSize offset = 0,
-		vk::DeviceSize size = vk::wholeSize) const;
-
-	const Device& device() const;
-	friend void swap(SubBuffer&, SubBuffer&) noexcept;
-
-protected:
-	union {
-		BufferAllocator* allocator_ {};
-		SharedBuffer* shared_;
-	};
-
-	Allocation allocation_ {};
-};
-
 /// Cases in which you might care for buffer alignment:
 ///  - use it with a DrawIndirectCommand at the beginning (align 4)
 ///  - descriptor buffer (align min<BufType>BufferOffsetAlignment)
@@ -196,13 +140,61 @@ protected:
 	std::vector<Reservation> tmpReservations_;
 };
 
-/// Returns a queue family that supports graphics, compute or transfer operations
-/// and can therefore be used for transfer operations.
-/// Guarantees that there exists at least one queue for the given device with
-/// the returned queue family.
-/// Returns -1 if there is no such family, although there usually should be.
-/// If queue if not nullptr, will store a pointer to a queue of the returned
-/// family into it.
-int transferQueueFamily(const Device& dev, const Queue** queue);
+/// Sub-allocated range of a buffer. See also SharedBuffer.
+/// Before destructing a SubBuffer, i.e. before returning that allocated
+/// range to the SharedBuffer, it must be ensured that all writes and
+/// reads to/from it have finished, usually a pipeline barrier is required.
+class SubBuffer {
+public:
+	using Allocation = SharedBuffer::Allocation;
+	struct InitData {
+		~InitData(); // cancels reservation
+		BufferAllocator* allocator {};
+		BufferAllocator::ReservationID reservation {};
+	};
+
+public:
+	SubBuffer() = default;
+
+	/// Will automatically make sure that alignment makes sense with
+	/// the given usage flags, e.g. will make sure it's at least
+	/// minUniformBufferOffsetAlignment of the associated physical device
+	/// if usage flags include uniform buffer.
+	SubBuffer(BufferAllocator&, vk::DeviceSize size,
+		vk::BufferUsageFlags usage, unsigned memoryTypeBits = ~0u,
+		vk::DeviceSize align = 0u);
+	SubBuffer(InitData&, BufferAllocator&, vk::DeviceSize size,
+		vk::BufferUsageFlags usage, unsigned memoryTypeBits = ~0u,
+		vk::DeviceSize align = 0u);
+	SubBuffer(SharedBuffer&, const Allocation& allocation);
+	~SubBuffer();
+
+	SubBuffer(SubBuffer&& rhs) noexcept { swap(*this, rhs); }
+	SubBuffer& operator=(SubBuffer rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
+	}
+
+	/// When this SubBuffer was constructed with the deferred constructor,
+	/// will finish initialization. Otherwise undefined behaviour.
+	void init(InitData&);
+
+	const SharedBuffer& buffer() const { return *buffer_; }
+	const Allocation& allocation() const { return allocation_; }
+	vk::DeviceSize offset() const { return allocation().offset; }
+	vk::DeviceSize size() const { return allocation().size; }
+	auto end() const { return allocation_.end(); }
+
+	bool mappable() const noexcept { return buffer().mappable(); }
+	MemoryMapView memoryMap(vk::DeviceSize offset = 0,
+		vk::DeviceSize size = vk::wholeSize) const;
+
+	const Device& device() const { return buffer().device(); }
+	friend void swap(SubBuffer&, SubBuffer&) noexcept;
+
+protected:
+	SharedBuffer* buffer_ {};
+	Allocation allocation_ {};
+};
 
 } // namespace vpp

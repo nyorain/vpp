@@ -98,7 +98,8 @@ TEST(allocator) {
 		alloc.reserve(layout);
 	}
 
-	auto defered = vpp::TrDs(vpp::defer, alloc, layout);
+	vpp::TrDs::InitData data;
+	auto defered = vpp::TrDs(data, alloc, layout);
 	EXPECT(defered.vkHandle(), vk::DescriptorSet {});
 
 	auto set0 = vpp::TrDs(alloc, layout);
@@ -114,7 +115,7 @@ TEST(allocator) {
 
 	EXPECT(alloc.pools().size(), 1u);
 
-	defered.init();
+	defered.init(data);
 	EXPECT(defered.vkHandle() != vk::DescriptorSet {}, true);
 	EXPECT(&defered.pool(), &set0.pool());
 	EXPECT(&defered.layout(), &layout);
@@ -145,19 +146,23 @@ TEST(devAllocator) {
 
 	alloc.reserve(layout, 1);
 
-	auto ds2 = vpp::TrDs(vpp::defer, alloc, layout);
+	vpp::TrDs::InitData data;
+	auto ds2 = vpp::TrDs(data, alloc, layout);
 
+	// destroy without finishing intialization
 	for(auto i = 0u; i < 1000; ++i) {
-		auto tmp = vpp::TrDs(vpp::defer, alloc, layout);
+		vpp::TrDs::InitData ldata;
+		auto tmp = vpp::TrDs(ldata, alloc, layout);
 	}
 
 	for(auto i = 0u; i < 1000; ++i) {
-		auto tmp = vpp::TrDs(vpp::defer, alloc, layout);
+		vpp::TrDs::InitData ldata;
+		auto tmp = vpp::TrDs(ldata, alloc, layout);
 		tmp = {};
 	}
 
 	auto ds = vpp::TrDs(alloc, layout);
-	ds2.init();
+	ds2.init(data);
 
 	EXPECT(alloc.pools().size(), 1u);
 	EXPECT(alloc.pools()[0].remainingSets() < 1000u, true);

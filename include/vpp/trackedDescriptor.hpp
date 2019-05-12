@@ -30,14 +30,16 @@ protected:
 /// Tracked DescriptorPool, knows how many resources it has left.
 /// Always created with the freeDescriptorSet flag since otherwise it makes
 /// no sense tracking the resources.
-/// NOTE: moving/destructing a TrDsPool while it is referenced
-/// by a TrDs results in undefined behaviour.
+/// Not movable since it is referenced by TrDs objects.
 class TrDsPool : public DescriptorPool {
 public:
 	TrDsPool() = default;
 	TrDsPool(const Device&, vk::DescriptorPoolCreateInfo);
 	TrDsPool(const Device&, unsigned maxSets,
 		nytl::Span<const vk::DescriptorPoolSize> sizes);
+
+	TrDsPool(TrDsPool&&) = delete;
+	TrDsPool& operator=(TrDsPool&&) = delete;
 
 	const auto& remaining() const { return remaining_; }
 	const auto& remainingSets() const { return remainingSets_; }
@@ -53,6 +55,14 @@ protected:
 /// created with.
 class TrDs : public DescriptorSet {
 public:
+	struct InitData {
+		~InitData();
+		const TrDsLayout* layout {};
+		DescriptorAllocator* allocator {};
+		size_t reservation {}; // number of pools in alloc at reserve time + 1
+	};
+
+public:
 	TrDs() = default;
 
 	/// Directly allocates a descriptor set with the given layout from
@@ -65,7 +75,7 @@ public:
 	/// Reserves the resources needed to allocate a descriptor set with the
 	/// given layout from the given allocator.
 	/// Only a call later to init() will really create the descriptor set.
-	TrDs(DeferTag, DescriptorAllocator&, const TrDsLayout&);
+	TrDs(InitData&, DescriptorAllocator&, const TrDsLayout&);
 	~TrDs();
 
 	TrDs(TrDs&& rhs) noexcept { swap(*this, rhs); }
@@ -74,10 +84,10 @@ public:
 		return *this;
 	}
 
-	/// Only needed to call when this was constructed deferred.
-	/// Will then actually allocate the descriptor set.
-	/// Otherwise has no effect.
-	void init();
+	/// When this object was constructed with a deferred constructor,
+	/// this will finish object initialization.
+	/// Otherwise undefined behaviour.
+	void init(InitData&);
 
 	TrDsPool& pool() const { return *pool_; }
 	const TrDsLayout& layout() const { return *layout_; }
@@ -85,13 +95,8 @@ public:
 	friend void swap(TrDs& a, TrDs& b) noexcept;
 
 protected:
-	union {
-		TrDsPool* pool_ {};
-		DescriptorAllocator* allocator_;
-	};
-
+	TrDsPool* pool_ {};
 	const TrDsLayout* layout_ {};
-	std::size_t reservation_ {}; // number of pools in alloc at reserve time
 };
 
 /// Dynamically allocates tracked descriptors.

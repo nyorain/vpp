@@ -16,6 +16,8 @@ MemoryResource::InitData::~InitData() {
 
 void MemoryResource::init(InitData& data) {
 	dlg_assert(data.allocator && data.reservation);
+	dlg_assert(!memory_);
+
 	auto [mem, alloc] = data.allocator->alloc(data.reservation);
 	memory_ = &mem;
 	offset_ = alloc.offset;

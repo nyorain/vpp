@@ -65,33 +65,36 @@ TEST(custom) {
 	auto alloc = vpp::DeviceMemoryAllocator(dev);
 	EXPECT(alloc.memories().empty(), true);
 
-	/*
 	// allocate some stuff
 	{
 		vk::BufferCreateInfo bufInfo;
 		bufInfo.size = 1024;
 		bufInfo.usage = vk::BufferUsageBits::storageBuffer;
-		auto buffer = vpp::Buffer(vpp::defer, dev, bufInfo, ~0u, &alloc);
-		vpp::Buffer buffer1(vpp::defer, dev, bufInfo, ~0u, &alloc);
-		vpp::Buffer buffer2(vpp::defer, dev, bufInfo, ~0u, &alloc);
-		vpp::Buffer buffer3(vpp::defer, dev, bufInfo, ~0u, &alloc);
-		EXPECT(buffer3.memoryEntry().allocator(), &alloc);
 
-		auto alloc2 = std::move(alloc);
+		std::array<vpp::Buffer::InitData, 5u> initData;
+		auto buffer = vpp::Buffer(initData[0], dev, bufInfo, ~0u, &alloc);
+		vpp::Buffer buffer1(initData[1], dev, bufInfo, ~0u, &alloc);
+		vpp::Buffer buffer2(initData[2], dev, bufInfo, ~0u, &alloc);
+		vpp::Buffer buffer3(initData[3], dev, bufInfo, ~0u, &alloc);
+		EXPECT(initData[3].allocator, &alloc);
 
-		vpp::Buffer buffer4(vpp::defer, dev, bufInfo, ~0u, &alloc2);
-		EXPECT(alloc2.memories().empty(), true);
-		EXPECT(buffer1.memoryEntry().allocated(), false);
-		EXPECT(buffer2.memoryEntry().allocator(), &alloc2);
-		EXPECT(buffer3.memoryEntry().allocator(), &alloc2);
+		vpp::Buffer buffer4(initData[4], dev, bufInfo, ~0u, &alloc);
+		EXPECT(alloc.memories().empty(), true);
+		EXPECT(initData[4].allocator, &alloc);
 
-		alloc = std::move(alloc2);
-		alloc.allocate();
+		alloc.alloc();
+		buffer.init(initData[0]);
+		buffer1.init(initData[1]);
+		buffer2.init(initData[2]);
+		buffer3.init(initData[3]);
+		buffer4.init(initData[4]);
+
 		EXPECT(alloc.memories().size(), 1u);
-
-		EXPECT(buffer2.memoryEntry().allocated(), true);
-		EXPECT(buffer3.memoryEntry().allocated(), true);
-		EXPECT(buffer3.memoryEntry().memory(), &alloc.memories()[0]);
+		EXPECT(&buffer.memory(), &alloc.memories()[0]);
+		EXPECT(&buffer1.memory(), &alloc.memories()[0]);
+		EXPECT(&buffer2.memory(), &alloc.memories()[0]);
+		EXPECT(&buffer3.memory(), &alloc.memories()[0]);
+		EXPECT(&buffer4.memory(), &alloc.memories()[0]);
 	}
 
 	EXPECT(alloc.memories().size(), 1u);
@@ -109,14 +112,23 @@ TEST(custom) {
 		EXPECT(alloc.memories().size(), 1u);
 		EXPECT(alloc.memories()[0].totalFree(), 1024u * 4);
 
-		vpp::Buffer buffer1(vpp::defer, dev, bufInfo, ~0u, &alloc);
+		vpp::Buffer::InitData data;
+		vpp::Buffer buffer1(data, dev, bufInfo, ~0u, &alloc);
 		EXPECT(alloc.memories()[0].totalFree(), 1024u * 4);
 
-		auto alloc2 = std::move(alloc);
-		buffer1.init();
-		EXPECT(alloc2.memories()[0].totalFree(), 1024u * 3);
-
-		alloc = std::move(alloc2);
+		buffer1.init(data);
+		EXPECT(alloc.memories()[0].totalFree(), 1024u * 3);
 	}
-	*/
+}
+
+TEST(cancel) {
+	auto& dev = *globals.device;
+	vk::BufferCreateInfo bufInfo;
+	bufInfo.size = 1024;
+	bufInfo.usage = vk::BufferUsageBits::storageBuffer |
+		vk::BufferUsageBits::uniformBuffer;
+
+	vpp::Buffer::InitData data;
+	vpp::Buffer buffer(data, dev, bufInfo);
+	buffer = {}; // destroy, never finish initialization
 }

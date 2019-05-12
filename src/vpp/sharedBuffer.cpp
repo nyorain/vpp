@@ -38,8 +38,7 @@ vk::DeviceSize usageAlignment(const Device& dev, vk::BufferUsageFlags usage) {
 
 // BufferRange
 SubBuffer::SubBuffer(SharedBuffer& buf, const Allocation& alloc) :
-		shared_(&buf), allocation_(alloc) {
-
+		buffer_(&buf), allocation_(alloc) {
 	dlg_assert(buf.vkHandle());
 	dlg_assert(alloc.size != 0);
 }
@@ -47,35 +46,33 @@ SubBuffer::SubBuffer(SharedBuffer& buf, const Allocation& alloc) :
 SubBuffer::SubBuffer(BufferAllocator& alloc, vk::DeviceSize size,
 		vk::BufferUsageFlags usage, unsigned memBits,
 		vk::DeviceSize align) {
-	auto [shared, a] = alloc.alloc(size, usage, memBits, align);
-	shared_ = &shared;
+	auto [buffer, a] = alloc.alloc(size, usage, memBits, align);
+	buffer_ = &buffer;
 	allocation_ = a;
 }
 
-SubBuffer::SubBuffer(DeferTag, BufferAllocator& alloc, vk::DeviceSize size,
-		vk::BufferUsageFlags usage, unsigned memBits,
-		vk::DeviceSize align) : allocator_(&alloc) {
-	 alloc.reserve(size, usage, memBits, align, &allocation_.offset);
+SubBuffer::SubBuffer(InitData& data, BufferAllocator& alloc,
+		vk::DeviceSize size, vk::BufferUsageFlags usage, unsigned memBits,
+		vk::DeviceSize align) {
+	data.allocator = &alloc;
+	alloc.reserve(size, usage, memBits, align, &data.reservation);
 }
 
 SubBuffer::~SubBuffer() {
-	if(allocation_.size > 0) {
-		dlg_assert(shared_);
-		shared_->free(allocation_);
-	} else if(allocation_.offset > 0) {
-		dlg_assert(allocator_);
-		allocator_->cancel(allocation_.offset);
+	if(buffer_) {
+		dlg_assert(allocation_.size > 0);
+		buffer_->free(allocation_);
 	}
 }
 
-void SubBuffer::init() {
-	if(allocation_.size == 0u) {
-		dlg_assert(allocator_);
-		dlg_assert(allocation_.offset > 0u);
-		auto [shared, alloc] = allocator_->alloc(offset());
-		shared_ = &shared;
-		allocation_ = alloc;
-	}
+void SubBuffer::init(InitData& data) {
+	dlg_assert(data.allocator && data.reservation);
+	dlg_assert(!buffer_);
+
+	auto [buf, alloc] = data.allocator->alloc(data.reservation);
+	buffer_ = &buf;
+	allocation_ = alloc;
+	data = {};
 }
 
 MemoryMapView SubBuffer::memoryMap(vk::DeviceSize offset,
@@ -88,34 +85,14 @@ MemoryMapView SubBuffer::memoryMap(vk::DeviceSize offset,
 
 void swap(SubBuffer& a, SubBuffer& b) noexcept {
 	using std::swap;
-
-	// union swap
-	if(a.size()) {
-		if(b.size()) {
-			swap(a.shared_, b.shared_);
-		} else {
-			auto tmp = b.allocator_;
-			b.allocator_ = a.allocator_;
-			a.allocator_ = tmp;
-		}
-	} else {
-		if(b.size()) {
-			auto tmp = b.shared_;
-			b.allocator_ = a.allocator_;
-			a.shared_ = tmp;
-		} else {
-			swap(a.allocator_, b.allocator_);
-		}
-	}
-
+	swap(a.buffer_, b.buffer_);
 	swap(a.allocation_, b.allocation_);
 }
 
-const Device& SubBuffer::device() const {
-	if(allocation_.size) {
-		return shared_->device();
-	} else {
-		return allocator_->device();
+SubBuffer::InitData::~InitData() {
+	if(allocator) {
+		dlg_assert(reservation);
+		allocator->cancel(reservation);
 	}
 }
 
@@ -369,29 +346,6 @@ BufferAllocator::Buffer::Buffer(const Device& dev,
 	vpp::BufferHandle buf, unsigned int mbits, vk::DeviceSize size,
 	vk::BufferUsageFlags xusage) :
 		buffer(dev, buf.release(), size, mbits), usage(xusage) {
-}
-
-// utility
-int transferQueueFamily(const Device& dev, const Queue** queue) {
-	// we do not only query a valid queue family but a valid queue and then
-	// chose its queue family to ensure that the device has a queue for the
-	// queried queue family
-	auto* q = dev.queue(vk::QueueBits::transfer);
-	if(!q) {
-		q = dev.queue(vk::QueueBits::graphics);
-	}
-	if(!q) {
-		q = dev.queue(vk::QueueBits::compute);
-	}
-	if(!q) {
-		return -1;
-	}
-
-	if(queue) {
-		*queue = q;
-	}
-
-	return q->family();
 }
 
 } // namespace vpp

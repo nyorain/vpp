@@ -1,9 +1,6 @@
 Todo list vor vpp
 =================
 
-- port remaining vpp::defer resources to new InitData idiom
-- re add shared buffer tests (commented out atm)
-- update readme
 - add glfw/sdl examples (option to use sdl from meson wrap db)
 
 important, later:
@@ -26,17 +23,23 @@ important, later:
 	- retrieve: probably not possible if we want to guarantee tightly packed data
 	- we could maybe use it when uploading data, just pass as alignment
 	  to the stage buffer
-
-low prio / general / ideas
---------------------------
-
-- device: cache supported extensions?
 - when using c++20, switch to std::span (nytl::Span should be fully compatble
   at the moment) and completely abolish using the nytl namespace.
   import NonCopyable/NonMovable into vpp namespace, maybe even completely 
   remove all nytl traces from it. 
-- discuss: remove common `init` syntax for deferred initialization?
-	- or could that be useful somehow?
+
+low prio / general / ideas
+--------------------------
+
+- optimiziation: currently some smarter resoures deriving handles
+  (like TrDs or Buffer, Image) store the Device word in addition
+  to a Resource they reference (like DeviceMemory or TrDsPool).
+  Could be optimized somehow i guess? but not critical, if users care about
+  that word they can always use the one device optimization.
+  Similar situation for CommandBuffer, could reference CommandPool instead
+  of pool + device (would make CommandPool non movable though, guess that's
+  acceptable though)
+- device: cache supported extensions?
 - DescriptorUpdate: any chance to avoid memory allocation? maybe just
   provide another mechanism for more convenient update definition like
   vpp::descriptorBinding; allow to group them somehow

@@ -56,6 +56,8 @@ void DeviceMemoryAllocator::cancel(ReservationID id) noexcept {
 
 	auto res = findRes(id);
 	dlg_assertm(res != reservations_.end(), "Invalid ReservationID: {}", id);
+	dlg_assert(res->memory);
+	res->memory->free(res->allocation);
 	reservations_.erase(res);
 }
 
@@ -117,6 +119,10 @@ void DeviceMemoryAllocator::alloc() {
 	auto& typeMap = tmpTypeMap_; // set by queryTypes
 	auto& reqs = tmpRequirements_;
 	for(auto i = 0u; i < 32; ++i) {
+		if(typeMap[i].empty()) {
+			continue;
+		}
+
 		reqs.clear();
 		reqs.reserve(typeMap[i].size());
 		for(auto& t : typeMap[i]) {
@@ -316,7 +322,8 @@ DeviceMemoryAllocator::queryTypes() {
 		// each iteration
 		std::uint32_t bestID = 0u;
 		for(auto i = 0u; i < 32; ++i) {
-			if(occurences[i].size() < best) {
+			auto count = occurences[i].size();
+			if(count > 0 && count < best) {
 				best = occurences[i].size();
 				bestID = i;
 			}

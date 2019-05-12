@@ -391,4 +391,28 @@ std::shared_mutex& Device::sharedQueueMutex() const {
 	return impl_->sharedQueueMutex;
 }
 
+
+// utility
+int transferQueueFamily(const Device& dev, const Queue** queue) {
+	// we do not only query a valid queue family but a valid queue and then
+	// chose its queue family to ensure that the device has a queue for the
+	// queried queue family
+	auto* q = dev.queue(vk::QueueBits::transfer);
+	if(!q) {
+		q = dev.queue(vk::QueueBits::graphics);
+	}
+	if(!q) {
+		q = dev.queue(vk::QueueBits::compute);
+	}
+	if(!q) {
+		return -1;
+	}
+
+	if(queue) {
+		*queue = q;
+	}
+
+	return q->family();
+}
+
 } // namespace vpp

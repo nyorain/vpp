@@ -186,19 +186,20 @@ TEST(defer) {
 	auto hostBits = dev.hostMemoryTypes();
 	auto devBits = dev.deviceMemoryTypes();
 
-	auto buf1 = vpp::SubBuffer(vpp::defer, allocator, 3251u, usage, hostBits);
+	std::array<vpp::SubBuffer::InitData, 6> data;
+	auto buf1 = vpp::SubBuffer(data[0], allocator, 3251u, usage, hostBits);
 	usage |= vk::BufferUsageBits::transferSrc;
-	auto buf2 = vpp::SubBuffer(vpp::defer, allocator, 6431u, usage, devBits);
+	auto buf2 = vpp::SubBuffer(data[1], allocator, 6431u, usage, devBits);
 	usage = vk::BufferUsageBits::transferDst;
-	auto buf3 = vpp::SubBuffer(vpp::defer, allocator, 234u, usage, devBits, 32u);
+	auto buf3 = vpp::SubBuffer(data[2], allocator, 234u, usage, devBits, 32u);
 	usage |= vk::BufferUsageBits::storageBuffer;
-	auto buf4 = vpp::SubBuffer(vpp::defer, allocator, 54u, usage, hostBits);
+	auto buf4 = vpp::SubBuffer(data[3], allocator, 54u, usage, hostBits);
 	usage = vk::BufferUsageBits::storageTexelBuffer;
-	auto buf5 = vpp::SubBuffer(vpp::defer, allocator, 53221u, usage, devBits);
+	auto buf5 = vpp::SubBuffer(data[4], allocator, 53221u, usage, devBits);
 
-	buf1.init();
-	buf2.init();
-	buf3.init();
+	buf1.init(data[0]);
+	buf2.init(data[1]);
+	buf3.init(data[2]);
 
 	EXPECT(buf1.size(), 3251u);
 	auto b1m = (1u << buf1.buffer().memory().type());
@@ -208,10 +209,10 @@ TEST(defer) {
 	EXPECT(((b2m & devBits) != 0), true);
 	EXPECT(buf3.size(), 234u);
 
-	auto buf6 = vpp::SubBuffer(vpp::defer, allocator, 2143u, usage, devBits, 2u);
-	buf4.init();
-	buf5.init();
-	buf6.init();
+	auto buf6 = vpp::SubBuffer(data[5], allocator, 2143u, usage, devBits, 2u);
+	buf4.init(data[3]);
+	buf5.init(data[4]);
+	buf6.init(data[5]);
 
 	EXPECT(buf4.size(), 54u);
 	EXPECT(buf5.size(), 53221u);

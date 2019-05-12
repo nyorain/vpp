@@ -16,7 +16,7 @@ namespace vpp {
 class MemoryResource {
 public:
 	struct InitData {
-		~InitData();
+		~InitData(); // cancels reservation
 		DeviceMemoryAllocator* allocator {};
 		DeviceMemoryAllocator::ReservationID reservation {};
 	};

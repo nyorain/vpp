@@ -12,7 +12,7 @@
 
 namespace vpp {
 
-// treat them as built-in
+// treat them as built-in as they probably should be
 using std::uint8_t;
 using std::uint16_t;
 using std::uint32_t;
@@ -25,14 +25,7 @@ using std::int64_t;
 
 using std::size_t;
 
-/// Tag that initializes resources in a deferred way.
-/// Usually better for performance but you have to call an additional
-/// function when you use them.
-struct DeferTag {};
-constexpr DeferTag defer {};
-
 class Resource;
-
 class Buffer;
 class Image;
 class ImageView;

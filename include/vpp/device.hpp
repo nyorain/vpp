@@ -192,4 +192,13 @@ protected:
 	std::unique_ptr<Impl> impl_;
 };
 
+/// Returns a queue family that supports graphics, compute or transfer operations
+/// and can therefore be used for transfer operations.
+/// Guarantees that there exists at least one queue for the given device with
+/// the returned queue family.
+/// Returns -1 if there is no such family, although there usually should be.
+/// If queue if not nullptr, will store a pointer to a queue of the returned
+/// family into it.
+int transferQueueFamily(const Device& dev, const Queue** queue);
+
 } // namespace vpp
