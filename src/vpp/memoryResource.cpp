@@ -7,13 +7,6 @@
 
 namespace vpp {
 
-MemoryResource::InitData::~InitData() {
-	if(allocator) {
-		dlg_assert(reservation);
-		allocator->cancel(reservation);
-	}
-}
-
 void MemoryResource::init(InitData& data) {
 	dlg_assert(data.allocator && data.reservation);
 	dlg_assert(!memory_);
@@ -21,7 +14,7 @@ void MemoryResource::init(InitData& data) {
 	auto [mem, alloc] = data.allocator->alloc(data.reservation);
 	memory_ = &mem;
 	offset_ = alloc.offset;
-	data = {};
+	data.allocator = nullptr;
 }
 
 MemoryResource::~MemoryResource() {
@@ -49,6 +42,32 @@ void swap(MemoryResource& a, MemoryResource& b) {
 	using std::swap;
 	swap(a.memory_, b.memory_);
 	swap(a.offset_, b.offset_);
+}
+
+// InitData
+MemoryResource::InitData::InitData(InitData&& rhs) noexcept {
+	allocator = rhs.allocator;
+	reservation = rhs.reservation;
+	rhs.allocator = {};
+	rhs.reservation = {};
+}
+
+MemoryResource::InitData& MemoryResource::InitData::operator=(
+		InitData&& rhs) noexcept {
+	this->~InitData();
+
+	allocator = rhs.allocator;
+	reservation = rhs.reservation;
+	rhs.allocator = {};
+	rhs.reservation = {};
+	return *this;
+}
+
+MemoryResource::InitData::~InitData() {
+	if(allocator) {
+		dlg_assert(reservation);
+		allocator->cancel(reservation);
+	}
 }
 
 } // namespace vpp

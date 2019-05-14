@@ -110,7 +110,7 @@ void TrDs::init(InitData& data) {
 	dlg_assert(layout_);
 
 	*this = data.allocator->alloc(*layout_);
-	data = {};
+	data.allocator = {};
 }
 
 TrDs::~TrDs() {
@@ -143,6 +143,28 @@ void swap(TrDs& a, TrDs& b) noexcept {
 	swap(static_cast<DescriptorSet&>(a), static_cast<DescriptorSet&>(b));
 	swap(a.layout_, b.layout_);
 	swap(a.pool_, b.pool_);
+}
+
+// InitData
+TrDs::InitData::InitData(InitData&& rhs) noexcept {
+	allocator = rhs.allocator;
+	reservation = rhs.reservation;
+	layout = rhs.layout;
+	rhs.allocator = {};
+	rhs.reservation = {};
+	rhs.layout = {};
+}
+
+TrDs::InitData& TrDs::InitData::operator=(
+		InitData&& rhs) noexcept {
+	this->~InitData();
+	allocator = rhs.allocator;
+	reservation = rhs.reservation;
+	layout = rhs.layout;
+	rhs.allocator = {};
+	rhs.reservation = {};
+	rhs.layout = {};
+	return *this;
 }
 
 TrDs::InitData::~InitData() {

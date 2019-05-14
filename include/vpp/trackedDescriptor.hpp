@@ -56,7 +56,11 @@ protected:
 class TrDs : public DescriptorSet {
 public:
 	struct InitData {
+		InitData() = default;
+		InitData(InitData&&) noexcept;
+		InitData& operator=(InitData&&) noexcept;
 		~InitData();
+
 		const TrDsLayout* layout {};
 		DescriptorAllocator* allocator {};
 		size_t reservation {}; // number of pools in alloc at reserve time + 1

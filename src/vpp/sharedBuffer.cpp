@@ -46,6 +46,7 @@ SubBuffer::SubBuffer(SharedBuffer& buf, const Allocation& alloc) :
 SubBuffer::SubBuffer(BufferAllocator& alloc, vk::DeviceSize size,
 		vk::BufferUsageFlags usage, unsigned memBits,
 		vk::DeviceSize align) {
+	dlg_assert(memBits);
 	auto [buffer, a] = alloc.alloc(size, usage, memBits, align);
 	buffer_ = &buffer;
 	allocation_ = a;
@@ -54,6 +55,7 @@ SubBuffer::SubBuffer(BufferAllocator& alloc, vk::DeviceSize size,
 SubBuffer::SubBuffer(InitData& data, BufferAllocator& alloc,
 		vk::DeviceSize size, vk::BufferUsageFlags usage, unsigned memBits,
 		vk::DeviceSize align) {
+	dlg_assert(memBits);
 	data.allocator = &alloc;
 	alloc.reserve(size, usage, memBits, align, &data.reservation);
 }
@@ -72,7 +74,7 @@ void SubBuffer::init(InitData& data) {
 	auto [buf, alloc] = data.allocator->alloc(data.reservation);
 	buffer_ = &buf;
 	allocation_ = alloc;
-	data = {};
+	data.allocator = nullptr;
 }
 
 MemoryMapView SubBuffer::memoryMap(vk::DeviceSize offset,
@@ -87,6 +89,24 @@ void swap(SubBuffer& a, SubBuffer& b) noexcept {
 	using std::swap;
 	swap(a.buffer_, b.buffer_);
 	swap(a.allocation_, b.allocation_);
+}
+
+// InitData
+SubBuffer::InitData::InitData(InitData&& rhs) noexcept {
+	allocator = rhs.allocator;
+	reservation = rhs.reservation;
+	rhs.allocator = {};
+	rhs.reservation = {};
+}
+
+SubBuffer::InitData& SubBuffer::InitData::operator=(
+		InitData&& rhs) noexcept {
+	this->~InitData();
+	allocator = rhs.allocator;
+	reservation = rhs.reservation;
+	rhs.allocator = {};
+	rhs.reservation = {};
+	return *this;
 }
 
 SubBuffer::InitData::~InitData() {
@@ -201,6 +221,7 @@ void BufferAllocator::reserve(vk::DeviceSize size,
 		vk::DeviceSize align, ReservationID* reservation) {
 
 	dlg_assert(size > 0);
+	dlg_assert(memBits);
 	dlg_assertm(align == 1 || align % 2 == 0,
 		"Alignment {} not power of 2", align);
 
@@ -211,7 +232,7 @@ void BufferAllocator::reserve(vk::DeviceSize size,
 	req.memBits = memBits;
 
 	if(reservation) {
-		if(++id_ == 0u) { // wrap
+		if(++id_ == 0u) { // wrap; 0 is invalid reservation id
 			++id_;
 		}
 
@@ -244,7 +265,7 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 	// TODO: really dumb, greedy algorithm at the moment
 
 	dlg_assert(size > 0);
-	dlg_assertm(memBits, "invalid (too few) memBits given");
+	dlg_assertm(memBits, "invalid memBits given");
 	dlg_assertm(align == 1 || align % 2 == 0,
 		"Alignment {} not power of 2", align);
 

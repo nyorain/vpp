@@ -155,7 +155,11 @@ class SubBuffer {
 public:
 	using Allocation = SharedBuffer::Allocation;
 	struct InitData {
+		InitData() = default;
+		InitData(InitData&&) noexcept;
+		InitData& operator=(InitData&&) noexcept;
 		~InitData(); // cancels reservation
+
 		BufferAllocator* allocator {};
 		BufferAllocator::ReservationID reservation {};
 	};
@@ -168,10 +172,10 @@ public:
 	/// minUniformBufferOffsetAlignment of the associated physical device
 	/// if usage flags include uniform buffer.
 	SubBuffer(BufferAllocator&, vk::DeviceSize size,
-		vk::BufferUsageFlags usage, unsigned memoryTypeBits = ~0u,
+		vk::BufferUsageFlags usage, unsigned memBits = ~0u,
 		vk::DeviceSize align = 0u);
 	SubBuffer(InitData&, BufferAllocator&, vk::DeviceSize size,
-		vk::BufferUsageFlags usage, unsigned memoryTypeBits = ~0u,
+		vk::BufferUsageFlags usage, unsigned memBits = ~0u,
 		vk::DeviceSize align = 0u);
 	SubBuffer(SharedBuffer&, const Allocation& allocation);
 	~SubBuffer();
