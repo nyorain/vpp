@@ -187,43 +187,44 @@ DebugLabel::~DebugLabel() {
 
 // spezialization of Handletype
 #define HandleSpec(handle, name) \
-	template<> struct HandleType<handle> { \
-		static constexpr auto value = vk::ObjectType::name; \
-		static constexpr auto debugReportValue = \
-			vk::DebugReportObjectTypeEXT::name; \
+	template<> vk::ObjectType handleType<handle>() { \
+		return vk::ObjectType::name; \
+	} \
+	template<> vk::DebugReportObjectTypeEXT debugReportHandleType<handle>() { \
+		return vk::DebugReportObjectTypeEXT::name; \
 	}
 
-HandleSpec(vk::Instance, instance);
-HandleSpec(vk::PhysicalDevice, physicalDevice);
-HandleSpec(vk::Device, device);
-HandleSpec(vk::CommandBuffer, commandBuffer);
-HandleSpec(vk::CommandPool, commandPool);
-HandleSpec(vk::Queue, queue);
-HandleSpec(vk::Image, image);
-HandleSpec(vk::ImageView, imageView);
-HandleSpec(vk::Buffer, buffer);
-HandleSpec(vk::BufferView, bufferView);
-HandleSpec(vk::Framebuffer, framebuffer);
-HandleSpec(vk::Sampler, sampler);
-HandleSpec(vk::DeviceMemory, deviceMemory);
-HandleSpec(vk::DescriptorSetLayout, descriptorSetLayout);
-HandleSpec(vk::DescriptorSet, descriptorSet);
-HandleSpec(vk::DescriptorPool, descriptorPool);
-HandleSpec(vk::PipelineLayout, pipelineLayout);
-HandleSpec(vk::Pipeline, pipeline);
-HandleSpec(vk::PipelineCache, pipelineCache);
-HandleSpec(vk::RenderPass, renderPass);
-HandleSpec(vk::Semaphore, semaphore);
-HandleSpec(vk::Fence, fence);
-HandleSpec(vk::Event, event);
-HandleSpec(vk::QueryPool, queryPool);
-HandleSpec(vk::ShaderModule, shaderModule);
-HandleSpec(vk::SurfaceKHR, surfaceKHR);
-HandleSpec(vk::SwapchainKHR, swapchainKHR);
-HandleSpec(vk::DebugReportCallbackEXT, debugReportCallbackEXT);
-HandleSpec(vk::DisplayKHR, displayKHR);
-HandleSpec(vk::DisplayModeKHR, displayModeKHR);
+HandleSpec(vk::Instance, instance)
+HandleSpec(vk::PhysicalDevice, physicalDevice)
+HandleSpec(vk::Device, device)
+HandleSpec(vk::CommandBuffer, commandBuffer)
+HandleSpec(vk::CommandPool, commandPool)
+HandleSpec(vk::Queue, queue)
+HandleSpec(vk::Image, image)
+HandleSpec(vk::ImageView, imageView)
+HandleSpec(vk::Buffer, buffer)
+HandleSpec(vk::BufferView, bufferView)
+HandleSpec(vk::Framebuffer, framebuffer)
+HandleSpec(vk::Sampler, sampler)
+HandleSpec(vk::DeviceMemory, deviceMemory)
+HandleSpec(vk::DescriptorSetLayout, descriptorSetLayout)
+HandleSpec(vk::DescriptorSet, descriptorSet)
+HandleSpec(vk::DescriptorPool, descriptorPool)
+HandleSpec(vk::PipelineLayout, pipelineLayout)
+HandleSpec(vk::Pipeline, pipeline)
+HandleSpec(vk::PipelineCache, pipelineCache)
+HandleSpec(vk::RenderPass, renderPass)
+HandleSpec(vk::Semaphore, semaphore)
+HandleSpec(vk::Fence, fence)
+HandleSpec(vk::Event, event)
+HandleSpec(vk::QueryPool, queryPool)
+HandleSpec(vk::ShaderModule, shaderModule)
+HandleSpec(vk::SurfaceKHR, surfaceKHR)
+HandleSpec(vk::SwapchainKHR, swapchainKHR)
+HandleSpec(vk::DebugReportCallbackEXT, debugReportCallbackEXT)
+HandleSpec(vk::DisplayKHR, displayKHR)
+HandleSpec(vk::DisplayModeKHR, displayModeKHR)
 
-#undef DebugHandleSpec
+#undef HandleSpec
 
 } // namespace vpp

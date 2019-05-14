@@ -67,10 +67,8 @@ protected:
 
 /// Useful for obtaining vk::ObjectType from a vk:: Handle.
 /// specialized in debug.cpp for supported types.
-template<typename T> struct HandleType;
-template<typename T> constexpr auto handleType = HandleType<T>::value;
-template<typename T> constexpr auto debugReportHandleType =
-	HandleType<T>::reportValue;
+template<typename T> vk::ObjectType handleType();
+template<typename T> vk::DebugReportObjectTypeEXT debugReportHandleType();
 
 // when VPP_NO_DEBUG_MARKER is defined, all debug marker functions
 // will be empty stubs. Useful in release builds.
@@ -99,7 +97,7 @@ bool insertDebugLabel(vk::CommandBuffer, const char* name,
 
 template<typename T>
 vk::Result nameHandle(vk::Device dev, const T& handle, const char* name) {
-	return nameHandle(dev, (std::uint64_t) handle, handleType<T>, name);
+	return nameHandle(dev, (std::uint64_t) handle, handleType<T>(), name);
 }
 
 template<typename T>
@@ -110,13 +108,13 @@ vk::Result nameHandle(const ResourceHandle<T>& handle, const char* name) {
 template<typename T>
 vk::Result tagHandle(vk::Device dev, const T& handle, std::uint64_t name,
 		nytl::Span<const std::byte> d) {
-	return tagHandle(dev, (std::uint64_t) handle, handleType<T>, name, d);
+	return tagHandle(dev, (std::uint64_t) handle, handleType<T>(), name, d);
 }
 
 template<typename T>
 vk::Result tagHandle(const ResourceHandle<T>& handle, std::uint64_t name,
 		nytl::Span<const std::byte> d) {
-	return tagHandle(handle.device(), handle.vkHandle(), handleType<T>, name, d);
+	return tagHandle(handle.device(), handle.vkHandle(), name, d);
 }
 
 #else // VPP_NO_DEBUG_MARKER

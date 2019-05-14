@@ -76,18 +76,6 @@ protected:
 	bool verbose_ {};
 };
 
-/// - Debug marker utitlity -
-namespace detail {
-
-// specialized in debug.cpp for supported types.
-template<typename T> struct HandleType;
-template<typename T> constexpr auto debugReportHandleType =
-	detail::HandleType<T>::reportValue;
-template<typename T> constexpr auto handleType =
-	detail::HandleType<T>::value;
-
-} // namespace detail
-
 // when VPP_NO_DEBUG_MARKER is defined, all debug marker functions
 // will be empty stubs. Useful in release builds.
 #ifndef VPP_NO_DEBUG_MARKER
@@ -114,16 +102,16 @@ bool insertDebugMarker(vk::CommandBuffer, const char* name,
 	std::array<float, 4> col = {});
 
 template<typename T>
-vk::Result nameHandle(vk::Device dev,T handle, const char* name) {
+vk::Result nameHandle(vk::Device dev, T handle, const char* name) {
 	return nameHandle(dev, (std::uint64_t) handle,
-		detail::debugReportHandleType<T>, name);
+		debugReportHandleType<T>(), name);
 }
 
 template<typename T>
 vk::Result tagHandle(vk::Device dev, T handle, std::uint64_t name,
 		nytl::Span<const std::byte> d) {
 	return tagHandle(dev, (std::uint64_t) handle,
-		detail::debugReportHandleType<T>, name, d);
+		debugReportHandleType<T>(), name, d);
 }
 
 #else // VPP_NO_DEBUG_MARKER
