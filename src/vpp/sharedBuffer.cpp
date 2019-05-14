@@ -175,7 +175,11 @@ void SharedBuffer::free(const Allocation& alloc) {
 
 // BufferAllocator
 BufferAllocator::BufferAllocator(const Device& dev) :
-		Resource(dev) {
+	BufferAllocator(dev.deviceAllocator()) {
+}
+
+BufferAllocator::BufferAllocator(DeviceMemoryAllocator& memAlloc) :
+	devMemAlloc_(memAlloc) {
 }
 
 BufferAllocator::~BufferAllocator() {
@@ -307,7 +311,7 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 	}
 
 	auto& nbuf = buffers_.emplace_back(device(), std::move(buf), imemBits,
-		createInfo.size, createInfo.usage);
+		createInfo.size, createInfo.usage, devMemAlloc_);
 	auto& allocs = nbuf.buffer.allocations(); // insert them manually
 	allocs.push_back({0, size}); // first entry, the required one
 	for(auto& res : reservations) {
@@ -344,8 +348,8 @@ void BufferAllocator::cancel(ReservationID reservation) {
 
 BufferAllocator::Buffer::Buffer(const Device& dev,
 	vpp::BufferHandle buf, unsigned int mbits, vk::DeviceSize size,
-	vk::BufferUsageFlags xusage) :
-		buffer(dev, buf.release(), size, mbits), usage(xusage) {
+	vk::BufferUsageFlags xusage, DeviceMemoryAllocator& alloc) :
+		buffer(dev, buf.release(), size, mbits, &alloc), usage(xusage) {
 }
 
 } // namespace vpp

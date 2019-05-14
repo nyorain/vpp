@@ -67,7 +67,7 @@ protected:
 /// transfer buffers or small buffers like ubos.
 /// Keep in mind that all allocated SubBuffers can only be used
 /// on the same queue family.
-class BufferAllocator : public vpp::Resource {
+class BufferAllocator {
 public:
 	using ReservationID = vk::DeviceSize;
 
@@ -78,12 +78,14 @@ public:
 	};
 
 public:
-	BufferAllocator() = default;
-	BufferAllocator(const Device& dev);
+	BufferAllocator(const Device&); // uses the devices default memory allocator
+	BufferAllocator(DeviceMemoryAllocator& allocator);
 	~BufferAllocator(); // erase reserved allocations before destroying buffers
 
-	BufferAllocator(BufferAllocator&&) = default;
-	BufferAllocator& operator=(BufferAllocator&&) = default;
+	/// Can't be moved since SubBuffers might reference it during
+	/// initializaiton.
+	BufferAllocator(BufferAllocator&&) = delete;
+	BufferAllocator& operator=(BufferAllocator&&) = delete;
 
 	/// Reserves the given requirements.
 	/// Useful to allow grouping many SubBuffers on one Buffer.
@@ -104,6 +106,8 @@ public:
 	void cancel(ReservationID reservation);
 
 	const auto& buffers() const { return buffers_; }
+	auto& devMemAllocator() const { return devMemAlloc_; }
+	auto& device() const { return devMemAllocator().device(); }
 
 protected:
 	struct Requirement {
@@ -122,13 +126,16 @@ protected:
 
 	struct Buffer {
 		Buffer(const Device&, vpp::BufferHandle, unsigned int mbits,
-			vk::DeviceSize size, vk::BufferUsageFlags usage);
+			vk::DeviceSize size, vk::BufferUsageFlags usage,
+			DeviceMemoryAllocator& alloc);
 
 		SharedBuffer buffer;
 		vk::BufferUsageFlags usage {};
 	};
 
 protected:
+	DeviceMemoryAllocator& devMemAlloc_;
+
 	// deque since not movable
 	std::deque<Buffer> buffers_;
 	std::vector<Reservation> reservations_;
