@@ -36,7 +36,7 @@ void fillMap(const Image& img, vk::Format format,
 	dlg_assert(data.size() == size.width * height * depth * texSize);
 
 	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
-	auto mapSize = texelAddress(sresLayout, texSize, size.width + 1,
+	auto mapSize = texelAddress(sresLayout, texSize, size.width,
 		height - 1, depth - 1, subres.arrayLayer);
 	auto map = img.memoryMap(0, mapSize);
 
@@ -76,7 +76,7 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 	std::vector<std::byte> data(byteSize);
 
 	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
-	auto mapSize = texelAddress(sresLayout, texSize, size.width + 1,
+	auto mapSize = texelAddress(sresLayout, texSize, size.width,
 		height - 1, depth - 1, subres.arrayLayer);
 	auto map = img.memoryMap(0, mapSize);
 	map.invalidate();
