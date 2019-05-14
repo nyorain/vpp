@@ -28,8 +28,8 @@ void fillDirect(vk::CommandBuffer cb, const BufferSpan& dst,
 	nytl::Span<const std::byte> data);
 
 template<typename T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
-vpp::SubBuffer fillStaging(vk::CommandBuffer cb, const BufferSpan& span,
-		const T& obj) {
+[[nodiscard]] vpp::SubBuffer fillStaging(vk::CommandBuffer cb,
+		const BufferSpan& span, const T& obj) {
 	auto ptr = reinterpret_cast<const std::byte*>(&obj);
 	auto size = sizeof(obj);
 	return fillStaging(cb, span, {ptr, ptr + size});
