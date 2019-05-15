@@ -129,7 +129,7 @@ void DeviceMemoryAllocator::alloc() {
 			reqs.push_back(*t);
 		}
 
-		allocate(i, reqs);
+		alloc(i, reqs);
 	}
 
 	requirements_.clear(); // all requirements were allocated
@@ -159,7 +159,7 @@ DeviceMemoryAllocator::alloc(ReservationID id) {
 	// requests and on which the given entry can be allocated and then alloc
 	// and bind all reqs for this type
 	auto type = findBestType(req->memoryTypes);
-	allocate(type);
+	alloc(type);
 
 	rit = findRes(id);
 	dlg_assert(rit != reservations_.end());
@@ -176,9 +176,9 @@ DeviceMemoryAllocator::alloc(AllocationType type,
 	return alloc(id);
 }
 
-void DeviceMemoryAllocator::allocate(unsigned int type) {
+void DeviceMemoryAllocator::alloc(unsigned int type) {
 	dlg_assertlm(dlg_level_debug, !requirements_.empty(),
-		"allocate called without pending requests for type");
+		"alloc called without pending requests for type");
 
 	auto& reqs = tmpRequirements_;
 	reqs.clear();
@@ -193,13 +193,13 @@ void DeviceMemoryAllocator::allocate(unsigned int type) {
 		it = requirements_.erase(it);
 	}
 
-	allocate(type, reqs);
+	alloc(type, reqs);
 }
 
-void DeviceMemoryAllocator::allocate(unsigned int type,
+void DeviceMemoryAllocator::alloc(unsigned int type,
 		nytl::Span<const Requirement> requirements) {
-	dlg_assertm(type <= 32, "invalid memory type to allocate");
-	dlg_assertm(!requirements.empty(), "empty requirements to allocate");
+	dlg_assertm(type <= 32, "invalid memory type to alloc");
+	dlg_assertm(!requirements.empty(), "empty requirements to alloc");
 
 	auto gran = device().properties().limits.bufferImageGranularity;
 

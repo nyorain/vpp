@@ -64,6 +64,8 @@ public:
 
 	/// Returns all memories that this allocator manages.
 	const auto& memories() const { return memories_; }
+	const auto& reservations() const { return reservations_; }
+	const auto& requirements() const { return requirements_; }
 
 protected:
 	/// Represents the requirements of a pending memory request.
@@ -89,8 +91,8 @@ protected:
 	static bool supportsType(uint32_t bits, unsigned int type) noexcept;
 
 	// utility allocation functions
-	void allocate(unsigned int type);
-	void allocate(unsigned int type, nytl::Span<const Requirement> reqs);
+	void alloc(unsigned int type);
+	void alloc(unsigned int type, nytl::Span<const Requirement> reqs);
 	bool findMem(Requirement& req, Reservation& info);
 	std::vector<Requirement>::iterator findReq(ReservationID);
 	std::vector<Reservation>::iterator findRes(ReservationID);
@@ -107,8 +109,10 @@ protected:
 protected:
 	std::vector<Reservation> reservations_;
 	std::vector<Requirement> requirements_;
-	std::deque<DeviceMemory> memories_; // list of owned memory objects
-	ReservationID lastReservation_ {};
+	// list of owned memory objects
+	// dequee since those objects can't be moved
+	std::deque<DeviceMemory> memories_;
+	ReservationID lastReservation_ {}; // for id counting
 
 	// cache for algorithms
 	std::vector<Requirement> tmpRequirements_;

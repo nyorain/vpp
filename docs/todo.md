@@ -31,6 +31,17 @@ important, later:
 low prio / general / ideas
 --------------------------
 
+- vpp::PipelineLayout(dev, {}) gives you a pipeline layout with
+  an empty handle, while
+  vpp::PipelineLayout(dev, vk::PipelineLayoutCreateInfo {}) gives you
+  a pipeline layout constructed with default, no/empty layouts.
+  Is that expected behavior for users?
+- allow to merge allocators
+	- started implementing it, see node 621. Problem is though that
+	  this requires to move non movable pool resources (TrDsPool,
+	  DeviceMemory, SharedBuffer). We could fix it by always storing
+	  those wrapped in unique ptrs (instead of using a deque)
+	  but i'm not sure that's worth it. Probably no other way though
 - optimiziation: currently some smarter resoures deriving handles
   (like TrDs or Buffer, Image) store the Device word in addition
   to a Resource they reference (like DeviceMemory or TrDsPool).

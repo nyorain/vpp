@@ -106,6 +106,9 @@ public:
 	void cancel(ReservationID reservation);
 
 	const auto& buffers() const { return buffers_; }
+	const auto& reservations() const { return reservations_; }
+	const auto& requirements() const { return requirements_; }
+
 	auto& devMemAllocator() const { return devMemAlloc_; }
 	auto& device() const { return devMemAllocator().device(); }
 
