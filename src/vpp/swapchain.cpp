@@ -227,12 +227,12 @@ void Swapchain::resize(const vk::Extent2D& size,
 	}
 }
 
+// TODO: rework with vkpp error handling
+// we don't want errors such as outOfDate or suboptimal to throw
+// here since that is an expected case: e.g. when the surface is resizing
 vk::Result Swapchain::acquire(unsigned int& id, vk::Semaphore sem,
 		vk::Fence fence, std::uint64_t timeout) const {
 	// TODO: suboptimal gets lost currently...
-	// TODO: rework with vkpp error handling
-	// we don't want errors such as outOfDate or suboptimal to throw
-	// here since that is an expected case: e.g. when the surface is resizing
 	try {
 		id = vk::acquireNextImageKHR(device(), vkHandle(), timeout,
 			sem, fence);
@@ -255,8 +255,11 @@ vk::Result Swapchain::present(const Queue& queue, std::uint32_t currentBuffer,
 	}
 
 	QueueLock(device(), queue);
-	auto ret = vk::queuePresentKHR(queue, presentInfo);
-	return ret;
+	try {
+		return vk::queuePresentKHR(queue, presentInfo);
+	} catch(const vk::VulkanError& error) {
+		return error.error;
+	}
 }
 
 } // namespace vpp
