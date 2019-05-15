@@ -104,7 +104,7 @@ public:
 	/// Renders one frame and waits for all frame operations to finish.
 	/// Internally just calls render and waits for the submit id to finish.
 	/// Returns any error that ocurred in render.
-	vk::Result renderSync(const RenderInfo& = {});
+	vk::Result renderStall(const RenderInfo& = {});
 
 	/// Changes the record mode.
 	/// Does not invalidate any currently recorded command buffers

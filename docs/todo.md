@@ -1,13 +1,17 @@
 Todo list vor vpp
 =================
 
-- add glfw/sdl examples (option to use sdl from meson wrap db)
-
-important, later:
 - when vkpp has error handling update: fix try/catch/swallowed error
   in swapchain acquire/present and formats.cpp (get format properties)
-- improve DeviceMemoryAllocator (cache data structures for fewer allocations,
-  improve allocation algorithm)
+- problem with Init<T>: the InitData may have to stay alive even
+  after alloc is called, e.g. when there's a stage buffer
+  maybe split alloc function into alloc and finish, only finish
+  will return the object? The finish function should then destroy
+  (move default initialize) the init data i guess to free everything
+  not needed anymore
+- improve allocation algorithms
+	- implement smarter strategies (per-allocate std::vector like?)
+	  we could implement multiple strategies and allow user to choose
 - allow compressed formats in image ops.
   we can also allow compression on the fly, vkCmdCopyImage supports it
   might be too complex to do/not a nice abstract, make sure it stays
@@ -27,10 +31,14 @@ important, later:
   at the moment) and completely abolish using the nytl namespace.
   import NonCopyable/NonMovable into vpp namespace, maybe even completely 
   remove all nytl traces from it. 
+- implement Allocator shrink function that destroyed all currently
+  empty (and not reserved) pool objects
+	- basic defragmentation for all allocators?
 
 low prio / general / ideas
 --------------------------
 
+- we could also add a sdl example
 - vpp::PipelineLayout(dev, {}) gives you a pipeline layout with
   an empty handle, while
   vpp::PipelineLayout(dev, vk::PipelineLayoutCreateInfo {}) gives you
@@ -61,8 +69,6 @@ low prio / general / ideas
   for debugging/temporary workarounds?
 	- clearly mark them as inefficient and not good for production code
 	  though... not sure if worth it
-- BufferAllocator optimize/shrink
-	- basic defragmentation?
 - offer functionality to select supported extensions/layers from a list
 - renderer: rework/remove RecordMode::all. Any way to get around the invalidate
   extra condition? Or at least rather use onDemand mode by default.
@@ -87,7 +93,6 @@ low prio / general / ideas
 		- etc...
 - support for checking max available vs used memory
 	- see vulkan extension
-- support for allocation strategies (mainly DeviceMemoryAllocator),
   support massive preallocations (like allocate pretty much the whole device memory)
 	- allow to explicity allocate memory on a given memory allocator.
 	  To create large (like over 100 mb) buffers of a memory type we know we will need

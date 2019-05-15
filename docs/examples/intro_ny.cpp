@@ -15,15 +15,13 @@
 //	- n: reset to normal toplevel state
 //	- Escape: close the window
 
-// uncomment this to load renderdoc layers and name handles.
-// #define RENDERDOC
+// Encapsulates render logic, window library independent
+#include "render.hpp"
 
 #include <vpp/renderer.hpp> // vpp::DefaultRenderer
-#include <vpp/pipeline.hpp> // vpp::GraphicsPipeline
 #include <vpp/handles.hpp> // vpp::Instance, vpp::RenderPass, ...
 #include <vpp/debug.hpp> // vpp::DebugMessenger
 #include <vpp/device.hpp> // vpp::Device
-#include <vpp/pipeline.hpp> // vpp::GraphicsPipelineInfo
 #include <vpp/vk.hpp> // vulkan commands
 
 #include <ny/backend.hpp> // ny::Backend
@@ -39,35 +37,7 @@
 #include <ny/event.hpp> // ny::*Event
 
 #include <dlg/dlg.hpp> // logging
-
 #include <nytl/vecOps.hpp> // print nytl::Vec
-
-// shader
-#include "data/intro.frag.h"
-#include "data/intro.vert.h"
-
-vpp::RenderPass createRenderPass(const vpp::Device&, vk::Format);
-vpp::Pipeline createGraphicsPipeline(const vpp::Device&, vk::RenderPass,
-	vk::PipelineLayout);
-
-// vpp::Renderer implementation (using DefaultRenderer since we
-// don't need special framebuffer stuff).
-// Pretty much only initializes the pipeline, implements an easier resize
-// function for the window listener and implements the command buffer
-// recodring.
-class MyRenderer : public vpp::DefaultRenderer {
-public:
-	MyRenderer(vk::RenderPass, vk::SwapchainCreateInfoKHR&,
-		const vpp::Queue& present);
-
-	void resize(nytl::Vec2ui size);
-	void record(const RenderBuffer& buf) override;
-
-protected:
-	vpp::PipelineLayout pipelineLayout_;
-	vpp::Pipeline pipeline_;
-	vk::SwapchainCreateInfoKHR& scInfo_;
-};
 
 // ny::WindowListener implementation
 class MyWindowListener : public ny::WindowListener {
@@ -104,9 +74,7 @@ int main(int, char**) {
 	// enables all default layers
 	constexpr const char* layers[] = {
 		"VK_LAYER_LUNARG_standard_validation",
-#ifdef RENDERDOC
-		"VK_LAYER_RENDERDOC_Capture",
-#endif
+		// "VK_LAYER_RENDERDOC_Capture",
 	};
 
 	// basic application info
@@ -122,9 +90,8 @@ int main(int, char**) {
 
 	vpp::Instance instance(instanceInfo);
 
-	// create a debug callback for our instance and the default layers
-	// the default implementation will just output to std::cerr when a debug callback
-	// is received
+	// create a debug messenger for our instance and the default layers.
+	// the default implementation will just output the debug messages
 	vpp::DebugMessenger debugMessenger(instance);
 
 	// create the ny window and vukan surface
@@ -143,14 +110,7 @@ int main(int, char**) {
 	// vulkan surface) and can create the device and renderer.
 	const vpp::Queue* present;
 
-#ifdef RENDERDOC
-	auto devExtensions = {
-		VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
-	};
-	vpp::Device device(instance, vkSurface, present, devExtensions);
-#else
 	vpp::Device device(instance, vkSurface, present);
-#endif
 	dlg_assert(present);
 
 	// we can construct everything for our renderer
@@ -159,6 +119,7 @@ int main(int, char**) {
 	auto scInfo = vpp::swapchainCreateInfo(device, vkSurface, {800u, 500u});
 	dlg_info("size: {}, {}", scInfo.imageExtent.width, scInfo.imageExtent.height);
 	auto renderPass = createRenderPass(device, scInfo.imageFormat);
+	vpp::nameHandle(renderPass, "main:renderPass");
 
 	// our renderer
 	MyRenderer renderer(renderPass, scInfo, *present);
@@ -183,61 +144,13 @@ int main(int, char**) {
 	// a game would usually not do (since it draws all the time anyways).
 
 	// while(run && ac->pollEvents()) {
-	// 	renderer.renderSync(); // or just render without blocking
+	// 	renderer.renderStall(); // render and wait, will block cpu
 	// }
 
 	vk::deviceWaitIdle(device);
 	dlg_info("Returning from main with grace");
 }
 
-// MyRenderer
-MyRenderer::MyRenderer(vk::RenderPass rp, vk::SwapchainCreateInfoKHR& scInfo,
-		const vpp::Queue& present) : vpp::DefaultRenderer(), scInfo_(scInfo) {
-	// pipeline
-	pipelineLayout_ = {present.device(), vk::PipelineLayoutCreateInfo {}};
-	pipeline_ = createGraphicsPipeline(present.device(), rp, pipelineLayout_);
-	init(rp, scInfo, present);
-}
-
-void MyRenderer::resize(nytl::Vec2ui size) {
-	vpp::DefaultRenderer::recreate({size[0], size[1]}, scInfo_);
-}
-
-void MyRenderer::record(const RenderBuffer& buf) {
-	static const auto clearValue = vk::ClearValue {{0.f, 0.f, 0.f, 1.f}};
-	const auto width = scInfo_.imageExtent.width;
-	const auto height = scInfo_.imageExtent.height;
-
-	auto cmdBuf = buf.commandBuffer;
-
-	vk::beginCommandBuffer(cmdBuf, {});
-	vk::cmdBeginRenderPass(cmdBuf, {
-		renderPass(),
-		buf.framebuffer,
-		{0u, 0u, width, height},
-		1,
-		&clearValue
-	}, {});
-
-	vk::Viewport vp {0.f, 0.f, (float) width, (float) height, 0.f, 1.f};
-	vk::cmdSetViewport(cmdBuf, 0, 1, vp);
-	vk::cmdSetScissor(cmdBuf, 0, 1, {0, 0, width, height});
-
-#ifdef RENDERDOC
-	vpp::insertDebugMarker(device(), cmdBuf, "finish setup");
-	vpp::beginDebugRegion(device(), cmdBuf, "render triangle", {1, 0.5, 0.5, 1});
-#endif
-
-	vk::cmdBindPipeline(cmdBuf, vk::PipelineBindPoint::graphics, pipeline_);
-	vk::cmdDraw(cmdBuf, 3, 1, 0, 0);
-
-#ifdef RENDERDOC
-	vpp::endDebugRegion(device(), cmdBuf);
-#endif
-
-	vk::cmdEndRenderPass(cmdBuf);
-	vk::endCommandBuffer(cmdBuf);
-}
 
 // MyWindowListener
 void MyWindowListener::draw(const ny::DrawEvent&) {
@@ -248,7 +161,7 @@ void MyWindowListener::draw(const ny::DrawEvent&) {
 
 	dlg_info("drawing the window");
 
-	auto res = renderer->renderSync();
+	auto res = renderer->renderStall();
 	if(res != vk::Result::success) {
 		dlg_warn("swapchain out of date");
 		windowContext->refresh();
@@ -363,7 +276,8 @@ void MyWindowListener::resize(const ny::SizeEvent& sizeEvent) {
 
 	// a woraround but should be valid per spec
 	vk::deviceWaitIdle(renderer->device());
-	renderer->resize(sizeEvent.size);
+	auto s = sizeEvent.size;
+	renderer->resize({s.x, s.y});
 }
 
 // android:
@@ -375,87 +289,3 @@ void MyWindowListener::surfaceDestroyed(const ny::SurfaceDestroyedEvent&) {
 	// TODO: unset surface and stop rendering
 }
 
-// utility
-vpp::Pipeline createGraphicsPipeline(const vpp::Device& dev, vk::RenderPass rp,
-		vk::PipelineLayout layout) {
-	// first load the shader modules and create the shader program for our pipeline
-	// if the shaders cannot be found/compiled, this will throw (and end the application)
-	vpp::ShaderModule vertexShader(dev, intro_vert_spv_data);
-	vpp::ShaderModule fragmentShader(dev, intro_frag_spv_data);
-
-#ifdef RENDERDOC
-	vpp::nameHandle(dev, vertexShader.vkHandle(), "triangleVertexShader");
-	vpp::nameHandle(dev, fragmentShader.vkHandle(), "triangleFragmentShader");
-#endif
-
-	vpp::GraphicsPipelineInfo pipeInfo(rp, layout, {{{
-		{vertexShader, vk::ShaderStageBits::vertex},
-		{fragmentShader, vk::ShaderStageBits::fragment}
-	}}});
-
-	pipeInfo.assembly.topology = vk::PrimitiveTopology::triangleList;
-
-	/* NOTE: if we used a vertex buffer
-	constexpr auto stride = (2 + 4) * sizeof(float); // pos (vec2), color(vec4)
-	vk::VertexInputBindingDescription bufferBinding {0,
-		stride, vk::VertexInputRate::vertex};
-
-	// vertex position, color attributes
-	vk::VertexInputAttributeDescription attributes[2];
-	attributes[0].format = vk::Format::r32g32Sfloat;
-
-	attributes[1].location = 1;
-	attributes[1].format = vk::Format::r32g32b32a32Sfloat;
-	attributes[1].offset = 2 * sizeof(float);
-
-	pipeInfo.vertex.vertexBindingDescriptionCount = 1;
-	pipeInfo.vertex.pVertexBindingDescriptions = &bufferBinding;
-	pipeInfo.vertex.vertexAttributeDescriptionCount = 2;
-	pipeInfo.vertex.pVertexAttributeDescriptions = attributes;
-	*/
-
-	// we also use the vpp::PipelienCache in this case
-	// we try to load it from an already existent cache
-	constexpr auto cacheName = "graphicsPipelineCache.bin";
-	vpp::PipelineCache cache {dev, cacheName};
-
-	vk::Pipeline vkPipeline;
-	vk::createGraphicsPipelines(dev, cache, 1, pipeInfo.info(), nullptr,
-		vkPipeline);
-
-	// save the cache to the file we tried to load it from
-	vpp::save(cache, cacheName);
-	return {dev, vkPipeline};
-}
-
-vpp::RenderPass createRenderPass(const vpp::Device& dev, vk::Format format) {
-	vk::AttachmentDescription attachment {};
-
-	// color from swapchain
-	attachment.format = format;
-	attachment.samples = vk::SampleCountBits::e1;
-	attachment.loadOp = vk::AttachmentLoadOp::clear;
-	attachment.storeOp = vk::AttachmentStoreOp::store;
-	attachment.stencilLoadOp = vk::AttachmentLoadOp::dontCare;
-	attachment.stencilStoreOp = vk::AttachmentStoreOp::dontCare;
-	attachment.initialLayout = vk::ImageLayout::undefined;
-	attachment.finalLayout = vk::ImageLayout::presentSrcKHR;
-
-	vk::AttachmentReference colorReference;
-	colorReference.attachment = 0;
-	colorReference.layout = vk::ImageLayout::colorAttachmentOptimal;
-
-	// only subpass
-	vk::SubpassDescription subpass;
-	subpass.pipelineBindPoint = vk::PipelineBindPoint::graphics;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorReference;
-
-	vk::RenderPassCreateInfo renderPassInfo;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &attachment;
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpass;
-
-	return {dev, renderPassInfo};
-}

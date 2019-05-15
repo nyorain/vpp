@@ -1,11 +1,12 @@
 project('vpp', ['c', 'cpp'],
   license: 'BSL',
 	version: '0.3.0',
-	meson_version: '>=0.42',
+	meson_version: '>=0.46',
   default_options: ['cpp_std=c++1z'])
 
 # options
-examples = get_option('examples')
+example_glfw = get_option('example_glfw')
+example_ny = get_option('example_ny')
 tests = get_option('tests')
 one_device = get_option('one_device')
 
@@ -45,9 +46,7 @@ vpp_dep = declare_dependency(
 
 # examples, test
 # must come after dependency
-if examples
-	subdir('docs/examples')
-endif
+subdir('docs/examples')
 
 if tests
 	subdir('docs/tests')
@@ -57,9 +56,9 @@ endif
 pkg = import('pkgconfig')
 pkg_dirs = ['.']
 pkg.generate(
+	vpp_lib,
 	name: 'vpp',
 	requires: ['vulkan'],
-	libraries: vpp_lib,
 	filebase: 'vpp',
 	subdirs: pkg_dirs,
 	version: meson.project_version(),

@@ -197,7 +197,7 @@ vk::Result Renderer::render(std::optional<uint64_t>* sid,
 	return swapchain().present(*present_, id, buf.semaphore);
 }
 
-vk::Result Renderer::renderSync(const RenderInfo& info) {
+vk::Result Renderer::renderStall(const RenderInfo& info) {
 	std::optional<uint64_t> id;
 	auto res = render(&id, info);
 	if(id) {
