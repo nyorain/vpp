@@ -31,6 +31,12 @@ vk::DeviceSize usageAlignment(const Device& dev, vk::BufferUsageFlags usage) {
 		ret = std::max(ret, align);
 	}
 
+	if(usage & vk::BufferUsageBits::indirectBuffer && align > 0) {
+		// offset of IndirectDrawCommand must be multiple of 4
+		align = 4u;
+		ret = std::max(ret, align);
+	}
+
 	return ret;
 }
 
