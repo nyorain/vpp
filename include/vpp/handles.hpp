@@ -242,8 +242,11 @@ public:
 class Pipeline : public ResourceHandle<vk::Pipeline> {
 public:
 	Pipeline() = default;
-	Pipeline(const Device& dev, vk::Pipeline pipeline) :
-		ResourceHandle(dev, pipeline) {}
+	Pipeline(const Device& dev, vk::Pipeline pipe) : ResourceHandle(dev, pipe) {}
+	Pipeline(const Device& dev, const vk::GraphicsPipelineCreateInfo&,
+		vk::PipelineCache cache = {});
+	Pipeline(const Device& dev, const vk::ComputePipelineCreateInfo&,
+		vk::PipelineCache cache = {});
 	~Pipeline();
 
 	Pipeline(Pipeline&& rhs) noexcept { swap(*this, rhs); }

@@ -5,6 +5,7 @@
 #include <vpp/descriptor.hpp>
 #include <vpp/sharedBuffer.hpp>
 #include <vpp/vk.hpp>
+#include <dlg/dlg.hpp>
 
 namespace vpp {
 namespace fwd {
@@ -13,7 +14,8 @@ namespace fwd {
 
 // DecriptorSetUpdate
 DescriptorSetUpdate::DescriptorSetUpdate(const DescriptorSet& set)
-	: set_(&set) {
+		: set_(&set) {
+	dlg_assert(set);
 }
 
 DescriptorSetUpdate::~DescriptorSetUpdate() {

@@ -210,6 +210,22 @@ bool save(vk::Device dev, vk::PipelineCache cache, std::string_view file) {
 }
 
 // Pipeline
+Pipeline::Pipeline(const Device& dev,
+	const vk::GraphicsPipelineCreateInfo& info, vk::PipelineCache cache) :
+		ResourceHandle(dev) {
+	vk::Pipeline pipe;
+	vk::createGraphicsPipelines(dev, cache, 1, info, nullptr, pipe);
+	handle_ = pipe;
+}
+
+Pipeline::Pipeline(const Device& dev,
+	const vk::ComputePipelineCreateInfo& info, vk::PipelineCache cache) :
+		ResourceHandle(dev) {
+	vk::Pipeline pipe;
+	vk::createComputePipelines(dev, cache, 1, info, nullptr, pipe);
+	handle_ = pipe;
+}
+
 Pipeline::~Pipeline() {
 	if(vkHandle()) {
 		vk::destroyPipeline(device(), vkHandle());
