@@ -157,7 +157,7 @@ public:
 	/// access to those or use multiple allocators (probably the best idea).
 	CommandAllocator& commandAllocator() const;
 	BufferAllocator& bufferAllocator() const;
-	DeviceMemoryAllocator& deviceAllocator() const;
+	DeviceMemoryAllocator& devMemAllocator() const;
 	DescriptorAllocator& descriptorAllocator() const;
 	QueueSubmitter& queueSubmitter() const;
 

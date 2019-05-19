@@ -1,6 +1,9 @@
 Todo list vor vpp
 =================
 
+- imageOps: support multiple layers in retrieve/fillMap
+	- also fillStaging
+
 - when vkpp has error handling update: fix try/catch/swallowed error
   in swapchain acquire/present and formats.cpp (get format properties)
 - problem with Init<T>: the InitData may have to stay alive even

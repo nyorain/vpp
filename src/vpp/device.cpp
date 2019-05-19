@@ -371,7 +371,7 @@ BufferAllocator& Device::bufferAllocator() const {
 	return *impl_->bufferAllocator;
 }
 
-DeviceMemoryAllocator& Device::deviceAllocator() const {
+DeviceMemoryAllocator& Device::devMemAllocator() const {
 	return *impl_->devAllocator;
 }
 

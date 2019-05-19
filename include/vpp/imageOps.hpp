@@ -69,6 +69,10 @@ std::vector<std::byte> retrieveMap(const Image&, vk::Format,
 ///   The size of data will be expected to equal exactly:
 ///   extent.w * extent.h * extent.d * formatSize(format)
 [[nodiscard]]
+SubBuffer fillStagingLayers(vk::CommandBuffer, const Image&, vk::Format,
+	vk::ImageLayout, const vk::Extent3D& size, nytl::Span<const std::byte> data,
+	const vk::ImageSubresourceLayers&, const vk::Offset3D& offset = {});
+[[nodiscard]]
 SubBuffer fillStaging(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, const vk::Extent3D& size, nytl::Span<const std::byte> data,
 	const vk::ImageSubresource&, const vk::Offset3D& offset = {});
@@ -82,8 +86,12 @@ SubBuffer fillStaging(vk::CommandBuffer, const Image&, vk::Format,
 /// The command buffer must be in recording state.
 /// The returned data will be tightly packed.
 [[nodiscard]]
+SubBuffer retrieveStagingLayers(vk::CommandBuffer, const Image&, vk::Format,
+	vk::ImageLayout, const vk::Extent3D& size,
+	const vk::ImageSubresourceLayers&, const vk::Offset3D& offset = {});
+[[nodiscard]]
 SubBuffer retrieveStaging(vk::CommandBuffer, const Image&, vk::Format,
-	vk::ImageLayout, const vk::Extent3D& size, const vk::ImageSubresource&,
-	const vk::Offset3D& offset = {});
+	vk::ImageLayout, const vk::Extent3D& size,
+	const vk::ImageSubresource&, const vk::Offset3D& offset = {});
 
 } // namespace vpp

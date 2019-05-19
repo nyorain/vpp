@@ -24,13 +24,13 @@ public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
 
 public:
-	SharedBuffer(const Device&, const vk::BufferCreateInfo&,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	SharedBuffer(const Device&, vk::Buffer, vk::DeviceSize size,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	SharedBuffer(const Device&, const vk::BufferCreateInfo&, DeviceMemory&);
-	SharedBuffer(InitData&, const Device&, const vk::BufferCreateInfo&,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+	SharedBuffer(DeviceMemoryAllocator&, const vk::BufferCreateInfo&,
+		unsigned int memBits = ~0u);
+	SharedBuffer(DeviceMemoryAllocator&, vk::Buffer, vk::DeviceSize size,
+		unsigned int memBits = ~0u);
+	SharedBuffer(DeviceMemory&, const vk::BufferCreateInfo&);
+	SharedBuffer(InitData&, DeviceMemoryAllocator&,
+		const vk::BufferCreateInfo&, unsigned int memBits = ~0u);
 
 	~SharedBuffer();
 
@@ -128,9 +128,8 @@ protected:
 	};
 
 	struct Buffer {
-		Buffer(const Device&, vpp::BufferHandle, unsigned int mbits,
-			vk::DeviceSize size, vk::BufferUsageFlags usage,
-			DeviceMemoryAllocator& alloc);
+		Buffer(DeviceMemoryAllocator&, vpp::BufferHandle, unsigned int mbits,
+			vk::DeviceSize size, vk::BufferUsageFlags usage);
 
 		SharedBuffer buffer;
 		vk::BufferUsageFlags usage {};

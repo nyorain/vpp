@@ -25,7 +25,7 @@ TEST(image) {
 		0, nullptr, vk::ImageLayout::undefined
 	};
 
-	vpp::Image img1 = {dev, imgInfo};
+	vpp::Image img1 = {dev.devMemAllocator(), imgInfo};
 	auto moved = std::move(img1);
 	img1 = std::move(moved);
 
@@ -34,7 +34,7 @@ TEST(image) {
 	imgInfo.tiling = vk::ImageTiling::linear;
 	imgInfo.initialLayout = vk::ImageLayout::preinitialized;
 	auto bits = dev.memoryTypeBits(vk::MemoryPropertyBits::hostVisible);
-	vpp::Image img2 = {dev, imgInfo, bits};
+	vpp::Image img2 = {dev.devMemAllocator(), imgInfo, bits};
 
 	std::vector<std::byte> data(4 * size.width * size.height, std::byte{0xffu});
 	data[0] = std::byte {0x00};
@@ -132,6 +132,6 @@ TEST(moving) {
 		0, nullptr, vk::ImageLayout::undefined
 	};
 
-	vpp::Image img1 = {dev, imgInfo};
+	vpp::Image img1 = {dev.devMemAllocator(), imgInfo};
 	img1 = {};
 }

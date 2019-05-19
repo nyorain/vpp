@@ -14,7 +14,7 @@ TEST(framebuffer) {
 	vpp::ViewableImageCreateInfo vic(colorFormat, vk::ImageAspectBits::color,
 		size, vk::ImageUsageBits::colorAttachment);
 	EXPECT(vpp::supported(dev, vic.img), true);
-	vpp::ViewableImage color(dev, vic);
+	vpp::ViewableImage color(dev.devMemAllocator(), vic);
 
 	vic.img.usage = vk::ImageUsageBits::depthStencilAttachment;
 	vic.img.format = vpp::findSupported(dev, {{
@@ -26,7 +26,7 @@ TEST(framebuffer) {
 	}}, vic.img);
 	vic.view.format = vic.img.format;
 	vic.view.subresourceRange = {vk::ImageAspectBits::depth, 0, 1, 0, 1};
-	vpp::ViewableImage depth(dev, vic);
+	vpp::ViewableImage depth(dev.devMemAllocator(), vic);
 
 	vk::AttachmentDescription attachments[2] {{{},
 			colorFormat, vk::SampleCountBits::e1,

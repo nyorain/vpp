@@ -123,24 +123,23 @@ SubBuffer::InitData::~InitData() {
 }
 
 // SharedBuffer
-SharedBuffer::SharedBuffer(const Device& dev, const vk::BufferCreateInfo& info,
-	unsigned int memBits, vpp::DeviceMemoryAllocator* allocator) :
-		Buffer(dev, info, memBits, allocator), size_(info.size) {
+SharedBuffer::SharedBuffer(DeviceMemoryAllocator& alloc,
+	const vk::BufferCreateInfo& info, unsigned int memBits) :
+		Buffer(alloc, info, memBits), size_(info.size) {
 }
 
-SharedBuffer::SharedBuffer(const Device& dev, vk::Buffer buf, vk::DeviceSize size,
-	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
-		Buffer(dev, buf, memBits, alloc), size_(size) {
+SharedBuffer::SharedBuffer(DeviceMemoryAllocator& alloc, vk::Buffer buf,
+	vk::DeviceSize size, unsigned int memBits) :
+		Buffer(alloc, buf, memBits), size_(size) {
 }
 
-SharedBuffer::SharedBuffer(const Device& dev, const vk::BufferCreateInfo& info,
-	DeviceMemory& mem) : Buffer(dev, info, mem), size_(info.size) {
+SharedBuffer::SharedBuffer(DeviceMemory& mem,
+	const vk::BufferCreateInfo& info) : Buffer(mem, info), size_(info.size) {
 }
 
-SharedBuffer::SharedBuffer(InitData& data, const Device& dev,
-	const vk::BufferCreateInfo& info, unsigned int memBits,
-	vpp::DeviceMemoryAllocator* alloc) :
-		Buffer(data, dev, info, memBits, alloc), size_(info.size) {
+SharedBuffer::SharedBuffer(InitData& data, DeviceMemoryAllocator& alloc,
+	const vk::BufferCreateInfo& info, unsigned int memBits) :
+		Buffer(data, alloc, info, memBits), size_(info.size) {
 }
 
 SharedBuffer::~SharedBuffer() {
@@ -201,7 +200,7 @@ void SharedBuffer::free(const Allocation& alloc) {
 
 // BufferAllocator
 BufferAllocator::BufferAllocator(const Device& dev) :
-	BufferAllocator(dev.deviceAllocator()) {
+	BufferAllocator(dev.devMemAllocator()) {
 }
 
 BufferAllocator::BufferAllocator(DeviceMemoryAllocator& memAlloc) :
@@ -337,8 +336,8 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 		return alloc(size, usage, imemBits, align);
 	}
 
-	auto& nbuf = buffers_.emplace_back(device(), std::move(buf), imemBits,
-		createInfo.size, createInfo.usage, devMemAlloc_);
+	auto& nbuf = buffers_.emplace_back(devMemAlloc_, std::move(buf), imemBits,
+		createInfo.size, createInfo.usage);
 	auto& allocs = nbuf.buffer.allocations(); // insert them manually
 	allocs.push_back({0, size}); // first entry, the required one
 	for(auto& res : reservations) {
@@ -373,10 +372,10 @@ void BufferAllocator::cancel(ReservationID reservation) {
 	requirements_.erase(req);
 }
 
-BufferAllocator::Buffer::Buffer(const Device& dev,
+BufferAllocator::Buffer::Buffer(DeviceMemoryAllocator& alloc,
 	vpp::BufferHandle buf, unsigned int mbits, vk::DeviceSize size,
-	vk::BufferUsageFlags xusage, DeviceMemoryAllocator& alloc) :
-		buffer(dev, buf.release(), size, mbits, &alloc), usage(xusage) {
+	vk::BufferUsageFlags xusage) :
+		buffer(alloc, buf.release(), size, mbits), usage(xusage) {
 }
 
 } // namespace vpp

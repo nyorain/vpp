@@ -19,8 +19,7 @@ public:
 	///   * (1,3,5,7): ImageCreateInfo parameter: create a new image
 	///   * (2,4,6,8): vk::Image parameter: transfer ownerhip of existent image
 	/// - Allocate mechanism. You can either use/pass
-	///   * (1,2): using a DeviceMemoryAllocator, if none is given using
-	///     the default threadlocal allocator of the given device.
+	///   * (1,2): using a DeviceMemoryAllocator.
 	///     Guarantees that the memory is allocated on a memory type
 	///     contained in memBits (e.g. to assure it's allocated
 	///     on hostVisible memory).
@@ -43,21 +42,21 @@ public:
 	/// allocate and bind the memory for you, you have to pass the images
 	/// tiling to allow the constructor to keep any granularity
 	/// requirements.
-	Image(const Device&, const vk::ImageCreateInfo&,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	Image(const Device&, vk::Image, vk::ImageTiling,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+	Image(vpp::DeviceMemoryAllocator&, const vk::ImageCreateInfo&,
+		unsigned int memBits = ~0u);
+	Image(vpp::DeviceMemoryAllocator&, vk::Image, vk::ImageTiling,
+		unsigned int memBits = ~0u);
 
-	Image(const Device&, const vk::ImageCreateInfo&, DeviceMemory&);
-	Image(const Device&, vk::Image, DeviceMemory&, vk::DeviceSize memOffset);
+	Image(DeviceMemory&, const vk::ImageCreateInfo&);
+	Image(DeviceMemory&, vk::Image, vk::DeviceSize memOffset);
 
 	/// Creates the image without any bound memory.
 	/// You have to call the ensureMemory function later on to
 	/// make sure memory is bound to the image.
-	Image(InitData&, const Device&, const vk::ImageCreateInfo&,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	Image(InitData&, const Device&, vk::Image, vk::ImageTiling,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+	Image(InitData&, DeviceMemoryAllocator&, const vk::ImageCreateInfo&,
+		unsigned int memBits = ~0u);
+	Image(InitData&, DeviceMemoryAllocator&, vk::Image, vk::ImageTiling,
+		unsigned int memBits = ~0u);
 
 	Image(Image&& rhs) noexcept = default;
 	Image& operator=(Image&& rhs) noexcept = default;
@@ -84,19 +83,18 @@ public:
 	/// view. Immediately binds memory to the image.
 	/// The image member can be left empty (nullHandle) in all
 	/// passed ImageViewCreateInfos, it will be set automatically.
-	ViewableImage(const Device&, const vk::ImageCreateInfo&,
-		const vk::ImageViewCreateInfo&, unsigned int memBits = ~0u,
-		vpp::DeviceMemoryAllocator* = {});
-	ViewableImage(const Device& dev, const ViewableImageCreateInfo&,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+	ViewableImage(DeviceMemoryAllocator&, const vk::ImageCreateInfo&,
+		const vk::ImageViewCreateInfo&, unsigned int memBits = ~0u);
+	ViewableImage(DeviceMemoryAllocator&, const ViewableImageCreateInfo&,
+		unsigned int memBits = ~0u);
 	ViewableImage(Image&&, vk::ImageViewCreateInfo);
 	ViewableImage(Image&&, ImageView&&);
 
 	/// Creates (or transfer ownership of) an image but doesn't bind
 	/// memory to it or create the view. You have to call
 	/// init with the ViewCreateInfo before it can be used in any way.
-	ViewableImage(InitData&, const Device&, const vk::ImageCreateInfo&,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+	ViewableImage(InitData&, DeviceMemoryAllocator&,
+		const vk::ImageCreateInfo&, unsigned int memBits = ~0u);
 	ViewableImage(InitData&, Image&&);
 
 	~ViewableImage() = default;
@@ -119,6 +117,10 @@ public:
 	auto vkDevice() const { return device().vkDevice(); }
 	auto vkInstance() const { return device().vkInstance(); }
 	auto vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
+
+	std::pair<vpp::Image, vpp::ImageView> split() {
+		return {std::move(image_), std::move(imageView_)};
+	}
 
 protected:
 	Image image_;

@@ -12,21 +12,21 @@
 namespace vpp {
 
 // Buffer
-Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info,
-	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
-		Buffer(dev, vk::createBuffer(dev, info), memBits, alloc) {
+Buffer::Buffer(DeviceMemoryAllocator& alloc, const vk::BufferCreateInfo& info,
+	unsigned int memBits) :
+		Buffer(alloc, vk::createBuffer(alloc.device(), info), memBits) {
 }
 
-Buffer::Buffer(const Device& dev, vk::Buffer buffer,
-		unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) {
+Buffer::Buffer(DeviceMemoryAllocator& alloc, vk::Buffer buffer,
+		unsigned int memBits) {
 	InitData data;
-	*this = {data, dev, buffer, memBits, alloc};
+	*this = {data, alloc, buffer, memBits};
 	init(data);
 }
 
-Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info,
-		DeviceMemory& mem) : BufferHandle(dev, vk::createBuffer(dev, info)) {
-	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
+Buffer::Buffer(DeviceMemory& mem, const vk::BufferCreateInfo& info) :
+		BufferHandle(mem.device(), vk::createBuffer(mem.device(), info)) {
+	auto reqs = vk::getBufferMemoryRequirements(mem.device(), vkHandle());
 	dlg_assertm(reqs.memoryTypeBits & (1 << mem.type()), "Invalid memory type");
 	auto alloc = mem.alloc(reqs.size, reqs.alignment, AllocationType::linear);
 	if(alloc.size == 0) {
@@ -37,31 +37,28 @@ Buffer::Buffer(const Device& dev, const vk::BufferCreateInfo& info,
 	MemoryResource::offset_ = alloc.offset;
 }
 
-Buffer::Buffer(const Device& dev, vk::Buffer buffer, DeviceMemory& mem,
-	vk::DeviceSize memOffset) :
-		BufferHandle(dev, buffer),
+Buffer::Buffer(DeviceMemory& mem, vk::Buffer buffer, vk::DeviceSize memOffset) :
+		BufferHandle(mem.device(), buffer),
 		MemoryResource(mem, memOffset) {
 }
 
-Buffer::Buffer(InitData& data, const Device& dev, vk::Buffer buffer,
-	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
-		BufferHandle(dev, buffer) {
+Buffer::Buffer(InitData& data, DeviceMemoryAllocator& alloc, vk::Buffer buffer,
+		unsigned int memBits) : BufferHandle(alloc.device(), buffer) {
 	dlg_assert(buffer);
 	dlg_assert(memBits);
 
-	auto reqs = vk::getBufferMemoryRequirements(dev, vkHandle());
+	auto reqs = vk::getBufferMemoryRequirements(alloc.device(), vkHandle());
 	reqs.memoryTypeBits &= memBits;
 	dlg_assertm(reqs.memoryTypeBits, "No memory type bits left");
 	dlg_assert(reqs.size > 0);
 
-	data.allocator = alloc ? alloc : &dev.deviceAllocator();
+	data.allocator = &alloc;
 	data.allocator->reserve(AllocationType::linear, reqs, &data.reservation);
 }
 
-Buffer::Buffer(InitData& data, const Device& dev,
-	const vk::BufferCreateInfo& info, unsigned int memBits,
-	vpp::DeviceMemoryAllocator* alloc) :
-		Buffer(data, dev, vk::createBuffer(dev, info), memBits, alloc) {
+Buffer::Buffer(InitData& data, DeviceMemoryAllocator& alloc,
+	const vk::BufferCreateInfo& info, unsigned int memBits) :
+		Buffer(data, alloc, vk::createBuffer(alloc.device(), info), memBits) {
 }
 
 void Buffer::init(InitData& data) {

@@ -11,8 +11,8 @@ TEST(copy) {
 	vk::BufferCreateInfo bufInfo;
 	bufInfo.size = 1024;
 	bufInfo.usage = vk::BufferUsageBits::uniformBuffer;
-	auto buffer = vpp::Buffer(dev, bufInfo);
-	buffer = {dev, bufInfo};
-	buffer = {dev, bufInfo};
-	buffer = {dev, bufInfo};
+	auto buffer = vpp::Buffer(dev.devMemAllocator(), bufInfo);
+	buffer = {dev.devMemAllocator(), bufInfo};
+	buffer = {dev.devMemAllocator(), bufInfo};
+	buffer = {dev.devMemAllocator(), bufInfo};
 }

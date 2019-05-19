@@ -42,21 +42,20 @@ public:
 	///     ensureMemory is called. Already issues a reserving request
 	///     to the DeviceMemoryAllocator, might result in less
 	///     memory allocations made if multiple resources are created deferred.
-	Buffer(const Device&, const vk::BufferCreateInfo&,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	Buffer(const Device&, vk::Buffer, unsigned int memBits = ~0u,
-		vpp::DeviceMemoryAllocator* = {});
+	Buffer(DeviceMemoryAllocator&, const vk::BufferCreateInfo&,
+		unsigned int memBits = ~0u);
+	Buffer(DeviceMemoryAllocator&, vk::Buffer, unsigned int memBits = ~0u);
 
-	Buffer(const Device&, const vk::BufferCreateInfo&, DeviceMemory&);
-	Buffer(const Device&, vk::Buffer, DeviceMemory&, vk::DeviceSize memOffset);
+	Buffer(DeviceMemory&, const vk::BufferCreateInfo&);
+	Buffer(DeviceMemory&, vk::Buffer, vk::DeviceSize memOffset);
 
 	/// Creates the buffer without any bound memory.
 	/// You have to call the ensureMemory function later on to
 	/// make sure memory is bound to the buffer.
-	Buffer(InitData&, const Device&, const vk::BufferCreateInfo&,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	Buffer(InitData&, const Device&, vk::Buffer, unsigned int memBits = ~0u,
-		vpp::DeviceMemoryAllocator* = {});
+	Buffer(InitData&, DeviceMemoryAllocator&, const vk::BufferCreateInfo&,
+		unsigned int memBits = ~0u);
+	Buffer(InitData&, DeviceMemoryAllocator&, vk::Buffer,
+		unsigned int memBits = ~0u);
 
 	Buffer(Buffer&& rhs) noexcept = default;
 	Buffer& operator=(Buffer&& rhs) noexcept = default;

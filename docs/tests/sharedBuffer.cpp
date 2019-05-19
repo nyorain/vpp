@@ -11,7 +11,8 @@ std::ostream& operator<<(std::ostream& os, const vpp::BasicAllocation<T>& alloc)
 
 TEST(sharedBuf) {
 	auto& dev = *globals.device;
-	vpp::SharedBuffer buf(dev, {{}, 1024u, vk::BufferUsageBits::uniformBuffer});
+	vpp::SharedBuffer buf(dev.devMemAllocator(),
+		{{}, 1024u, vk::BufferUsageBits::uniformBuffer});
 	auto alloc1 = buf.alloc(1000u);
 	EXPECT(alloc1.offset, 0u);
 	EXPECT(alloc1.size, 1000u);
@@ -63,7 +64,8 @@ TEST(sharedBuf) {
 TEST(alignment) {
 	using Alloc = vpp::SharedBuffer::Allocation;
 	auto& dev = *globals.device;
-	vpp::SharedBuffer buf(dev, {{}, 2048u, vk::BufferUsageBits::uniformBuffer});
+	vpp::SharedBuffer buf(dev.devMemAllocator(),
+		{{}, 2048u, vk::BufferUsageBits::uniformBuffer});
 
 	auto alloc1 = buf.alloc(230u, 64u);
 	EXPECT(alloc1, (Alloc{0, 230u}));
@@ -117,8 +119,8 @@ TEST(nonCoherentAtomAlign) {
 		return;
 	}
 
-	vpp::SharedBuffer buf(dev, {{}, 2048u, vk::BufferUsageBits::uniformBuffer},
-		hostNonCoherent);
+	vpp::SharedBuffer buf(dev.devMemAllocator(),
+		{{}, 2048u, vk::BufferUsageBits::uniformBuffer}, hostNonCoherent);
 
 	vpp::SubBuffer range1(buf, buf.alloc(10u));
 	EXPECT(range1.allocation(), (Alloc{0u, 10u}));

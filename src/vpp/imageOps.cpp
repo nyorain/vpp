@@ -96,29 +96,30 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 	return data;
 }
 
-SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
+SubBuffer fillStagingLayers(vk::CommandBuffer cmdBuf, const Image& img,
 		vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size,
-		nytl::Span<const std::byte> data, const vk::ImageSubresource& subres,
-		const vk::Offset3D& offset) {
+		nytl::Span<const std::byte> data,
+		const vk::ImageSubresourceLayers& subres, const vk::Offset3D& offset) {
 
-	const auto texSize = formatSize(format);
+	const auto fmtSize = formatSize(format);
 	const auto depth = size.depth ? size.depth : 1u;
 	const auto height = size.height ? size.height : 1u;
+	const auto bsize = subres.layerCount * fmtSize * size.width * height * depth;
 
 	dlg_assert(cmdBuf);
 	dlg_assert(layout == vk::ImageLayout::transferDstOptimal ||
 		layout == vk::ImageLayout::general);
 	dlg_assert(img.vkHandle());
-	dlg_assert(texSize > 0);
+	dlg_assert(fmtSize > 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
-	dlg_assert(data.size() == texSize * size.width * height * depth);
+	dlg_assert(data.size() == bsize);
 	dlg_assert(size.width != 0);
 
 	// bufferOfset must be multiple of 4 and image format size
 	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
-	align = std::max<vk::DeviceSize>(align, texSize);
+	align = std::max<vk::DeviceSize>(align, fmtSize);
 	align = std::max<vk::DeviceSize>(align, 4u);
-	auto stage = SubBuffer(img.device().bufferAllocator(), data.size(),
+	auto stage = SubBuffer(img.device().bufferAllocator(), bsize,
 		vk::BufferUsageBits::transferSrc, img.device().hostMemoryTypes(), align);
 
 	{
@@ -129,23 +130,33 @@ SubBuffer fillStaging(vk::CommandBuffer cmdBuf, const Image& img,
 
 	auto buf = stage.buffer().vkHandle();
 	auto boffset = stage.offset();
-	vk::ImageSubresourceLayers layers {subres.aspectMask, subres.mipLevel,
-		subres.arrayLayer, 1};
-	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset,
+	vk::BufferImageCopy region {boffset, 0u, 0u, subres, offset,
 		{size.width, height, depth}};
 
 	vk::cmdCopyBufferToImage(cmdBuf, buf, img, layout, {{region}});
 	return stage;
 }
 
-SubBuffer retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
+SubBuffer fillStaging(vk::CommandBuffer cb, const Image& img,
 		vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size,
+		nytl::Span<const std::byte> data,
 		const vk::ImageSubresource& subres, const vk::Offset3D& offset) {
+	vk::ImageSubresourceLayers layers;
+	layers.aspectMask = subres.aspectMask;
+	layers.layerCount = 1u;
+	layers.baseArrayLayer = subres.arrayLayer;
+	layers.mipLevel = subres.mipLevel;
+	return fillStagingLayers(cb, img, format, layout, size, data, layers, offset);
+}
+
+SubBuffer retrieveStagingLayers(vk::CommandBuffer cmdBuf, const Image& img,
+		vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size,
+		const vk::ImageSubresourceLayers& subres, const vk::Offset3D& offset) {
 
 	const auto texSize = formatSize(format);
 	const auto depth = size.depth ? size.depth : 1u;
 	const auto height = size.height ? size.height : 1u;
-	const auto byteSize = texSize * size.width * height * depth;
+	const auto bsize = texSize * size.width * height * depth * subres.layerCount;
 
 	dlg_assert(cmdBuf);
 	dlg_assert(layout == vk::ImageLayout::transferSrcOptimal ||
@@ -159,18 +170,27 @@ SubBuffer retrieveStaging(vk::CommandBuffer cmdBuf, const Image& img,
 	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
 	align = std::max<vk::DeviceSize>(align, texSize);
 	align = std::max<vk::DeviceSize>(align, 4u);
-	auto stage = SubBuffer {img.device().bufferAllocator(), byteSize,
+	auto stage = SubBuffer {img.device().bufferAllocator(), bsize,
 		vk::BufferUsageBits::transferDst, img.device().hostMemoryTypes(), align};
 
 	auto buf = stage.buffer().vkHandle();
 	auto boffset = stage.offset();
-	vk::ImageSubresourceLayers layers {subres.aspectMask, subres.mipLevel,
-		subres.arrayLayer, 1};
-	vk::BufferImageCopy region {boffset, 0u, 0u, layers, offset,
+	vk::BufferImageCopy region {boffset, 0u, 0u, subres, offset,
 		{size.width, height, depth}};
 
 	vk::cmdCopyImageToBuffer(cmdBuf, img, layout, buf, {{region}});
 	return stage;
+}
+
+SubBuffer retrieveStaging(vk::CommandBuffer cb, const Image& img,
+		vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size,
+		const vk::ImageSubresource& subres, const vk::Offset3D& offset) {
+	vk::ImageSubresourceLayers layers;
+	layers.aspectMask = subres.aspectMask;
+	layers.layerCount = 1u;
+	layers.baseArrayLayer = subres.arrayLayer;
+	layers.mipLevel = subres.mipLevel;
+	return retrieveStagingLayers(cb, img, format, layout, size, layers, offset);
 }
 
 // Utility functions
