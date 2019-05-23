@@ -94,6 +94,7 @@ TrDs::TrDs(TrDsPool& pool, const TrDsLayout& layout) :
 
 TrDs::TrDs(InitData& data, DescriptorAllocator& alloc,
 		const TrDsLayout& layout) : layout_(&layout) {
+	Resource::init(alloc.device());
 	data.allocator = &alloc;
 	data.layout = &layout;
 	alloc.reserve(layout);

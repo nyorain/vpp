@@ -11,7 +11,8 @@ namespace vpp {
 
 /// Tracked DescriptorSetLayout, knows it layout.
 /// NOTE: moving/destructing a TrDsLayout while it is referenced
-/// by a TrDs results in undefined behaviour.
+/// by a TrDs results in undefined behavior.
+/// TODO: probably best to make this not movable
 class TrDsLayout : public DescriptorSetLayout {
 public:
 	TrDsLayout() = default;
@@ -61,7 +62,7 @@ public:
 		InitData& operator=(InitData&&) noexcept;
 		~InitData();
 
-		const TrDsLayout* layout {};
+		const TrDsLayout* layout {}; // required for canceln a reservation
 		DescriptorAllocator* allocator {};
 		size_t reservation {}; // number of pools in alloc at reserve time + 1
 	};

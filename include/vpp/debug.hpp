@@ -155,7 +155,7 @@ class DebugLabel {
 public:
 	DebugLabel() = default;
 	DebugLabel(vk::CommandBuffer, const char* name,
-		std::array<float, 4> color);
+		std::array<float, 4> color = {});
 	~DebugLabel();
 
 	DebugLabel(DebugLabel&&) noexcept = default;
