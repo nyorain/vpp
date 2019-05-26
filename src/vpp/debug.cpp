@@ -97,14 +97,16 @@ void DebugMessenger::call(MsgSeverity severity, MsgTypeFlags,
 		}
 	}
 
-	if(data.queueLabelCount > 0) {
-		auto& lastLabel = data.pQueueLabels[0];
-		dlg_log(level, "    last queue label '{}'", lastLabel.pLabelName);
+	for(auto i = 0u; i < data.queueLabelCount; ++i) {
+		auto& label = data.pQueueLabels[i];
+		auto name = label.pLabelName ? label.pLabelName : "<unnamed>";
+		dlg_log(level, "    queue label '{}'", name);
 	}
 
-	if(data.cmdBufLabelCount > 0) {
-		auto& lastLabel = data.pCmdBufLabels[0];
-		dlg_log(level, "    last cmd label '{}'", lastLabel.pLabelName);
+	for(auto i = 0u; i < data.cmdBufLabelCount; ++i) {
+		auto& label = data.pCmdBufLabels[0];
+		auto name = label.pLabelName ? label.pLabelName : "<unnamed>";
+		dlg_log(level, "    cmd label '{}'", name);
 	}
 }
 

@@ -205,6 +205,11 @@ public:
 	const Device& device() const { return buffer().device(); }
 	friend void swap(SubBuffer&, SubBuffer&) noexcept;
 
+	// NOTE: there is no vkHandle() member or conversion operator
+	// to vk::Buffer here since when passing a SubBuffer to vulkan
+	// functions you always have to pass the offset as well.
+	// A SubBuffer isn't a vk::Buffer, just an owned span on it.
+
 protected:
 	SharedBuffer* buffer_ {};
 	Allocation allocation_ {};

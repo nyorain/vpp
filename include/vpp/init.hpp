@@ -36,4 +36,30 @@ private:
 	T obj_;
 };
 
+/// Like init, but initializes an object in place.
+/// Useful for non movable objects.
+template<typename T>
+class InitObject {
+public:
+	/// Constructs an internal object of type T with the given arguments
+	/// and the internally stored InitData as first argument.
+	template<typename... A>
+	InitObject(T& ref, A&&... args) : ref_(ref) {
+		ref_.create(data_, std::forward<A>(args)...);
+	}
+
+	/// Calls 'init' on the object to be initialized with the given arguments
+	/// and the internally stored InitData as first argument.
+	/// Since this finished initialization, move returns the object.
+	template<typename... A>
+	void init(A&&... args) {
+		ref_.init(data_, std::forward<A>(args)...);
+	}
+
+private:
+	using InitData = typename T::InitData;
+	InitData data_ {};
+	T& ref_;
+};
+
 } // namespace vpp
