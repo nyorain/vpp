@@ -233,7 +233,18 @@ TrDs DescriptorAllocator::alloc(const TrDsLayout& layout) {
 		}
 
 		if(ok) {
-			return {pool, layout};
+			// TODO: fix with vkpp error handling rework.
+			// not really unexpected error, shouldn't be exception
+			try {
+				return {pool, layout};
+			} catch(const vk::VulkanError& err) {
+				if(err.error != vk::Result::errorFragmentedPool) {
+					throw;
+				}
+
+				// otherwise, just continue, try the next pool or
+				// create a new one in the worst case
+			}
 		}
 	}
 

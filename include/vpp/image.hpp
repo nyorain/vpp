@@ -127,4 +127,9 @@ protected:
 	ImageView imageView_;
 };
 
+/// Names image and view of the given ViewaableImage,
+/// respectively as name + {".image", ".view"}.
+/// See debug.hpp for more information about vulkan handle naming.
+void nameHandle(const ViewableImage&, std::string name);
+
 } // namespace vpp

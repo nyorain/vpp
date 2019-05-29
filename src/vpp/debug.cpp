@@ -104,7 +104,7 @@ void DebugMessenger::call(MsgSeverity severity, MsgTypeFlags,
 	}
 
 	for(auto i = 0u; i < data.cmdBufLabelCount; ++i) {
-		auto& label = data.pCmdBufLabels[0];
+		auto& label = data.pCmdBufLabels[i];
 		auto name = label.pLabelName ? label.pLabelName : "<unnamed>";
 		dlg_log(level, "    cmd label '{}'", name);
 	}

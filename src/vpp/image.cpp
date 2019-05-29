@@ -3,6 +3,7 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/image.hpp>
+#include <vpp/debug.hpp>
 #include <vpp/formats.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
@@ -108,6 +109,16 @@ void ViewableImage::init(InitData& data, vk::ImageViewCreateInfo ivi) {
 	image_.init(data);
 	ivi.image = image_;
 	imageView_ = {device(), ivi};
+}
+
+void nameHandle(const ViewableImage& vi, std::string name) {
+	auto pos = name.length();
+	name += ".image";
+	vpp::nameHandle(vi.image(), name.c_str());
+
+	name.erase(pos);
+	name += ".view";
+	vpp::nameHandle(vi.imageView(), name.c_str());
 }
 
 } // namespace vpp
