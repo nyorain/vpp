@@ -71,6 +71,12 @@ DebugMessenger::~DebugMessenger() {
 
 void DebugMessenger::call(MsgSeverity severity, MsgTypeFlags,
 		const Data& data) noexcept {
+	// check if message is ignored
+	auto ig = std::find(ignore.begin(), ignore.end(), data.pMessageIdName);
+	if(ig != ignore.end()) {
+		return;
+	}
+
 	auto level = dlg_level_trace;
 	switch(severity) {
 		case MsgSeverity::error:
@@ -88,7 +94,7 @@ void DebugMessenger::call(MsgSeverity severity, MsgTypeFlags,
 	}
 
 	dlg_tags("DebugCallback");
-	dlg_log(level, "{} ({})", data.pMessage, data.messageIdNumber);
+	dlg_log(level, "{} ({})", data.pMessage, data.pMessageIdName);
 
 	for(auto i = 0u; i < data.objectCount; ++i) {
 		auto& obj = data.pObjects[i];

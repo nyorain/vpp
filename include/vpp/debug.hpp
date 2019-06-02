@@ -40,6 +40,15 @@ public:
 	/// Returns general | performance | validation, i.e. all possible types.
 	static MsgTypeFlags defaultTypes();
 
+	/// Can be set to the message names to ignore (are discarded in the
+	/// default call implementation). Default implementation always outputs
+	/// the names behind the messages. Useful to ignore validation layer
+	/// messages that are known to be wrong (but haven't been fixed yet/
+	/// no fixed version released yet).
+	/// NOTE: probably makes more sense to use the message ids here
+	/// but they are not reported correctly/not assigned?
+	std::vector<std::string> ignore;
+
 public:
 	DebugMessenger(vk::Instance instance,
 		MsgSeverityFlags severity = defaultSeverity(),

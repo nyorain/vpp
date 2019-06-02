@@ -36,6 +36,7 @@ class ShaderModule;
 class DeviceMemory;
 class Pipeline;
 class DebugCallback;
+class DebugMessenger;
 class DescriptorSet;
 class DescriptorPool;
 class DescriptorSetLayout;

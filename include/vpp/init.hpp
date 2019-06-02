@@ -30,6 +30,10 @@ public:
 		return std::move(obj_);
 	}
 
+	/// Usually not needed
+	T& object() { return obj_; }
+	auto& data() { return data_; }
+
 private:
 	using InitData = typename T::InitData;
 	InitData data_ {};
@@ -55,6 +59,10 @@ public:
 	void init(A&&... args) {
 		ref_.init(data_, std::forward<A>(args)...);
 	}
+
+	/// Usually not needed
+	T& object() { return ref_; }
+	auto& data() { return data_; }
 
 private:
 	using InitData = typename T::InitData;
