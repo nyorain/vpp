@@ -39,7 +39,7 @@ constexpr auto align(A offset, B alignment) {
 	}
 
 	auto rest = offset % alignment;
-	return rest ? offset + (alignment - rest) : offset;
+	return rest ? A(offset + (alignment - rest)) : A(offset);
 }
 
 /// Returns whether the first allocation fully contains the second one.
