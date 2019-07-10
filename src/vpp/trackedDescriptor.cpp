@@ -109,6 +109,7 @@ void TrDs::init(InitData& data) {
 	dlg_assert(data.allocator && data.reservation);
 	dlg_assert(!vkHandle());
 	dlg_assert(layout_);
+	dlg_assert(layout_ == data.layout);
 
 	*this = data.allocator->alloc(*layout_);
 	data.allocator = {};
