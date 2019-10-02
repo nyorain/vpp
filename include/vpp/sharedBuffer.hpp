@@ -166,7 +166,7 @@ protected:
 
 	struct Entry {
 		ReservationID id {};
-		std::variant<Requirement, Reservation> data;
+		std::variant<Requirement, Reservation> data = Requirement();
 	};
 
 	struct Buffer {
