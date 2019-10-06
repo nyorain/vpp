@@ -1,63 +1,77 @@
 Todo list vor vpp
 =================
 
-- simply writing buffers, especially for raw data...
-- is the whole work concept really useful? and deferred initialization
-  as it currently stands?
-- fix formats.cpp: throws on error (getPhysicalDeviceFormatProperties)
-	- are the formats utility functions even useful though?
-	- also fix the weird 'depth == 1 or depth == 0, whatever' semantics
-- improve BufferAllocator/SharedBuffer/DescriptorAllocator algorithms
-- add glfw/sdl examples (option to use sdl from meson wrap db)
-- correct syncs, pipeline barriers support
-	- when a SharedBuffer range is reallocated, does there have to be
-	  a pipeline barrier?
-- simplify/correct TrackedDescriptor/SubBuffer swap (union)
-- one_device: store device in Device, not Resource.
-  Make sure it can be reset (after destruction) e.g. for device lost or
-  multiple devices in sequence + example/test
-  (create multiple devices and resources)
-- make codestyle consistent everywhere
-	- mainly old sources using old styles (devcice.cpp etc)
-- clean up usage of nytl
-	- just include it as subproject?
-- handle problem: memBits (in buffer/sharedBuffer/image) not compatible
-  with buffer requirements
-  	- solution: might require to be checked/handled by user
-  		- then: does sharedBuffer (the hostCoherent checking) implement
-  		  it correctly?
-- memoryMap: remap smaller range when a certain range is no longer needed?
-	- might otherwise have undefined behavior, mapping memory while used
-	  on device is undefined, right? even if not used?
-- imageOps: really allow extent with depth == 0? also handle it for height == 0?
-- device: cache supported extensions (see e.g. defaults.cpp: could change
-  format querying behavior)
-- write basic docs
+- imageOps: support multiple layers in retrieve/fillMap
+	- also fillStaging
 
-- improve debug.hpp
-	- remove enums.hpp from debug.hpp
-		- probably best to implement the handle type switching in some other
-		  way; in source file
-	- use the new debug extension (debug_utils)?
-		- how to handle vulkan 1.1? require it at some point?
-	- cache loaded debug marker functions? require them to be present
-	  if used? we currently just silently fail, probably not expected
+- when vkpp has error handling update: fix try/catch/swallowed error
+  in swapchain acquire/present and formats.cpp (get format properties)
+- problem with Init<T>: the InitData may have to stay alive even
+  after alloc is called, e.g. when there's a stage buffer
+  maybe split alloc function into alloc and finish, only finish
+  will return the object? The finish function should then destroy
+  (move default initialize) the init data i guess to free everything
+  not needed anymore
+- improve allocation algorithms
+	- implement smarter strategies (per-allocate std::vector like?)
+	  we could implement multiple strategies and allow user to choose
+- allow compressed formats in image ops.
+  we can also allow compression on the fly, vkCmdCopyImage supports it
+  might be too complex to do/not a nice abstract, make sure it stays
+  inside vpp scope
+  Shouldn't be too complicated except that we might have to adjust
+  the address calculation in fill/retrieve Map and make sure to
+  align correctly (in staging). See vulkan spec, has nice
+  address/requirements definitions
+  	- can we provide blitting utility?
+	  maybe just move the initializon from stage here and fix it up
+	  for spec correctness
+- honor optimalBufferCopyRowPitchAlignment somehow
+	- retrieve: probably not possible if we want to guarantee tightly packed data
+	- we could maybe use it when uploading data, just pass as alignment
+	  to the stage buffer
+- when using c++20, switch to std::span (nytl::Span should be fully compatble
+  at the moment) and completely abolish using the nytl namespace.
+  import NonCopyable/NonMovable into vpp namespace, maybe even completely 
+  remove all nytl traces from it. 
+- implement Allocator shrink function that destroyed all currently
+  empty (and not reserved) pool objects
+	- basic defragmentation for all allocators?
 
 low prio / general / ideas
 --------------------------
 
-- vpp: better descriptor update overloads.
-  e.g. `uniform(nytl::Span<const BufferRange>);`
-- add overloads to SubBuffer/TrDs that don't take a <>allocator and just
-  use the default one
-- BufferAllocator optimize/shrink
-- look into simplyfying complicated offset mechanisms (mainly MappedBufferWriter)
-  in bufferOps
-  	- also: maybe best to not put (even if only couple of lines) the whole
-  	  stage buffer allocation handling in header?
-- work dependency chaining (-> QueueSubmitter semaphores)
-	- would allow to e.g. let Renderer submission depend on
-	  (staging, so cmdBuf-based) buffer updates
+- we could also add a sdl example
+- vpp::PipelineLayout(dev, {}) gives you a pipeline layout with
+  an empty handle, while
+  vpp::PipelineLayout(dev, vk::PipelineLayoutCreateInfo {}) gives you
+  a pipeline layout constructed with default, no/empty layouts.
+  Is that expected behavior for users?
+- allow to merge allocators
+	- started implementing it, see node 621. Problem is though that
+	  this requires to move non movable pool resources (TrDsPool,
+	  DeviceMemory, SharedBuffer). We could fix it by always storing
+	  those wrapped in unique ptrs (instead of using a deque)
+	  but i'm not sure that's worth it. Probably no other way though
+- optimiziation: currently some smarter resoures deriving handles
+  (like TrDs or Buffer, Image) store the Device word in addition
+  to a Resource they reference (like DeviceMemory or TrDsPool).
+  Could be optimized somehow i guess? but not critical, if users care about
+  that word they can always use the one device optimization.
+  Similar situation for CommandBuffer, could reference CommandPool instead
+  of pool + device (would make CommandPool non movable though, guess that's
+  acceptable though)
+- device: cache supported extensions?
+- DescriptorUpdate: any chance to avoid memory allocation? maybe just
+  provide another mechanism for more convenient update definition like
+  vpp::descriptorBinding; allow to group them somehow
+- improve BufferAllocator/SharedBuffer/DescriptorAllocator algorithms
+	- general descriptor algorithms
+- add debug barrier from vulkan sync wiki
+- stalling commands (in vpp::stall namespace) that are useful
+  for debugging/temporary workarounds?
+	- clearly mark them as inefficient and not good for production code
+	  though... not sure if worth it
 - offer functionality to select supported extensions/layers from a list
 - renderer: rework/remove RecordMode::all. Any way to get around the invalidate
   extra condition? Or at least rather use onDemand mode by default.
@@ -65,7 +79,10 @@ low prio / general / ideas
   implement possibility for that, i.e. record member function gets multiple
   command buffers to record at once. Could be more efficient to do for some
   engines (and they can still fall back to separate recording).
-- GraphicsPipelineInfo: could provide conversion operator
+  	- also see the stage workaround for avoiding initial record, maybe
+	  allow extra parameter?
+- GraphicsPipelineInfo: provide conversion operator?
+  if not, document why
 - add more assertions everywhere where things are assumed
 	- don't overdo, only if potentially useful when debugging
 	- see work.inl (something like tryFinish probably best)
@@ -77,144 +94,34 @@ low prio / general / ideas
 		- queue
 		- image constructors (simply copy from buffer constructors in objects.cpp)
 		- etc...
-	- also test coherent atom handling in SharedBuffer
-- respect optimalBufferCopyRowPitchAlignment somehow
-	- retrieve: probably not possible if we want to guarantee tightly packed data
-	- we could maybe use it when uploading data
 - support for checking max available vs used memory
 	- see vulkan extension
-- support for allocation strategies (mainly DeviceMemoryAllocator),
   support massive preallocations (like allocate pretty much the whole device memory)
 	- allow to explicity allocate memory on a given memory allocator.
 	  To create large (like over 100 mb) buffers of a memory type we know we will need
 	  Also something like an additional allocation strategy?
 	  Allocate more than needed if the user wants it
-- make sure device limits are correct in vpp
-	- are there any device limits we currently don't respect?
 - more utility for checking device limits?
 	- differentiate: assumptions and tests/checks
+- make sure device limits are correct in vpp
+	- are there any device limits we currently don't respect?
 - physicalDevice: add overload that take already queried physical dev properties
-- dataWork::data: use non-rvalue & modifier?
-	- to disallow something like ```data = retrieve(...)->data```
-	- has multiple problems: sometimes it's probably valid to do this.
-- rework commandBuffer
-	- don't make commandPools store information
-- example vulkanType impl for nytl and glm
-- maybe expose BufferOperator as independent header?
-	- especially BufferSizer, constexpr neededBufferSize
-		- maybe even useful in gl
-- procAddr: test if local cache really faster than load it every time?
-- add sync methods to retrieve/fill/transferWork utility
-	- semaphore for submitting work
 - cache hostVisible/deviceLocal bits in device?
-- rather use 'operator const Handle&()' for resources (also device/queue)?
-	- also: make conversion explicit? any possible problems with having them
-	  implicit?
-- improve memory/buffer allocation algorithm
 - support for sparse stuff. Without making non-sparse buffers/images more expensive
-- good idea to make everything threadlocal by default? hidden costs
-	- we synchronize things that might not need it, implicit
-- is size value in MemoryEntry really needed?
-	- rather work with some id's or something?
 - use using declarations in the derived resource classes to make the
 	protected ResourceHandle constructors visisble
 - pmr for performance critical functions.
 	- Device to store a thread-specific memory resource?
 	- use it inside vpp for memory heavy operations (see DeviceMemoryAllocator)
-- is there a better way for the Resource::swap mess?
-- config: vpp_debug vs vpp_ndebug rather messy now
-	- configurable from build system?
-- work dependencies
-	- make it possible (in some way) for work objects to depend on each other
-	- the work objects itself will figure out how to do it (e.g. by fence or
-		semaphore synchronization, or by simply waiting on the work before
-		submitting or in which step ever)
-- which information should resources carry around, which not?
-- general initializer
-	- something about descriptors and descriptor pools
-	- think about buffer/image providers (better not)
+- document the swap/move idiom used by resource and subclasses
 - display class for vkDisplayKHR extension
-	- scope of vpp?
-	- must wait until supported somewhere, for tests
 - queue constness? (maybe make it related to any operations on the queue?)
-- codegen constexpr?
 - write deviceLost handling code snippet example
-- shader stage construction in place?
+- shader stage construction in place? [probably not worth it, works alright atm]
 	- make it easier to create shader modules that are only once used directly inside
 		a ShaderProgram. Is there any way that keeps a reasonable interface?
-
 - further custom exception? like vpp::QueueError if there is no queue that
-	can execute the needed operation
+	can execute the needed operation [probably not worth it]
 	- think about some functionality to handle device lost (how to deal with it?)
-
-- External constructors for all resources (construct them from existing handles)
 - further examples/snippets/documentation
 - better best physical device querying (vpp/physicalDevice.cpp)
-
-- alternative two step init: safer, easier to use
-	- create/init methods for buffer and image?
-		- would be consistent at least
-		- make the constructor fully initialize it (like specified in init.hpp?)
-		- rework/rethink init.hpp specifications
-
-- idea moved from init.hpp:
-
-// TODO: asynchronous two step initialization concept
-// some operations do need more than 2 steps to be fully initialized.
-// Make their waiting asynchronous in a way that it makes sense (?)
-// e.g. wait 5ms for someone else to ask for an uploadBuffer, if no one is doing, ask yourself
-// then record the needed commands, then wait 20ms for someone else to submit work on a valid
-// queue, if no one is doing submit youself.
-// TODO (e.g. for the point above): dynamic queue mangement. Sometimes more than one queue
-// would be able to execute commands, make it possible to just give some expression that is
-// available to use the first matching queue.
-
-- docs
-
-/// General documentation for vpp two-step-initiazation classes.
-/// Constructors shall always either fully construct the object or be default constructors.
-/// This way users of classes can always be sure that constructing the object with arguments
-/// will initialize it wihtout having to look into some documentation.
-
-/// For two-step-initiazation only the two member functions create(...) and init(...) will
-/// be used on a default constructed object. Calling create() for an object that was
-/// not default constructed and since then unchanged, calling init() for an object
-/// on that create() was not called before, or calling one of the functions
-/// more than one time is usually undefined behaviour.
-/// It therefore might work but class writers are encouraged throw an exception in such
-/// a case.
-/// Both functions can be const but are not required to be so.
-/// There might also be mutliple overloads of both functions, taking 0 or more arguments.
-/// Classes should try to avoid redundant information in the both functions,
-/// e.g. if both of them need certain information they should simply take it as paramter
-/// in create and then store it (if this does not introduce an unacceptable overheat).
-
-/// If one wants to re-two-step-initialized an already initialized object, it must first
-/// move assign (or copy assign if available) with a default constructed object and then
-/// call the two functions.
-/// Using an uninitialized object will result in undefined behaviour. This time class
-/// authors are explicitly encouraged to NOT check for this case, since that would result
-/// in high overheads, so this will likely lead to a memory error e.g. when dereferencing
-/// an nullptr.
-/// Destructors (as an exception) should work for default constructed object as well,
-/// i.e. they must not assume that the destructing object was ever valid.
-
-/// Classes should generally avoid having something like a destroy method (and if, then protected).
-/// In move operators the destructor can be directly called.
-/// Usually classes implement a free friend swap function for themselves and then use it
-/// for the move operator.
-
-### From sharedbuffer:
-
-// NOTE: it might be useful to go even one step further and add a new
-//  SharedBuffer class that makes use of sparse memory bindings and
-//  only binds those regions that are currently used by a BufferRange.
-//  Will have different costs than this concept (and this is fine
-//  in most cases, also sparse stuff is only sparingly supported)
-//  so keep this separate.
-
-// NOTE: also implement synchronized versions of these classes?
-//  might be useful since often there are multiple threads e.g.
-//  uploading or initializing stuff. But again, implement as
-//  a separate version, only pay for what you use.
-

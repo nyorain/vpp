@@ -3,8 +3,8 @@
 
 #include <vpp/shader.hpp>
 #include <vpp/pipeline.hpp>
-#include <vpp/pipelineInfo.hpp>
-#include <vpp/renderPass.hpp>
+#include <vpp/pipeline.hpp>
+#include <vpp/handles.hpp>
 
 uint32_t dummy_vert_spv[] = {
 	119734787, 65536, 524289, 62, 0, 131089, 1, 393227, 1, 1280527431, 1685353262,
@@ -89,15 +89,15 @@ TEST(defaultCreate) {
 	auto& dev = *globals.device;
 
 	auto rp = createRenderPass(dev, vk::Format::b8g8r8a8Unorm);
-	auto layout = vpp::PipelineLayout(dev, {});
+	auto layout = vpp::PipelineLayout(dev, vk::PipelineLayoutCreateInfo {});
 
 	auto vert = vpp::ShaderModule(dev, dummy_vert_spv);
 	auto frag = vpp::ShaderModule(dev, dummy_frag_spv);
 
-	auto info = vpp::GraphicsPipelineInfo(rp, layout, {{
+	auto info = vpp::GraphicsPipelineInfo(rp, layout, {{{
 		{vert, vk::ShaderStageBits::vertex},
 		{frag, vk::ShaderStageBits::fragment}
-	}});
+	}}});
 
 	constexpr auto cacheName = "graphicsPipelineCache.bin";
 	vpp::PipelineCache cache(dev, cacheName);

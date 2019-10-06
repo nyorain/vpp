@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -129,8 +129,9 @@ vk::Result Renderer::render(std::optional<uint64_t>* sid,
 	// we use acquireSemaphore_ to acquire the image
 	// this semaphore is always unsignaled
 	std::uint32_t id;
-	auto res = swapchain().acquire(id, acquireSemaphore_, {}, UINT64_MAX - 1);
-	if(res != vk::Result::success) {
+	auto res = swapchain().acquire(id, acquireSemaphore_, {}, UINT64_MAX);
+	// TODO: handle suboptimal
+	if(!vk::error::success(res)) {
 		return res;
 	}
 
@@ -197,7 +198,7 @@ vk::Result Renderer::render(std::optional<uint64_t>* sid,
 	return swapchain().present(*present_, id, buf.semaphore);
 }
 
-vk::Result Renderer::renderSync(const RenderInfo& info) {
+vk::Result Renderer::renderStall(const RenderInfo& info) {
 	std::optional<uint64_t> id;
 	auto res = render(&id, info);
 	if(id) {

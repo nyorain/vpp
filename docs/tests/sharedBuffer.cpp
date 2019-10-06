@@ -11,7 +11,8 @@ std::ostream& operator<<(std::ostream& os, const vpp::BasicAllocation<T>& alloc)
 
 TEST(sharedBuf) {
 	auto& dev = *globals.device;
-	vpp::SharedBuffer buf(dev, {{}, 1024u, vk::BufferUsageBits::uniformBuffer});
+	vpp::SharedBuffer buf(dev.devMemAllocator(),
+		{{}, 1024u, vk::BufferUsageBits::uniformBuffer});
 	auto alloc1 = buf.alloc(1000u);
 	EXPECT(alloc1.offset, 0u);
 	EXPECT(alloc1.size, 1000u);
@@ -63,7 +64,8 @@ TEST(sharedBuf) {
 TEST(alignment) {
 	using Alloc = vpp::SharedBuffer::Allocation;
 	auto& dev = *globals.device;
-	vpp::SharedBuffer buf(dev, {{}, 2048u, vk::BufferUsageBits::uniformBuffer});
+	vpp::SharedBuffer buf(dev.devMemAllocator(),
+		{{}, 2048u, vk::BufferUsageBits::uniformBuffer});
 
 	auto alloc1 = buf.alloc(230u, 64u);
 	EXPECT(alloc1, (Alloc{0, 230u}));
@@ -117,8 +119,8 @@ TEST(nonCoherentAtomAlign) {
 		return;
 	}
 
-	vpp::SharedBuffer buf(dev, {{}, 2048u, vk::BufferUsageBits::uniformBuffer},
-		hostNonCoherent);
+	vpp::SharedBuffer buf(dev.devMemAllocator(),
+		{{}, 2048u, vk::BufferUsageBits::uniformBuffer}, hostNonCoherent);
 
 	vpp::SubBuffer range1(buf, buf.alloc(10u));
 	EXPECT(range1.allocation(), (Alloc{0u, 10u}));
@@ -146,7 +148,7 @@ TEST(mappable) {
 	auto buf1 = vpp::SubBuffer(allocator, 100u, usage, hostBits);
 	EXPECT(buf1.allocation().size, 100u);
 	EXPECT(buf1.buffer().mappable(), true);
-	auto props = buf1.buffer().memoryEntry().memory()->properties();
+	auto props = buf1.buffer().memory().properties();
 	auto coherent = (props & vk::MemoryPropertyBits::hostCoherent);
 	EXPECT(buf1.offset() % 128u, 0u);
 	if(!coherent) {
@@ -157,7 +159,7 @@ TEST(mappable) {
 	auto buf2 = vpp::SubBuffer{allocator, 1000u, usage, coherentBits};
 	EXPECT(buf2.allocation().size, 1000u);
 	EXPECT(buf2.buffer().mappable(), true);
-	auto type = buf2.buffer().memoryEntry().memory()->type();
+	auto type = buf2.buffer().memory().type();
 	EXPECT((coherentBits & (1 << type)) != 0, true);
 
 	auto mapView1 = buf2.memoryMap();
@@ -172,7 +174,7 @@ TEST(mappable) {
 		auto buf3 = vpp::SubBuffer(allocator, 511u, usage, hostNonCoherent);
 		EXPECT(buf3.allocation().size, 511u);
 		EXPECT(buf3.buffer().mappable(), true);
-		type = buf3.buffer().memoryEntry().memory()->type();
+		type = buf3.buffer().memory().type();
 		EXPECT((~coherentBits & (1 << type)) != 0, true);
 		EXPECT(buf3.offset() % atomAlign, 0u);
 	}
@@ -186,32 +188,33 @@ TEST(defer) {
 	auto hostBits = dev.hostMemoryTypes();
 	auto devBits = dev.deviceMemoryTypes();
 
-	auto buf1 = vpp::SubBuffer(vpp::defer, allocator, 3251u, usage, hostBits);
+	std::array<vpp::SubBuffer::InitData, 6> data;
+	auto buf1 = vpp::SubBuffer(data[0], allocator, 3251u, usage, hostBits);
 	usage |= vk::BufferUsageBits::transferSrc;
-	auto buf2 = vpp::SubBuffer(vpp::defer, allocator, 6431u, usage, devBits);
+	auto buf2 = vpp::SubBuffer(data[1], allocator, 6431u, usage, devBits);
 	usage = vk::BufferUsageBits::transferDst;
-	auto buf3 = vpp::SubBuffer(vpp::defer, allocator, 234u, usage, devBits, 32u);
+	auto buf3 = vpp::SubBuffer(data[2], allocator, 234u, usage, devBits, 32u);
 	usage |= vk::BufferUsageBits::storageBuffer;
-	auto buf4 = vpp::SubBuffer(vpp::defer, allocator, 54u, usage, hostBits);
+	auto buf4 = vpp::SubBuffer(data[3], allocator, 54u, usage, hostBits);
 	usage = vk::BufferUsageBits::storageTexelBuffer;
-	auto buf5 = vpp::SubBuffer(vpp::defer, allocator, 53221u, usage, devBits);
+	auto buf5 = vpp::SubBuffer(data[4], allocator, 53221u, usage, devBits);
 
-	buf1.init();
-	buf2.init();
-	buf3.init();
+	buf1.init(data[0]);
+	buf2.init(data[1]);
+	buf3.init(data[2]);
 
 	EXPECT(buf1.size(), 3251u);
-	auto b1m = (1u << buf1.buffer().memoryEntry().memory()->type());
+	auto b1m = (1u << buf1.buffer().memory().type());
 	EXPECT(((b1m & hostBits) != 0), true);
 	EXPECT(buf2.size(), 6431u);
-	auto b2m = (1u << buf2.buffer().memoryEntry().memory()->type());
+	auto b2m = (1u << buf2.buffer().memory().type());
 	EXPECT(((b2m & devBits) != 0), true);
 	EXPECT(buf3.size(), 234u);
 
-	auto buf6 = vpp::SubBuffer(vpp::defer, allocator, 2143u, usage, devBits, 2u);
-	buf4.init();
-	buf5.init();
-	buf6.init();
+	auto buf6 = vpp::SubBuffer(data[5], allocator, 2143u, usage, devBits, 2u);
+	buf4.init(data[3]);
+	buf5.init(data[4]);
+	buf6.init(data[5]);
 
 	EXPECT(buf4.size(), 54u);
 	EXPECT(buf5.size(), 53221u);

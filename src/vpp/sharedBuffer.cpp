@@ -1,10 +1,10 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/sharedBuffer.hpp>
 #include <vpp/queue.hpp>
-#include <vkpp/structs.hpp>
+#include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 #include <algorithm>
 
@@ -31,6 +31,12 @@ vk::DeviceSize usageAlignment(const Device& dev, vk::BufferUsageFlags usage) {
 		ret = std::max(ret, align);
 	}
 
+	if(usage & vk::BufferUsageBits::indirectBuffer && align > 0) {
+		// offset of IndirectDrawCommand must be multiple of 4
+		align = 4u;
+		ret = std::max(ret, align);
+	}
+
 	return ret;
 }
 
@@ -38,8 +44,7 @@ vk::DeviceSize usageAlignment(const Device& dev, vk::BufferUsageFlags usage) {
 
 // BufferRange
 SubBuffer::SubBuffer(SharedBuffer& buf, const Allocation& alloc) :
-		shared_(&buf), allocation_(alloc) {
-
+		buffer_(&buf), allocation_(alloc) {
 	dlg_assert(buf.vkHandle());
 	dlg_assert(alloc.size != 0);
 }
@@ -47,64 +52,94 @@ SubBuffer::SubBuffer(SharedBuffer& buf, const Allocation& alloc) :
 SubBuffer::SubBuffer(BufferAllocator& alloc, vk::DeviceSize size,
 		vk::BufferUsageFlags usage, unsigned memBits,
 		vk::DeviceSize align) {
-	auto [shared, a] = alloc.alloc(size, usage, memBits, align);
-	shared_ = &shared;
+	dlg_assert(memBits);
+	auto [buffer, a] = alloc.alloc(size, usage, memBits, align);
+	buffer_ = &buffer;
 	allocation_ = a;
 }
 
-SubBuffer::SubBuffer(DeferTag, BufferAllocator& alloc, vk::DeviceSize size,
-		vk::BufferUsageFlags usage, unsigned memBits,
-		vk::DeviceSize align) : allocator_(&alloc) {
-	 alloc.reserve(size, usage, memBits, align, &allocation_.offset);
+SubBuffer::SubBuffer(InitData& data, BufferAllocator& alloc,
+		vk::DeviceSize size, vk::BufferUsageFlags usage, unsigned memBits,
+		vk::DeviceSize align) {
+	dlg_assert(memBits);
+	data.allocator = &alloc;
+	alloc.reserve(size, usage, memBits, align, &data.reservation);
 }
 
 SubBuffer::~SubBuffer() {
-	if(allocation_.size > 0) {
-		dlg_assert(shared_);
-		shared_->free(allocation_);
-	} else if(allocation_.offset > 0) {
-		dlg_assert(allocator_);
-		allocator_->cancel(allocation_.offset);
+	if(buffer_) {
+		dlg_assert(allocation_.size > 0);
+		buffer_->free(allocation_);
 	}
 }
 
-void SubBuffer::init() {
-	if(allocation_.size == 0u) {
-		dlg_assert(allocator_);
-		dlg_assert(allocation_.offset > 0u);
-		auto [shared, alloc] = allocator_->alloc(offset());
-		shared_ = &shared;
-		allocation_ = alloc;
-	}
+void SubBuffer::init(InitData& data) {
+	dlg_assert(data.allocator && data.reservation);
+	dlg_assert(!buffer_);
+
+	auto [buf, alloc] = data.allocator->alloc(data.reservation);
+	buffer_ = &buf;
+	allocation_ = alloc;
+	data.allocator = nullptr;
 }
 
-MemoryMapView SubBuffer::memoryMap() const {
-	// buffer().memoryMap will warn if buffer is not mappable
-	return buffer().memoryMap(offset(), size());
+MemoryMapView SubBuffer::memoryMap(vk::DeviceSize offset,
+		vk::DeviceSize size) const {
+	size = (size == vk::wholeSize) ? this->size() : size;
+	dlg_assert(offset + size <= this->size());
+	offset += this->offset();
+	return buffer().memoryMap(offset, size);
 }
 
 void swap(SubBuffer& a, SubBuffer& b) noexcept {
-	using RR = ResourceReference<SubBuffer>;
 	using std::swap;
-	swap(static_cast<RR&>(a), static_cast<RR&>(b));
-	swap(a.shared_, b.shared_);
+	swap(a.buffer_, b.buffer_);
 	swap(a.allocation_, b.allocation_);
 }
 
+// InitData
+SubBuffer::InitData::InitData(InitData&& rhs) noexcept {
+	allocator = rhs.allocator;
+	reservation = rhs.reservation;
+	rhs.allocator = {};
+	rhs.reservation = {};
+}
+
+SubBuffer::InitData& SubBuffer::InitData::operator=(
+		InitData&& rhs) noexcept {
+	this->~InitData();
+	allocator = rhs.allocator;
+	reservation = rhs.reservation;
+	rhs.allocator = {};
+	rhs.reservation = {};
+	return *this;
+}
+
+SubBuffer::InitData::~InitData() {
+	if(allocator) {
+		dlg_assert(reservation);
+		allocator->cancel(reservation);
+	}
+}
+
 // SharedBuffer
-SharedBuffer::SharedBuffer(const Device& dev, const vk::BufferCreateInfo& info,
-	unsigned int memBits, vpp::DeviceMemoryAllocator* allocator) :
-		Buffer(dev, info, memBits, allocator), size_(info.size) {
+SharedBuffer::SharedBuffer(DeviceMemoryAllocator& alloc,
+	const vk::BufferCreateInfo& info, unsigned int memBits) :
+		Buffer(alloc, info, memBits), size_(info.size) {
 }
 
-SharedBuffer::SharedBuffer(const Device& dev, const vk::BufferCreateInfo& info,
-	DeviceMemory& mem) : Buffer(dev, info, mem), size_(info.size) {
+SharedBuffer::SharedBuffer(DeviceMemoryAllocator& alloc, vk::Buffer buf,
+	vk::DeviceSize size, unsigned int memBits) :
+		Buffer(alloc, buf, memBits), size_(size) {
 }
 
-SharedBuffer::SharedBuffer(DeferTag defer, const Device& dev,
-	const vk::BufferCreateInfo& info, unsigned int memBits,
-	vpp::DeviceMemoryAllocator* alloc) :
-		Buffer(defer, dev, info, memBits, alloc), size_(info.size) {
+SharedBuffer::SharedBuffer(DeviceMemory& mem,
+	const vk::BufferCreateInfo& info) : Buffer(mem, info), size_(info.size) {
+}
+
+SharedBuffer::SharedBuffer(InitData& data, DeviceMemoryAllocator& alloc,
+	const vk::BufferCreateInfo& info, unsigned int memBits) :
+		Buffer(data, alloc, info, memBits), size_(info.size) {
 }
 
 SharedBuffer::~SharedBuffer() {
@@ -121,7 +156,7 @@ SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
 
 	// respect the nonCoherentAtomSize if the buffer is allocated on hostVisible
 	// and not hostCoherent memory
-	auto t = memoryEntry().memory()->type();
+	auto t = memory().type();
 	auto flags = device().memoryProperties().memoryTypes[t].propertyFlags;
 	auto nonCoherentAtomAlign =
 		flags & vk::MemoryPropertyBits::hostVisible &&
@@ -165,19 +200,25 @@ void SharedBuffer::free(const Allocation& alloc) {
 
 // BufferAllocator
 BufferAllocator::BufferAllocator(const Device& dev) :
-		Resource(dev) {
+	BufferAllocator(dev.devMemAllocator()) {
+}
+
+BufferAllocator::BufferAllocator(DeviceMemoryAllocator& memAlloc) :
+	devMemAlloc_(memAlloc) {
 }
 
 BufferAllocator::~BufferAllocator() {
 	// shared buffer will warn if there are remaining allocations
 	// on destruction
-	for(auto& reservation : reservations_) {
-		if(auto* r = std::get_if<1>(&reservation.data); r) {
-			if(r->buffer && r->allocation.size) {
-				r->buffer->free(r->allocation);
-			}
-		}
-	}
+	// for(auto& res : reservations_) {
+	// 	dlg_assert(res.buffer && res.allocation.size);
+	// 	res.buffer->free(res.allocation);
+	// }
+
+	dlg_assertlm(dlg_level_warn, requirements_.empty(),
+		"~BufferAllocator: pending requirements left");
+	dlg_assertlm(dlg_level_warn, reservations_.empty(),
+		"~BufferAllocator: pending reservations left");
 }
 
 void BufferAllocator::reserve(vk::DeviceSize size,
@@ -185,64 +226,62 @@ void BufferAllocator::reserve(vk::DeviceSize size,
 		vk::DeviceSize align, ReservationID* reservation) {
 
 	dlg_assert(size > 0);
+	dlg_assert(memBits);
 	dlg_assertm(align == 1 || align % 2 == 0,
 		"Alignment {} not power of 2", align);
 
-	align = std::max(align, usageAlignment(device(), usage));
-	auto& back = reservations_.emplace_back();
-
 	Requirement req;
 	req.size = size;
-	req.align = align;
+	req.align = std::max(align, usageAlignment(device(), usage));
 	req.usage = usage;
 	req.memBits = memBits;
-	back.data = {req};
 
 	if(reservation) {
-		if(++id_ == 0u) { // wrap
+		if(++id_ == 0u) { // wrap; 0 is invalid reservation id
 			++id_;
 		}
 
-		back.id = id_;
-		*reservation = id_;
+		req.id = *reservation = id_;
 	}
+
+	requirements_.push_back(req);
 }
 
 BufferAllocator::Allocation BufferAllocator::alloc(ReservationID reservation) {
 	dlg_assert(reservation);
 	auto cmp = [&](const auto& val) { return val.id == reservation; };
-	auto it = std::find_if(reservations_.begin(), reservations_.end(), cmp);
-	dlg_assert(it != reservations_.end());
-
-	auto r = std::move(*it);
-	reservations_.erase(it); // important to erase first!
-	if(auto* req = std::get_if<0>(&r.data); req) {
-		auto [buf, a] = alloc(req->size, req->usage, req->memBits, req->align);
-		return {buf, a};
-	} else {
-		auto& res = std::get<1>(r.data);
-		return {*res.buffer, res.allocation};
+	auto res = std::find_if(reservations_.begin(), reservations_.end(), cmp);
+	if(res != reservations_.end()) {
+		auto ret = Allocation{*res->buffer, res->allocation};
+		reservations_.erase(res);
+		return ret;
 	}
+
+	auto rit = std::find_if(requirements_.begin(), requirements_.end(), cmp);
+	dlg_assert(rit != requirements_.end());
+	auto req = *rit;
+	requirements_.erase(rit); // important to erase before alloc
+	auto ret = alloc(req.size, req.usage, req.memBits, req.align);
+	return ret;
 }
 
 BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 		vk::BufferUsageFlags usage, unsigned memBits, vk::DeviceSize align) {
+	// TODO: really dumb, greedy algorithm at the moment
 
 	dlg_assert(size > 0);
-	dlg_assertm(memBits, "invalid (too few) memBits given");
+	dlg_assertm(memBits, "invalid memBits given");
 	dlg_assertm(align == 1 || align % 2 == 0,
 		"Alignment {} not power of 2", align);
 
 	align = std::max(align, usageAlignment(device(), usage));
 
 	// check if there is still space available
-	// TODO: really dumb algorithm atm, greedy af
 	for(auto& buf : buffers_) {
-		auto* mem = buf.buffer.memoryEntry().memory();
-		dlg_assert(mem);
+		auto& mem = buf.buffer.memory();
 
 		// check buffer has use and memBits we need
-		if((buf.usage & usage) != usage || !(memBits & (1 << mem->type()))) {
+		if((buf.usage & usage) != usage || !(memBits & (1 << mem.type()))) {
 			continue;
 		}
 
@@ -254,46 +293,65 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 	}
 
 	// allocate a new buffer
-	// gather all matching buffer information
+	auto& remaining = tmpRequirements_;
+	auto& reservations = tmpReservations_;
+	remaining.reserve(requirements_.size());
+	reservations.reserve(requirements_.size());
+
+	auto imemBits = memBits;
 	vk::BufferCreateInfo createInfo;
 	createInfo.size = size;
 	createInfo.usage = usage;
 
-	for(auto it = reservations_.begin(); it != reservations_.end();) {
-		auto reqp = std::get_if<0>(&it->data);
-		if(!reqp) { // reservation, no requirement
-			++it;
+	// try to allocate as many requirements as possible on this new buffer
+	for(auto& req : requirements_) {
+		auto mem = imemBits & req.memBits;
+		if(!mem) { // requirement can't be allocated in this batch
+			remaining.push_back(req);
 			continue;
 		}
-		auto& req = *reqp;
 
-		// TODO: bad, greedy algorithm
-		auto mem = memBits & req.memBits;
-		if(mem) {
-			auto off = vpp::align(createInfo.size, req.align);
-			createInfo.usage |= req.usage;
-			createInfo.size = off + req.size;
-			memBits = mem;
-
-			if(it->id) {
-				// buffer is filled in after creation
-				it->data = Reservation{nullptr, {off, req.size}};
-				++it;
-			} else {
-				it = reservations_.erase(it);
-			}
+		auto off = vpp::align(createInfo.size, req.align);
+		createInfo.usage |= req.usage;
+		createInfo.size = off + req.size;
+		imemBits = mem;
+		if(req.id) {
+			// buffer nullptr is filled in after buffer creation
+			reservations.push_back({req.id, nullptr, {off, req.size}});
 		}
 	}
 
-	auto& nbuf = buffers_.emplace_back(device(), createInfo, memBits);
+	auto buf = BufferHandle(device(), createInfo);
+	auto memReqs = vk::getBufferMemoryRequirements(device(), buf);
+	imemBits &= memReqs.memoryTypeBits;
+	if(!imemBits) {
+		// in this case we can't allocate the buffer on any memory
+		// type we want to. Try again but only with the types that
+		// vulkan supports.
+		imemBits = memBits & memReqs.memoryTypeBits;
+		dlg_assertm(imemBits, "Invalid allocation memBits requirement");
+		remaining.clear();
+		reservations.clear();
+		buf = {};
+		return alloc(size, usage, imemBits, align);
+	}
+
+	auto& nbuf = buffers_.emplace_back(devMemAlloc_, std::move(buf), imemBits,
+		createInfo.size, createInfo.usage);
 	auto& allocs = nbuf.buffer.allocations(); // insert them manually
 	allocs.push_back({0, size}); // first entry, the required one
-	for(auto& r : reservations_) {
-		if(auto* res = std::get_if<1>(&r.data); res && !res->buffer) {
-			res->buffer = &nbuf.buffer;
-			allocs.push_back(res->allocation);
-		}
+	for(auto& res : reservations) {
+		res.buffer = &nbuf.buffer;
+		allocs.push_back(res.allocation);
 	}
+
+	requirements_.clear();
+	requirements_.insert(requirements_.end(), remaining.begin(), remaining.end());
+	reservations_.insert(reservations_.end(), reservations.begin(),
+		reservations.end());
+
+	remaining.clear();
+	reservations.clear();
 
 	return {nbuf.buffer, {0, size}};
 }
@@ -301,43 +359,23 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 void BufferAllocator::cancel(ReservationID reservation) {
 	dlg_assert(reservation);
 	auto cmp = [&](const auto& val) { return val.id == reservation; };
-	auto it = std::find_if(reservations_.begin(), reservations_.end(), cmp);
-	dlg_assert(it != reservations_.end());
-	auto r = std::move(*it);
-	reservations_.erase(it);
-
-	// if we already made the reserving allocation, free it!
-	if(auto* req = std::get_if<1>(&r.data); req) {
-		req->buffer->free(req->allocation);
+	auto res = std::find_if(reservations_.begin(), reservations_.end(), cmp);
+	if(res != reservations_.end()) {
+		dlg_assert(res->buffer && res->allocation.size);
+		res->buffer->free(res->allocation);
+		reservations_.erase(res);
+		return;
 	}
+
+	auto req = std::find_if(requirements_.begin(), requirements_.end(), cmp);
+	dlg_assert(req != requirements_.end());
+	requirements_.erase(req);
 }
 
-BufferAllocator::Buffer::Buffer(const Device& dev,
-	const vk::BufferCreateInfo& info, unsigned int mbits) :
-		buffer(dev, info, mbits), usage(info.usage) {
-}
-
-// utility
-int transferQueueFamily(const Device& dev, const Queue** queue) {
-	// we do not only query a valid queue family but a valid queue and then
-	// chose its queue family to ensure that the device has a queue for the
-	// queried queue family
-	auto* q = dev.queue(vk::QueueBits::transfer);
-	if(!q) {
-		q = dev.queue(vk::QueueBits::graphics);
-	}
-	if(!q) {
-		q = dev.queue(vk::QueueBits::compute);
-	}
-	if(!q) {
-		return -1;
-	}
-
-	if(queue) {
-		*queue = q;
-	}
-
-	return q->family();
+BufferAllocator::Buffer::Buffer(DeviceMemoryAllocator& alloc,
+	vpp::BufferHandle buf, unsigned int mbits, vk::DeviceSize size,
+	vk::BufferUsageFlags xusage) :
+		buffer(alloc, buf.release(), size, mbits), usage(xusage) {
 }
 
 } // namespace vpp

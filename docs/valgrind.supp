@@ -64,4 +64,20 @@
    obj:/usr/lib/libdl-*.so
    fun:_dl_catch_error
 }
-
+{
+   vulkan_enumerate_devices
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:realpath@@GLIBC_2.3
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/libvulkan.so.1.1.107
+   obj:/usr/lib/libvulkan.so.1.1.107
+   obj:*
+   obj:/usr/lib/libvulkan.so.1.1.107
+   fun:vkEnumeratePhysicalDevices
+}

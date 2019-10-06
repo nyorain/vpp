@@ -1,237 +1,238 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/debug.hpp>
-#include <vpp/procAddr.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 
 namespace vpp {
 namespace {
 
-VKAPI_PTR vk::Bool32 defaultMessageCallback(vk::DebugReportFlagsEXT flags,
-		vk::DebugReportObjectTypeEXT objType,
-		uint64_t srcObject,
-		size_t location,
-		int32_t msgCode,
-		const char* pLayerPrefix,
-		const char* pMsg,
-		void* pUserData) {
-
-	if(!pUserData) {
-		dlg_error("DebugCallback called with nullptr user data");
-		return true;
+static VkBool32 messengerCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+		VkDebugUtilsMessageTypeFlagsEXT type,
+		const VkDebugUtilsMessengerCallbackDataEXT* debugData,
+		void* data) {
+	if(!data || !debugData) {
+		dlg_error("DebugCallback called with null data");
+		return false;
 	}
 
-	auto callback = static_cast<DebugCallback*>(pUserData);
-	return callback->call({flags, objType, srcObject, location, msgCode, pLayerPrefix, pMsg});
+	auto messenger = static_cast<DebugMessenger*>(data);
+	auto vseverity = static_cast<vk::DebugUtilsMessageSeverityBitsEXT>(severity);
+	auto vtype = static_cast<vk::DebugUtilsMessageTypeBitsEXT>(type);
+
+	// NOTE: gcc 8 warns here because of the memcpy and since
+	// vdebugData isn't trivial (cannot be made trivial due to sType
+	// initializer). But memcpy doesn't require that types are trivial,
+	// only trivially copyable and vdebugData is that, so we cheat
+	// the warning by casting to void*
+	vk::DebugUtilsMessengerCallbackDataEXT vdebugData;
+	std::memcpy((void*) &vdebugData, debugData, sizeof(vdebugData));
+	messenger->call(vseverity, vtype, vdebugData);
+	return false;
 }
 
-std::string to_string(vk::DebugReportFlagsEXT flags) {
-	static constexpr struct {
-		vk::DebugReportBitsEXT bit;
-		const char* name;
-	} names[] = {
-		{vk::DebugReportBitsEXT::information, "information"},
-		{vk::DebugReportBitsEXT::warning, "warning"},
-		{vk::DebugReportBitsEXT::performanceWarning, "performanceWarning"},
-		{vk::DebugReportBitsEXT::error, "error"},
-		{vk::DebugReportBitsEXT::debug, "debug"},
-	};
+} // anon namespace
 
-	std::string ret;
-	unsigned int count = 0u;
-	for(auto name : names) {
-		if(flags & name.bit) {
-			++count;
-			ret += name.name;
-			ret += ", ";
-		}
-	}
-
-	if(ret.empty()) {
-		ret = "<unknown>";
-	} else if(ret.size() > 3) {
-		ret = ret.substr(0, ret.size() - 2);
-	}
-
-	if(count > 1) {
-		ret = "{" + ret + "}";
-	}
-
-	return ret;
+// DebugMessenger
+vk::DebugUtilsMessageSeverityFlagsEXT DebugMessenger::defaultSeverity() {
+	return MsgSeverity::error |
+		MsgSeverity::warning;
 }
 
-std::string to_string(vk::DebugReportObjectTypeEXT type) {
-	switch(type) {
-		case vk::DebugReportObjectTypeEXT::unknown: return "unknown";
-		case vk::DebugReportObjectTypeEXT::instance: return "instance";
-		case vk::DebugReportObjectTypeEXT::physicalDevice: return "physicalDevice";
-		case vk::DebugReportObjectTypeEXT::device: return "device";
-		case vk::DebugReportObjectTypeEXT::queue: return "queue";
-		case vk::DebugReportObjectTypeEXT::semaphore: return "semaphore";
-		case vk::DebugReportObjectTypeEXT::commandBuffer: return "commandBuffer";
-		case vk::DebugReportObjectTypeEXT::fence: return "fence";
-		case vk::DebugReportObjectTypeEXT::deviceMemory: return "deviceMemory";
-		case vk::DebugReportObjectTypeEXT::buffer: return "buffer";
-		case vk::DebugReportObjectTypeEXT::image: return "image";
-		case vk::DebugReportObjectTypeEXT::event: return "event";
-		case vk::DebugReportObjectTypeEXT::queryPool: return "queryPool";
-		case vk::DebugReportObjectTypeEXT::bufferView: return "bufferView";
-		case vk::DebugReportObjectTypeEXT::imageView: return "imageView";
-		case vk::DebugReportObjectTypeEXT::shaderModule: return "shaderModule";
-		case vk::DebugReportObjectTypeEXT::pipelineCache: return "pipelineCache";
-		case vk::DebugReportObjectTypeEXT::pipelineLayout: return "pipelineLayout";
-		case vk::DebugReportObjectTypeEXT::renderPass: return "renderPass";
-		case vk::DebugReportObjectTypeEXT::pipeline: return "pipeline";
-		case vk::DebugReportObjectTypeEXT::descriptorSetLayout: return "descriptorSetLayout";
-		case vk::DebugReportObjectTypeEXT::sampler: return "sampler";
-		case vk::DebugReportObjectTypeEXT::descriptorPool: return "descriptorPool";
-		case vk::DebugReportObjectTypeEXT::descriptorSet: return "descriptorSet";
-		case vk::DebugReportObjectTypeEXT::framebuffer: return "framebuffer";
-		case vk::DebugReportObjectTypeEXT::commandPool: return "commandPool";
-		case vk::DebugReportObjectTypeEXT::surfaceKHR: return "surfaceKHR";
-		case vk::DebugReportObjectTypeEXT::swapchainKHR: return "swapchainKHR";
-		default: return "<unknown>";
+vk::DebugUtilsMessageTypeFlagsEXT DebugMessenger::defaultTypes() {
+	return MsgType::general |
+		MsgType::performance |
+		MsgType::validation;
+}
+
+DebugMessenger::DebugMessenger(vk::Instance instance, MsgSeverityFlags severity,
+		MsgTypeFlags types) : instance_(instance) {
+	if(!vk::dispatch.vkCreateDebugUtilsMessengerEXT) {
+		auto msg = "vpp::DebugCallback: VK_EXT_debug_utils not enabled";
+		throw std::runtime_error(msg);
+	}
+
+	vk::DebugUtilsMessengerCreateInfoEXT info;
+	info.messageSeverity = severity;
+	info.messageType = types;
+	info.pfnUserCallback = &messengerCallback;
+	info.pUserData = this;
+	messenger_ = vk::createDebugUtilsMessengerEXT(instance, info);
+}
+
+DebugMessenger::~DebugMessenger() {
+	if(vkMessenger()) {
+		vk::destroyDebugUtilsMessengerEXT(vkInstance(), vkMessenger());
 	}
 }
 
-} // anonymous util namespace
-
-// DebugCallback
-vk::DebugReportFlagsEXT DebugCallback::defaultFlags() {
-	return vk::DebugReportBitsEXT::warning |
-		vk::DebugReportBitsEXT::error |
-		vk::DebugReportBitsEXT::performanceWarning;
-}
-
-vk::DebugReportFlagsEXT DebugCallback::defaultErrorFlags() {
-	return vk::DebugReportBitsEXT::error;
-}
-vk::DebugReportFlagsEXT DebugCallback::allBits() {
-	return vk::DebugReportBitsEXT::warning |
-		vk::DebugReportBitsEXT::error |
-		vk::DebugReportBitsEXT::performanceWarning |
-		vk::DebugReportBitsEXT::debug |
-		vk::DebugReportBitsEXT::information;
-}
-
-DebugCallback::DebugCallback(vk::Instance instance, vk::DebugReportFlagsEXT flags,
-		bool verbose, vk::DebugReportFlagsEXT error) :
-		instance_(instance), errorFlags_(error), verbose_(verbose) {
-
-	VPP_LOAD_PROC(vkInstance(), CreateDebugReportCallbackEXT);
-	vk::DebugReportCallbackCreateInfoEXT createInfo(flags, &defaultMessageCallback, this);
-	VKPP_CALL(pfCreateDebugReportCallbackEXT(vkInstance(), &createInfo, nullptr, &debugCallback_));
-}
-
-DebugCallback::~DebugCallback() {
-	if(vkCallback()) {
-		VPP_PROC(vkInstance(), DestroyDebugReportCallbackEXT)(vkInstance(), vkCallback(), nullptr);
+void DebugMessenger::call(MsgSeverity severity, MsgTypeFlags,
+		const Data& data) noexcept {
+	// check if message is ignored
+	auto ig = std::find(ignore.begin(), ignore.end(), data.pMessageIdName);
+	if(ig != ignore.end()) {
+		return;
 	}
-}
 
-bool DebugCallback::call(const CallbackInfo& info) noexcept {
-	std::string verbose;
-	if(verbose_) {
-		verbose = "\n\tflags: " + to_string(info.flags) + "\n\t";
-		verbose += "objType: " + to_string(info.objectType) + "\n\t";
-		verbose += "srcObject: " + std::to_string(info.srcObject) + "\n\t";
-		verbose += "location: " + std::to_string(info.location) + "\n\t";
-		verbose += "code: " + std::to_string(info.messageCode) + "\n\t";
-		verbose += "layer: ";
-		verbose += info.layer;
+	auto level = dlg_level_trace;
+	switch(severity) {
+		case MsgSeverity::error:
+			level = dlg_level_error;
+			break;
+		case MsgSeverity::warning:
+			level = dlg_level_warn;
+			break;
+		case MsgSeverity::info:
+			level = dlg_level_info;
+			break;
+		case MsgSeverity::verbose:
+			level = dlg_level_debug;
+			break;
 	}
 
 	dlg_tags("DebugCallback");
-	if(info.flags & vk::DebugReportBitsEXT::error) {
-		dlg_error("{}{}", info.message, verbose);
-	} else if(info.flags & vk::DebugReportBitsEXT::warning) {
-		dlg_warn("{}{}", info.message, verbose);
-	} else if(info.flags & vk::DebugReportBitsEXT::information) {
-		dlg_info("{}{}", info.message, verbose);
-	} else if(info.flags & vk::DebugReportBitsEXT::performanceWarning) {
-		dlg_info("{}{}", info.message, verbose);
-	} else if(info.flags & vk::DebugReportBitsEXT::debug) {
-		dlg_debug("{}{}", info.message, verbose);
+	dlg_log(level, "{} ({})", data.pMessage, data.pMessageIdName);
+
+	for(auto i = 0u; i < data.objectCount; ++i) {
+		auto& obj = data.pObjects[i];
+		if(obj.pObjectName) {
+			dlg_log(level, "    involving '{}'", obj.pObjectName);
+		}
 	}
 
-	return (info.flags & errorFlags_);
+	for(auto i = 0u; i < data.queueLabelCount; ++i) {
+		auto& label = data.pQueueLabels[i];
+		auto name = label.pLabelName ? label.pLabelName : "<unnamed>";
+		dlg_log(level, "    queue label '{}'", name);
+	}
+
+	for(auto i = 0u; i < data.cmdBufLabelCount; ++i) {
+		auto& label = data.pCmdBufLabels[i];
+		auto name = label.pLabelName ? label.pLabelName : "<unnamed>";
+		dlg_log(level, "    cmd label '{}'", name);
+	}
 }
 
-// debug report
+// name/tag functions
 vk::Result nameHandle(vk::Device dev, std::uint64_t handle,
-		vk::DebugReportObjectTypeEXT type, const char* name) {
-
-	VPP_LOAD_PROC_NOTHROW(dev, DebugMarkerSetObjectNameEXT);
-	if(!pfDebugMarkerSetObjectNameEXT) {
+		vk::ObjectType type, const char* name) {
+	if(!vk::dispatch.vkSetDebugUtilsObjectNameEXT) {
 		return vk::Result::errorExtensionNotPresent;
 	}
 
-	vk::DebugMarkerObjectNameInfoEXT info;
-	info.object = handle;
+	vk::DebugUtilsObjectNameInfoEXT info;
+	info.objectHandle = handle;
 	info.objectType = type;
 	info.pObjectName = name;
-	return pfDebugMarkerSetObjectNameEXT(dev, &info);
+	return vk::setDebugUtilsObjectNameEXT(dev, info);
 }
 
 vk::Result tagHandle(vk::Device dev, std::uint64_t handle,
-		vk::DebugReportObjectTypeEXT type, std::uint64_t name,
+		vk::ObjectType type, std::uint64_t name,
 		nytl::Span<const std::byte> data) {
-
-	VPP_LOAD_PROC_NOTHROW(dev, DebugMarkerSetObjectTagEXT);
-	if(!pfDebugMarkerSetObjectTagEXT) {
+	if(!vk::dispatch.vkSetDebugUtilsObjectTagEXT) {
 		return vk::Result::errorExtensionNotPresent;
 	}
 
-	vk::DebugMarkerObjectTagInfoEXT info;
-	info.object = handle;
+	vk::DebugUtilsObjectTagInfoEXT info;
+	info.objectHandle = handle;
 	info.objectType = type;
-	info.pTag = data.data();
-	info.tagSize = data.size();
 	info.tagName = name;
-	return pfDebugMarkerSetObjectTagEXT(dev, &info);
+	info.pTag = data.data();
+	info.tagSize = size_t(data.size());
+	return vk::setDebugUtilsObjectTagEXT(dev, info);
 }
 
-bool beginDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf,
-		const char* name, std::array<float, 4> col) {
-
-	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerBeginEXT);
-	if(!pfCmdDebugMarkerBeginEXT) {
+bool beginDebugLabel(vk::CommandBuffer cb, const char* name,
+		std::array<float, 4> col) {
+	if(!vk::dispatch.vkCmdBeginDebugUtilsLabelEXT) {
 		return false;
 	}
 
-	vk::DebugMarkerMarkerInfoEXT markerInfo;
-	markerInfo.color = col;
-	markerInfo.pMarkerName = name;
-	pfCmdDebugMarkerBeginEXT(cmdBuf, &markerInfo);
+	vk::DebugUtilsLabelEXT info;
+	info.color = col;
+	info.pLabelName = name;
+	vk::cmdBeginDebugUtilsLabelEXT(cb, info);
 	return true;
 }
 
-bool endDebugRegion(vk::Device dev, vk::CommandBuffer cmdBuf) {
-	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerEndEXT);
-	if(!pfCmdDebugMarkerEndEXT) {
+bool endDebugLabel(vk::CommandBuffer cb) {
+	if(!vk::dispatch.vkCmdEndDebugUtilsLabelEXT) {
 		return false;
 	}
 
-	pfCmdDebugMarkerEndEXT(cmdBuf);
+	vk::cmdEndDebugUtilsLabelEXT(cb);
 	return true;
 }
 
-bool insertDebugMarker(vk::Device dev, vk::CommandBuffer cmdBuf,
-		const char* name, std::array<float, 4> col) {
-
-	VPP_LOAD_PROC_NOTHROW(dev, CmdDebugMarkerInsertEXT);
-	if(!pfCmdDebugMarkerInsertEXT) {
+bool insertDebugLabel(vk::CommandBuffer cb, const char* name,
+		std::array<float, 4> col) {
+	if(!vk::dispatch.vkCmdInsertDebugUtilsLabelEXT) {
 		return false;
 	}
 
-	vk::DebugMarkerMarkerInfoEXT markerInfo;
-	markerInfo.color = col;
-	markerInfo.pMarkerName = name;
-	pfCmdDebugMarkerInsertEXT(cmdBuf, &markerInfo);
+	vk::DebugUtilsLabelEXT info;
+	info.color = col;
+	info.pLabelName = name;
+	vk::cmdInsertDebugUtilsLabelEXT(cb, info);
 	return true;
 }
+
+// DebugLabel
+DebugLabel::DebugLabel(vk::CommandBuffer cb, const char* name,
+		std::array<float, 4> color) : cb_(cb) {
+	beginDebugLabel(cb, name, color);
+}
+
+DebugLabel::~DebugLabel() {
+	if(cb_) {
+		endDebugLabel(cb_);
+	}
+}
+
+// spezialization of Handletype
+#define HandleSpec(handle, name) \
+	template<> vk::ObjectType handleType<handle>() { \
+		return vk::ObjectType::name; \
+	} \
+	template<> vk::DebugReportObjectTypeEXT debugReportHandleType<handle>() { \
+		return vk::DebugReportObjectTypeEXT::name; \
+	}
+
+HandleSpec(vk::Instance, instance)
+HandleSpec(vk::PhysicalDevice, physicalDevice)
+HandleSpec(vk::Device, device)
+HandleSpec(vk::CommandBuffer, commandBuffer)
+HandleSpec(vk::CommandPool, commandPool)
+HandleSpec(vk::Queue, queue)
+HandleSpec(vk::Image, image)
+HandleSpec(vk::ImageView, imageView)
+HandleSpec(vk::Buffer, buffer)
+HandleSpec(vk::BufferView, bufferView)
+HandleSpec(vk::Framebuffer, framebuffer)
+HandleSpec(vk::Sampler, sampler)
+HandleSpec(vk::DeviceMemory, deviceMemory)
+HandleSpec(vk::DescriptorSetLayout, descriptorSetLayout)
+HandleSpec(vk::DescriptorSet, descriptorSet)
+HandleSpec(vk::DescriptorPool, descriptorPool)
+HandleSpec(vk::PipelineLayout, pipelineLayout)
+HandleSpec(vk::Pipeline, pipeline)
+HandleSpec(vk::PipelineCache, pipelineCache)
+HandleSpec(vk::RenderPass, renderPass)
+HandleSpec(vk::Semaphore, semaphore)
+HandleSpec(vk::Fence, fence)
+HandleSpec(vk::Event, event)
+HandleSpec(vk::QueryPool, queryPool)
+HandleSpec(vk::ShaderModule, shaderModule)
+HandleSpec(vk::SurfaceKHR, surfaceKHR)
+HandleSpec(vk::SwapchainKHR, swapchainKHR)
+HandleSpec(vk::DebugReportCallbackEXT, debugReportCallbackEXT)
+HandleSpec(vk::DisplayKHR, displayKHR)
+HandleSpec(vk::DisplayModeKHR, displayModeKHR)
+
+#undef HandleSpec
 
 } // namespace vpp

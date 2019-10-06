@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -39,7 +39,7 @@ constexpr auto align(A offset, B alignment) {
 	}
 
 	auto rest = offset % alignment;
-	return rest ? offset + (alignment - rest) : offset;
+	return rest ? A(offset + (alignment - rest)) : A(offset);
 }
 
 /// Returns whether the first allocation fully contains the second one.

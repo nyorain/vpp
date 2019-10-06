@@ -1,14 +1,12 @@
 #include "init.hpp"
 
-#include <vpp/allocator.hpp>
-#include <vpp/commandBuffer.hpp>
+#include <vpp/devMemAllocator.hpp>
+#include <vpp/commandAllocator.hpp>
 #include <vpp/memory.hpp>
 #include <vpp/sharedBuffer.hpp>
-#include <vpp/sync.hpp>
+#include <vpp/handles.hpp>
 #include <vpp/formats.hpp>
-#include <vpp/framebuffer.hpp>
 #include <vpp/image.hpp>
-#include <vpp/renderPass.hpp>
 #include <vpp/vpp.hpp>
 
 // test just instanciates all vpp objects
@@ -27,19 +25,22 @@ TEST(mem) {
 	auto mem2 = vpp::DeviceMemory(dev, rawMem2, 14u, 0u);
 
 	auto allocator = vpp::DeviceMemoryAllocator(dev);
-	auto memEntry = vpp::MemoryEntry(mem1, mem1.alloc(10u, 0u, vpp::AllocationType::linear));
-	auto memEntry2 = std::move(memEntry);
+	vk::BufferCreateInfo bufInfo;
+	bufInfo.size = 256u;
+	bufInfo.usage = vk::BufferUsageBits::storageBuffer;
+	auto buf = vpp::Buffer(mem1, bufInfo);
+	auto buf2 = std::move(buf);
 }
 
 TEST(cmd) {
 	auto& dev = *globals.device;
 
-	auto commandPool = vpp::CommandPool{dev, 0};
+	auto commandPool = vpp::CommandPool{dev, 0u};
 	auto cmdBuf1 = vpp::CommandBuffer(commandPool);
 	auto cmdBuf2 = vpp::CommandBuffer(commandPool, vk::CommandBufferLevel::secondary);
 
 	auto cmdBufsRaw = vk::allocateCommandBuffers(dev, {commandPool,
-		vk::CommandBufferLevel::primary, 2});
+		vk::CommandBufferLevel::primary, 2u});
 	auto cmdBuf3 = vpp::CommandBuffer(commandPool, cmdBufsRaw[0]);
 	auto cmdBuf4 = vpp::CommandBuffer(dev, commandPool, cmdBufsRaw[1]);
 
@@ -83,18 +84,22 @@ TEST(buf) {
 		vk::BufferUsageBits::indexBuffer |
 		vk::BufferUsageBits::transferDst |
 		vk::BufferUsageBits::uniformTexelBuffer};
-	vpp::Buffer buf3(dev, info);
-	vpp::Buffer buf4(dev, info, hvBits);
+	vpp::Buffer buf3(dev.devMemAllocator(), info);
+	vpp::Buffer buf4(dev.devMemAllocator(), info, hvBits);
+
+	vpp::Buffer::InitData initData5;
+	vpp::Buffer::InitData initData5b;
 
 	vpp::DeviceMemoryAllocator allocator(dev);
-	vpp::Buffer buf5(vpp::defer, dev, info, dlBits, &allocator);
+	vpp::Buffer buf5(initData5, allocator, info, dlBits);
 	auto rawBuf3b = vk::createBuffer(dev, info);
-	vpp::Buffer buf5b(vpp::defer, dev, rawBuf3b, dlBits, &allocator);
-	vpp::Buffer buf6(dev, info, dlBits, &allocator);
-	buf5.init();
+	vpp::Buffer buf5b(initData5b, allocator, rawBuf3b, dlBits);
+	vpp::Buffer buf6(allocator, info, dlBits);
+	buf5.init(initData5);
+	buf5b.init(initData5b);
 	EXPECT(allocator.memories().size(), 1u);
 
-	vpp::Buffer buf7(dev, rawBuf2);
+	vpp::Buffer buf7(dev.devMemAllocator(), rawBuf2);
 
 	auto rawBuf3 = vk::createBuffer(dev, {{}, 123, vk::BufferUsageBits::uniformBuffer});
 	auto reqs = vk::getBufferMemoryRequirements(dev, rawBuf3);
@@ -102,10 +107,9 @@ TEST(buf) {
 	vpp::DeviceMemory mem(dev, {12000, type});
 	auto memAlloc = mem.alloc(reqs.size, reqs.alignment, vpp::AllocationType::linear);
 	vk::bindBufferMemory(dev, rawBuf3, mem, memAlloc.offset);
-	vpp::MemoryEntry entry(mem, memAlloc);
-	vpp::Buffer buf8(dev, rawBuf3, std::move(entry));
+	vpp::Buffer buf8(mem, rawBuf3, memAlloc.offset);
 
-	vpp::Buffer buf9(dev, info, mem);
+	vpp::Buffer buf9(mem, info);
 	auto buf10 = std::move(buf9);
 }
 

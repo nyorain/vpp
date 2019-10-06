@@ -3,7 +3,6 @@ tests = [
   'copy',
   'framebuffer',
   'memory',
-  'bufferOps',
   'image',
   'objects',
   'submit',

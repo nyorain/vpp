@@ -6,6 +6,9 @@ A vulkan abstraction and utility library written in modern C++.
 Does not aim to be a framework or full-sized graphics engine, but rather focuses on
 providing some useful features that make programming vulkan applications in
 C++ more convenient and less repetitive while not introducing unreasonable overhead.
+It does not force you to use shared pointers for all your resources,
+automagically synchronizes pools or implicitly submits to the device.
+Think of vpp more like an independently usable set of utilities.
 
 __Things vpp provides:__
 
@@ -14,7 +17,7 @@ __Things vpp provides:__
 - RAII classes for all handles
 	- you only pay for what you use: no shared_ptr lock-in, no virtual abstraction
 - memory management utilities
-	- automatic yet efficient memory allocation (if you want)
+	- automatic yet efficient memory allocation
 	- you can still allocate/manage your own memory if you need to
 		- e.g. vpp currently does not provide any sparse memory utility
 - idioms for efficient vulkan use
@@ -22,10 +25,9 @@ __Things vpp provides:__
 	  and share them
 	- SharedBuffer and BufferAllocator
 	- sharing DeviceMemory, DeviceMemoryAllocator (grouping allocations)
-	- Bundled command buffer submissions
-- retrieving/filling buffers and images in various ways
-	- utility for correctly filling std140, std430 buffers
-- query valid image usage combinations
+	- batching command buffer submissions via QueueSubmitter
+- some utility for retrieving/filling buffers and images
+- query valid image usage combinations and format support
 	- default image/imageView creation initializers
 - various initialization helpers (querying properties)
 	- Swapchain
@@ -36,23 +38,21 @@ __Things vpp provides:__
 
 __Things vpp does not provide:__
 
-- Full renderer/graphical implementations
-	- vpp will not provide something like a forward/deferred renderer imlpementation
+- full renderer/graphical implementations
+	- vpp will not provide something like a forward/deferred renderer
+	  imlpementation, specific render techniques or shaders
 	- no non-vulkan concepts like camera, transform, matrix or vector
-- High-cost or non-generic abstractions like Texture/Model
+- high-cost or non-generic abstractions like Texture/Model
 - a Window abstraction (just use sdl/glfw or whatever you want)
 	- vpp does not implement any platform-specific bits
-- Examples for learning vulkan
+- examples for learning vulkan
 
-At the moment, vpp is still in an early state, its latest unstable release
-is __[v0.2](https://github.com/nyorain/vpp/releases)__
-You can build it using meson. Linux (android as well) and Windows are
+You can build vpp using meson. Linux (android as well) and Windows are
 supported and tested. Needs a solid C++17 compiler, msvc does
 currently not implement enough of the standard correctly.
 MinGW-w64 works on windows.
 
-Any contributions (feature requests, issues and recommendations as well)
-are highly appreciated.
+Any contributions (feature requests, issues and ideas as well) are appreciated.
 
 # Examples
 
@@ -70,7 +70,7 @@ For more information on any of them, just check out the usually well-documented
 // Create instance and debugCallback
 vk::InstanceCreateInfo iniInfo = {  ...  };
 vpp::Instance instance(iniInfo);
-vpp::DebugCallback debugCallback(instance); // extension must be enabled
+vpp::DebugMessenger debugMessenger(instance); // debug_utils extension must be enabled
 
 auto surface = /* use your favorite window abstraction to create a surface */
 
@@ -96,70 +96,56 @@ submitter.wait(id);
 #### Deferred initialization
 
 ```cpp
-// Create a couple of memory resources deferred
-// They are not fully initialized, not ready to be used
-vpp::Buffer buffer1(vpp::defer, device, bufferCreateInfo1);
-vpp::Buffer buffer2(vpp::defer, device, bufferCreateInfo2);
-vpp::Image image1(vpp::defer, device, imaCreateInfo1);
+// Create initializers for a couple of memory resources.
+// They will already reserve as much memory as they need.
+// The api can also be used manually (via vpp::Buffer/Image constructors
+// and the init method), without the vpp::Init helper
+vpp::Init<vpp::Buffer> initBuf1(device, bufferCreateInfo1);
+vpp::Init<vpp::Buffer> initBuf2(device, bufferCreateInfo2);
+vpp::Init<vpp::Image> iniImg1(device, imgCreateInfo1);
 
 // Finish deferred initialization for all resources
 // If posssible (due to vulkan MemoryRequirements) will allocate all resources
 // on a single device memory (respecting alignments etc)
-buffer1.init();
-buffer2.init();
-image1.init();
+buffer1 = initBuf1.init();
+buffer2 = initBuf2.init();
+image1 = initImg1.init();
 ```
 
 #### SharedBuffer and BufferAllocator
 
 ```cpp
-// Create a bufferAllocator (we could also use the device's thread-specific
-// default allocator) and allocate a bunch of mappable uniform buffer objects.
+// Create a bufferAllocator (we could also use the device's default allocator) 
+// and allocate a bunch of mappable uniform buffer objects.
 // Since we reserve the needed storage, only one buffer will be created.
 // Alternatively, we could have directly created one vpp::SharedBuffer.
-vpp::BufferAllocator bufferAllocator(device);
-bufferAllocator.reserve(true, 1024, vk::BufferUsageBits::uniformBuffer);
-auto ubo1 = bufferAllocator.alloc(true, 64u, vk::BufferUsageBits::uniformBuffer);
-auto ubo2 = bufferAllocator.alloc(true, 64u, vk::BufferUsageBits::uniformBuffer);
-auto ubo3 = bufferAllocator.alloc(true, 64u, vk::BufferUsageBits::uniformBuffer);
-auto ubo4 = bufferAllocator.alloc(true, 64u, vk::BufferUsageBits::uniformBuffer);
-```
+vpp::BufferAllocator bufAlloc(device);
 
-#### Aligned buffer reading/writing
+auto hostBits = device.hostMemoryTypes(); // memory types that are hostVisible
+auto usage = vk::BufferUsageBits::uniformBuffer;
+auto uboSize = 64u;
 
-```cpp
-// Fill buffers in different ways using vpp.
-// Will automatically apply alignment requirements for std140/std430.
-// You could also use the oop api with more features (e.g. MappedBufferWriter)
-// Note that you have to specialize the vpp::VulkanType template
-// to make this work with your structs, vector or matrix types
-vpp::writeMap140(ubo, 1.f, someVec2f, 5u); // ubo must be mappable
-vpp::writeStaging140(vertexBuffer, verticesContainer); // use a staging buffer
-vpp::writeStagin430(storageBuffer, vpp::raw(data, size));
-vpp::writeDirect140(smallBuffer, 1.f, 2.f, 3.f); // direct update for few data
+bufAlloc.reserve(1024, usage, hostBits); // reserve enough for all ubos
 
-// You can also read a buffer respecting the layout/alignment
-// will read the values set above
-float float1, float2, float3;
-/* your favorite vector type */ vec2f;
-vpp::readMap140(ubo, float1, vec2f, float2);
-auto work = vpp::readStaging140(smallBuffer, float1, float2, float3);
-
-// will submit and wait for the command buffer
-// will write float1,float2,float3
-// can be used deferred to group multiple commands into one submission
-work.wait();
+vpp::SubBuffer ubo1(bufAlloc, 64u, usage, hostBits);
+vpp::SubBuffer ubo2(bufAlloc, 64u, usage, hostBits);
+vpp::SubBuffer ubo3(bufAlloc, 64u, usage, hostBits);
 ```
 
 #### Image filling/retrieving
 
 ```cpp
-// You can also easily fill images. When using them, you should check the
-// documentation at vpp/imageOps.hpp for requirements
-vpp::fillMap(img1, size, dataToWrite, {vk::AspectBits::color});
-vpp::fillStaging(img2, format, layout, size, dataToWrite, {vk::AspectBits::color});
-auto work = vpp::retrieveStaging(img3, format, layout, size, {vk::AspectBits::color});
-auto img3Data = auto work.data();
+// Some helpers to fill or read images.
+auto subres = vk::ImageSubresource{vk::AspectBits::color};
+vpp::fillMap(commandBuffer, img1, img1Size, dataToWrite, subres);
+
+// Creates a stage buffer and copies from/to it via the given
+// commandBuffer. The stage buffer must be kept alive until the
+// command buffer has finished.
+auto stageBuffer = vpp::fillStaging(commandBuffer, img2,
+	img2Format, img2Layout, img2Size, dataToWrite, subres);
+auto stageBuffer = vpp::retrieveStaging(commandBuffer, img3,
+	img3Format, img3Layout, img3Size, subres);
 ```
 
 #### Testing

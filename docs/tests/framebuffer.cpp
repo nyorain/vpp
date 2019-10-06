@@ -1,25 +1,35 @@
 #include "init.hpp"
 
 #include <vpp/formats.hpp>
-#include <vpp/framebuffer.hpp>
-#include <vpp/renderPass.hpp>
+#include <vpp/handles.hpp>
 #include <vpp/image.hpp>
 
 // we create a renderpass and a framebuffer for it (as simple
 // as possible)
 TEST(framebuffer) {
 	auto& dev = *globals.device;
-	const auto size = vk::Extent3D {420, 693};
+	const auto size = vk::Extent2D {420, 693};
+	const auto colorFormat = vk::Format::r8g8b8a8Srgb;
 
-	using VICI = vpp::ViewableImageCreateInfo;
-	auto colorUsage = vk::ImageUsageBits::colorAttachment;
-	auto colorInfo = VICI::color(dev, size, colorUsage).value();
-	auto depthInfo = VICI::depth(dev, size).value();
-	vpp::ViewableImage color(dev, colorInfo);
-	vpp::ViewableImage depth(dev, depthInfo);
+	vpp::ViewableImageCreateInfo vic(colorFormat, vk::ImageAspectBits::color,
+		size, vk::ImageUsageBits::colorAttachment);
+	EXPECT(vpp::supported(dev, vic.img), true);
+	vpp::ViewableImage color(dev.devMemAllocator(), vic);
+
+	vic.img.usage = vk::ImageUsageBits::depthStencilAttachment;
+	vic.img.format = vpp::findSupported(dev, {{
+		vk::Format::d32Sfloat,
+		vk::Format::d16Unorm,
+		vk::Format::d24UnormS8Uint,
+		vk::Format::d32SfloatS8Uint,
+		vk::Format::x8D24UnormPack32
+	}}, vic.img);
+	vic.view.format = vic.img.format;
+	vic.view.subresourceRange = {vk::ImageAspectBits::depth, 0, 1, 0, 1};
+	vpp::ViewableImage depth(dev.devMemAllocator(), vic);
 
 	vk::AttachmentDescription attachments[2] {{{},
-			colorInfo.img.format, vk::SampleCountBits::e1,
+			colorFormat, vk::SampleCountBits::e1,
 			vk::AttachmentLoadOp::dontCare,
 			vk::AttachmentStoreOp::dontCare,
 			vk::AttachmentLoadOp::dontCare,
@@ -27,7 +37,7 @@ TEST(framebuffer) {
 			vk::ImageLayout::undefined,
 			vk::ImageLayout::colorAttachmentOptimal,
 		}, {{},
-			depthInfo.img.format, vk::SampleCountBits::e1,
+			vic.img.format, vk::SampleCountBits::e1,
 			vk::AttachmentLoadOp::dontCare,
 			vk::AttachmentStoreOp::dontCare,
 			vk::AttachmentLoadOp::dontCare,
@@ -51,7 +61,7 @@ TEST(framebuffer) {
 	};
 
 	vk::RenderPassCreateInfo rpInfo;
-	vpp::RenderPass renderPass {dev, {{}, 
+	vpp::RenderPass renderPass {dev, {{},
 		2, attachments,
 		1, &subpass,
 	}};

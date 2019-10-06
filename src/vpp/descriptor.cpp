@@ -1,98 +1,21 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/descriptor.hpp>
+#include <vpp/sharedBuffer.hpp>
 #include <vpp/vk.hpp>
+#include <dlg/dlg.hpp>
 
 namespace vpp {
 namespace fwd {
 	const vk::ShaderStageFlags allShaderStages = vk::ShaderStageBits::all;
 } // namespace fwd
 
-// DescriptorSetLayout
-DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
-		nytl::Span<const vk::DescriptorSetLayoutBinding> bindings) :
-			ResourceHandle(dev) {
-
-	static constexpr auto defaultBinding = std::uint32_t(-1);
-
-	std::vector<vk::DescriptorSetLayoutBinding> vkbindings;
-	vkbindings.reserve(bindings.size());
-
-	unsigned int highestBinding = 0u;
-	for(auto& binding : bindings) {
-		vkbindings.emplace_back(binding);
-		auto& bid = vkbindings.back().binding;
-		if(bid == defaultBinding) bid = highestBinding++;
-		else highestBinding = std::max(highestBinding, bid + 1);
-	}
-
-	vk::DescriptorSetLayoutCreateInfo descriptorLayout;
-	descriptorLayout.bindingCount = vkbindings.size();
-	descriptorLayout.pBindings = vkbindings.data();
-
-	handle_ = vk::createDescriptorSetLayout(vkDevice(), descriptorLayout);
-}
-
-DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
-	vk::DescriptorSetLayout layout) : ResourceHandle(dev, layout) {
-}
-
-DescriptorSetLayout::~DescriptorSetLayout() {
-	if(vkHandle()) {
-		vk::destroyDescriptorSetLayout(vkDevice(), vkHandle());
-	}
-}
-
-// DescriptorSet
-DescriptorSet::DescriptorSet(const DescriptorPool& p,
-		const DescriptorSetLayout& l) : DescriptorSet(p, l.vkHandle()) {
-}
-
-DescriptorSet::DescriptorSet(const DescriptorPool& pool,
-	vk::DescriptorSetLayout layout) :
-	DescriptorSet(pool.device(), pool, layout) {
-}
-
-DescriptorSet::DescriptorSet(vk::DescriptorPool pool,
-	const DescriptorSetLayout& layout) :
-	DescriptorSet(layout.device(), pool, layout) {
-}
-
-DescriptorSet::DescriptorSet(const Device& dev, vk::DescriptorPool pool,
-		vk::DescriptorSetLayout layout) : ResourceHandle(dev) {
-
-	vk::DescriptorSetAllocateInfo allocInfo;
-	allocInfo.descriptorPool = pool;
-	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = &layout;
-	vk::allocateDescriptorSets(vkDevice(), allocInfo, handle_);
-}
-
-DescriptorSet::DescriptorSet(const Device& dev, vk::DescriptorSet set)
-	: ResourceHandle(dev, set) {
-}
-
-// DescriptorPool
-DescriptorPool::DescriptorPool(const Device& dev,
-		const vk::DescriptorPoolCreateInfo& info) : ResourceHandle(dev) {
-	handle_ = vk::createDescriptorPool(dev, info);
-}
-
-DescriptorPool::DescriptorPool(const Device& dev, vk::DescriptorPool pool)
-	: ResourceHandle(dev, pool) {
-}
-
-DescriptorPool::~DescriptorPool() {
-	if(vkHandle()) {
-		vk::destroyDescriptorPool(device(), vkHandle());
-	}
-}
-
 // DecriptorSetUpdate
 DescriptorSetUpdate::DescriptorSetUpdate(const DescriptorSet& set)
-	: set_(&set) {
+		: set_(&set) {
+	dlg_assert(set);
 }
 
 DescriptorSetUpdate::~DescriptorSetUpdate() {
@@ -239,6 +162,63 @@ void DescriptorSetUpdate::storageDynamic(BufferInfos buffers, int binding,
 	writes_.emplace_back(*set_, binding, elem, buffers_.back().size(),
 		vk::DescriptorType::storageBufferDynamic, nullptr,
 		buffers_.back().data(), nullptr);
+}
+
+void DescriptorSetUpdate::uniform(nytl::Span<const BufferSpan> bufs, int binding,
+		unsigned elem) {
+	std::vector<vk::DescriptorBufferInfo> infos;
+	infos.reserve(bufs.size());
+	for(const auto& b : bufs) {
+		vk::DescriptorBufferInfo info;
+		info.buffer = b.buffer();
+		info.offset = b.offset();
+		info.range = b.size();
+		infos.push_back(info);
+	}
+
+	uniform(std::move(infos), binding, elem);
+}
+void DescriptorSetUpdate::storage(nytl::Span<const BufferSpan> bufs, int binding,
+		unsigned elem) {
+	std::vector<vk::DescriptorBufferInfo> infos;
+	infos.reserve(bufs.size());
+	for(const auto& b : bufs) {
+		vk::DescriptorBufferInfo info;
+		info.buffer = b.buffer();
+		info.offset = b.offset();
+		info.range = b.size();
+		infos.push_back(info);
+	}
+
+	storage(std::move(infos), binding, elem);
+}
+void DescriptorSetUpdate::uniformDynamic(nytl::Span<const BufferSpan> bufs,
+		int binding, unsigned elem) {
+	std::vector<vk::DescriptorBufferInfo> infos;
+	infos.reserve(bufs.size());
+	for(const auto& b : bufs) {
+		vk::DescriptorBufferInfo info;
+		info.buffer = b.buffer();
+		info.offset = b.offset();
+		info.range = b.size();
+		infos.push_back(info);
+	}
+
+	uniformDynamic(std::move(infos), binding, elem);
+}
+void DescriptorSetUpdate::storageDynamic(nytl::Span<const BufferSpan> bufs,
+		int binding, unsigned elem) {
+	std::vector<vk::DescriptorBufferInfo> infos;
+	infos.reserve(bufs.size());
+	for(const auto& b : bufs) {
+		vk::DescriptorBufferInfo info;
+		info.buffer = b.buffer();
+		info.offset = b.offset();
+		info.range = b.size();
+		infos.push_back(info);
+	}
+
+	storageDynamic(std::move(infos), binding, elem);
 }
 
 void DescriptorSetUpdate::sampler(ImageInfos images, int binding,

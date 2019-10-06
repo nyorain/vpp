@@ -1,12 +1,12 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/resource.hpp>
-#include <vpp/sync.hpp>
+#include <vpp/queue.hpp>
+#include <vpp/handles.hpp>
 #include <vpp/util/span.hpp>
 
 #include <deque>
@@ -18,11 +18,14 @@ namespace vpp {
 /// Can be used to track the submit state using an id.
 /// Is bound to a fixed queue and not synchronized in any way but
 /// will respect queue locks.
-class QueueSubmitter : public ResourceReference<QueueSubmitter> {
+class QueueSubmitter {
 public:
 	QueueSubmitter() = default;
 	QueueSubmitter(const Queue& queue);
 	~QueueSubmitter();
+
+	QueueSubmitter(QueueSubmitter&&) = default;
+	QueueSubmitter& operator=(QueueSubmitter&&) = default;
 
 	/// Adds a submission.
 	/// Returns the id associated with this submission. The id
@@ -34,7 +37,14 @@ public:
 	/// this submission. Until the returned id is not submitted,
 	/// pendingInfos()[specificID] can be used to refer to (and change)
 	/// this submit info (since submissions cannot be deleted).
-	uint64_t add(const vk::SubmitInfo& info, unsigned int* specificID = {});
+	uint64_t add(const vk::SubmitInfo& info, unsigned* specificID = {});
+
+	/// Shortcut overload for above.
+	/// Note that the reference must stay valid until this batch is
+	/// submitted. If called with a vpp::CommandBuffer (and therefore
+	/// the implicit conversion to const vk::CommandBuffer& is used),
+	/// the vpp::CommandBuffer must not be moved until then.
+	uint64_t add(const vk::CommandBuffer& cb, unsigned* specificID = {});
 
 	/// Submits all pending submissions.
 	/// Returns the number of submissions.
@@ -76,7 +86,7 @@ public:
 	auto& pendingInfos() { return pending_; }
 
 	const auto& queue() const { return *queue_; }
-	const auto& resourceRef() const { return *queue_; }
+	const Device& device() const { return queue().device(); }
 
 protected:
 	std::vector<vk::SubmitInfo> pending_;

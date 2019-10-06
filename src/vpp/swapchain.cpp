@@ -1,12 +1,11 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/swapchain.hpp>
 #include <vpp/vk.hpp>
-#include <vpp/procAddr.hpp>
 #include <vpp/queue.hpp>
-#include <vpp/surface.hpp>
+#include <vpp/handles.hpp>
 #include <vpp/image.hpp>
 #include <dlg/dlg.hpp>
 
@@ -59,44 +58,18 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 		vk::SurfaceKHR surface, const vk::Extent2D& size,
 		const SwapchainPreferences& prefs) {
 
-	// query information
-	VPP_LOAD_PROC(dev.vkInstance(), GetPhysicalDeviceSurfacePresentModesKHR);
-	VPP_LOAD_PROC(dev.vkInstance(), GetPhysicalDeviceSurfaceFormatsKHR);
-	VPP_LOAD_PROC(dev.vkInstance(), GetPhysicalDeviceSurfaceCapabilitiesKHR);
-
 	auto phdev = dev.vkPhysicalDevice();
 
-	// query formats
-	uint32_t count;
-	VKPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev,
-		surface, &count, nullptr));
-	if(!count) {
+	auto formats = vk::getPhysicalDeviceSurfaceFormatsKHR(phdev, surface);
+	auto modes = vk::getPhysicalDeviceSurfacePresentModesKHR(phdev, surface);
+	if(formats.empty() || modes.empty()) {
 		throw std::runtime_error("vpp::swapchainCreateInfo: "
-			"could not get any formats");
+			"could not get any formats or modes");
 	}
 
-	std::vector<vk::SurfaceFormatKHR> formats(count);
-	VKPP_CALL(pfGetPhysicalDeviceSurfaceFormatsKHR(phdev,
-		surface, &count, formats.data()));
-
-	// present modes
-	count = 0u;
-	VKPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev,
-		surface, &count, nullptr));
-	if(!count) {
-		throw std::runtime_error("vpp::swapchainCreateInfo: "
-			"could not get any present modes");
-	}
-
-	std::vector<vk::PresentModeKHR> modes(count);
-	VKPP_CALL(pfGetPhysicalDeviceSurfacePresentModesKHR(phdev,
-		surface, &count, modes.data()));
 
 	// caps
-	vk::SurfaceCapabilitiesKHR surfCaps;
-	VKPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev,
-		surface, &surfCaps));
-
+	auto surfCaps = vk::getPhysicalDeviceSurfaceCapabilitiesKHR(phdev, surface);
 
 	// parse createInfo
 	vk::SwapchainCreateInfoKHR ret;
@@ -153,7 +126,7 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 	}
 
 	// number of images
-	count = std::max<unsigned int>(surfCaps.minImageCount, prefs.minImageCount);
+	auto count = std::max<unsigned int>(surfCaps.minImageCount, prefs.minImageCount);
 	if(surfCaps.maxImageCount > 0) {
 		count = std::min<unsigned int>(surfCaps.maxImageCount, count);
 	}
@@ -210,53 +183,31 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 	return ret;
 }
 
-
 // Swapchain
 Swapchain::Swapchain(const Device& dev, const vk::SwapchainCreateInfoKHR& info)
-	: ResourceHandle(dev)
-{
-	VPP_LOAD_PROC(dev, CreateSwapchainKHR);
-	VKPP_CALL(pfCreateSwapchainKHR(device(), &info, nullptr, &handle_));
+		: ResourceHandle(dev) {
+	handle_ = vk::createSwapchainKHR(device(), info);
 }
 
 Swapchain::Swapchain(const Device& dev, vk::SwapchainKHR swapChain)
-	: ResourceHandle(dev, swapChain)
-{
+	: ResourceHandle(dev, swapChain) {
 }
 
-Swapchain::~Swapchain()
-{
+Swapchain::~Swapchain() {
 	if(vkHandle()) {
-		VPP_LOAD_PROC(device(), DestroySwapchainKHR);
-		pfDestroySwapchainKHR(device(), vkHandle(), nullptr);
+		vk::destroySwapchainKHR(device(), vkHandle());
 	}
 }
 
-std::vector<vk::Image> Swapchain::images() const
-{
-	VPP_LOAD_PROC(vkDevice(), GetSwapchainImagesKHR);
-
-	std::uint32_t c;
-	VKPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &c, nullptr));
-
-	std::vector<vk::Image> imgs(c);
-	VKPP_CALL(pfGetSwapchainImagesKHR(device(), vkHandle(), &c, imgs.data()));
-
-	return imgs;
+std::vector<vk::Image> Swapchain::images() const {
+	return vk::getSwapchainImagesKHR(device(), vkHandle());
 }
 
 void Swapchain::resize(const vk::Extent2D& size,
-	vk::SwapchainCreateInfoKHR& info)
-{
+		vk::SwapchainCreateInfoKHR& info) {
 	dlg_assert(info.surface);
-
-	VPP_LOAD_PROC(vkInstance(), GetPhysicalDeviceSurfaceCapabilitiesKHR);
-	VPP_LOAD_PROC(device(), DestroySwapchainKHR);
-	VPP_LOAD_PROC(device(), CreateSwapchainKHR);
-
-	vk::SurfaceCapabilitiesKHR surfCaps;
-	VKPP_CALL(pfGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice(),
-		info.surface, &surfCaps));
+	auto surfCaps = vk::getPhysicalDeviceSurfaceCapabilitiesKHR(
+		vkPhysicalDevice(), info.surface);
 
 	auto& curr = surfCaps.currentExtent;
 	if(curr.width == 0xFFFFFFFF && curr.height == 0xFFFFFFFF) {
@@ -269,28 +220,30 @@ void Swapchain::resize(const vk::Extent2D& size,
 	}
 
 	info.oldSwapchain = vkHandle();
-	VKPP_CALL(pfCreateSwapchainKHR(device(), &info, nullptr, &handle_));
+	handle_ = vk::createSwapchainKHR(device(), info);
 
 	if(info.oldSwapchain) {
-		pfDestroySwapchainKHR(device(), info.oldSwapchain, nullptr);
+		vk::destroySwapchainKHR(device(), info.oldSwapchain);
 	}
 }
 
+// TODO: rework with vkpp error handling
+// we don't want errors such as outOfDate or suboptimal to throw
+// here since that is an expected case: e.g. when the surface is resizing
 vk::Result Swapchain::acquire(unsigned int& id, vk::Semaphore sem,
-	vk::Fence fence, std::uint64_t timeout) const
-{
-	VPP_LOAD_PROC(vkDevice(), AcquireNextImageKHR);
-	auto ret = pfAcquireNextImageKHR(device(), vkHandle(), timeout,
-		sem, fence, &id);
-
-	return ret;
+		vk::Fence fence, std::uint64_t timeout) const {
+	// TODO: suboptimal gets lost currently...
+	try {
+		id = vk::acquireNextImageKHR(device(), vkHandle(), timeout,
+			sem, fence);
+		return vk::Result::success;
+	} catch(const vk::VulkanError& error) {
+		return error.error;
+	}
 }
 
 vk::Result Swapchain::present(const Queue& queue, std::uint32_t currentBuffer,
-	vk::Semaphore wait) const
-{
-	VPP_LOAD_PROC(vkDevice(), QueuePresentKHR);
-
+		vk::Semaphore wait) const {
 	vk::PresentInfoKHR presentInfo {};
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &vkHandle();
@@ -302,8 +255,11 @@ vk::Result Swapchain::present(const Queue& queue, std::uint32_t currentBuffer,
 	}
 
 	QueueLock(device(), queue);
-	auto ret = pfQueuePresentKHR(queue, &presentInfo);
-	return ret;
+	try {
+		return vk::queuePresentKHR(queue, presentInfo);
+	} catch(const vk::VulkanError& error) {
+		return error.error;
+	}
 }
 
 } // namespace vpp

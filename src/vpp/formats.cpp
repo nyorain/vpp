@@ -1,15 +1,15 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/formats.hpp>
 #include <vpp/device.hpp>
 #include <vkpp/functions.hpp>
+#include <cmath>
 
 namespace vpp {
 
-bool supportedUsage(vk::FormatFeatureFlags features, vk::ImageUsageFlags usages)
-{
+bool supportedUsage(vk::FormatFeatureFlags features, vk::ImageUsageFlags usages) {
 	static constexpr struct {
 		vk::ImageUsageBits usage;
 		vk::FormatFeatureBits feature;
@@ -17,12 +17,11 @@ bool supportedUsage(vk::FormatFeatureFlags features, vk::ImageUsageFlags usages)
 		{vk::ImageUsageBits::sampled, vk::FormatFeatureBits::sampledImage},
 		{vk::ImageUsageBits::storage, vk::FormatFeatureBits::storageImage},
 		{vk::ImageUsageBits::colorAttachment, vk::FormatFeatureBits::colorAttachment},
-		{vk::ImageUsageBits::depthStencilAttachment, vk::FormatFeatureBits::depthStencilAttachment},
-
-		// TODO: only use/test for when vkpp supports maintenance1 extension
-		//  and it is enabled on device
-		// {vk::ImageUsageBits::transferSrc, vk::FormatFeatureBits::transferSrcKHR},
-		// {vk::ImageUsageBits::transferDst, vk::FormatFeatureBits::transferDstKHR},
+		{vk::ImageUsageBits::depthStencilAttachment,
+			vk::FormatFeatureBits::depthStencilAttachment},
+		// vulkan 1.1. We would need to know whether application uses 1.1
+		// {vk::ImageUsageBits::transferSrc, vk::FormatFeatureBits::transferSrc},
+		// {vk::ImageUsageBits::transferDst, vk::FormatFeatureBits::transferDst},
 	};
 
 	for(const auto& map : maps) {
@@ -34,15 +33,17 @@ bool supportedUsage(vk::FormatFeatureFlags features, vk::ImageUsageFlags usages)
 	return true;
 }
 
-bool supportedUsage(vk::FormatFeatureFlags features, vk::BufferUsageFlags usages)
-{
+bool supportedUsage(vk::FormatFeatureFlags features, vk::BufferUsageFlags usages) {
 	static constexpr struct {
 		vk::BufferUsageBits usage;
 		vk::FormatFeatureBits feature;
 	} maps[] = {
-		{vk::BufferUsageBits::uniformTexelBuffer, vk::FormatFeatureBits::uniformTexelBuffer},
-		{vk::BufferUsageBits::storageTexelBuffer, vk::FormatFeatureBits::storageTexelBuffer},
-		{vk::BufferUsageBits::vertexBuffer, vk::FormatFeatureBits::vertexBuffer},
+		{vk::BufferUsageBits::uniformTexelBuffer,
+			vk::FormatFeatureBits::uniformTexelBuffer},
+		{vk::BufferUsageBits::storageTexelBuffer,
+			vk::FormatFeatureBits::storageTexelBuffer},
+		{vk::BufferUsageBits::vertexBuffer,
+			vk::FormatFeatureBits::vertexBuffer},
 	};
 
 	for(const auto& map : maps) {
@@ -54,43 +55,59 @@ bool supportedUsage(vk::FormatFeatureFlags features, vk::BufferUsageFlags usages
 	return true;
 }
 
-bool supported(const Device& dev, vk::Format format,
-	const vk::ImageCreateInfo& info, vk::FormatFeatureFlags additional)
-{
+// TODO: fix try/catch when vkpp has proper error forwarding
+bool supported(const Device& dev, const vk::ImageCreateInfo& info,
+		vk::FormatFeatureFlags additional) {
 	auto props = vk::getPhysicalDeviceFormatProperties(
-		dev.vkPhysicalDevice(), format);
+		dev.vkPhysicalDevice(), info.format);
 	auto features = (info.tiling == vk::ImageTiling::linear) ?
 		props.linearTilingFeatures : props.optimalTilingFeatures;
 
-	auto imgProps = vk::getPhysicalDeviceImageFormatProperties(
-		dev.vkPhysicalDevice(), format, info.imageType, info.tiling,
-		info.usage, info.flags);
-
-	return ((features & additional) == additional &&
-		supportedUsage(features, info.usage) &&
-		info.extent.width <= imgProps.maxExtent.width &&
-		info.extent.height <= imgProps.maxExtent.height &&
-		info.extent.depth <= imgProps.maxExtent.depth &&
-		info.mipLevels <= imgProps.maxMipLevels &&
-		info.arrayLayers <= imgProps.maxArrayLayers &&
-		(imgProps.sampleCounts & info.samples));
+	try {
+		auto imgProps = vk::getPhysicalDeviceImageFormatProperties(
+			dev.vkPhysicalDevice(), info.format, info.imageType, info.tiling,
+			info.usage, info.flags);
+		return ((features & additional) == additional &&
+			supportedUsage(features, info.usage) &&
+			info.extent.width <= imgProps.maxExtent.width &&
+			info.extent.height <= imgProps.maxExtent.height &&
+			info.extent.depth <= imgProps.maxExtent.depth &&
+			info.mipLevels <= imgProps.maxMipLevels &&
+			info.arrayLayers <= imgProps.maxArrayLayers &&
+			(imgProps.sampleCounts & info.samples));
+	} catch(const vk::VulkanError& err) {
+		if(err.error == vk::Result::errorFormatNotSupported) {
+			return false;
+		} else {
+			// we can't handle the error in this case; rethrow
+			throw;
+		}
+	}
 }
 
 bool supported(const Device& dev, vk::Format format,
-	vk::BufferUsageFlags use, vk::FormatFeatureFlags additional)
-{
-	// TODO: this currently throws on error... no what we want
-	auto props = vk::getPhysicalDeviceFormatProperties(
-		dev.vkPhysicalDevice(), format);
-	return ((props.bufferFeatures & additional) == additional) &&
-		supportedUsage(props.bufferFeatures, use);
+		vk::BufferUsageFlags use, vk::FormatFeatureFlags additional) {
+	try {
+		auto props = vk::getPhysicalDeviceFormatProperties(
+			dev.vkPhysicalDevice(), format);
+		return ((props.bufferFeatures & additional) == additional) &&
+			supportedUsage(props.bufferFeatures, use);
+	} catch(const vk::VulkanError& err) {
+		if(err.error == vk::Result::errorFormatNotSupported) {
+			return false;
+		} else {
+			// we can't handle the error in this case; rethrow
+			throw;
+		}
+	}
 }
 
 vk::Format findSupported(const Device& dev, nytl::Span<const vk::Format> formats,
-	const vk::ImageCreateInfo& info, vk::FormatFeatureFlags additional)
-{
+		const vk::ImageCreateInfo& info, vk::FormatFeatureFlags additional) {
+	auto copy = info;
 	for(auto format : formats) {
-		if(supported(dev, format, info, additional)) {
+		copy.format = format;
+		if(supported(dev, copy, additional)) {
 			return format;
 		}
 	}
@@ -99,8 +116,7 @@ vk::Format findSupported(const Device& dev, nytl::Span<const vk::Format> formats
 }
 
 vk::Format findSupported(const Device& dev, nytl::Span<const vk::Format> formats,
-	vk::BufferUsageFlags use, vk::FormatFeatureFlags additional)
-{
+		vk::BufferUsageFlags use, vk::FormatFeatureFlags additional) {
 	for(auto format : formats) {
 		if(supported(dev, format, use, additional)) {
 			return format;
@@ -110,63 +126,29 @@ vk::Format findSupported(const Device& dev, nytl::Span<const vk::Format> formats
 	return vk::Format::undefined;
 }
 
-std::optional<ViewableImageCreateInfo> ViewableImageCreateInfo::general(
-	const Device& dev, const vk::Extent3D& size,
-	vk::ImageUsageFlags usage, nytl::Span<const vk::Format> formats,
-	vk::ImageAspectFlags aspect, vk::ImageTiling tiling,
-	vk::SampleCountBits samples, vk::ImageLayout layout,
-	vk::ImageCreateFlags flags, vk::FormatFeatureFlags additional)
-{
-	ViewableImageCreateInfo ret;
-	ret.img.flags = flags;
-	ret.img.extent.width = size.width;
-	ret.img.extent.height = size.height ? size.height : 1u;
-	ret.img.extent.depth = size.depth ? size.depth : 1u;
-	ret.img.imageType = size.depth > 1 ?
-		vk::ImageType::e3d : size.height > 1 ?
-		vk::ImageType::e2d : vk::ImageType::e1d;
-	ret.img.initialLayout = layout;
-	ret.img.tiling = tiling;
-	ret.img.arrayLayers = ret.img.mipLevels = 1u;
-	ret.img.samples = samples;
-	ret.img.sharingMode = vk::SharingMode::exclusive;
-	ret.img.usage = usage;
-	ret.img.format = findSupported(dev, formats, ret.img, additional);
-
-	if(ret.img.format == vk::Format::undefined) {
-		return {};
-	}
-
-	ret.view.viewType = size.depth > 1 ?
-		vk::ImageViewType::e3d : size.height > 1 ?
-		vk::ImageViewType::e2d : vk::ImageViewType::e1d;
-	ret.view.format = ret.img.format;
-	ret.view.components = {}; // identity everywhere
-	ret.view.subresourceRange = {aspect, 0, 1, 0, 1};
-
-	return ret;
+// complete mipmap chain as specified in
+// https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/chap11.html#resources-image-miplevel-sizing
+unsigned mipmapLevels(const vk::Extent2D& extent) {
+	return 1 + std::floor(std::log2(std::max(extent.width, extent.height)));
 }
 
-std::optional<ViewableImageCreateInfo> ViewableImageCreateInfo::color(
-	const Device& dev, const vk::Extent3D& size,
-	vk::ImageUsageFlags usage, nytl::Span<const vk::Format> formats,
-	vk::ImageTiling tiling, vk::SampleCountBits samples,
-	vk::ImageLayout layout, vk::ImageCreateFlags flags,
-	vk::FormatFeatureFlags additional)
-{
-	return general(dev, size, usage, formats, vk::ImageAspectBits::color,
-		tiling, samples, layout, flags, additional);
-}
+ViewableImageCreateInfo::ViewableImageCreateInfo(vk::Format format,
+		vk::ImageAspectBits aspect, vk::Extent2D size,
+		vk::ImageUsageFlags usage, vk::ImageTiling tiling,
+		uint32_t mipLevels) {
+	img.extent = {size.width, size.height, 1u};
+	img.imageType = vk::ImageType::e2d;
+	img.usage = usage;
+	img.arrayLayers = 1u;
+	img.mipLevels = mipLevels;
+	img.tiling = tiling;
+	img.format = format;
+	img.samples = vk::SampleCountBits::e1;
 
-std::optional<ViewableImageCreateInfo> ViewableImageCreateInfo::depth(
-	const Device& dev, const vk::Extent3D& size,
-	vk::ImageUsageFlags usage, nytl::Span<const vk::Format> formats,
-	vk::ImageTiling tiling, vk::SampleCountBits samples,
-	vk::ImageLayout layout, vk::ImageCreateFlags flags,
-	vk::FormatFeatureFlags additional)
-{
-	return general(dev, size,  usage, formats, vk::ImageAspectBits::depth,
-		tiling, samples, layout, flags, additional);
+	view.format = format;
+	view.subresourceRange = {aspect, 0, mipLevels, 0, 1};
+	view.components = {}; // identity
+	view.viewType = vk::ImageViewType::e2d;
 }
 
 } // namespace vpp

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -24,15 +24,17 @@ public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
 
 public:
-	SharedBuffer(const Device&, const vk::BufferCreateInfo&,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
-	SharedBuffer(const Device&, const vk::BufferCreateInfo&, DeviceMemory&);
-	SharedBuffer(DeferTag, const Device&, const vk::BufferCreateInfo&,
-		unsigned int memBits = ~0u, vpp::DeviceMemoryAllocator* = {});
+	SharedBuffer(DeviceMemoryAllocator&, const vk::BufferCreateInfo&,
+		unsigned int memBits = ~0u);
+	SharedBuffer(DeviceMemoryAllocator&, vk::Buffer, vk::DeviceSize size,
+		unsigned int memBits = ~0u);
+	SharedBuffer(DeviceMemory&, const vk::BufferCreateInfo&);
+	SharedBuffer(InitData&, DeviceMemoryAllocator&,
+		const vk::BufferCreateInfo&, unsigned int memBits = ~0u);
 
 	~SharedBuffer();
 
-	/// Not movable to allow BufferRanges to reference it.
+	/// Not movable to allow SubBuffer to reference it.
 	SharedBuffer(SharedBuffer&&) noexcept = delete;
 	SharedBuffer& operator=(SharedBuffer&&) noexcept = delete;
 
@@ -55,59 +57,6 @@ protected:
 	vk::DeviceSize size_;
 };
 
-/// Sub-allocated range of a buffer.
-/// See also SharedBuffer.
-class SubBuffer : public ResourceReference<SubBuffer> {
-public:
-	using Allocation = SharedBuffer::Allocation;
-
-public:
-	SubBuffer() = default;
-
-	/// Will automatically make sure that alignment makes sense with
-	/// the given usage flags, e.g. will make sure it's at least
-	/// minUniformBufferOffsetAlignment of the associated physical device
-	/// if usage flags include uniform buffer.
-	SubBuffer(BufferAllocator&, vk::DeviceSize size,
-		vk::BufferUsageFlags usage, unsigned memoryTypeBits = ~0u,
-		vk::DeviceSize align = 0u);
-	SubBuffer(DeferTag, BufferAllocator&, vk::DeviceSize size,
-		vk::BufferUsageFlags usage, unsigned memoryTypeBits = ~0u,
-		vk::DeviceSize align = 0u);
-	SubBuffer(SharedBuffer&, const Allocation& allocation);
-	~SubBuffer();
-
-	SubBuffer(SubBuffer&& rhs) noexcept { swap(*this, rhs); }
-	SubBuffer& operator=(SubBuffer rhs) noexcept {
-		swap(*this, rhs);
-		return *this;
-	}
-
-	/// Only has to be called when the SubBuffer was constructed
-	/// with the defer tag. Otherwise has no effect.
-	void init();
-
-	const SharedBuffer& buffer() const { return *shared_; }
-	const Allocation& allocation() const { return allocation_; }
-	vk::DeviceSize offset() const { return allocation().offset; }
-	vk::DeviceSize size() const { return allocation().size; }
-	auto end() const { return allocation_.end(); }
-
-	bool mappable() const noexcept { return buffer().mappable(); }
-	MemoryMapView memoryMap() const;
-
-	const SharedBuffer& resourceRef() const { return *shared_; }
-	friend void swap(SubBuffer&, SubBuffer&) noexcept;
-
-protected:
-	union {
-		BufferAllocator* allocator_ {};
-		SharedBuffer* shared_;
-	};
-
-	Allocation allocation_ {};
-};
-
 /// Cases in which you might care for buffer alignment:
 ///  - use it with a DrawIndirectCommand at the beginning (align 4)
 ///  - descriptor buffer (align min<BufType>BufferOffsetAlignment)
@@ -118,18 +67,25 @@ protected:
 /// transfer buffers or small buffers like ubos.
 /// Keep in mind that all allocated SubBuffers can only be used
 /// on the same queue family.
-class BufferAllocator : public vpp::Resource {
+class BufferAllocator {
 public:
 	using ReservationID = vk::DeviceSize;
-	using Allocation = std::pair<SharedBuffer&, SharedBuffer::Allocation>;
+
+	/// Allocated span on a buffer object.
+	struct Allocation {
+		SharedBuffer& buffer;
+		SharedBuffer::Allocation allocation;
+	};
 
 public:
-	BufferAllocator() = default;
-	BufferAllocator(const Device& dev);
+	BufferAllocator(const Device&); // uses the devices default memory allocator
+	BufferAllocator(DeviceMemoryAllocator& allocator);
 	~BufferAllocator(); // erase reserved allocations before destroying buffers
 
-	BufferAllocator(BufferAllocator&&) = default;
-	BufferAllocator& operator=(BufferAllocator&&) = default;
+	/// Can't be moved since SubBuffers might reference it during
+	/// initializaiton.
+	BufferAllocator(BufferAllocator&&) = delete;
+	BufferAllocator& operator=(BufferAllocator&&) = delete;
 
 	/// Reserves the given requirements.
 	/// Useful to allow grouping many SubBuffers on one Buffer.
@@ -150,9 +106,15 @@ public:
 	void cancel(ReservationID reservation);
 
 	const auto& buffers() const { return buffers_; }
+	const auto& reservations() const { return reservations_; }
+	const auto& requirements() const { return requirements_; }
+
+	auto& devMemAllocator() const { return devMemAlloc_; }
+	auto& device() const { return devMemAllocator().device(); }
 
 protected:
 	struct Requirement {
+		ReservationID id {};
 		vk::DeviceSize size {};
 		vk::DeviceSize align {};
 		vk::BufferUsageFlags usage {};
@@ -160,34 +122,97 @@ protected:
 	};
 
 	struct Reservation {
-		SharedBuffer* buffer;
-		SharedBuffer::Allocation allocation;
-	};
-
-	struct Entry {
 		ReservationID id {};
-		std::variant<Requirement, Reservation> data = Requirement();
+		SharedBuffer* buffer {};
+		SharedBuffer::Allocation allocation {};
 	};
 
 	struct Buffer {
-		Buffer(const Device&, const vk::BufferCreateInfo&, unsigned int mbits);
+		Buffer(DeviceMemoryAllocator&, vpp::BufferHandle, unsigned int mbits,
+			vk::DeviceSize size, vk::BufferUsageFlags usage);
 
 		SharedBuffer buffer;
 		vk::BufferUsageFlags usage {};
 	};
 
+protected:
+	DeviceMemoryAllocator& devMemAlloc_;
+
+	// deque since not movable
 	std::deque<Buffer> buffers_;
-	std::vector<Entry> reservations_;
+	std::vector<Reservation> reservations_;
+	std::vector<Requirement> requirements_;
 	ReservationID id_ {}; // last id for counting
+
+	// cache for alloc algorithm
+	std::vector<Requirement> tmpRequirements_;
+	std::vector<Reservation> tmpReservations_;
 };
 
-/// Returns a queue family that supports graphics, compute or transfer operations
-/// and can therefore be used for transfer operations.
-/// Guarantees that there exists at least one queue for the given device with
-/// the returned queue family.
-/// Returns -1 if there is no such family, although there usually should be.
-/// If queue if not nullptr, will store a pointer to a queue of the returned
-/// family into it.
-int transferQueueFamily(const Device& dev, const Queue** queue);
+/// Sub-allocated range of a buffer. See also SharedBuffer.
+/// Before destructing a SubBuffer, i.e. before returning that allocated
+/// range to the SharedBuffer, it must be ensured that all writes and
+/// reads to/from it have finished, usually a pipeline barrier is required.
+class SubBuffer {
+public:
+	using Allocation = SharedBuffer::Allocation;
+	struct InitData {
+		InitData() = default;
+		InitData(InitData&&) noexcept;
+		InitData& operator=(InitData&&) noexcept;
+		~InitData(); // cancels reservation
+
+		BufferAllocator* allocator {};
+		BufferAllocator::ReservationID reservation {};
+	};
+
+public:
+	SubBuffer() = default;
+
+	/// Will automatically make sure that alignment makes sense with
+	/// the given usage flags, e.g. will make sure it's at least
+	/// minUniformBufferOffsetAlignment of the associated physical device
+	/// if usage flags include uniform buffer.
+	SubBuffer(BufferAllocator&, vk::DeviceSize size,
+		vk::BufferUsageFlags usage, unsigned memBits = ~0u,
+		vk::DeviceSize align = 0u);
+	SubBuffer(InitData&, BufferAllocator&, vk::DeviceSize size,
+		vk::BufferUsageFlags usage, unsigned memBits = ~0u,
+		vk::DeviceSize align = 0u);
+	SubBuffer(SharedBuffer&, const Allocation& allocation);
+	~SubBuffer();
+
+	SubBuffer(SubBuffer&& rhs) noexcept { swap(*this, rhs); }
+	SubBuffer& operator=(SubBuffer rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
+	}
+
+	/// When this SubBuffer was constructed with the deferred constructor,
+	/// will finish initialization. Otherwise undefined behaviour.
+	void init(InitData&);
+
+	const SharedBuffer& buffer() const { return *buffer_; }
+	const Allocation& allocation() const { return allocation_; }
+	vk::DeviceSize offset() const { return allocation().offset; }
+	vk::DeviceSize size() const { return allocation().size; }
+	auto end() const { return allocation_.end(); }
+
+	bool mappable() const noexcept { return buffer().mappable(); }
+	MemoryMapView memoryMap(vk::DeviceSize offset = 0,
+		vk::DeviceSize size = vk::wholeSize) const;
+
+	const Device& device() const { return buffer().device(); }
+	friend void swap(SubBuffer&, SubBuffer&) noexcept;
+
+	// NOTE: there is no vkHandle() member or conversion operator
+	// to vk::Buffer here since when passing a SubBuffer to vulkan
+	// functions you always have to pass the offset as well.
+	// A SubBuffer isn't a vk::Buffer, just an owned span on it.
+
+protected:
+	SharedBuffer* buffer_ {};
+	Allocation allocation_ {};
+};
 
 } // namespace vpp

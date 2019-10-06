@@ -1,3 +1,7 @@
+// Copyright (c) 2016-2019 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #include <vpp/trackedDescriptor.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
@@ -6,9 +10,25 @@ namespace vpp {
 
 // TrDsLayout
 TrDsLayout::TrDsLayout(const Device& dev,
-	nytl::Span<const vk::DescriptorSetLayoutBinding> xbindings) :
-		DescriptorSetLayout(dev, xbindings) {
+	const vk::DescriptorSetLayoutCreateInfo& info) :
+		DescriptorSetLayout(dev, info) {
+	init({info.pBindings, info.bindingCount});
+}
 
+TrDsLayout::TrDsLayout(const Device& dev,
+	nytl::Span<vk::DescriptorSetLayoutBinding> bindings) :
+		DescriptorSetLayout(dev, bindings) {
+	init(bindings);
+}
+
+TrDsLayout::TrDsLayout(const Device& dev,
+	std::initializer_list<vk::DescriptorSetLayoutBinding> xbindings) :
+		DescriptorSetLayout(dev, xbindings) {
+	init(xbindings);
+}
+
+void TrDsLayout::init(nytl::Span<const vk::DescriptorSetLayoutBinding> xbindings) {
+	bindings_.reserve(xbindings.size());
 	for(auto& b : xbindings) {
 		auto it = std::find_if(bindings_.begin(), bindings_.end(),
 			[&](const auto& s) { return s.type == b.descriptorType; });
@@ -58,7 +78,8 @@ TrDs::TrDs(TrDsPool& pool, const TrDsLayout& layout) :
 	dlg_assert(layout);
 
 	// remove from pool
-	// TODO: throw when there are not enough resources left?
+	// TODO: throw when there are not enough resources left instead
+	//   of just asserting it?
 	auto& rem = pool.remaining_;
 	for(auto& binding : layout.bindings()) {
 		auto it = std::find_if(rem.begin(), rem.end(), [&](const auto& s)
@@ -71,51 +92,45 @@ TrDs::TrDs(TrDsPool& pool, const TrDsLayout& layout) :
 	--pool.remainingSets_;
 }
 
-TrDs::TrDs(DeferTag, DescriptorAllocator& alloc, const TrDsLayout& layout) :
-		allocator_(&alloc), layout_(&layout) {
-	allocator_->reserve(layout);
-	reservation_ = allocator_->pools().size() + 1;
+TrDs::TrDs(InitData& data, DescriptorAllocator& alloc,
+		const TrDsLayout& layout) : layout_(&layout) {
+	Resource::init(alloc.device());
+	data.allocator = &alloc;
+	data.layout = &layout;
+	alloc.reserve(layout);
+	data.reservation = alloc.pools().size() + 1;
 }
 
 TrDs::TrDs(DescriptorAllocator& alloc, const TrDsLayout& layout)
 		: TrDs(alloc.alloc(layout)) {
 }
 
-void TrDs::init() {
-	if(vkHandle()) {
-		dlg_assert(!reservation_);
-		return;
-	}
-
-	reservation_ = {};
-	dlg_assert(allocator_);
+void TrDs::init(InitData& data) {
+	dlg_assert(data.allocator && data.reservation);
+	dlg_assert(!vkHandle());
 	dlg_assert(layout_);
-	*this = allocator_->alloc(*layout_);
+	dlg_assert(layout_ == data.layout);
+
+	*this = data.allocator->alloc(*layout_);
+	data.allocator = {};
 }
 
 TrDs::~TrDs() {
-	if(reservation_) {
-		dlg_assert(!vkHandle());
-		dlg_assert(allocator_ && layout_);
-		if(allocator_->pools().size() + 1 == reservation_) {
-			allocator_->unreserve(*layout_);
-		}
-
-		return;
-	}
-
 	if(!vkHandle()) {
 		return;
 	}
 
-	dlg_assert(layout_);
-	dlg_assert(pool_);
+	dlg_assert(layout_ && layout_->vkHandle());
+	dlg_assert(pool_ && pool_->vkHandle());
 
-	// add bindings to pool
+	// add bindings back to pool
 	auto& rem = pool().remaining_;
 	for(auto& binding : layout().bindings()) {
 		auto it = std::find_if(rem.begin(), rem.end(), [&](const auto& s)
 			{ return s.type == binding.type; });
+		// NOTE: this assertion often fails when the layout was destroyed
+		// before this object was (which is obviously an error). There is
+		// pretty much no valid reason it could fail.
 		dlg_assert(it != rem.end());
 		it->descriptorCount += binding.descriptorCount;
 	}
@@ -124,14 +139,46 @@ TrDs::~TrDs() {
 	vk::freeDescriptorSets(device(), pool(), 1, vkHandle());
 }
 
-void swap(TrDs& a, TrDs& b) noexcept
-{
+void swap(TrDs& a, TrDs& b) noexcept {
 	using std::swap;
 
 	swap(static_cast<DescriptorSet&>(a), static_cast<DescriptorSet&>(b));
-	swap(a.pool_, b.pool_);
 	swap(a.layout_, b.layout_);
-	swap(a.reservation_, b.reservation_);
+	swap(a.pool_, b.pool_);
+}
+
+// InitData
+TrDs::InitData::InitData(InitData&& rhs) noexcept {
+	allocator = rhs.allocator;
+	reservation = rhs.reservation;
+	layout = rhs.layout;
+	rhs.allocator = {};
+	rhs.reservation = {};
+	rhs.layout = {};
+}
+
+TrDs::InitData& TrDs::InitData::operator=(
+		InitData&& rhs) noexcept {
+	this->~InitData();
+	allocator = rhs.allocator;
+	reservation = rhs.reservation;
+	layout = rhs.layout;
+	rhs.allocator = {};
+	rhs.reservation = {};
+	rhs.layout = {};
+	return *this;
+}
+
+TrDs::InitData::~InitData() {
+	if(allocator) {
+		dlg_assert(reservation && layout);
+		// if this is the case, no descriptor pool containing descriptors
+		// for this reservation was created and we can simply remove the
+		// reservation again
+		if(allocator->pools().size() + 1 == reservation) {
+			allocator->unreserve(*layout);
+		}
+	}
 }
 
 // DescriptorAllocator
@@ -187,18 +234,30 @@ TrDs DescriptorAllocator::alloc(const TrDsLayout& layout) {
 		}
 
 		if(ok) {
-			return {pool, layout};
+			// TODO: fix with vkpp error handling rework.
+			// not really unexpected error, shouldn't be exception
+			try {
+				return {pool, layout};
+			} catch(const vk::VulkanError& err) {
+				if(err.error != vk::Result::errorFragmentedPool) {
+					throw;
+				}
+
+				// otherwise, just continue, try the next pool or
+				// create a new one in the worst case
+			}
 		}
 	}
 
-	// TODO: use a better allocation strat
 	// allocate a new pool
 	// reserve the default allocations additionally
+	// TODO: use a better allocation strat, depending on what was
+	//  previously allocated
 	reserve(layout.bindings(), 1);
-	reserve({
+	reserve({{
 		{vk::DescriptorType::uniformBuffer, 30},
 		{vk::DescriptorType::combinedImageSampler, 20}
-	}, 20);
+	}}, 20);
 
 	pools_.emplace_back(device(), pending_.count, pending_.types);
 	pending_ = {};

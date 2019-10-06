@@ -2,34 +2,30 @@
 #include "bugged.hpp"
 #include <vpp/vk.hpp>
 #include <vpp/memory.hpp>
+#include <vpp/handles.hpp>
 #include <vpp/device.hpp>
-#include <vpp/instance.hpp>
 #include <vpp/debug.hpp>
 #include <vpp/physicalDevice.hpp>
 #include <memory>
 #include <dlg/dlg.hpp>
 
-class CustomDebugCallback : public vpp::DebugCallback {
+class CustomDebugCallback : public vpp::DebugMessenger {
 public:
-	using vpp::DebugCallback::DebugCallback;
+	using vpp::DebugMessenger::DebugMessenger;
 
-	bool call(const CallbackInfo& info) noexcept override {
-		if(info.flags & vk::DebugReportBitsEXT::error) {
+	void call(MsgSeverity severity, MsgTypeFlags types,
+			const Data& data) noexcept override {
+		if(severity == MsgSeverity::error) {
 			++errors;
 		}
 
-		if(info.flags & vk::DebugReportBitsEXT::warning) {
+		if(severity == MsgSeverity::warning) {
 			++warnings;
 		}
 
-		if(info.flags & vk::DebugReportBitsEXT::performanceWarning) {
-			++performanceWarnings;
-		}
-
-		return vpp::DebugCallback::call(info);
+		return vpp::DebugMessenger::call(severity, types, data);
 	}
 
-	unsigned int performanceWarnings {};
 	unsigned int warnings {};
 	unsigned int errors {};
 };
@@ -45,7 +41,7 @@ static Globals globals;
 void initGlobals() {
 	constexpr const char* iniExtensions[] = {
 		VK_KHR_SURFACE_EXTENSION_NAME,
-		VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+		VK_EXT_DEBUG_UTILS_EXTENSION_NAME
 	};
 
 	constexpr auto layer = "VK_LAYER_LUNARG_standard_validation";
@@ -82,11 +78,11 @@ int main() {
 	dlg_set_handler(dlgHandler, nullptr);
 
 	auto ret = bugged::Testing::run();
-	// ret += globals.debugCallback->performanceWarnings;
+	globals.device = {};
+
 	ret += globals.debugCallback->errors + dlgErrors;
 	ret += globals.debugCallback->warnings + dlgWarnings;
 
-	globals.device = {};
 	globals.debugCallback = {};
 	globals.instance = {};
 

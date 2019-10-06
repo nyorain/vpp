@@ -1,51 +1,31 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/image.hpp>
+#include <vpp/debug.hpp>
 #include <vpp/formats.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 
 namespace vpp {
 
-// ImageHandle
-ImageHandle::ImageHandle(const Device& dev, const vk::ImageCreateInfo& info) :
-	ResourceHandle(dev, vk::createImage(dev, info))
-{
-}
-
-ImageHandle::ImageHandle(const Device& dev, vk::Image buf) :
-	ResourceHandle(dev, buf)
-{
-}
-
-ImageHandle::~ImageHandle()
-{
-	if(vkHandle()) {
-		vk::destroyImage(device(), vkHandle());
-	}
-}
-
 // Image
-Image::Image(const Device& dev, const vk::ImageCreateInfo& info,
-	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
-		Image(dev, vk::createImage(dev, info), info.tiling, memBits, alloc)
-{
+Image::Image(DeviceMemoryAllocator& alloc, const vk::ImageCreateInfo& info,
+	unsigned int memBits) : Image(alloc,
+		vk::createImage(alloc.device(), info), info.tiling, memBits) {
 }
 
-Image::Image(const Device& dev, vk::Image image, vk::ImageTiling tiling,
-	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
-		Image(defer, dev, image, tiling, memBits, alloc)
-{
-	ensureMemory();
+Image::Image(DeviceMemoryAllocator& alloc, vk::Image image,
+		vk::ImageTiling tiling, unsigned int memBits) {
+	InitData data;
+	*this = {data, alloc, image, tiling, memBits};
+	init(data);
 }
 
-Image::Image(const Device& dev, const vk::ImageCreateInfo& info,
-	DeviceMemory& mem) :
-		ImageHandle(dev, vk::createImage(dev, info))
-{
-	auto reqs = vk::getImageMemoryRequirements(dev, vkHandle());
+Image::Image(DeviceMemory& mem, const vk::ImageCreateInfo& info) :
+		ImageHandle(mem.device(), vk::createImage(mem.device(), info)) {
+	auto reqs = vk::getImageMemoryRequirements(mem.device(), vkHandle());
 	dlg_assertm(reqs.memoryTypeBits & (1 << mem.type()), "Invalid memory type");
 
 	auto allocType = info.tiling == vk::ImageTiling::linear ?
@@ -55,119 +35,90 @@ Image::Image(const Device& dev, const vk::ImageCreateInfo& info,
 		throw std::runtime_error("Failed to alloc from memory");
 	}
 
-	memoryEntry_ = {mem, alloc};
+	memory_ = &mem;
+	offset_ = alloc.offset;
 }
 
-Image::Image(const Device& dev, vk::Image image, MemoryEntry&& entry) :
-	ImageHandle(dev, image), MemoryResource(std::move(entry))
-{
-	dlg_assert(memoryEntry().allocated());
+Image::Image(DeviceMemory& mem, vk::Image image, vk::DeviceSize memOffset) :
+		ImageHandle(mem.device(), image),
+		MemoryResource(mem, memOffset) {
 }
 
-Image::Image(DeferTag, const Device& dev, vk::Image image,
-	vk::ImageTiling tiling, unsigned int memBits,
-	vpp::DeviceMemoryAllocator* alloc) :
-		ImageHandle(dev, image)
-{
+Image::Image(InitData& data, DeviceMemoryAllocator& alloc, vk::Image image,
+	vk::ImageTiling tiling, unsigned int memBits) :
+		ImageHandle(alloc.device(), image) {
 	dlg_assert(image);
 	dlg_assert(memBits);
 
-	alloc = alloc ? alloc : &dev.deviceAllocator();
-	auto reqs = vk::getImageMemoryRequirements(dev, vkHandle());
+	auto reqs = vk::getImageMemoryRequirements(alloc.device(), vkHandle());
 	reqs.memoryTypeBits &= memBits;
 	dlg_assertm(reqs.memoryTypeBits, "Image: No memory type bits left");
 	dlg_assert(reqs.size > 0);
+	auto type = tiling == vk::ImageTiling::linear ?
+		AllocationType::linear : AllocationType::optimal;
 
-	dev.deviceAllocator().request(vkHandle(), reqs, tiling, memoryEntry_);
+	data.allocator = &alloc;
+	data.allocator->reserve(type, reqs, &data.reservation);
 }
 
-Image::Image(DeferTag, const Device& dev, const vk::ImageCreateInfo& info,
-	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
-		Image(defer, dev, vk::createImage(dev, info), info.tiling, memBits, alloc)
-{
+Image::Image(InitData& data, DeviceMemoryAllocator& alloc,
+	const vk::ImageCreateInfo& info, unsigned int mbits) : Image(data, alloc,
+		vk::createImage(alloc.device(), info), info.tiling, mbits) {
 }
 
-// ImageView
-ImageView::ImageView(const Device& dev, const vk::ImageViewCreateInfo& info) :
-	ImageView(dev, vk::createImageView(dev, info))
-{
-}
-
-ImageView::ImageView(const Device& dev, vk::ImageView view) :
-	ResourceHandle(dev, view)
-{
-}
-
-ImageView::~ImageView()
-{
-	if(vkHandle()) {
-		vk::destroyImageView(device(), vkHandle());
-	}
+void Image::init(InitData& data) {
+	MemoryResource::init(data);
+	vk::bindImageMemory(device(), vkHandle(), memory(), memoryOffset());
 }
 
 // ViewableImage
-ViewableImage::ViewableImage(const Device& dev,
+ViewableImage::ViewableImage(DeviceMemoryAllocator& alloc,
 	const vk::ImageCreateInfo& imgInfo, const vk::ImageViewCreateInfo& viewInfo,
-	unsigned int memBits, vpp::DeviceMemoryAllocator* alloc) :
-		ViewableImage(Image{dev, imgInfo, memBits, alloc}, viewInfo)
-{
+	unsigned int memBits) :
+		ViewableImage(Image{alloc, imgInfo, memBits}, viewInfo) {
 }
 
-ViewableImage::ViewableImage(const Device& dev,
-	const ViewableImageCreateInfo& info, unsigned int memBits,
-	vpp::DeviceMemoryAllocator* alloc) :
-		ViewableImage(dev, info.img, info.view, memBits, alloc)
-{
+ViewableImage::ViewableImage(DeviceMemoryAllocator& alloc,
+	const ViewableImageCreateInfo& info, unsigned int memBits) :
+		ViewableImage(alloc, info.img, info.view, memBits) {
 }
 
-ViewableImage::ViewableImage(Image&& image, const vk::ImageViewCreateInfo& info) :
-	image_(std::move(image))
-{
+ViewableImage::ViewableImage(Image&& img, vk::ImageViewCreateInfo ivi) :
+		image_(std::move(img)) {
 	dlg_assert(image_.vkHandle());
-	init(info);
+	ivi.image = image_;
+	imageView_ = {device(), ivi};
 }
 
 ViewableImage::ViewableImage(Image&& image, ImageView&& view) :
-	image_(std::move(image)), imageView_(std::move(view))
-{
+	image_(std::move(image)), imageView_(std::move(view)) {
 }
 
-ViewableImage::ViewableImage(DeferTag, const Device& dev,
-	const vk::ImageCreateInfo& info, unsigned int memBits,
-	vpp::DeviceMemoryAllocator* alloc) : image_(dev, info, memBits, alloc)
-{
+ViewableImage::ViewableImage(InitData& data, DeviceMemoryAllocator& alloc,
+	const vk::ImageCreateInfo& info, unsigned int memBits) :
+		image_(data, alloc, info, memBits) {
 }
 
-ViewableImage::ViewableImage(DeferTag, Image&& image) : image_(std::move(image))
-{
+ViewableImage::ViewableImage(InitData&, Image&& img) : image_(std::move(img)) {
 }
 
-void ViewableImage::init(vk::ImageViewCreateInfo info)
-{
+void ViewableImage::init(InitData& data, vk::ImageViewCreateInfo ivi) {
 	dlg_assert(image_.vkHandle());
 	dlg_assert(!imageView_.vkHandle());
 
-	image_.ensureMemory();
-	info.image = vkImage();
-	imageView_ = {device(), info};
+	image_.init(data);
+	ivi.image = image_;
+	imageView_ = {device(), ivi};
 }
 
-// Sampler
-Sampler::Sampler(const Device& dev, const vk::SamplerCreateInfo& info) :
-	Sampler(dev, vk::createSampler(dev, info))
-{
-}
+void nameHandle(const ViewableImage& vi, std::string name) {
+	auto pos = name.length();
+	name += ".image";
+	vpp::nameHandle(vi.image(), name.c_str());
 
-Sampler::Sampler(const Device& dev, vk::Sampler sampler) :
-	ResourceHandle(dev, sampler)
-{
-}
-
-Sampler::~Sampler()
-{
-	if(vkHandle()) {
-		vk::destroySampler(device(), vkHandle());
-	}
+	name.erase(pos);
+	name += ".view";
+	vpp::nameHandle(vi.imageView(), name.c_str());
 }
 
 } // namespace vpp

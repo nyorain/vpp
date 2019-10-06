@@ -1,23 +1,24 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/resource.hpp> // vpp::ResourceReference
+#include <vpp/device.hpp>
 #include <vpp/util/allocation.hpp> // vpp::Allocation
+#include <vpp/util/span.hpp> // Span
 
 namespace vpp {
 
-/// Represents a mapped range of a vulkan DeviceMemory.
-/// There shall never be more than one MemoryMap object for on DeviceMemory object.
-/// The MemoryMap class is usually never used directly, but rather accessed through a
-/// MemoryMapView.
-/// Instances of this class cannot be created manually but must be indirectly
-/// retrieved by a DeviceMemory object.
-/// This class is not threadsafe.
-class MemoryMap : public ResourceReference<MemoryMap> {
+// Represents a mapped range of a vulkan DeviceMemory.
+// There must never be more than one MemoryMap object for on DeviceMemory object.
+// The MemoryMap class is usually never used directly, but rather accessed
+// through a MemoryMapView.
+// Instances of this class cannot be created manually but must be indirectly
+// retrieved by a DeviceMemory object.
+// This class is not threadsafe.
+class MemoryMap {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
 
@@ -49,8 +50,10 @@ public:
 	/// Note that pointer (and span) may change when the memory is remapped.
 	/// So don't store them over a time where a remap might happen.
 	std::byte* ptr() const noexcept { return static_cast<std::byte*>(ptr_); }
-	nytl::Span<std::byte> span() const noexcept { return {ptr(), size()}; }
-	nytl::Span<const std::byte> cspan() const noexcept { return {ptr(), size()}; }
+	nytl::Span<std::byte> span() const noexcept { return {ptr(), ptr() + size()}; }
+	nytl::Span<const std::byte> cspan() const noexcept {
+		return {ptr(), ptr() + size()};
+	}
 
 	const vk::DeviceMemory& vkMemory() const noexcept;
 	const Allocation& allocation() const noexcept { return allocation_; }
@@ -60,8 +63,7 @@ public:
 	bool coherent() const noexcept;
 
 	vk::MappedMemoryRange mappedMemoryRange() const noexcept;
-
-	const DeviceMemory& resourceRef() const noexcept { return *memory_; }
+	const Device& device() const noexcept;
 
 protected:
 	friend class MemoryMapView;
@@ -83,11 +85,11 @@ protected:
 	void* ptr_ {nullptr};
 };
 
-/// A view into a mapped memory range.
-/// Makes it possible to write/read from multiple allocations on a mapped memory.
-/// Objects are always retrieved by a DeviceMemory object.
-/// This class is not threadsafe.
-class MemoryMapView : public ResourceReference<MemoryMapView> {
+// A view into a mapped memory range.
+// Makes it possible to write/read from multiple allocations on a mapped memory.
+// Objects are always retrieved by a DeviceMemory object.
+// This class is not threadsafe.
+class MemoryMapView {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
 
@@ -117,8 +119,10 @@ public:
 	/// Note that pointer (and span) may change when the memory is remapped.
 	/// So don't store them over a time where a remap might happen.
 	std::byte* ptr() const noexcept;
-	nytl::Span<std::byte> span() const noexcept { return {ptr(), size()}; }
-	nytl::Span<const std::byte> cspan() const noexcept { return {ptr(), size()}; }
+	nytl::Span<std::byte> span() const noexcept { return {ptr(), ptr() + size()}; }
+	nytl::Span<const std::byte> cspan() const noexcept {
+		return {ptr(), ptr() + size()};
+	}
 
 	MemoryMap& memoryMap() const noexcept { return *memoryMap_; }
 	const DeviceMemory& memory() const noexcept { return memoryMap().memory(); }
@@ -130,7 +134,7 @@ public:
 
 	vk::MappedMemoryRange mappedMemoryRange() const noexcept;
 
-	const MemoryMap& resourceRef() const noexcept { return *memoryMap_; }
+	const Device& device() const noexcept { return memoryMap_->device(); }
 	void swap(MemoryMapView& lhs) noexcept;
 
 protected:

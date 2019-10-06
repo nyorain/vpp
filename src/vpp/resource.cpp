@@ -1,35 +1,36 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/resource.hpp>
+#include <vpp/device.hpp>
+#include <stdexcept>
 
 namespace vpp {
 
-#ifndef VPP_ONE_DEVICE_OPTIMIZATION
+#ifdef VPP_ONE_DEVICE_OPTIMIZATION
 
-Resource::Resource(Resource&& other) noexcept
-{
-	device_ = other.device_;
-	other.device_ = {};
-}
+void Resource::init(const Device& dev) {
+	if(Device::instance() == &dev) {
+		return;
+	}
 
-Resource& Resource::operator=(Resource&& other) noexcept
-{
-	device_ = other.device_;
-	other.device_ = {};
-	return *this;
+	auto msg = "vpp::Resource: invalid device instance (compiled with"
+		"VPP_ONE_DEVICE_OPTIMIZATION)";
+	throw std::logic_error(msg);
 }
 
 #else // VPP_ONE_DEVICE_OPTIMIZATION
 
-const Device* Resource::deviceInstance_ {};
-void Resource::init(const Device& dev)
-{
-	if(deviceInstance_ == &dev) return; // most likely
+Resource::Resource(Resource&& other) noexcept {
+	device_ = other.device_;
+	other.device_ = {};
+}
 
-	if(!deviceInstance_) deviceInstance_ = &dev;
-	else throw std::logic_error("vpp::Resource: VPP_ONE_DEVICE_OPTIMIZATION invalid device");
+Resource& Resource::operator=(Resource&& other) noexcept {
+	device_ = other.device_;
+	other.device_ = {};
+	return *this;
 }
 
 #endif // VPP_ONE_DEVICE_OPTIMIZATION

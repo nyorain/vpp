@@ -3,10 +3,12 @@
 -I./build/include
 -I./build/subprojects/vkpp/include
 -I./build/subprojects/ny/include
+-I./build/subprojects/nytl/include
 -I./build/subprojects/vkpp/include
 -I./subprojects/dlg/include
 -I./subprojects/vkpp/include
 -I./subprojects/ny/include
+-I./subprojects/nytl
 -Wall
 -Wextra
 -Wpedantic

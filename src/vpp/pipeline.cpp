@@ -1,9 +1,8 @@
-// Copyright (c) 2016-2018 nyorain
+// Copyright (c) 2016-2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/pipeline.hpp>
-#include <vpp/pipelineInfo.hpp>
 #include <vpp/descriptor.hpp>
 #include <vpp/vk.hpp>
 #include <vpp/util/file.hpp>
@@ -11,85 +10,6 @@
 
 namespace vpp {
 
-// PipelineLayout
-PipelineLayout::PipelineLayout(const Device& dev,
-		const vk::PipelineLayoutCreateInfo& info) : ResourceHandle(dev) {
-	handle_ = vk::createPipelineLayout(dev, info);
-}
-
-PipelineLayout::PipelineLayout(const Device& dev,
-		nytl::Span<const vk::DescriptorSetLayout> layouts,
-		nytl::Span<const vk::PushConstantRange> ranges) : ResourceHandle(dev) {
-	vk::PipelineLayoutCreateInfo info;
-	info.setLayoutCount = layouts.size();
-	info.pSetLayouts = layouts.data();
-	info.pushConstantRangeCount = ranges.size();
-	info.pPushConstantRanges = ranges.data();
-
-	handle_ = vk::createPipelineLayout(dev, info);
-}
-
-PipelineLayout::~PipelineLayout() {
-	if(vkHandle()) {
-		vk::destroyPipelineLayout(device(), vkHandle());
-	}
-}
-
-// PipelineCache
-PipelineCache::PipelineCache(const Device& dev) : ResourceHandle(dev) {
-	handle_ = vk::createPipelineCache(dev, {});
-}
-
-PipelineCache::PipelineCache(const Device& dev,
-		nytl::Span<const std::uint8_t> data) : ResourceHandle(dev) {
-	handle_ = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
-}
-
-PipelineCache::PipelineCache(const Device& dev, std::string_view filename,
-		bool except) : ResourceHandle(dev) {
-
-	std::vector<std::byte> data;
-	try {
-		data = readFile(filename);
-	} catch(const std::exception& err) {
-		dlg_info("PipelineCache: {}", err.what());
-		if(except) {
-			throw;
-		}
-	}
-
-	handle_ = vk::createPipelineCache(dev, {{}, data.size(), data.data()});
-}
-
-PipelineCache::~PipelineCache() {
-	if(vkHandle()) {
-		vk::destroyPipelineCache(device(), vkHandle());
-	}
-}
-
-bool save(vk::Device dev, vk::PipelineCache cache, std::string_view file) {
-	auto data = vk::getPipelineCacheData(dev, cache);
-	auto ptr = reinterpret_cast<const std::byte*>(data.data());
-
-	try {
-		writeFile(file, {ptr, data.size()});
-	} catch(const std::exception& err) {
-		dlg_warn("vpp::save(PipelineCache): {}", err.what());
-		return false;
-	}
-
-	return true;
-}
-
-// Pipeline
-Pipeline::~Pipeline()
-{
-	if(vkHandle()) {
-		vk::destroyPipeline(device(), vkHandle());
-	}
-}
-
-//
 // GraphicsPipelineInfo
 GraphicsPipelineInfo::GraphicsPipelineInfo(vk::RenderPass renderPass,
 		vk::PipelineLayout layout, ShaderProgram&& program, unsigned subpass,
