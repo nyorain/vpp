@@ -9,7 +9,7 @@
 namespace vpp {
 namespace {
 
-static VkBool32 messengerCallback(
+static VKAPI_PTR VkBool32 messengerCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT severity,
 		VkDebugUtilsMessageTypeFlagsEXT type,
 		const VkDebugUtilsMessengerCallbackDataEXT* debugData,
@@ -193,6 +193,9 @@ DebugLabel::~DebugLabel() {
 	}
 }
 
+// On 32-bit handles don't get distinct types
+#if defined(__LP64__) || defined(_WIN64) || (defined(__x86_64__) && !defined(__ILP32__) ) || defined(_M_X64) || defined(__ia64) || defined (_M_IA64) || defined(__aarch64__) || defined(__powerpc64__)
+
 // spezialization of Handletype
 #define HandleSpec(handle, name) \
 	template<> vk::ObjectType handleType<handle>() { \
@@ -234,5 +237,7 @@ HandleSpec(vk::DisplayKHR, displayKHR)
 HandleSpec(vk::DisplayModeKHR, displayModeKHR)
 
 #undef HandleSpec
+
+#endif
 
 } // namespace vpp

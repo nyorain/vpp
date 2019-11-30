@@ -9,6 +9,9 @@
 #include <vpp/util/nonCopyable.hpp>
 #include <vpp/util/span.hpp>
 
+// TODO: only 32-bit
+#include <vkpp/enums.hpp>
+
 #include <vector> // std::vector
 #include <cstdint> // std::uint64_t
 
@@ -97,6 +100,8 @@ vk::Result tagHandle(vk::Device, std::uint64_t handle,
 	vk::ObjectType, std::uint64_t name,
 	nytl::Span<const std::byte> data);
 
+#if defined(__LP64__) || defined(_WIN64) || (defined(__x86_64__) && !defined(__ILP32__) ) || defined(_M_X64) || defined(__ia64) || defined (_M_IA64) || defined(__aarch64__) || defined(__powerpc64__)
+
 /// Return false if the extension (its function) could not be loaded.
 bool beginDebugLabel(vk::CommandBuffer, const char* name,
 	std::array<float, 4> col = {});
@@ -126,6 +131,31 @@ vk::Result tagHandle(const ResourceHandle<T>& handle, std::uint64_t name,
 	return tagHandle(handle.device(), handle.vkHandle(), name, d);
 }
 
+#else // 64-bit
+
+template<typename T>
+vk::Result tagHandle(vk::Device, const T&, std::uint64_t,
+		nytl::Span<const std::byte>) {
+	return vk::Result::errorExtensionNotPresent;
+}
+template<typename T>
+vk::Result nameHandle(vk::Device, const T&, const char*) {
+	return vk::Result::errorExtensionNotPresent;
+}
+
+template<typename T>
+vk::Result nameHandle(const ResourceHandle<T>& handle, const char* name) {
+	return vk::Result::errorExtensionNotPresent;
+}
+
+template<typename T>
+vk::Result tagHandle(const ResourceHandle<T>& handle, std::uint64_t name,
+		nytl::Span<const std::byte> d) {
+	return vk::Result::errorExtensionNotPresent;
+}
+
+#endif // 64-bit
+
 #else // VPP_NO_DEBUG_MARKER
 
 inline vk::Result nameHandle(vk::Device, std::uint64_t,
@@ -154,6 +184,17 @@ vk::Result tagHandle(vk::Device, const T&, std::uint64_t,
 }
 template<typename T>
 vk::Result nameHandle(vk::Device, const T&, const char*) {
+	return vk::Result::errorExtensionNotPresent;
+}
+
+template<typename T>
+vk::Result nameHandle(const ResourceHandle<T>& handle, const char* name) {
+	return vk::Result::errorExtensionNotPresent;
+}
+
+template<typename T>
+vk::Result tagHandle(const ResourceHandle<T>& handle, std::uint64_t name,
+		nytl::Span<const std::byte> d) {
 	return vk::Result::errorExtensionNotPresent;
 }
 
