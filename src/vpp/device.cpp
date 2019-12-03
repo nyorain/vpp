@@ -265,7 +265,7 @@ void Device::init(nytl::Span<const std::pair<vk::Queue, unsigned int>> queues) {
 	impl_->queues = std::make_unique<DevQueue[]>(queues.size());
 	impl_->queueCount = queues.size();
 	std::map<unsigned int, unsigned int> queueIds;
-	for(auto i = 0; i < queues.size(); ++i) {
+	for(auto i = 0u; i < queues.size(); ++i) {
 		auto id = queueIds[queues[i].second]++;
 		impl_->queues[i].init(*this, queues[i].first, id, queues[i].second);
 	}

@@ -21,8 +21,8 @@ public:
 	// Command Pool that stores its own flags and queue family.
 	class TrCmdPool : public CommandPool {
 	public:
-		const uint32_t queueFamily {};
-		const vk::CommandPoolCreateFlags flags {};
+		uint32_t queueFamily {};
+		vk::CommandPoolCreateFlags flags {};
 
 	public:
 		TrCmdPool() = default;
