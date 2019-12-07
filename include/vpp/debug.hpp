@@ -8,9 +8,7 @@
 #include <vpp/resource.hpp>
 #include <vpp/util/nonCopyable.hpp>
 #include <vpp/util/span.hpp>
-
-// TODO: only 32-bit
-#include <vkpp/enums.hpp>
+#include <vkpp/enums.hpp> // for vk::Result::errorExtensionNotPresent
 
 #include <vector> // std::vector
 #include <cstdint> // std::uint64_t
@@ -77,142 +75,153 @@ protected:
 	vk::DebugUtilsMessengerEXT messenger_ {};
 };
 
-/// Useful for obtaining vk::ObjectType from a vk:: Handle.
-/// specialized in debug.cpp for supported types.
+/// Useful for obtaining vk::ObjectType from a vpp RAII Handle.
+/// Specialized in debug.cpp for supported types.
+/// Optimally, we could specialize these for vk:: handles (e.g.
+/// debugReportHandleType<vk::Image>) but this doesn't work on 32-bit
+/// where vulkan defines some handles to just be a uint64_t typedef.
 template<typename T> vk::ObjectType handleType();
 template<typename T> vk::DebugReportObjectTypeEXT debugReportHandleType();
 
-// when VPP_NO_DEBUG_MARKER is defined, all debug marker functions
-// will be empty stubs. Useful in release builds.
-#ifndef VPP_NO_DEBUG_MARKER
+/// Converts a vk:: handle to std::uint64_t.
+/// This isn't as trivial as a simple cast when dispatchable, non-dispatchable
+/// and 32- as well as 64-bit should be supported without warning.
+template<typename T> constexpr std::uint64_t handleToUint(T handle) {
+	if constexpr(sizeof(T) == sizeof(std::uint64_t)) {
+		return reinterpret_cast<std::uint64_t>(handle);
+	} else if constexpr(sizeof(T) == sizeof(std::uintptr_t)) {
+		return reinterpret_cast<std::uintptr_t>(handle);
+	} else if constexpr(sizeof(T) != 64) {
+		// This else if will catch all cases not covered by the
+		// first cases, we just include the if constexpr to
+		// not always trigger this assertion.
+		// The condition is just a more elaborate way to write "false"
+		static_assert(sizeof(T) < 0, "Invalid handle");
+	}
+}
 
-// Require VK_EXT_debug_utils respectively in instance,
-// will have no effect otherwise and return vk::Result::errorExtensionNotPresent.
+// You usually don't want to use symbols in the debug or nodebug namespaces
+// explicitly. See the using declaration based on VPP_NO_DEBUG_MARKER
+// below. This is done so that if VPP_NO_DEBUG_MARKER is defined and
+// we define the dummy symbols inline, we don't get clashes with the
+// real symbols that are always defined in vpp.
+namespace debug {
 
 /// Set the name of the given handle.
 /// Also see the templated version below.
-vk::Result nameHandle(vk::Device, std::uint64_t handle,
+/// When `hasDebugUtils` of the given device is false,
+/// returns vk::Result::errorExtensionNotPresent.
+vk::Result nameHandle(const vpp::Device&, std::uint64_t handle,
 	vk::ObjectType, const char* name);
 
 /// Sets the tag of the given handle.
 /// Also see the templated version below.
-vk::Result tagHandle(vk::Device, std::uint64_t handle,
+/// When `hasDebugUtils` of the given device is false,
+/// returns vk::Result::errorExtensionNotPresent.
+vk::Result tagHandle(const vpp::Device&, std::uint64_t handle,
 	vk::ObjectType, std::uint64_t name,
 	nytl::Span<const std::byte> data);
 
-#if defined(__LP64__) || defined(_WIN64) || (defined(__x86_64__) && !defined(__ILP32__) ) || defined(_M_X64) || defined(__ia64) || defined (_M_IA64) || defined(__aarch64__) || defined(__powerpc64__)
+/// Has no effect `hasDebugUtils` of the given device is false.
+void beginDebugLabel(const vpp::Device& dev, vk::CommandBuffer cb,
+	const char* name, std::array<float, 4> col = {});
+void endDebugLabel(const vpp::Device& dev, vk::CommandBuffer);
+void insertDebugLabel(const vpp::Device& dev, vk::CommandBuffer,
+	const char* name, std::array<float, 4> col = {});
 
-/// Return false if the extension (its function) could not be loaded.
-bool beginDebugLabel(vk::CommandBuffer, const char* name,
+void beginDebugLabel(const vpp::CommandBuffer&, const char* name,
 	std::array<float, 4> col = {});
-bool endDebugLabel(vk::CommandBuffer);
-bool insertDebugLabel(vk::CommandBuffer, const char* name,
-	std::array<float, 4> col = {});
+void endDebugLabel(const vpp::CommandBuffer&);
+void insertDebugLabel(const vpp::CommandBuffer&,
+	const char* name, std::array<float, 4> col = {});
 
 template<typename T>
-vk::Result nameHandle(vk::Device dev, const T& handle, const char* name) {
-	return nameHandle(dev, (std::uint64_t) handle, handleType<T>(), name);
+vk::Result nameHandle(const T& handle, const char* name) {
+	return nameHandle(handle.device(), handleToUint(handle.vkHandle()),
+		handleType<T>(), name);
 }
 
 template<typename T>
-vk::Result nameHandle(const ResourceHandle<T>& handle, const char* name) {
-	return nameHandle(handle.device(), handle.vkHandle(), name);
-}
-
-template<typename T>
-vk::Result tagHandle(vk::Device dev, const T& handle, std::uint64_t name,
+vk::Result tagHandle(const T& handle, std::uint64_t name,
 		nytl::Span<const std::byte> d) {
-	return tagHandle(dev, (std::uint64_t) handle, handleType<T>(), name, d);
+	return tagHandle(handle.device(), handleToUint(handle.vkHandle()),
+		handleType<T>(), name, d);
 }
 
-template<typename T>
-vk::Result tagHandle(const ResourceHandle<T>& handle, std::uint64_t name,
-		nytl::Span<const std::byte> d) {
-	return tagHandle(handle.device(), handle.vkHandle(), name, d);
-}
-
-#else // 64-bit
-
-template<typename T>
-vk::Result tagHandle(vk::Device, const T&, std::uint64_t,
-		nytl::Span<const std::byte>) {
-	return vk::Result::errorExtensionNotPresent;
-}
-template<typename T>
-vk::Result nameHandle(vk::Device, const T&, const char*) {
-	return vk::Result::errorExtensionNotPresent;
-}
-
-template<typename T>
-vk::Result nameHandle(const ResourceHandle<T>& handle, const char* name) {
-	return vk::Result::errorExtensionNotPresent;
-}
-
-template<typename T>
-vk::Result tagHandle(const ResourceHandle<T>& handle, std::uint64_t name,
-		nytl::Span<const std::byte> d) {
-	return vk::Result::errorExtensionNotPresent;
-}
-
-#endif // 64-bit
-
-#else // VPP_NO_DEBUG_MARKER
-
-inline vk::Result nameHandle(vk::Device, std::uint64_t,
-		vk::ObjectType, const char*) {
-	return vk::Result::errorExtensionNotPresent;
-}
-inline vk::Result tagHandle(vk::Device, std::uint64_t,
-		vk::ObjectType, std::uint64_t, nytl::Span<const std::byte>) {
-	return vk::Result::errorExtensionNotPresent;
-}
-inline bool beginDebugLabel(vk::CommandBuffer, const char*,
-		std::array<float, 4> = {}) {
-	return false;
-}
-inline bool endDebugLabel(vk::CommandBuffer) {
-	return false;
-}
-inline bool insertDebugLabel(vk::CommandBuffer, const char*,
-		std::array<float, 4> = {}) {
-	return false;
-}
-template<typename T>
-vk::Result tagHandle(vk::Device, const T&, std::uint64_t,
-		nytl::Span<const std::byte>) {
-	return vk::Result::errorExtensionNotPresent;
-}
-template<typename T>
-vk::Result nameHandle(vk::Device, const T&, const char*) {
-	return vk::Result::errorExtensionNotPresent;
-}
-
-template<typename T>
-vk::Result nameHandle(const ResourceHandle<T>& handle, const char* name) {
-	return vk::Result::errorExtensionNotPresent;
-}
-
-template<typename T>
-vk::Result tagHandle(const ResourceHandle<T>& handle, std::uint64_t name,
-		nytl::Span<const std::byte> d) {
-	return vk::Result::errorExtensionNotPresent;
-}
-
-#endif
-
-// RAII wrapper around a command buffer debug label.
+/// RAII wrapper around a command buffer debug label.
+/// Has no effect `hasDebugUtils` of the given device is false.
 class DebugLabel {
 public:
-	DebugLabel() = default;
-	DebugLabel(vk::CommandBuffer, const char* name,
+	DebugLabel(const vpp::CommandBuffer&, const char* name,
 		std::array<float, 4> color = {});
+	DebugLabel(const vpp::Device& dev, vk::CommandBuffer,
+		const char* name, std::array<float, 4> color = {});
 	~DebugLabel();
-
-	DebugLabel(DebugLabel&&) noexcept = default;
-	DebugLabel& operator=(DebugLabel&&) noexcept = default;
 
 protected:
 	vk::CommandBuffer cb_ {};
+	const vpp::Device* dev_ {};
 };
+
+} // namespace debug
+
+namespace nodebug {
+
+inline vk::Result nameHandle(const vpp::Device&, std::uint64_t,
+		vk::ObjectType, const char*) {
+	return vk::Result::errorExtensionNotPresent;
+}
+
+inline vk::Result tagHandle(const vpp::Device&, std::uint64_t,
+		vk::ObjectType, std::uint64_t,
+		nytl::Span<const std::byte>) {
+	return vk::Result::errorExtensionNotPresent;
+}
+
+template<typename T>
+vk::Result tagHandle(const T&, std::uint64_t, nytl::Span<const std::byte>) {
+	return vk::Result::errorExtensionNotPresent;
+}
+template<typename T>
+vk::Result nameHandle(const T&, const char*) {
+	return vk::Result::errorExtensionNotPresent;
+}
+
+inline void beginDebugLabel(const vpp::Device&, vk::CommandBuffer,
+	const char*, std::array<float, 4> = {}) {
+}
+inline void endDebugLabel(const vpp::Device&, vk::CommandBuffer) {
+}
+inline void insertDebugLabel(const vpp::Device&, vk::CommandBuffer,
+	const char*, std::array<float, 4> = {}) {
+}
+
+inline void beginDebugLabel(const vpp::CommandBuffer&, const char*,
+	std::array<float, 4> = {}) {
+}
+inline void endDebugLabel(const vpp::CommandBuffer&) {
+}
+inline void insertDebugLabel(const vpp::CommandBuffer&,
+	const char*, std::array<float, 4> = {}) {
+}
+
+class DebugLabel {
+public:
+	inline DebugLabel(const vpp::CommandBuffer&, const char*,
+		std::array<float, 4> = {}) {}
+	inline DebugLabel(const vpp::Device&, vk::CommandBuffer,
+		const char*, std::array<float, 4> = {}) {}
+	inline ~DebugLabel() {}
+};
+
+} // namespace nodebug
+
+// When VPP_NO_DEBUG_MARKER is defined, all debug marker functions
+// will be empty stubs. Useful in release builds.
+#ifdef VPP_NO_DEBUG_MARKER
+using namespace nodebug;
+#else
+using namespace debug;
+#endif
 
 } // namespace vpp

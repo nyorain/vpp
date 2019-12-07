@@ -114,11 +114,11 @@ void ViewableImage::init(InitData& data, vk::ImageViewCreateInfo ivi) {
 void nameHandle(const ViewableImage& vi, std::string name) {
 	auto pos = name.length();
 	name += ".image";
-	vpp::nameHandle(vi.image(), name.c_str());
+	nameHandle(vi.image(), name.c_str());
 
 	name.erase(pos);
 	name += ".view";
-	vpp::nameHandle(vi.imageView(), name.c_str());
+	nameHandle(vi.imageView(), name.c_str());
 }
 
 } // namespace vpp

@@ -62,14 +62,17 @@ public:
 };
 
 int main(int, char**) {
+	constexpr auto debugUtils = true;
+
 	// ny backend/ac setup
 	auto& backend = ny::Backend::choose();
 	auto ac = backend.createAppContext();
 
 	// vulkan setup since ny needs the instance to create a surface
 	auto iniExtensions = ac->vulkanExtensions();
-	iniExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-	iniExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	if(debugUtils) {
+		iniExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	}
 
 	// enables all default layers
 	constexpr const char* layers[] = {
@@ -111,6 +114,7 @@ int main(int, char**) {
 	const vpp::Queue* present;
 
 	vpp::Device device(instance, vkSurface, present);
+	device.hasDebugUtils = debugUtils;
 	dlg_assert(present);
 
 	// we can construct everything for our renderer

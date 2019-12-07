@@ -49,6 +49,7 @@ public:
 	static vk::DebugReportFlagsEXT defaultErrorFlags();
 
 public:
+	[[deprecated("Prefer vpp::DebugMessenger and VK_EXT_debug_utils")]]
 	DebugCallback(vk::Instance instance,
 		vk::DebugReportFlagsEXT flags = defaultFlags(), bool verbose = false,
 		vk::DebugReportFlagsEXT errorFlags = defaultErrorFlags());
@@ -76,82 +77,9 @@ protected:
 	bool verbose_ {};
 };
 
-// when VPP_NO_DEBUG_MARKER is defined, all debug marker functions
-// will be empty stubs. Useful in release builds.
-#ifndef VPP_NO_DEBUG_MARKER
-
-// Functions require VK_EXT_debug_marker in instance, will have no effect
-// otherwise and return vk::Result::errorExtensionNotPresent.
-
-/// Set the name of the given handle.
-/// Also see the templated version below.
-vk::Result nameHandle(vk::Device, std::uint64_t handle,
-	vk::DebugReportObjectTypeEXT, const char* name);
-
-/// Sets the tag of the given handle.
-/// Also see the templated version below.
-vk::Result tagHandle(vk::Device, std::uint64_t handle,
-	vk::DebugReportObjectTypeEXT, std::uint64_t name,
-	nytl::Span<const std::byte> data);
-
-/// Return false if the extension (its function) could not be loaded.
-bool beginDebugRegion(vk::CommandBuffer, const char* name,
-	std::array<float, 4> col = {});
-bool endDebugRegion(vk::CommandBuffer);
-bool insertDebugMarker(vk::CommandBuffer, const char* name,
-	std::array<float, 4> col = {});
-
-template<typename T>
-vk::Result nameHandle(vk::Device dev, T handle, const char* name) {
-	return nameHandle(dev, (std::uint64_t) handle,
-		debugReportHandleType<T>(), name);
-}
-
-template<typename T>
-vk::Result tagHandle(vk::Device dev, T handle, std::uint64_t name,
-		nytl::Span<const std::byte> d) {
-	return tagHandle(dev, (std::uint64_t) handle,
-		debugReportHandleType<T>(), name, d);
-}
-
-#else // VPP_NO_DEBUG_MARKER
-
-inline vk::Result nameHandle(vk::Device, std::uint64_t,
-		vk::DebugReportObjectTypeEXT, const char*) {
-	return vk::Result::errorExtensionNotPresent;
-}
-
-inline vk::Result tagHandle(vk::Device, std::uint64_t,
-		vk::DebugReportObjectTypeEXT, std::uint64_t,
-		nytl::Span<const std::byte>) {
-	return vk::Result::errorExtensionNotPresent;
-}
-
-inline bool beginDebugRegion(vk::CommandBuffer, const char*,
-		std::array<float, 4> = {}) {
-	return false;
-}
-
-inline bool endDebugRegion(vk::CommandBuffer) {
-	return false;
-}
-
-inline bool insertDebugMarker(vk::CommandBuffer, const char*,
-		std::array<float, 4> = {}) {
-	return false;
-}
-
-template<typename T>
-vk::Result tagHandle(vk::Device, T, std::uint64_t, nytl::Span<const std::byte>) {
-	return vk::Result::errorExtensionNotPresent;
-}
-
-template<typename T>
-vk::Result nameHandle(vk::Device, T, const char*) {
-	return vk::Result::errorExtensionNotPresent;
-}
-
-#endif
+// NOTE: could add functions for naming, tagging and debug
+// markers again. Were broken and removed in commit on 7.12.2019
+// that fixed them for debug utils.
 
 } // namespace vpp
 
