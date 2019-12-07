@@ -77,9 +77,10 @@ protected:
 	bool verbose_ {};
 };
 
-// NOTE: could add functions for naming, tagging and debug
-// markers again. Were broken and removed in commit on 7.12.2019
-// that fixed them for debug utils.
+// NOTE: could add functions for naming, tagging and debug markers again.
+// They were broken and therefore removed in commit 012252c on 7.12.2019
+// that fixed them for debug utils since the debug callback extension
+// is deprecated anyways.
 
 } // namespace vpp
 
