@@ -91,11 +91,6 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 	ret.imageFormat = formats[0].format;
 	ret.imageColorSpace = formats[0].colorSpace;
 
-	// for(auto& format : formats) {
-	// 	dlg_trace("swapchain format: {}", (int) format.format);
-	// 	dlg_trace("swapchain color space: {}", (int) format.colorSpace);
-	// }
-
 	if(formats.size() == 1 && formats[0].format == vk::Format::undefined) {
 		ret.imageFormat = prefs.format;
 	} else {
