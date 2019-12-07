@@ -51,6 +51,10 @@ ShaderModule::~ShaderModule() {
 	}
 }
 
+vk::ObjectType ShaderModule::vkObjectType() {
+	return vk::ObjectType::shaderModule;
+}
+
 // ShaderProgram
 ShaderProgram::ShaderProgram(nytl::Span<const StageInfo> infos) {
 	stages_.reserve(infos.size());

@@ -80,6 +80,8 @@ public:
 
 	/// Wrapper around vkGetSwapchainImagesKHR
 	std::vector<vk::Image> images() const;
+
+	static vk::ObjectType vkObjectType();
 };
 
 } // namespace vpp

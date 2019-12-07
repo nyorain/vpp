@@ -111,14 +111,20 @@ void ViewableImage::init(InitData& data, vk::ImageViewCreateInfo ivi) {
 	imageView_ = {device(), ivi};
 }
 
-void nameHandle(const ViewableImage& vi, std::string name) {
+inline namespace debug {
+
+vk::Result nameHandle(const ViewableImage& vi, std::string name) {
 	auto pos = name.length();
 	name += ".image";
-	nameHandle(vi.image(), name.c_str());
+	if(auto res = nameHandle(vi.image(), name.c_str());
+			res != vk::Result::success) {
+		return res;
+	}
 
 	name.erase(pos);
 	name += ".view";
-	nameHandle(vi.imageView(), name.c_str());
+	return nameHandle(vi.imageView(), name.c_str());
 }
 
+} // namespace debug
 } // namespace vpp

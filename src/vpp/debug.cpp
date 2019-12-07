@@ -118,7 +118,7 @@ void DebugMessenger::call(MsgSeverity severity, MsgTypeFlags,
 }
 
 // name/tag functions
-namespace debug {
+inline namespace debug {
 
 vk::Result nameHandle(const vpp::Device& dev, std::uint64_t handle,
 		vk::ObjectType type, const char* name) {
@@ -224,46 +224,10 @@ DebugLabel::~DebugLabel() {
 
 } // namespace debug
 
-#define HandleSpec(handle, name) \
-	template<> vk::ObjectType handleType<handle>() { \
-		return vk::ObjectType::name; \
-	} \
-	template<> vk::DebugReportObjectTypeEXT debugReportHandleType<handle>() { \
-		return vk::DebugReportObjectTypeEXT::name; \
-	}
+namespace nodebug {
 
-HandleSpec(Instance, instance)
-// HandleSpec(PhysicalDevice, physicalDevice)
-HandleSpec(Device, device)
-HandleSpec(CommandBuffer, commandBuffer)
-HandleSpec(CommandPool, commandPool)
-HandleSpec(Queue, queue)
-HandleSpec(Image, image)
-HandleSpec(ImageView, imageView)
-HandleSpec(Buffer, buffer)
-HandleSpec(BufferView, bufferView)
-HandleSpec(Framebuffer, framebuffer)
-HandleSpec(Sampler, sampler)
-HandleSpec(DeviceMemory, deviceMemory)
-HandleSpec(DescriptorSetLayout, descriptorSetLayout)
-HandleSpec(DescriptorSet, descriptorSet)
-HandleSpec(DescriptorPool, descriptorPool)
-HandleSpec(PipelineLayout, pipelineLayout)
-HandleSpec(Pipeline, pipeline)
-HandleSpec(PipelineCache, pipelineCache)
-HandleSpec(RenderPass, renderPass)
-HandleSpec(Semaphore, semaphore)
-HandleSpec(Fence, fence)
-HandleSpec(Event, event)
-HandleSpec(QueryPool, queryPool)
-HandleSpec(ShaderModule, shaderModule)
-HandleSpec(Surface, surfaceKHR)
-HandleSpec(Swapchain, swapchainKHR)
-HandleSpec(DebugCallback, debugReportCallbackEXT)
-// HandleSpec(DisplayKHR, displayKHR)
-// HandleSpec(DisplayModeKHR, displayModeKHR)
+const vk::Result resultExtensionNotPresent =
+	vk::Result::errorExtensionNotPresent;
 
-#undef HandleSpec
-#undef INFO_IMPL
-
+} // namespace nodebug
 } // namespace vpp

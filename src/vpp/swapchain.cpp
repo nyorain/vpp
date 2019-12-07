@@ -262,4 +262,8 @@ vk::Result Swapchain::present(const Queue& queue, std::uint32_t currentBuffer,
 	}
 }
 
+vk::ObjectType Swapchain::vkObjectType() {
+	return vk::ObjectType::swapchainKHR;
+}
+
 } // namespace vpp

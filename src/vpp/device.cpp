@@ -391,6 +391,9 @@ std::shared_mutex& Device::sharedQueueMutex() const {
 	return impl_->sharedQueueMutex;
 }
 
+vk::ObjectType Device::vkObjectType() {
+	return vk::ObjectType::device;
+}
 
 // utility
 int transferQueueFamily(const Device& dev, const Queue** queue) {

@@ -8,10 +8,10 @@
 #include <vpp/resource.hpp>
 #include <vpp/util/nonCopyable.hpp>
 #include <vpp/util/span.hpp>
-#include <vkpp/enums.hpp> // for vk::Result::errorExtensionNotPresent
 
 #include <vector> // std::vector
 #include <cstdint> // std::uint64_t
+#include <string> // std::string
 
 namespace vpp {
 
@@ -75,14 +75,6 @@ protected:
 	vk::DebugUtilsMessengerEXT messenger_ {};
 };
 
-/// Useful for obtaining vk::ObjectType from a vpp RAII Handle.
-/// Specialized in debug.cpp for supported types.
-/// Optimally, we could specialize these for vk:: handles (e.g.
-/// debugReportHandleType<vk::Image>) but this doesn't work on 32-bit
-/// where vulkan defines some handles to just be a uint64_t typedef.
-template<typename T> vk::ObjectType handleType();
-template<typename T> vk::DebugReportObjectTypeEXT debugReportHandleType();
-
 /// Converts a vk:: handle to std::uint64_t.
 /// This isn't as trivial as a simple cast when dispatchable, non-dispatchable
 /// and 32- as well as 64-bit should be supported without warning.
@@ -100,11 +92,17 @@ template<typename T> constexpr std::uint64_t handleToUint(T handle) {
 	}
 }
 
+// When VPP_NO_DEBUG_MARKER is defined, all debug marker functions
+// will be empty stubs. Useful in release builds.
 // You usually don't want to use symbols in the debug or nodebug namespaces
-// explicitly. See the using declaration based on VPP_NO_DEBUG_MARKER
-// below. This is done so that if VPP_NO_DEBUG_MARKER is defined and
+// explicitly. Depending on the VPP_NO_DEBUG_MARKER definition, one
+// of the namespaces will be inlined into the vpp namespace.
+// This is done so that if VPP_NO_DEBUG_MARKER is defined and
 // we define the dummy symbols inline, we don't get clashes with the
 // real symbols that are always defined in vpp.
+#ifndef VPP_NO_DEBUG_MARKER
+inline
+#endif
 namespace debug {
 
 /// Set the name of the given handle.
@@ -138,14 +136,24 @@ void insertDebugLabel(const vpp::CommandBuffer&,
 template<typename T>
 vk::Result nameHandle(const T& handle, const char* name) {
 	return nameHandle(handle.device(), handleToUint(handle.vkHandle()),
-		handleType<T>(), name);
+		T::vkObjectType(), name);
 }
 
 template<typename T>
 vk::Result tagHandle(const T& handle, std::uint64_t name,
 		nytl::Span<const std::byte> d) {
 	return tagHandle(handle.device(), handleToUint(handle.vkHandle()),
-		handleType<T>(), name, d);
+		T::vkObjectType(), name, d);
+}
+
+/// Names image and view of the given ViewaableImage,
+/// respectively as name + {".image", ".view"}.
+/// See debug.hpp for more information about vulkan handle naming.
+vk::Result nameHandle(const ViewableImage&, std::string name);
+
+template<> inline
+vk::Result nameHandle(const ViewableImage& vi, const char* name) {
+	return nameHandle(vi, std::string(name));
 }
 
 /// RAII wrapper around a command buffer debug label.
@@ -165,26 +173,30 @@ protected:
 
 } // namespace debug
 
+#ifdef VPP_NO_DEBUG_MARKER
+inline
+#endif
 namespace nodebug {
 
+extern const vk::Result resultExtensionNotPresent;
 inline vk::Result nameHandle(const vpp::Device&, std::uint64_t,
 		vk::ObjectType, const char*) {
-	return vk::Result::errorExtensionNotPresent;
+	return resultExtensionNotPresent;
 }
 
 inline vk::Result tagHandle(const vpp::Device&, std::uint64_t,
 		vk::ObjectType, std::uint64_t,
 		nytl::Span<const std::byte>) {
-	return vk::Result::errorExtensionNotPresent;
+	return resultExtensionNotPresent;
 }
 
 template<typename T>
 vk::Result tagHandle(const T&, std::uint64_t, nytl::Span<const std::byte>) {
-	return vk::Result::errorExtensionNotPresent;
+	return resultExtensionNotPresent;
 }
 template<typename T>
 vk::Result nameHandle(const T&, const char*) {
-	return vk::Result::errorExtensionNotPresent;
+	return resultExtensionNotPresent;
 }
 
 inline void beginDebugLabel(const vpp::Device&, vk::CommandBuffer,
@@ -215,13 +227,5 @@ public:
 };
 
 } // namespace nodebug
-
-// When VPP_NO_DEBUG_MARKER is defined, all debug marker functions
-// will be empty stubs. Useful in release builds.
-#ifdef VPP_NO_DEBUG_MARKER
-using namespace nodebug;
-#else
-using namespace debug;
-#endif
 
 } // namespace vpp

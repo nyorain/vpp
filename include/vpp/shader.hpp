@@ -27,7 +27,12 @@ public:
 	~ShaderModule();
 
 	ShaderModule(ShaderModule&& rhs) noexcept { swap(*this, rhs); }
-	ShaderModule& operator=(ShaderModule&& rhs) noexcept { swap(*this, rhs); return *this; }
+	ShaderModule& operator=(ShaderModule&& rhs) noexcept {
+		swap(*this, rhs);
+		return *this;
+	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 // ShaderProgram with multiple stages for graphic pipelines.

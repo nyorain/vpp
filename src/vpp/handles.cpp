@@ -41,6 +41,10 @@ Instance& Instance::operator=(Instance&& lhs) noexcept {
 	return *this;
 }
 
+vk::ObjectType Instance::vkObjectType() {
+	return vk::ObjectType::instance;
+}
+
 // DescriptorSetLayout
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	std::initializer_list<vk::DescriptorSetLayoutBinding> bindings) :
@@ -85,6 +89,10 @@ DescriptorSetLayout::~DescriptorSetLayout() {
 	}
 }
 
+vk::ObjectType DescriptorSetLayout::vkObjectType() {
+	return vk::ObjectType::descriptorSetLayout;
+}
+
 // DescriptorSet
 DescriptorSet::DescriptorSet(const DescriptorPool& p,
 		const DescriptorSetLayout& l) : DescriptorSet(p, l.vkHandle()) {
@@ -114,6 +122,10 @@ DescriptorSet::DescriptorSet(const Device& dev, vk::DescriptorSet set)
 	: ResourceHandle(dev, set) {
 }
 
+vk::ObjectType DescriptorSet::vkObjectType() {
+	return vk::ObjectType::descriptorSet;
+}
+
 // DescriptorPool
 DescriptorPool::DescriptorPool(const Device& dev,
 		const vk::DescriptorPoolCreateInfo& info) : ResourceHandle(dev) {
@@ -128,6 +140,10 @@ DescriptorPool::~DescriptorPool() {
 	if(vkHandle()) {
 		vk::destroyDescriptorPool(device(), vkHandle());
 	}
+}
+
+vk::ObjectType DescriptorPool::vkObjectType() {
+	return vk::ObjectType::descriptorPool;
 }
 
 // PipelineLayout
@@ -156,6 +172,10 @@ PipelineLayout::~PipelineLayout() {
 	if(vkHandle()) {
 		vk::destroyPipelineLayout(device(), vkHandle());
 	}
+}
+
+vk::ObjectType PipelineLayout::vkObjectType() {
+	return vk::ObjectType::pipelineLayout;
 }
 
 // PipelineCache
@@ -209,6 +229,10 @@ bool save(vk::Device dev, vk::PipelineCache cache, std::string_view file) {
 	return true;
 }
 
+vk::ObjectType PipelineCache::vkObjectType() {
+	return vk::ObjectType::pipelineCache;
+}
+
 // Pipeline
 Pipeline::Pipeline(const Device& dev,
 	const vk::GraphicsPipelineCreateInfo& info, vk::PipelineCache cache) :
@@ -232,6 +256,10 @@ Pipeline::~Pipeline() {
 	}
 }
 
+vk::ObjectType Pipeline::vkObjectType() {
+	return vk::ObjectType::pipeline;
+}
+
 // Framebuffer
 Framebuffer::Framebuffer(const Device& dev, vk::Framebuffer framebuffer)
 	: ResourceHandle(dev, framebuffer) {
@@ -245,6 +273,10 @@ Framebuffer::~Framebuffer() {
 	if(vkHandle()) {
 		vk::destroyFramebuffer(vkDevice(), vkHandle(), nullptr);
 	}
+}
+
+vk::ObjectType Framebuffer::vkObjectType() {
+	return vk::ObjectType::framebuffer;
 }
 
 // QueryPool
@@ -262,6 +294,10 @@ QueryPool::~QueryPool() {
 	}
 }
 
+vk::ObjectType QueryPool::vkObjectType() {
+	return vk::ObjectType::queryPool;
+}
+
 // RenderPass
 RenderPass::RenderPass(const Device& dev, const vk::RenderPassCreateInfo& info)
 	: RenderPass(dev, vk::createRenderPass(dev, info)) {
@@ -275,6 +311,10 @@ RenderPass::~RenderPass() {
 	if(vkHandle()) {
 		vk::destroyRenderPass(vkDevice(), vkHandle());
 	}
+}
+
+vk::ObjectType RenderPass::vkObjectType() {
+	return vk::ObjectType::renderPass;
 }
 
 // CommandPool
@@ -328,6 +368,10 @@ std::vector<CommandBuffer> CommandPool::allocate(unsigned count,
 	return ret;
 }
 
+vk::ObjectType CommandPool::vkObjectType() {
+	return vk::ObjectType::commandPool;
+}
+
 // CommandBuffer
 CommandBuffer::CommandBuffer(const CommandPool& pool)
 	: CommandBuffer(pool, vk::CommandBufferLevel::primary) {
@@ -360,6 +404,10 @@ void swap(CommandBuffer& a, CommandBuffer& b) noexcept {
 	swap(a.commandPool_, b.commandPool_);
 }
 
+vk::ObjectType CommandBuffer::vkObjectType() {
+	return vk::ObjectType::commandBuffer;
+}
+
 // Surface
 Surface::Surface(vk::Instance instance, vk::SurfaceKHR surface)
 	: instance_(instance), surface_(surface) {
@@ -377,6 +425,10 @@ void swap(Surface& a, Surface& b) noexcept {
 	swap(a.surface_, b.surface_);
 }
 
+vk::ObjectType Surface::vkObjectType() {
+	return vk::ObjectType::surfaceKHR;
+}
+
 // Fence
 Fence::Fence(const Device& dev) : Fence(dev, vk::FenceCreateInfo {}) {}
 Fence::Fence(const Device& dev, vk::Fence fence) : ResourceHandle(dev, fence) {}
@@ -389,6 +441,10 @@ Fence::~Fence() {
 	if(vkHandle()) {
 		vk::destroyFence(device(), vkHandle());
 	}
+}
+
+vk::ObjectType Fence::vkObjectType() {
+	return vk::ObjectType::fence;
 }
 
 // Semaphore
@@ -405,6 +461,10 @@ Semaphore::~Semaphore() {
 	}
 }
 
+vk::ObjectType Semaphore::vkObjectType() {
+	return vk::ObjectType::semaphore;
+}
+
 // Event
 Event::Event(const Device& dev) : Event(dev, vk::EventCreateInfo {}) {}
 Event::Event(const Device& dev, vk::Event event) : ResourceHandle(dev, event) {}
@@ -417,6 +477,10 @@ Event::~Event() {
 	if(vkHandle()) {
 		vk::destroyEvent(device(), vkHandle());
 	}
+}
+
+vk::ObjectType Event::vkObjectType() {
+	return vk::ObjectType::event;
 }
 
 // ImageHandle
@@ -434,6 +498,10 @@ ImageHandle::~ImageHandle() {
 	}
 }
 
+vk::ObjectType ImageHandle::vkObjectType() {
+	return vk::ObjectType::image;
+}
+
 // ImageView
 ImageView::ImageView(const Device& dev, const vk::ImageViewCreateInfo& info) :
 	ImageView(dev, vk::createImageView(dev, info)) {
@@ -447,6 +515,10 @@ ImageView::~ImageView() {
 	if(vkHandle()) {
 		vk::destroyImageView(device(), vkHandle());
 	}
+}
+
+vk::ObjectType ImageView::vkObjectType() {
+	return vk::ObjectType::imageView;
 }
 
 // BufferHandle
@@ -464,6 +536,10 @@ BufferHandle::~BufferHandle() {
 	}
 }
 
+vk::ObjectType BufferHandle::vkObjectType() {
+	return vk::ObjectType::buffer;
+}
+
 // BufferView
 BufferView::BufferView(const Device& dev, const vk::BufferViewCreateInfo& info) :
 		BufferView(dev, vk::createBufferView(dev, info)) {
@@ -477,6 +553,10 @@ BufferView::~BufferView() {
 	if(vkHandle()) {
 		vk::destroyBufferView(device(), vkHandle());
 	}
+}
+
+vk::ObjectType BufferView::vkObjectType() {
+	return vk::ObjectType::bufferView;
 }
 
 // DeviceMemoryHandle
@@ -495,6 +575,10 @@ DeviceMemoryHandle::~DeviceMemoryHandle() {
 	}
 }
 
+vk::ObjectType DeviceMemoryHandle::vkObjectType() {
+	return vk::ObjectType::deviceMemory;
+}
+
 // Sampler
 Sampler::Sampler(const Device& dev, const vk::SamplerCreateInfo& info) :
 	Sampler(dev, vk::createSampler(dev, info)) {
@@ -508,6 +592,10 @@ Sampler::~Sampler() {
 	if(vkHandle()) {
 		vk::destroySampler(device(), vkHandle());
 	}
+}
+
+vk::ObjectType Sampler::vkObjectType() {
+	return vk::ObjectType::sampler;
 }
 
 } // namespace vpp

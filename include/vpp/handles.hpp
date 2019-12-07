@@ -30,6 +30,8 @@ public:
 	vk::Instance vkHandle() const { return instance_; }
 	operator vk::Instance() const { return instance_; }
 
+	static vk::ObjectType vkObjectType();
+
 protected:
 	void release() { instance_ = {}; }
 
@@ -53,6 +55,7 @@ public:
 	vk::Instance vkInstance() const { return instance_; }
 	vk::SurfaceKHR vkHandle() const { return surface_; }
 
+	static vk::ObjectType vkObjectType();
 	operator vk::SurfaceKHR() const { return surface_; }
 	friend void swap(Surface& a, Surface& b) noexcept;
 
@@ -77,6 +80,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII Fence wrapper
@@ -93,6 +98,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII semaphore wrapper
@@ -109,6 +116,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII event wrapper
@@ -125,6 +134,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII Vulkan Renderpass wrapper.
@@ -141,6 +152,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII Vulkan Framebuffer wrapper.
@@ -157,6 +170,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII Vulkan DescriptorSetLayout wrapper.
@@ -182,6 +197,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// Vulkan DescriptorSet.
@@ -203,6 +220,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII vulkan descriptor pool wrapper.
@@ -218,6 +237,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII vulkan pipeline layout wrapper.
@@ -236,6 +257,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII Vulkan pipeline wrapper.
@@ -254,6 +277,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII vulkan pipeline cache wrapper.
@@ -280,6 +305,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 namespace fwd { extern const vk::CommandBufferLevel primaryCmdBufLevel; }
@@ -307,6 +334,8 @@ public:
 	CommandBuffer allocate(vk::CommandBufferLevel = fwd::primaryCmdBufLevel);
 	std::vector<CommandBuffer> allocate(unsigned count,
 		vk::CommandBufferLevel = fwd::primaryCmdBufLevel);
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII vulkan CommandBuffer wrapper.
@@ -328,6 +357,7 @@ public:
 
 	const vk::CommandPool& commandPool() const { return commandPool_; }
 	friend void swap(CommandBuffer& a, CommandBuffer& b) noexcept;
+	static vk::ObjectType vkObjectType();
 
 protected:
 	vk::CommandPool commandPool_;
@@ -347,6 +377,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII wrapper around a vulkan image view.
@@ -362,6 +394,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII vk::Buffer wrapper.
@@ -378,6 +412,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII wrapper around a vulkan buffer view.
@@ -393,6 +429,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII wrapper around vk::DeviceMemory.
@@ -409,6 +447,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 /// RAII wrapper for a vulkan sampler.
@@ -424,6 +464,8 @@ public:
 		swap(*this, rhs);
 		return *this;
 	}
+
+	static vk::ObjectType vkObjectType();
 };
 
 } // namespace vpp

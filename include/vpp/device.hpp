@@ -178,6 +178,8 @@ public:
 	vk::Device vkHandle() const { return device_; }
 	operator vk::Device() const { return device_; }
 
+	static vk::ObjectType vkObjectType();
+
 protected:
 	struct Impl;
 	struct Provider;
