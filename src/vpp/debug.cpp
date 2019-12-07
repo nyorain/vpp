@@ -3,13 +3,14 @@
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/debug.hpp>
+#include <vpp/handles.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 
 namespace vpp {
 namespace {
 
-static VkBool32 messengerCallback(
+static VKAPI_PTR VkBool32 messengerCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT severity,
 		VkDebugUtilsMessageTypeFlagsEXT type,
 		const VkDebugUtilsMessengerCallbackDataEXT* debugData,
@@ -117,12 +118,15 @@ void DebugMessenger::call(MsgSeverity severity, MsgTypeFlags,
 }
 
 // name/tag functions
-vk::Result nameHandle(vk::Device dev, std::uint64_t handle,
+namespace debug {
+
+vk::Result nameHandle(const vpp::Device& dev, std::uint64_t handle,
 		vk::ObjectType type, const char* name) {
-	if(!vk::dispatch.vkSetDebugUtilsObjectNameEXT) {
+	if(!dev.hasDebugUtils) {
 		return vk::Result::errorExtensionNotPresent;
 	}
 
+	dlg_assert(vk::dispatch.vkSetDebugUtilsObjectNameEXT);
 	vk::DebugUtilsObjectNameInfoEXT info;
 	info.objectHandle = handle;
 	info.objectType = type;
@@ -130,13 +134,14 @@ vk::Result nameHandle(vk::Device dev, std::uint64_t handle,
 	return vk::setDebugUtilsObjectNameEXT(dev, info);
 }
 
-vk::Result tagHandle(vk::Device dev, std::uint64_t handle,
+vk::Result tagHandle(const vpp::Device& dev, std::uint64_t handle,
 		vk::ObjectType type, std::uint64_t name,
 		nytl::Span<const std::byte> data) {
-	if(!vk::dispatch.vkSetDebugUtilsObjectTagEXT) {
+	if(!dev.hasDebugUtils) {
 		return vk::Result::errorExtensionNotPresent;
 	}
 
+	dlg_assert(vk::dispatch.vkSetDebugUtilsObjectTagEXT);
 	vk::DebugUtilsObjectTagInfoEXT info;
 	info.objectHandle = handle;
 	info.objectType = type;
@@ -146,54 +151,79 @@ vk::Result tagHandle(vk::Device dev, std::uint64_t handle,
 	return vk::setDebugUtilsObjectTagEXT(dev, info);
 }
 
-bool beginDebugLabel(vk::CommandBuffer cb, const char* name,
-		std::array<float, 4> col) {
-	if(!vk::dispatch.vkCmdBeginDebugUtilsLabelEXT) {
-		return false;
+void beginDebugLabel(const vpp::Device& dev, vk::CommandBuffer cb,
+		const char* name, std::array<float, 4> col) {
+	if(!dev.hasDebugUtils) {
+		return;
 	}
 
+	dlg_assert(vk::dispatch.vkCmdBeginDebugUtilsLabelEXT);
 	vk::DebugUtilsLabelEXT info;
 	info.color = col;
 	info.pLabelName = name;
 	vk::cmdBeginDebugUtilsLabelEXT(cb, info);
-	return true;
 }
 
-bool endDebugLabel(vk::CommandBuffer cb) {
-	if(!vk::dispatch.vkCmdEndDebugUtilsLabelEXT) {
-		return false;
+void endDebugLabel(const vpp::Device& dev, vk::CommandBuffer cb) {
+	if(!dev.hasDebugUtils) {
+		return;
 	}
 
+	dlg_assert(vk::dispatch.vkCmdEndDebugUtilsLabelEXT);
 	vk::cmdEndDebugUtilsLabelEXT(cb);
-	return true;
+	return;
 }
 
-bool insertDebugLabel(vk::CommandBuffer cb, const char* name,
-		std::array<float, 4> col) {
-	if(!vk::dispatch.vkCmdInsertDebugUtilsLabelEXT) {
-		return false;
+void insertDebugLabel(const vpp::Device& dev, vk::CommandBuffer cb,
+		const char* name, std::array<float, 4> col) {
+	if(!dev.hasDebugUtils) {
+		return;
 	}
 
+	dlg_assert(vk::dispatch.vkCmdInsertDebugUtilsLabelEXT);
 	vk::DebugUtilsLabelEXT info;
 	info.color = col;
 	info.pLabelName = name;
 	vk::cmdInsertDebugUtilsLabelEXT(cb, info);
-	return true;
+}
+
+void beginDebugLabel(const vpp::CommandBuffer& cb, const char* name,
+		std::array<float, 4> col) {
+	beginDebugLabel(cb.device(), cb, name, col);
+}
+
+void endDebugLabel(const vpp::CommandBuffer& cb) {
+	endDebugLabel(cb.device(), cb);
+}
+
+void insertDebugLabel(const vpp::CommandBuffer& cb,
+		const char* name, std::array<float, 4> col) {
+	insertDebugLabel(cb.device(), cb, name, col);
 }
 
 // DebugLabel
-DebugLabel::DebugLabel(vk::CommandBuffer cb, const char* name,
-		std::array<float, 4> color) : cb_(cb) {
-	beginDebugLabel(cb, name, color);
-}
-
-DebugLabel::~DebugLabel() {
-	if(cb_) {
-		endDebugLabel(cb_);
+DebugLabel::DebugLabel(const vpp::Device& dev, vk::CommandBuffer cb,
+		const char* name, std::array<float, 4> color) {
+	if(dev.hasDebugUtils) {
+		beginDebugLabel(dev, cb, name, color);
+		cb_ = cb;
+		dev_ = &dev;
 	}
 }
 
-// spezialization of Handletype
+DebugLabel::DebugLabel(const vpp::CommandBuffer& cb,
+	const char* name, std::array<float, 4> color) :
+		DebugLabel(cb.device(), cb.vkHandle(), name, color) {
+}
+
+DebugLabel::~DebugLabel() {
+	if(dev_ && cb_) {
+		endDebugLabel(*dev_, cb_);
+	}
+}
+
+} // namespace debug
+
 #define HandleSpec(handle, name) \
 	template<> vk::ObjectType handleType<handle>() { \
 		return vk::ObjectType::name; \
@@ -202,37 +232,38 @@ DebugLabel::~DebugLabel() {
 		return vk::DebugReportObjectTypeEXT::name; \
 	}
 
-HandleSpec(vk::Instance, instance)
-HandleSpec(vk::PhysicalDevice, physicalDevice)
-HandleSpec(vk::Device, device)
-HandleSpec(vk::CommandBuffer, commandBuffer)
-HandleSpec(vk::CommandPool, commandPool)
-HandleSpec(vk::Queue, queue)
-HandleSpec(vk::Image, image)
-HandleSpec(vk::ImageView, imageView)
-HandleSpec(vk::Buffer, buffer)
-HandleSpec(vk::BufferView, bufferView)
-HandleSpec(vk::Framebuffer, framebuffer)
-HandleSpec(vk::Sampler, sampler)
-HandleSpec(vk::DeviceMemory, deviceMemory)
-HandleSpec(vk::DescriptorSetLayout, descriptorSetLayout)
-HandleSpec(vk::DescriptorSet, descriptorSet)
-HandleSpec(vk::DescriptorPool, descriptorPool)
-HandleSpec(vk::PipelineLayout, pipelineLayout)
-HandleSpec(vk::Pipeline, pipeline)
-HandleSpec(vk::PipelineCache, pipelineCache)
-HandleSpec(vk::RenderPass, renderPass)
-HandleSpec(vk::Semaphore, semaphore)
-HandleSpec(vk::Fence, fence)
-HandleSpec(vk::Event, event)
-HandleSpec(vk::QueryPool, queryPool)
-HandleSpec(vk::ShaderModule, shaderModule)
-HandleSpec(vk::SurfaceKHR, surfaceKHR)
-HandleSpec(vk::SwapchainKHR, swapchainKHR)
-HandleSpec(vk::DebugReportCallbackEXT, debugReportCallbackEXT)
-HandleSpec(vk::DisplayKHR, displayKHR)
-HandleSpec(vk::DisplayModeKHR, displayModeKHR)
+HandleSpec(Instance, instance)
+// HandleSpec(PhysicalDevice, physicalDevice)
+HandleSpec(Device, device)
+HandleSpec(CommandBuffer, commandBuffer)
+HandleSpec(CommandPool, commandPool)
+HandleSpec(Queue, queue)
+HandleSpec(Image, image)
+HandleSpec(ImageView, imageView)
+HandleSpec(Buffer, buffer)
+HandleSpec(BufferView, bufferView)
+HandleSpec(Framebuffer, framebuffer)
+HandleSpec(Sampler, sampler)
+HandleSpec(DeviceMemory, deviceMemory)
+HandleSpec(DescriptorSetLayout, descriptorSetLayout)
+HandleSpec(DescriptorSet, descriptorSet)
+HandleSpec(DescriptorPool, descriptorPool)
+HandleSpec(PipelineLayout, pipelineLayout)
+HandleSpec(Pipeline, pipeline)
+HandleSpec(PipelineCache, pipelineCache)
+HandleSpec(RenderPass, renderPass)
+HandleSpec(Semaphore, semaphore)
+HandleSpec(Fence, fence)
+HandleSpec(Event, event)
+HandleSpec(QueryPool, queryPool)
+HandleSpec(ShaderModule, shaderModule)
+HandleSpec(Surface, surfaceKHR)
+HandleSpec(Swapchain, swapchainKHR)
+HandleSpec(DebugCallback, debugReportCallbackEXT)
+// HandleSpec(DisplayKHR, displayKHR)
+// HandleSpec(DisplayModeKHR, displayModeKHR)
 
 #undef HandleSpec
+#undef INFO_IMPL
 
 } // namespace vpp

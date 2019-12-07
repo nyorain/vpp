@@ -33,6 +33,12 @@ public:
 	static Device* instance();
 #endif
 
+	/// Whether the Device's instance has the VK_EXT_debug_utils extension.
+	/// If this is set to false, the utility functions in vpp/debug.hpp will
+	/// have no effect.
+	/// This has to be set after device creation if the user cares about it.
+	bool hasDebugUtils {false};
+
 public:
 	/// Creates a new vulkan device from the given device create info.
 	/// Might (as all vpp classes) throw a vk::VulkanError from the underlaying
