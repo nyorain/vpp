@@ -44,6 +44,14 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device&,
 	vk::SurfaceKHR, const vk::Extent2D& size,
 	const SwapchainPreferences& prefs = {});
 
+/// Updates the imageExtent member of the given swapchain info
+/// given on the capabilities of the surface returned by the surface
+/// of the create info. Tries to use the requested width and height as well
+/// as possible. Must only be called with a swapchain create info
+/// that already has the surface member set.
+void updateImageExtent(vk::PhysicalDevice, vk::SwapchainCreateInfoKHR& sci,
+	vk::Extent2D desired);
+
 /// Swapchain wrapper that (together with SwapchainSettings and its
 /// implementations) manages surface property querying and swapchain setup.
 /// Does not remember/store any additional information about itself.

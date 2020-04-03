@@ -183,6 +183,23 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device& dev,
 	return ret;
 }
 
+void updateImageExtent(vk::PhysicalDevice phdev,
+		vk::SwapchainCreateInfoKHR& sci, vk::Extent2D desired) {
+	dlg_assert(sci.surface);
+	auto surfCaps = vk::getPhysicalDeviceSurfaceCapabilitiesKHR(
+		phdev, sci.surface);
+
+	auto& curr = surfCaps.currentExtent;
+	if(curr.width == 0xFFFFFFFF && curr.height == 0xFFFFFFFF) {
+		const auto& min = surfCaps.minImageExtent;
+		const auto& max = surfCaps.maxImageExtent;
+		sci.imageExtent.width = std::clamp(desired.width, min.width, max.width);
+		sci.imageExtent.height = std::clamp(desired.height, min.height, max.height);
+	} else {
+		sci.imageExtent = surfCaps.currentExtent;
+	}
+}
+
 // Swapchain
 Swapchain::Swapchain(const Device& dev, const vk::SwapchainCreateInfoKHR& info)
 		: ResourceHandle(dev) {
@@ -205,20 +222,7 @@ std::vector<vk::Image> Swapchain::images() const {
 
 void Swapchain::resize(const vk::Extent2D& size,
 		vk::SwapchainCreateInfoKHR& info) {
-	dlg_assert(info.surface);
-	auto surfCaps = vk::getPhysicalDeviceSurfaceCapabilitiesKHR(
-		vkPhysicalDevice(), info.surface);
-
-	auto& curr = surfCaps.currentExtent;
-	if(curr.width == 0xFFFFFFFF && curr.height == 0xFFFFFFFF) {
-		const auto& min = surfCaps.minImageExtent;
-		const auto& max = surfCaps.maxImageExtent;
-		info.imageExtent.width = std::clamp(size.width, min.width, max.width);
-		info.imageExtent.height = std::clamp(size.height, min.height, max.height);
-	} else {
-		info.imageExtent = surfCaps.currentExtent;
-	}
-
+	updateImageExtent(vkPhysicalDevice(), info, size);
 	info.oldSwapchain = vkHandle();
 	handle_ = vk::createSwapchainKHR(device(), info);
 

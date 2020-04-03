@@ -117,6 +117,8 @@ public:
 	auto recordMode() const { return mode_; }
 	const auto& device() const { return present_->device(); }
 	auto& submitter() const { return *submitter_; }
+	auto& renderBuffers() { return renderBuffers_; }
+	auto& renderBuffers() const { return renderBuffers_; }
 
 protected:
 	/// Requires to call init before using it.
