@@ -18,7 +18,7 @@ namespace fwd {
 	extern const vk::ShaderStageFlags allShaderStages;
 } // namespace fwd
 
-/// Allows convinient descriptorSet updates.
+/// Allows convenient descriptorSet updates.
 /// Does not perform any checking and has the overhead of internally
 /// allocating memory.
 class DescriptorSetUpdate : public nytl::NonCopyable {
