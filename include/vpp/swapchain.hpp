@@ -19,7 +19,7 @@ namespace vpp {
 struct SwapchainPreferences {
 	enum class ErrorAction {
 		none, /// Simply chooses another setting.
-		output, /// Choses another setting and prints a warning to cerr.
+		output, /// Choses another setting and prints a warning
 		exception /// Throws a std::runtime_error
 	};
 
@@ -84,7 +84,7 @@ public:
 
 	/// Wrapper for vkQueuePresentKHR, will simply forward the result.
 	vk::Result present(const Queue& queue, unsigned int image,
-		vk::Semaphore wait = {}) const;
+		nytl::Span<const vk::Semaphore> wait = {}) const;
 
 	/// Wrapper around vkGetSwapchainImagesKHR
 	std::vector<vk::Image> images() const;

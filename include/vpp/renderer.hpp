@@ -156,6 +156,16 @@ protected:
 	/// was recreated and therefore size and/or image views have changed.
 	virtual void initBuffers(const vk::Extent2D&, nytl::Span<RenderBuffer>) = 0;
 
+	/// Should submit the render work needed for the given buffer.
+	/// Always called after the associated swapchain image has been
+	/// acquired with the acquire semaphore buf.semaphore.
+	/// Must return the semaphore presentation should wait on.
+	/// Can be overwritten to submit buffer-specific work.
+	/// If sid is not null, must store the submission ID as returned
+	/// from Submitter in it.
+	virtual vk::Semaphore submit(const RenderBuffer& buf,
+		const RenderInfo& info, std::optional<std::uint64_t>* sid);
+
 protected:
 	Swapchain swapchain_ {};
 	const Queue* present_ {};

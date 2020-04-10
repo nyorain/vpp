@@ -236,7 +236,7 @@ void Swapchain::resize(const vk::Extent2D& size,
 // here since that is an expected case: e.g. when the surface is resizing
 vk::Result Swapchain::acquire(unsigned int& id, vk::Semaphore sem,
 		vk::Fence fence, std::uint64_t timeout) const {
-	// TODO: suboptimal gets lost currently...
+	// TODO: "suboptimal" result gets lost currently
 	try {
 		id = vk::acquireNextImageKHR(device(), vkHandle(), timeout,
 			sem, fence);
@@ -247,19 +247,16 @@ vk::Result Swapchain::acquire(unsigned int& id, vk::Semaphore sem,
 }
 
 vk::Result Swapchain::present(const Queue& queue, std::uint32_t currentBuffer,
-		vk::Semaphore wait) const {
+		nytl::Span<const vk::Semaphore> wait) const {
 	vk::PresentInfoKHR presentInfo {};
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &vkHandle();
 	presentInfo.pImageIndices = &currentBuffer;
+	presentInfo.waitSemaphoreCount = wait.size();
+	presentInfo.pWaitSemaphores = wait.data();
 
-	if(wait) {
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = &wait;
-	}
-
-	QueueLock(device(), queue);
 	try {
+		QueueLock(device(), queue);
 		return vk::queuePresentKHR(queue, presentInfo);
 	} catch(const vk::VulkanError& error) {
 		return error.error;
