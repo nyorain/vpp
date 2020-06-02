@@ -13,6 +13,7 @@ namespace vpp {
 /// NOTE: moving/destructing a TrDsLayout while it is referenced
 /// by a TrDs results in undefined behavior.
 /// TODO: probably best to make this not movable
+///   instead offer a 'init' function.
 class TrDsLayout : public DescriptorSetLayout {
 public:
 	TrDsLayout() = default;

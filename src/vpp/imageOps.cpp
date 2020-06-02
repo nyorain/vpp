@@ -7,6 +7,7 @@
 #include <vpp/sharedBuffer.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
+#include <limits>
 
 namespace vpp {
 
@@ -38,6 +39,7 @@ void fillMap(const Image& img, vk::Format format,
 	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
 	auto mapSize = texelAddress(sresLayout, texSize, size.width,
 		height - 1, depth - 1, subres.arrayLayer);
+	// TODO: don't start mapping at 0 but at first texel.
 	auto map = img.memoryMap(0, mapSize);
 
 	auto doffset = 0u; // current data offset
@@ -149,10 +151,84 @@ SubBuffer fillStaging(vk::CommandBuffer cb, const Image& img,
 	return fillStagingLayers(cb, img, format, layout, size, data, layers, offset);
 }
 
-SubBuffer retrieveStagingLayers(vk::CommandBuffer cmdBuf, const Image& img,
+SubBuffer retrieveStagingRange(vk::CommandBuffer cb, const Image& img, vk::Format format,
+		vk::ImageLayout layout, const vk::Extent3D& size,
+		const vk::ImageSubresourceRange& range, const vk::Offset3D& offset) {
+
+	const auto texSize = std::uint64_t(formatSize(format));
+	const auto depth = size.depth ? size.depth : 1u;
+	const auto height = size.height ? size.height : 1u;
+
+	dlg_assert(cb); // valid command buffer handle
+	dlg_assert(layout == vk::ImageLayout::transferSrcOptimal ||
+		layout == vk::ImageLayout::general); // supported layout
+	dlg_assert(img.vkHandle()); // image is valid
+	dlg_assert(texSize > 0); // format isn't undefined/weird
+	dlg_assert(size.width != 0); // at least 1D texture
+	// We don't support compressed textures yet.
+	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
+	// first, check for reasonable level count.
+	// If it's more, we might get problems with the shifting below.
+	dlg_assert(range.levelCount < 32);
+	// Check that the image has this number of levels.
+	dlg_assert((size.width >> range.levelCount) != 0 ||
+		(height >> range.levelCount) != 0 ||
+		(depth >> range.levelCount) != 0);
+
+	vk::DeviceSize bsize = 0u;
+	for(auto i = 0u; i < range.levelCount; ++i) {
+		auto l = range.baseMipLevel + i;
+		const auto iwidth = std::max(size.width >> l, 1u);
+		const auto iheight = std::max(height >> l, 1u);
+		const auto idepth = std::max(depth >> l, 1u);
+		bsize += texSize * iwidth * iheight * idepth * range.layerCount;
+	}
+
+	// bufferOfset must be multiple of 4 and image format size
+	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
+	align = std::max<vk::DeviceSize>(align, texSize);
+	align = std::max<vk::DeviceSize>(align, 4u);
+	auto stage = SubBuffer {img.device().bufferAllocator(), bsize,
+		vk::BufferUsageBits::transferDst, img.device().hostMemoryTypes(), align};
+
+	auto buf = stage.buffer().vkHandle();
+	auto boffset = stage.offset();
+
+	vk::ImageSubresourceLayers subres;
+	subres.aspectMask = range.aspectMask;
+	subres.baseArrayLayer = range.baseArrayLayer;
+	subres.layerCount = range.layerCount;
+	for(auto i = 0u; i < range.levelCount; ++i) {
+		auto l = range.baseMipLevel + i;
+		subres.mipLevel = l;
+
+		const auto iwidth = std::max(size.width >> l, 1u);
+		const auto iheight = std::max(height >> l, 1u);
+		const auto idepth = std::max(depth >> l, 1u);
+		const auto ms = texSize * iwidth * iheight * idepth * range.layerCount;
+
+		vk::BufferImageCopy region {boffset, 0u, 0u, subres, offset,
+			{iwidth, iheight, idepth}};
+		vk::cmdCopyImageToBuffer(cb, img, layout, buf, {{region}});
+		boffset += ms;
+	}
+
+	return stage;
+}
+
+SubBuffer retrieveStagingLayers(vk::CommandBuffer cb, const Image& img,
 		vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size,
 		const vk::ImageSubresourceLayers& subres, const vk::Offset3D& offset) {
+	vk::ImageSubresourceRange range;
+	range.aspectMask = subres.aspectMask;
+	range.baseArrayLayer = subres.baseArrayLayer;;
+	range.layerCount = subres.layerCount;
+	range.baseMipLevel = subres.mipLevel;
+	range.levelCount = 1u;
+	return retrieveStagingRange(cb, img, format, layout, size, range, offset);
 
+	// TODO: remove old implementation
+	/*
 	const auto texSize = formatSize(format);
 	const auto depth = size.depth ? size.depth : 1u;
 	const auto height = size.height ? size.height : 1u;
@@ -180,17 +256,42 @@ SubBuffer retrieveStagingLayers(vk::CommandBuffer cmdBuf, const Image& img,
 
 	vk::cmdCopyImageToBuffer(cmdBuf, img, layout, buf, {{region}});
 	return stage;
+	*/
 }
 
 SubBuffer retrieveStaging(vk::CommandBuffer cb, const Image& img,
 		vk::Format format, vk::ImageLayout layout, const vk::Extent3D& size,
 		const vk::ImageSubresource& subres, const vk::Offset3D& offset) {
-	vk::ImageSubresourceLayers layers;
-	layers.aspectMask = subres.aspectMask;
-	layers.layerCount = 1u;
-	layers.baseArrayLayer = subres.arrayLayer;
-	layers.mipLevel = subres.mipLevel;
-	return retrieveStagingLayers(cb, img, format, layout, size, layers, offset);
+	vk::ImageSubresourceRange range;
+	range.aspectMask = subres.aspectMask;
+	range.baseArrayLayer = subres.arrayLayer;
+	range.baseMipLevel = subres.mipLevel;
+	range.layerCount = 1u;
+	range.levelCount = 1u;
+	return retrieveStagingRange(cb, img, format, layout, size, range, offset);
+
+	// TODO: remove old implementation
+	// vk::ImageSubresourceLayers layers;
+	// layers.aspectMask = subres.aspectMask;
+	// layers.layerCount = 1u;
+	// layers.baseArrayLayer = subres.arrayLayer;
+	// layers.mipLevel = subres.mipLevel;
+	// return retrieveStagingLayers(cb, img, format, layout, size, layers, offset);
+}
+
+vk::DeviceSize imageBufferOffset(unsigned formatSize, vk::Extent3D extent,
+		unsigned numLayers, unsigned mip, unsigned layer) {
+	std::uint64_t off = 0u;
+	for(auto i = 0u; i < mip; ++i) {
+		off += extent.width * extent.height * extent.depth * numLayers * formatSize;
+
+		extent.width = std::max(extent.width >> 1u, 1u);
+		extent.height = std::max(extent.height >> 1u, 1u);
+		extent.depth = std::max(extent.depth >> 1u, 1u);
+	}
+
+	auto s = extent.width * extent.height * extent.depth * formatSize;
+	return off + layer * s;
 }
 
 // Utility functions

@@ -84,7 +84,14 @@ SubBuffer fillStaging(vk::CommandBuffer, const Image&, vk::Format,
 /// finishes execution. If the commandbuffer is never submitted, the
 /// BufferRange may be destroyed.
 /// The command buffer must be in recording state.
-/// The returned data will be tightly packed.
+/// The returned data will be tightly packed,
+/// mipLevels, layers, depth, height, width. When multiple mip levels are
+/// downloaded, calculating invidual image addresses isn't trivial,
+/// see the bufferImageOffset function below.
+[[nodiscard]]
+SubBuffer retrieveStagingRange(vk::CommandBuffer, const Image&, vk::Format,
+	vk::ImageLayout, const vk::Extent3D& size,
+	const vk::ImageSubresourceRange&, const vk::Offset3D& offset = {});
 [[nodiscard]]
 SubBuffer retrieveStagingLayers(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, const vk::Extent3D& size,
@@ -93,5 +100,12 @@ SubBuffer retrieveStagingLayers(vk::CommandBuffer, const Image&, vk::Format,
 SubBuffer retrieveStaging(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, const vk::Extent3D& size,
 	const vk::ImageSubresource&, const vk::Offset3D& offset = {});
+
+/// For an image with the given extent and a format of the given byte size,
+/// downloaded with retrieveStagingRange, returns the address at which
+/// the part of the image data for mip, layer begins.
+/// TODO: extend for baseMipLevel != 0
+vk::DeviceSize imageBufferOffset(unsigned formatSize, vk::Extent3D extent,
+	unsigned numLayers, unsigned mip, unsigned layer);
 
 } // namespace vpp

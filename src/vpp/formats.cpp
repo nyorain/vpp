@@ -144,6 +144,7 @@ ViewableImageCreateInfo::ViewableImageCreateInfo(vk::Format format,
 	img.tiling = tiling;
 	img.format = format;
 	img.samples = vk::SampleCountBits::e1;
+	img.sharingMode = vk::SharingMode::exclusive;
 
 	view.format = format;
 	view.subresourceRange = {aspect, 0, mipLevels, 0, 1};
