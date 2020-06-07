@@ -16,3 +16,6 @@
 -Wno-pragma-once-outside-header
 -Wno-unused-const-variable
 -std=c++17
+-I/the_following_is_for_vpp_built_as_subproject/
+-I../../build/subprojects/vkpp/include
+-I../vkpp/include

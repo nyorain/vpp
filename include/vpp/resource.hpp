@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -28,9 +28,9 @@ namespace vpp {
 /// swap member function if there are no additional data members. They cannot be
 /// implemented here instead of '= delete' and then simply defaulted in derived
 /// classes since the destructor of the derived classes needs to trigger in the
-/// case of operator=(Handle&&).
+/// case of operator=(ResourceHandle&&).
 template<typename Handle>
-class ResourceHandle : public Resource, public nytl::NonCopyable {
+class ResourceHandle : public Resource {
 public:
 	const Handle& vkHandle() const noexcept { return handle_; }
 	operator const Handle&() const noexcept { return vkHandle(); }

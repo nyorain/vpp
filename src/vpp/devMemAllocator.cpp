@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -7,6 +7,7 @@
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 #include <algorithm>
+#include <iterator>
 
 namespace vpp {
 
@@ -22,22 +23,23 @@ DeviceMemoryAllocator::~DeviceMemoryAllocator() {
 		"~DeviceMemoryAllocator: pending reservations left");
 }
 
-void DeviceMemoryAllocator::reserve(AllocationType type,
-		const vk::MemoryRequirements& reqs, ReservationID* rid) {
+void DeviceMemoryAllocator::init(const Device& dev) {
+	Resource::init(dev);
+}
+
+DeviceMemoryAllocator::ReservationID
+DeviceMemoryAllocator::reserve(AllocationType type,
+		const vk::MemoryRequirements& reqs) {
 	dlg_assertm(reqs.size, "req memory size 0");
 	dlg_assertm(reqs.memoryTypeBits, "req no memory type bits");
 
-	auto id = ReservationID {};
-	if(rid) {
-		if(++lastReservation_ == 0u) { // wrap
-			++lastReservation_;
-		}
-
-		id = *rid = lastReservation_;
+	if(++lastReservation_ == 0u) { // wrap
+		++lastReservation_;
 	}
+	auto rid = lastReservation_;
 
 	Requirement req {
-		id,
+		rid,
 		reqs.size,
 		reqs.alignment,
 		reqs.memoryTypeBits,
@@ -45,6 +47,7 @@ void DeviceMemoryAllocator::reserve(AllocationType type,
 	};
 
 	requirements_.push_back(req);
+	return rid;
 }
 
 void DeviceMemoryAllocator::cancel(ReservationID id) noexcept {
@@ -63,17 +66,17 @@ void DeviceMemoryAllocator::cancel(ReservationID id) noexcept {
 
 bool DeviceMemoryAllocator::findMem(Requirement& req, Reservation& info) {
 	for(auto& mem : memories_) {
-		if(!supportsType(req, mem.type())) {
+		if(!supportsType(req, mem->type())) {
 			continue;
 		}
 
-		auto alloc = mem.alloc(req.size, req.alignment, req.type);
+		auto alloc = mem->alloc(req.size, req.alignment, req.type);
 		if(alloc.size == 0) {
 			continue;
 		}
 
 		info.id = req.id;
-		info.memory = &mem;
+		info.memory = mem.get();
 		info.allocation = alloc;
 
 		return true;
@@ -171,9 +174,8 @@ DeviceMemoryAllocator::alloc(ReservationID id) {
 DeviceMemoryAllocator::Allocation
 DeviceMemoryAllocator::alloc(AllocationType type,
 		const vk::MemoryRequirements& memReqs) {
-	ReservationID id;
-	reserve(type, memReqs, &id);
-	return alloc(id);
+	auto rid = reserve(type, memReqs);
+	return alloc(rid);
 }
 
 void DeviceMemoryAllocator::alloc(unsigned int type) {
@@ -256,7 +258,7 @@ void DeviceMemoryAllocator::alloc(unsigned int type,
 	// now the needed size is known and the requirements to be allocated have
 	// their offsets the last offset value now equals the needed size
 	auto info = vk::MemoryAllocateInfo {offset, type};
-	auto& mem = memories_.emplace_back(device(), info);
+	auto& mem = memories_.emplace_back(std::make_unique<DeviceMemory>(device(), info));
 
 	// insert reservations where needed
 	reservations_.reserve(reservations_.size() + reservations.size());
@@ -264,14 +266,13 @@ void DeviceMemoryAllocator::alloc(unsigned int type,
 		Reservation res;
 		res.id = r.id;
 		res.allocation = r.allocation;
-		res.memory = &mem;
+		res.memory = mem.get();
 		reservations_.push_back(res);
-		mem.allocSpecified(r.allocation, r.type);
+		mem->allocSpecified(r.allocation, r.type);
 	}
 }
 
-void
-DeviceMemoryAllocator::queryTypes() {
+void DeviceMemoryAllocator::queryTypes() {
 	// XXX: this implementation does not always return the best result, but the
 	//  algorithms complexity is quadratic (in the number of requirements) and
 	//  the problem is NP-complete so good enough i guess.
@@ -429,6 +430,42 @@ bool DeviceMemoryAllocator::supportsType(uint32_t typeBits,
 bool DeviceMemoryAllocator::supportsType(const Requirement& req,
 		unsigned int type) noexcept {
 	return supportsType(req.memoryTypes, type);
+}
+
+bool DeviceMemoryAllocator::tryMergeMemories(DeviceMemoryAllocator&& rhs) {
+	if(!rhs.reservations_.empty() || !rhs.requirements_.empty()) {
+		return false;
+	}
+
+	// if this is initialized, both must have the same device
+	dlg_assert(!vkDevice() || (&device() == &rhs.device()));
+	this->init(rhs.device()); // in case this wasn't initialized
+
+	// If the other allocator is more restricted than we are,
+	// we might gain memories that don't match our restriction and we
+	// might allocate on them in future.
+	// This might not be expected.
+	// Check that we are allowed allocate on all types, rhs is allowed to.
+	dlg_assert((this->restricted() & rhs.restricted()) == rhs.restricted());
+
+	auto b = std::make_move_iterator(rhs.memories_.begin());
+	auto e = std::make_move_iterator(rhs.memories_.end());
+	memories_.insert(memories_.end(), b, e);
+
+	// NOTE: we could also take the cache vectors from rhs if they
+	// are larger than the cache vectors we have in *this.
+	// Not sure if this would be a better policy though, might
+	// be unexpected.
+	rhs.tmpTypeMap_ = {};
+	rhs.tmpOccurences_ = {};
+	rhs.tmpRequirements_ = {};
+	rhs.tmpReservations_ = {};
+
+	return true;
+}
+
+void DeviceMemoryAllocator::restrict(std::uint32_t memoryTypeBits) {
+	restrict_ = memoryTypeBits;
 }
 
 } // namespace vpp

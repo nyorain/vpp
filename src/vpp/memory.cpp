@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -50,9 +50,9 @@ void DeviceMemory::allocSpecified(Allocation a, AllocationType type) {
 	auto it = std::lower_bound(allocations_.begin(), allocations_.end(), allocation,
 		[](auto& a, auto& b){ return a.allocation.offset < b.allocation.offset; });
 
-	dlg_assertm(it == allocations_.begin() || (it - 1)->allocation.end() <= offset,
+	dlg_assertm(it == allocations_.begin() || end((it - 1)->allocation) <= offset,
 		"Overlapping allocSpecified (before allocation)");
-	dlg_assertm(it == allocations_.end() || it->allocation.offset >= a.end(),
+	dlg_assertm(it == allocations_.end() || it->allocation.offset >= end(a),
 		"Overlapping allocSpecified (after allocation)");
 
 	allocations_.insert(it, allocation);
@@ -94,7 +94,7 @@ DeviceMemory::Allocation DeviceMemory::allocatable(vk::DeviceSize size,
 
 	const AllocationEntry* old = &start;
 	for(auto& alloc : allocations_) {
-		vk::DeviceSize alignedOffset = align(old->allocation.end(), alignment);
+		vk::DeviceSize alignedOffset = align(end(old->allocation), alignment);
 
 		// check for granularity between prev and to be inserted
 		if(old->type != AllocationType::none && old->type != type) {
@@ -108,7 +108,7 @@ DeviceMemory::Allocation DeviceMemory::allocatable(vk::DeviceSize size,
 		}
 
 		if(end < alloc.allocation.offset) {
-			auto newWaste = alignedOffset - old->allocation.end();
+			auto newWaste = alignedOffset - vpp::end(old->allocation);
 			newWaste += end - (alignedOffset + size);
 			if(newWaste < bestWaste) {
 				bestWaste = newWaste;
@@ -123,7 +123,7 @@ DeviceMemory::Allocation DeviceMemory::allocatable(vk::DeviceSize size,
 	// the segments between two allocations
 	// just copied from above with the "new allocation" alloc being an empty
 	// past-end allocation
-	vk::DeviceSize alignedOffset = align(old->allocation.end(), alignment);
+	vk::DeviceSize alignedOffset = align(end(old->allocation), alignment);
 
 	if(old->type != AllocationType::none && old->type != type) {
 		alignedOffset = align(alignedOffset, granularity);
@@ -163,7 +163,7 @@ vk::DeviceSize DeviceMemory::largestFreeSegment() const noexcept {
 			ret = alloc.allocation.offset - oldend;
 		}
 
-		oldend = alloc.allocation.end();
+		oldend = end(alloc.allocation);
 	}
 
 	// potential last free block

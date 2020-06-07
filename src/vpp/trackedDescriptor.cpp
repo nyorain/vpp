@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -9,40 +9,67 @@
 namespace vpp {
 
 // TrDsLayout
+TrDsLayout::TrDsLayout() = default;
+TrDsLayout::~TrDsLayout() = default;
+
 TrDsLayout::TrDsLayout(const Device& dev,
-	const vk::DescriptorSetLayoutCreateInfo& info) :
+		const vk::DescriptorSetLayoutCreateInfo& info) :
 		DescriptorSetLayout(dev, info) {
 	init({info.pBindings, info.bindingCount});
 }
 
 TrDsLayout::TrDsLayout(const Device& dev,
-	nytl::Span<vk::DescriptorSetLayoutBinding> bindings) :
+		nytl::Span<vk::DescriptorSetLayoutBinding> bindings) :
 		DescriptorSetLayout(dev, bindings) {
 	init(bindings);
 }
 
 TrDsLayout::TrDsLayout(const Device& dev,
-	std::initializer_list<vk::DescriptorSetLayoutBinding> xbindings) :
-		DescriptorSetLayout(dev, xbindings) {
-	init(xbindings);
+		std::initializer_list<vk::DescriptorSetLayoutBinding> bindings) :
+		DescriptorSetLayout(dev, bindings) {
+	init(bindings);
 }
 
-void TrDsLayout::init(nytl::Span<const vk::DescriptorSetLayoutBinding> xbindings) {
-	bindings_.reserve(xbindings.size());
-	for(auto& b : xbindings) {
-		auto it = std::find_if(bindings_.begin(), bindings_.end(),
+void TrDsLayout::init(const Device& dev,
+		const vk::DescriptorSetLayoutCreateInfo& info) {
+	dlg_assert(!vkHandle());
+	DescriptorSetLayout::operator=({dev, info});
+	init({info.pBindings, info.bindingCount});
+}
+
+void TrDsLayout::init(const Device& dev,
+		nytl::Span<vk::DescriptorSetLayoutBinding> bindings) {
+	dlg_assert(!vkHandle());
+	DescriptorSetLayout::operator=({dev, bindings});
+	init(bindings);
+}
+
+void TrDsLayout::init(const Device& dev,
+		std::initializer_list<vk::DescriptorSetLayoutBinding> bindings) {
+	dlg_assert(!vkHandle());
+	DescriptorSetLayout::operator=({dev, bindings});
+	init(bindings);
+}
+
+void TrDsLayout::init(nytl::Span<const vk::DescriptorSetLayoutBinding> bindings) {
+	poolSizes_.reserve(bindings.size());
+	for(auto& b : bindings) {
+		auto it = std::find_if(poolSizes_.begin(), poolSizes_.end(),
 			[&](const auto& s) { return s.type == b.descriptorType; });
-		if(it != bindings_.end()) {
+		if(it != poolSizes_.end()) {
 			it->descriptorCount += b.descriptorCount;
 		} else {
-			bindings_.push_back({});
-			bindings_.back().type = b.descriptorType;
-			bindings_.back().descriptorCount = b.descriptorCount;
+			auto& ps = poolSizes_.emplace_back();
+			ps.type = b.descriptorType;
+			ps.descriptorCount = b.descriptorCount;
 		}
 	}
 }
 
 // TrDsPool
+TrDsPool::TrDsPool() = default;
+TrDsPool::~TrDsPool() = default;
+
 TrDsPool::TrDsPool(const Device& dev, vk::DescriptorPoolCreateInfo info)
 		: remainingSets_(info.maxSets) {
 
@@ -81,7 +108,7 @@ TrDs::TrDs(TrDsPool& pool, const TrDsLayout& layout) :
 	// TODO: throw when there are not enough resources left instead
 	//   of just asserting it?
 	auto& rem = pool.remaining_;
-	for(auto& binding : layout.bindings()) {
+	for(auto& binding : layout.poolSizes()) {
 		auto it = std::find_if(rem.begin(), rem.end(), [&](const auto& s)
 			{ return s.type == binding.type; });
 		dlg_assert(it != rem.end());
@@ -125,7 +152,7 @@ TrDs::~TrDs() {
 
 	// add bindings back to pool
 	auto& rem = pool().remaining_;
-	for(auto& binding : layout().bindings()) {
+	for(auto& binding : layout().poolSizes()) {
 		auto it = std::find_if(rem.begin(), rem.end(), [&](const auto& s)
 			{ return s.type == binding.type; });
 		// NOTE: this assertion often fails when the layout was destroyed
@@ -182,8 +209,19 @@ TrDs::InitData::~InitData() {
 }
 
 // DescriptorAllocator
+DescriptorAllocator::DescriptorAllocator() = default;
+DescriptorAllocator::~DescriptorAllocator() = default;
+
 DescriptorAllocator::DescriptorAllocator(const Device& dev) :
 	Resource(dev) {
+}
+
+void DescriptorAllocator::init(const vpp::Device& dev) {
+	Resource::init(dev);
+}
+
+void DescriptorAllocator::clearReservations() {
+	pending_ = {};
 }
 
 void DescriptorAllocator::reserve(nytl::Span<const vk::DescriptorPoolSize> bs,
@@ -205,7 +243,7 @@ void DescriptorAllocator::reserve(nytl::Span<const vk::DescriptorPoolSize> bs,
 }
 
 void DescriptorAllocator::reserve(const TrDsLayout& layout, unsigned count) {
-	reserve(layout.bindings(), count);
+	reserve(layout.poolSizes(), count);
 }
 
 TrDs DescriptorAllocator::alloc(const TrDsLayout& layout) {
@@ -223,7 +261,7 @@ TrDs DescriptorAllocator::alloc(const TrDsLayout& layout) {
 
 		// test for every binding if there are enough remaining
 		auto& rem = pool.remaining();
-		for(auto& b1 : layout.bindings()) {
+		for(auto& b1 : layout.poolSizes()) {
 			auto it = std::find_if(rem.begin(), rem.end(),
 				[&](const auto& b2){ return b2.type == b1.type; });
 			ok = (it != rem.end()) &&
@@ -253,7 +291,7 @@ TrDs DescriptorAllocator::alloc(const TrDsLayout& layout) {
 	// reserve the default allocations additionally
 	// TODO: use a better allocation strat, depending on what was
 	//  previously allocated
-	reserve(layout.bindings(), 1);
+	reserve(layout.poolSizes(), 1);
 	reserve({{
 		{vk::DescriptorType::uniformBuffer, 30},
 		{vk::DescriptorType::combinedImageSampler, 20}
@@ -266,7 +304,7 @@ TrDs DescriptorAllocator::alloc(const TrDsLayout& layout) {
 
 void DescriptorAllocator::unreserve(const TrDsLayout& layout) {
 	auto& t = pending_.types;
-	for(auto& b1 : layout.bindings()) {
+	for(auto& b1 : layout.poolSizes()) {
 		auto it = std::find_if(t.begin(), t.end(), [&](const auto& b2)
 			{ return b2.type == b1.type; });
 

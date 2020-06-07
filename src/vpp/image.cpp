@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -58,7 +58,7 @@ Image::Image(InitData& data, DeviceMemoryAllocator& alloc, vk::Image image,
 		AllocationType::linear : AllocationType::optimal;
 
 	data.allocator = &alloc;
-	data.allocator->reserve(type, reqs, &data.reservation);
+	data.reservation = data.allocator->reserve(type, reqs);
 }
 
 Image::Image(InitData& data, DeviceMemoryAllocator& alloc,

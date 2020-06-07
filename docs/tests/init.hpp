@@ -44,7 +44,7 @@ void initGlobals() {
 		VK_EXT_DEBUG_UTILS_EXTENSION_NAME
 	};
 
-	constexpr auto layer = "VK_LAYER_LUNARG_standard_validation";
+	constexpr auto layer = "VK_LAYER_KHRONOS_validation";
 
 	vk::InstanceCreateInfo instanceInfo;
 	instanceInfo.pApplicationInfo = nullptr;

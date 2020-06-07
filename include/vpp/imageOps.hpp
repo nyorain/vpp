@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -18,23 +18,48 @@ namespace vpp {
 ///   Can e.g. be obtained from formatSize (with the images format).
 /// - x,y,z,layer: The coordinates of the texel which address should be returned.
 vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout,
-	unsigned int texelSize, unsigned int x, unsigned int y, unsigned int z = 0,
-	unsigned int layer = 0);
+	unsigned texelSize, unsigned x, unsigned y, unsigned z = 0,
+	unsigned layer = 0);
 
-/// Returns the size of the given format in bits.
-/// E.g. vk::Format::r8g8b8a8* will return 32, since it has 4 * 8 = 32 bits
-/// For compressed formats this function will return the size of one block.
-unsigned int formatSizeBits(vk::Format);
+/// Returns the pixel number of a given texel in a tightly, linearly layout
+/// image, dimension order: mips, layers, depth, height, width.
+/// To obtain the buffer offset, multiply the address with the format size
+/// of the image (see imageBufferOffset).
+/// Useful since that's the format in which image ranges are returned
+/// from retrieveStagingRange (and variations).
+/// Mainly interesting for images with multiple mip levels since the
+/// offset formula is not trivial in that case (since each level
+/// has different size).
+/// This cannot be used to compute the address of a texel in a linear
+/// vulkan image, see vpp::texelAddress for that (above).
+/// - extent: size of the linear image
+/// - numLayers: number of layers the image has
+/// - mip: the mip of the texel to compute the texel number for.
+///   `mip < mipmapLevels(extent)` must hold, i.e. if the
+///   mip level can't exist for the given extent
+/// - layer: the layer of the texel to compute the texel number for
+///   `layer < numLayers` must hold.
+/// - x,y,z: coordinates of the texel in the given mip, layer
+/// - firstMip: which mip begins at texel number 0.
+///   `firstMip <= mip` must hold. Note that 'mip' is not relative
+///   to baseMip but absolute.
+vk::DeviceSize tightTexelNumber(vk::Extent3D extent,
+	unsigned numLayers, unsigned mip, unsigned layer,
+	unsigned x = 0u, unsigned y = 0u, unsigned z = 0u,
+	unsigned firstMip = 0u);
 
-/// Returns the size in bytes of the given format.
-/// E.g. vk::Format::r8g8b8a8* will return 4, since it has 4 * 8 bits = 4 bytes.
-/// For compressed formats this function will return the size of one block.
-unsigned int formatSize(vk::Format);
+/// Equivalent to tightTexelNumber(extent, 1, 0, 0, x, y, z),
+/// i.e. returns the texel number in a single layer for an image
+/// of the given size.
+inline vk::DeviceSize tightLayerTexelNumber(vk::Extent3D extent,
+		unsigned x, unsigned y, unsigned z = 0) {
+	return z * (extent.height * extent.width) + y * extent.width + x;
+}
 
-/// Returns the size of one compressed block of a compressed vulkan format.
-/// If the given format is not a compressed format, {1, 1} is returned.
-/// For vk::Format::undefined, {0, 0} is returned
-vk::Extent2D blockSize(vk::Format);
+// TODO: properly test the functions for multiple mips and multiple layers.
+// They might still have issues.
+// TODO(low): we could support SubresourceRanges for the 'Map' functions
+// as well.
 
 /// Fills the given image with the given data by mapping it.
 /// The image must be bound to hostVisible memory.
@@ -66,8 +91,26 @@ std::vector<std::byte> retrieveMap(const Image&, vk::Format,
 /// The command buffer must be in recording state.
 /// - data: Tightly packed data.
 ///   Must be in row-major order and large enough for the given extent.
-///   The size of data will be expected to equal exactly:
-///   extent.w * extent.h * extent.d * formatSize(format)
+///   The size of data will be expected to equal exactly the sum of
+///   formatSize(format) * subresource.layerCount * width * height * depth
+///   for all mip levels in the given range (note that width, height, depth
+///   might vary for each mip level). This is equivalent to
+///   formatSize(format) * tightTexelNumber(extent, nl, mm, 0, 0, 0, 0, bm) with
+///   nl = subresource.layerCount
+///   mm = subresource.baseMipLevel + subresource.levelCount
+///   bm = subresource.baseMipLevel.
+///   The data is expected to be layouted as computed by tightTexelNumber,
+///   miplevels -> layers -> depth -> height -> width.
+/// - size: extent to fill in the image in absolute mip level 0.
+///   Note that filling just a part of multiple levels of an image
+///   might be a bad idea, you usually want to pass the full image size
+///   here if multiple mip levels are filled.
+/// - offset: offset into the image in absolute mip level 0.
+///   When the fills any mip other than mip level 0, offset must be 0.
+[[nodiscard]]
+SubBuffer fillStagingRange(vk::CommandBuffer, const Image&, vk::Format,
+	vk::ImageLayout, vk::Extent3D size, nytl::Span<const std::byte> data,
+	const vk::ImageSubresourceRange& range, const vk::Offset3D& offset = {});
 [[nodiscard]]
 SubBuffer fillStagingLayers(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, const vk::Extent3D& size, nytl::Span<const std::byte> data,
@@ -85,12 +128,12 @@ SubBuffer fillStaging(vk::CommandBuffer, const Image&, vk::Format,
 /// BufferRange may be destroyed.
 /// The command buffer must be in recording state.
 /// The returned data will be tightly packed,
-/// mipLevels, layers, depth, height, width. When multiple mip levels are
-/// downloaded, calculating invidual image addresses isn't trivial,
-/// see the bufferImageOffset function below.
+/// mipLevels -> layers- > depth- > height -> width.
+/// When multiple mip levels are downloaded, calculating invidual
+/// image addresses isn't trivial, see the tightTexelNumber function..
 [[nodiscard]]
 SubBuffer retrieveStagingRange(vk::CommandBuffer, const Image&, vk::Format,
-	vk::ImageLayout, const vk::Extent3D& size,
+	vk::ImageLayout, vk::Extent3D size,
 	const vk::ImageSubresourceRange&, const vk::Offset3D& offset = {});
 [[nodiscard]]
 SubBuffer retrieveStagingLayers(vk::CommandBuffer, const Image&, vk::Format,
@@ -100,12 +143,5 @@ SubBuffer retrieveStagingLayers(vk::CommandBuffer, const Image&, vk::Format,
 SubBuffer retrieveStaging(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, const vk::Extent3D& size,
 	const vk::ImageSubresource&, const vk::Offset3D& offset = {});
-
-/// For an image with the given extent and a format of the given byte size,
-/// downloaded with retrieveStagingRange, returns the address at which
-/// the part of the image data for mip, layer begins.
-/// TODO: extend for baseMipLevel != 0
-vk::DeviceSize imageBufferOffset(unsigned formatSize, vk::Extent3D extent,
-	unsigned numLayers, unsigned mip, unsigned layer);
 
 } // namespace vpp

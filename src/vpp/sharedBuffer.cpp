@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -7,6 +7,7 @@
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
 #include <algorithm>
+#include <iterator>
 
 namespace vpp {
 namespace {
@@ -63,7 +64,7 @@ SubBuffer::SubBuffer(InitData& data, BufferAllocator& alloc,
 		vk::DeviceSize align) {
 	dlg_assert(memBits);
 	data.allocator = &alloc;
-	alloc.reserve(size, usage, memBits, align, &data.reservation);
+	data.reservation = alloc.reserve(size, usage, memBits, align);
 }
 
 SubBuffer::~SubBuffer() {
@@ -170,7 +171,7 @@ SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
 	}
 
 	for(auto it = allocations_.begin(); it != allocations_.end(); ++it) {
-		auto aligned = vpp::align(old.end(), alignment);
+		auto aligned = vpp::align(end(old), alignment);
 		if(aligned + vpp::align(size, endAlign) <= it->offset) {
 			Allocation range = {aligned, size};
 			allocations_.insert(it, range);
@@ -182,7 +183,7 @@ SharedBuffer::Allocation SharedBuffer::alloc(vk::DeviceSize size,
 
 	// last
 	// we don't have to check for nonCoherentAtom end align here
-	auto aligned = vpp::align(old.end(), alignment);
+	auto aligned = vpp::align(end(old), alignment);
 	if(aligned + size <= this->size()) {
 		Allocation range = {aligned, size};
 		allocations_.push_back(range);
@@ -204,7 +205,7 @@ BufferAllocator::BufferAllocator(const Device& dev) :
 }
 
 BufferAllocator::BufferAllocator(DeviceMemoryAllocator& memAlloc) :
-	devMemAlloc_(memAlloc) {
+	devMemAlloc_(&memAlloc) {
 }
 
 BufferAllocator::~BufferAllocator() {
@@ -221,30 +222,33 @@ BufferAllocator::~BufferAllocator() {
 		"~BufferAllocator: pending reservations left");
 }
 
-void BufferAllocator::reserve(vk::DeviceSize size,
+void BufferAllocator::init(DeviceMemoryAllocator& allocator) {
+	dlg_assertm(!devMemAlloc_, "already initialized");
+	devMemAlloc_ = &allocator;
+}
+
+BufferAllocator::ReservationID BufferAllocator::reserve(vk::DeviceSize size,
 		vk::BufferUsageFlags usage, unsigned int memBits,
-		vk::DeviceSize align, ReservationID* reservation) {
+		vk::DeviceSize align) {
 
 	dlg_assert(size > 0);
 	dlg_assert(memBits);
 	dlg_assertm(align == 1 || align % 2 == 0,
 		"Alignment {} not power of 2", align);
 
+	if(++id_ == 0u) { // wrap; 0 is invalid reservation id
+		++id_;
+	}
+
 	Requirement req;
+	req.id = id_;
 	req.size = size;
 	req.align = std::max(align, usageAlignment(device(), usage));
 	req.usage = usage;
 	req.memBits = memBits;
 
-	if(reservation) {
-		if(++id_ == 0u) { // wrap; 0 is invalid reservation id
-			++id_;
-		}
-
-		req.id = *reservation = id_;
-	}
-
 	requirements_.push_back(req);
+	return id_;
 }
 
 BufferAllocator::Allocation BufferAllocator::alloc(ReservationID reservation) {
@@ -278,17 +282,17 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 
 	// check if there is still space available
 	for(auto& buf : buffers_) {
-		auto& mem = buf.buffer.memory();
+		auto& mem = buf.buffer->memory();
 
 		// check buffer has use and memBits we need
 		if((buf.usage & usage) != usage || !(memBits & (1 << mem.type()))) {
 			continue;
 		}
 
-		auto alloc = buf.buffer.alloc(size, align);
+		auto alloc = buf.buffer->alloc(size, align);
 		if(alloc.size != 0) {
 			dlg_assert(alloc.size == size);
-			return {buf.buffer, alloc};
+			return {*buf.buffer, alloc};
 		}
 	}
 
@@ -336,12 +340,12 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 		return alloc(size, usage, imemBits, align);
 	}
 
-	auto& nbuf = buffers_.emplace_back(devMemAlloc_, std::move(buf), imemBits,
+	auto& nbuf = buffers_.emplace_back(*devMemAlloc_, std::move(buf), imemBits,
 		createInfo.size, createInfo.usage);
-	auto& allocs = nbuf.buffer.allocations(); // insert them manually
+	auto& allocs = nbuf.buffer->allocations(); // insert them manually
 	allocs.push_back({0, size}); // first entry, the required one
 	for(auto& res : reservations) {
-		res.buffer = &nbuf.buffer;
+		res.buffer = nbuf.buffer.get();
 		allocs.push_back(res.allocation);
 	}
 
@@ -353,7 +357,7 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 	remaining.clear();
 	reservations.clear();
 
-	return {nbuf.buffer, {0, size}};
+	return {*nbuf.buffer, {0, size}};
 }
 
 void BufferAllocator::cancel(ReservationID reservation) {
@@ -372,10 +376,46 @@ void BufferAllocator::cancel(ReservationID reservation) {
 	requirements_.erase(req);
 }
 
+bool BufferAllocator::tryMergeBuffers(BufferAllocator&& rhs) {
+	if(!rhs.requirements_.empty() || !rhs.reservations_.empty()) {
+		return false;
+	}
+
+	// if this is initialized, both must have the same device
+	dlg_assert(rhs.devMemAlloc_);
+	dlg_assert(!devMemAlloc_ || (&device() == &rhs.device()));
+	if(!devMemAlloc_) { // not initialized yet
+		devMemAlloc_ = rhs.devMemAlloc_;
+	}
+
+	// If the device memory allocator used by this buffer allocator is *more*
+	// restricted, we might merge in some buffers allocated on memory
+	// that our device memory allocator might not have used.
+	// We might give out allocations on those in future. That behavior
+	// is not expected.
+	// Check that we are allowed allocate on all types, rhs is allowed to.
+	dlg_assert((devMemAllocator().restricted() & rhs.devMemAllocator().restricted()) ==
+		rhs.devMemAllocator().restricted());
+
+	auto b = std::make_move_iterator(rhs.buffers_.begin());
+	auto e = std::make_move_iterator(rhs.buffers_.end());
+	buffers_.insert(buffers_.end(), b, e);
+
+	// NOTE: we could also take the cache vectors from rhs if they
+	// are larger than the cache vectors we have in *this.
+	// Not sure if this would be a better policy though, might
+	// be unexpected. Same as in DeviceMemoryAllocator
+	rhs.tmpRequirements_ = {};
+	rhs.tmpReservations_ = {};
+
+	return true;
+}
+
 BufferAllocator::Buffer::Buffer(DeviceMemoryAllocator& alloc,
 	vpp::BufferHandle buf, unsigned int mbits, vk::DeviceSize size,
 	vk::BufferUsageFlags xusage) :
-		buffer(alloc, buf.release(), size, mbits), usage(xusage) {
+		buffer(std::make_unique<SharedBuffer>(alloc, buf.release(), size, mbits)),
+		usage(xusage) {
 }
 
 } // namespace vpp

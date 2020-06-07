@@ -47,10 +47,9 @@ TEST(sharedBuf) {
 
 	// allocator
 	vpp::BufferAllocator bufAlloc(dev);
-	bufAlloc.reserve(1000u, vk::BufferUsageBits::uniformBuffer);
-	bufAlloc.reserve(10000u, vk::BufferUsageBits::uniformBuffer);
-	bufAlloc.reserve(7u, vk::BufferUsageBits::storageBuffer);
-	bufAlloc.reserve(100u, vk::BufferUsageBits::indexBuffer);
+	auto id0 = bufAlloc.reserve(10000u, vk::BufferUsageBits::uniformBuffer);
+	auto id1 = bufAlloc.reserve(7u, vk::BufferUsageBits::storageBuffer);
+	auto id2 = bufAlloc.reserve(100u, vk::BufferUsageBits::indexBuffer);
 	EXPECT(bufAlloc.buffers().size(), 0u);
 
 	auto usage = vk::BufferUsageBits::uniformBuffer |
@@ -59,6 +58,10 @@ TEST(sharedBuf) {
 		vpp::SubBuffer tmp(bufAlloc, 11000u, usage);
 		EXPECT(bufAlloc.buffers().size(), 1u);
 	}
+
+	bufAlloc.cancel(id0);
+	bufAlloc.cancel(id1);
+	bufAlloc.cancel(id2);
 }
 
 TEST(alignment) {
@@ -130,7 +133,7 @@ TEST(nonCoherentAtomAlign) {
 	EXPECT(range2.allocation(), (Alloc{offset, 10u}));
 
 	vpp::SubBuffer range3(buf, buf.alloc(100u));
-	offset = vpp::align<vk::DeviceSize>(range2.allocation().end(), atomAlign);
+	offset = vpp::align<vk::DeviceSize>(end(range2.allocation()), atomAlign);
 	EXPECT(range3.allocation(), (Alloc{offset, 100u}));
 
 	auto range4 = std::move(range3);

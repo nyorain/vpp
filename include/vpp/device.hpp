@@ -1,11 +1,10 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #pragma once
 
 #include <vpp/fwd.hpp>
-#include <vpp/util/nonCopyable.hpp> // nytl::NonMovable
 #include <vpp/util/span.hpp> // nytl::Span
 
 #include <memory> // std::unique_ptr
@@ -14,6 +13,9 @@
 
 namespace vpp {
 
+// TODO: since Device is not movable, offer constructor-like 'init' functions.
+// Makes initialization of classes easier that create a Device.
+
 /// Represents a Vulkan Device.
 /// The central objects that all resources are created from.
 /// Holds important device-related resources such as queried properties and
@@ -21,9 +23,9 @@ namespace vpp {
 /// When a DeviceLost vulkan error occurs, the program can try to create a new
 /// Device object for the same PhysicalDevice, if this fails again with
 /// DeviceLost, then the physical device is not longer valid.
-/// Notice that Device is one of the few classes that are not movable since it
+/// Device is one of the few classes that are not movable since it
 /// is referenced by all resources.
-class Device : public nytl::NonMovable {
+class Device {
 public:
 #ifdef VPP_ONE_DEVICE_OPTIMIZATION
 	/// If VPP_ONE_DEVICE_OPTIMIZATION is defined, vpp must only be used
@@ -100,6 +102,10 @@ public:
 	/// This should only be called if there are no other resources left that
 	/// were created from this device.
 	~Device();
+
+	/// Not movable since most resources reference it.
+	Device(Device&&) = delete;
+	Device& operator=(Device&&) = delete;
 
 	/// Returns all available queues for the created device.
 	/// Note that if the Device was created from an external device (and

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -10,27 +10,33 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
+#include <vpp/util/span.hpp>
 #include <vector>
+#include <initializer_list>
 
 namespace vpp {
 
 /// RAII vulkan Instance wrapper.
 /// Will always automatically initialize vk::dispatch on construction.
-class Instance : public nytl::NonCopyable {
+class Instance {
 public:
 	Instance() = default;
 	Instance(const vk::InstanceCreateInfo& info);
 	Instance(vk::Instance instance);
 	~Instance();
 
-	Instance(Instance&& other) noexcept;
-	Instance& operator=(Instance&& other) noexcept;
+	Instance(Instance&& other) noexcept { swap(*this, other); }
+	Instance& operator=(Instance other) noexcept {
+		swap(*this, other);
+		return *this;
+	}
 
 	vk::Instance vkInstance() const { return instance_; }
 	vk::Instance vkHandle() const { return instance_; }
 	operator vk::Instance() const { return instance_; }
 
 	static vk::ObjectType vkObjectType();
+	friend void swap(Instance& a, Instance& b) noexcept;
 
 protected:
 	void release() { instance_ = {}; }
@@ -182,12 +188,13 @@ public:
 	DescriptorSetLayout(const Device&, const vk::DescriptorSetLayoutCreateInfo&);
 
 	/// Will modify the passed DescriptorSetLayoutBindings, i.e. automatically
-	/// numerate them if they have binding == -1, as is the default of
-	/// vpp::descriptorBinding
+	/// numerate them if they have binding == autoDescriptorbinding (-1),
+	/// as is the default of vpp::descriptorBinding.
 	DescriptorSetLayout(const Device&, nytl::Span<vk::DescriptorSetLayoutBinding>);
 
-	/// Will have to create a temporary copy of the passed bindings, i.e.
-	/// allocate memory. Prefer the other constructors if possible.
+	/// If binding = autoDescriptorbinding (-1) is used, will have to create
+	/// a temporary copy of the passed bindings, i.e. allocate memory.
+	/// The above constructor should be preferred in that case.
 	DescriptorSetLayout(const Device&,
 		std::initializer_list<vk::DescriptorSetLayoutBinding>);
 	~DescriptorSetLayout();

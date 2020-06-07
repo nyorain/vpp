@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -38,7 +38,7 @@ void MemoryMap::map(const DeviceMemory& memory, const Allocation& alloc) {
 void MemoryMap::remap(const Allocation& allocation) {
 	// new allocation extent
 	auto nbeg = std::min(allocation.offset, allocation_.offset);
-	auto nsize = std::max(allocation.end(), allocation_.end()) - nbeg;
+	auto nsize = std::max(end(allocation), end(allocation_)) - nbeg;
 
 	// if new extent lay inside old do nothing
 	if(offset() <= nbeg && offset() + size() >= nbeg + nsize) {

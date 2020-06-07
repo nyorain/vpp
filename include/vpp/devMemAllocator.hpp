@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -34,21 +34,27 @@ public:
 	};
 
 public:
+	DeviceMemoryAllocator() = default;
 	DeviceMemoryAllocator(const Device& dev);
 	~DeviceMemoryAllocator();
 
 	DeviceMemoryAllocator(DeviceMemoryAllocator&&) = delete;
 	DeviceMemoryAllocator& operator=(DeviceMemoryAllocator) = delete;
 
+	void init(const Device& dev);
+
 	/// Requests memory for the given memory resource type.
 	/// If an id is given, it can be later used to allocate that memory
 	/// or cancel that reservation again (one of the two *must* happen
-	/// otherwise the reserved memory might be wasted).
+	/// if id is not nullptr since the memory will be reserved for the
+	/// id to retrieve later on).
+	/// When this is called without 'id' it just serves as general
+	/// over-allocation hint the next time memory is allocated,
+	/// and does not actually reserve memory.
 	/// - reqs: The MemoryRequirements queried for the given resource.
 	///   Might have been modified by the caller to fit additional requirements
 	///   (such as selected a preferred memory type)
-	void reserve(AllocationType, const vk::MemoryRequirements&,
-		ReservationID* id = nullptr);
+	[[nodiscard]] ReservationID reserve(AllocationType, const vk::MemoryRequirements&);
 
 	/// Cancels a pending reservation.
 	void cancel(ReservationID) noexcept;
@@ -56,16 +62,44 @@ public:
 	/// Allocates memory for the given reservation id.
 	/// The reservation must come from this Allocator object and must not
 	/// have been cancelled.
-	Allocation alloc(ReservationID);
-	Allocation alloc(AllocationType, const vk::MemoryRequirements&);
+	[[nodiscard]] Allocation alloc(ReservationID);
+	[[nodiscard]] Allocation alloc(AllocationType, const vk::MemoryRequirements&);
 
 	/// Allocates and associated device memory for all pending requests.
 	void alloc();
+
+	/// == A lot of things can wrong here, use with caution ==
+	/// Tries to move the given device memory allocator into this one,
+	/// effectively merging them. This is not only possible when
+	/// 'rhs' has no pending reservations/requirements (i.e. no resource still in
+	/// initialization referencing it). Returns false if this
+	/// is not the case and will not modify rhs in that case.
+	/// If the operation can be done, returns false and will effectively
+	/// empty/reset rhs.
+	/// If 'this' was already initialized, 'this' and 'rhs' must both
+	/// use the same vpp::Device. Will not modify the memory types
+	/// this allocator is restricted to. Note that if rhs was restricted
+	/// to less memory types than this allocator is, this allocator
+	/// will gain memories not matching its restriction and might allocate
+	/// on them in future.
+	/// Can be used as conditional move operator, i.e. works even if
+	/// 'this' is uninitialized.
+	[[nodiscard]] bool tryMergeMemories(DeviceMemoryAllocator&& rhs);
+
+	/// Restricts allocation to the given type bits.
+	/// Note that if this is too restrictive, certain memory resources
+	/// might be able to allocate memory anymore using this allocator
+	/// (when the type bits they can be allocated on has not types
+	/// in common with the given ones).
+	/// Will not change the previously allocatoed memories, just
+	/// future allocations.
+	void restrict(std::uint32_t memoryTypeBits);
 
 	/// Returns all memories that this allocator manages.
 	const auto& memories() const { return memories_; }
 	const auto& reservations() const { return reservations_; }
 	const auto& requirements() const { return requirements_; }
+	std::uint32_t restricted() const { return restrict_; }
 
 protected:
 	/// Represents the requirements of a pending memory request.
@@ -107,11 +141,15 @@ protected:
 	};
 
 protected:
+	std::uint32_t restrict_ {0xFFFFFFFF};
+
 	std::vector<Reservation> reservations_;
 	std::vector<Requirement> requirements_;
-	// list of owned memory objects
-	// dequee since those objects can't be moved
-	std::deque<DeviceMemory> memories_;
+
+	// all owned memory objects
+	// we use unique_ptrs since DeviceMemory objects can't be moved.
+	// std::deque wouldn't allow the tryMerge operation
+	std::vector<std::unique_ptr<DeviceMemory>> memories_;
 	ReservationID lastReservation_ {}; // for id counting
 
 	// cache for algorithms

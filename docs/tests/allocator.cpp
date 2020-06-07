@@ -30,16 +30,16 @@ TEST(memory) {
 
 		EXPECT(alloc.memories().size(), 1u);
 
-		EXPECT(&buffer1.memory(), &alloc.memories()[0]);
-		EXPECT(&buffer2.memory(), &alloc.memories()[0]);
-		EXPECT(&buffer3.memory(), &alloc.memories()[0]);
+		EXPECT(&buffer1.memory(), alloc.memories()[0].get());
+		EXPECT(&buffer2.memory(), alloc.memories()[0].get());
+		EXPECT(&buffer3.memory(), alloc.memories()[0].get());
 	}
 
 	EXPECT(alloc.memories().size(), 1u);
 
 	// XXX: might fail due to alignment requirements etc (allocater
 	// allocated larger memory)
-	EXPECT(alloc.memories()[0].totalFree(), 1024u * 5);
+	EXPECT(alloc.memories()[0]->totalFree(), 1024u * 5);
 
 	// make sure same memory is used again
 	{
@@ -48,14 +48,14 @@ TEST(memory) {
 		bufInfo.usage = vk::BufferUsageBits::storageBuffer;
 		auto buffer = vpp::Buffer(alloc, bufInfo);
 		EXPECT(alloc.memories().size(), 1u);
-		EXPECT(alloc.memories()[0].totalFree(), 1024u * 4);
+		EXPECT(alloc.memories()[0]->totalFree(), 1024u * 4);
 
 		vpp::Buffer::InitData initData;
 		vpp::Buffer buffer1(initData, alloc, bufInfo);
-		EXPECT(alloc.memories()[0].totalFree(), 1024u * 4);
+		EXPECT(alloc.memories()[0]->totalFree(), 1024u * 4);
 
 		buffer1.init(initData);
-		EXPECT(alloc.memories()[0].totalFree(), 1024u * 3);
+		EXPECT(alloc.memories()[0]->totalFree(), 1024u * 3);
 	}
 }
 
@@ -90,18 +90,18 @@ TEST(custom) {
 		buffer4.init(initData[4]);
 
 		EXPECT(alloc.memories().size(), 1u);
-		EXPECT(&buffer.memory(), &alloc.memories()[0]);
-		EXPECT(&buffer1.memory(), &alloc.memories()[0]);
-		EXPECT(&buffer2.memory(), &alloc.memories()[0]);
-		EXPECT(&buffer3.memory(), &alloc.memories()[0]);
-		EXPECT(&buffer4.memory(), &alloc.memories()[0]);
+		EXPECT(&buffer.memory(), alloc.memories()[0].get());
+		EXPECT(&buffer1.memory(), alloc.memories()[0].get());
+		EXPECT(&buffer2.memory(), alloc.memories()[0].get());
+		EXPECT(&buffer3.memory(), alloc.memories()[0].get());
+		EXPECT(&buffer4.memory(), alloc.memories()[0].get());
 	}
 
 	EXPECT(alloc.memories().size(), 1u);
 
 	// XXX: might fail due to alignment requirements etc (allocater
 	// allocated larger memory)
-	EXPECT(alloc.memories()[0].totalFree(), 1024u * 5);
+	EXPECT(alloc.memories()[0]->totalFree(), 1024u * 5);
 
 	// make sure same memory is used again
 	{
@@ -110,14 +110,14 @@ TEST(custom) {
 		bufInfo.usage = vk::BufferUsageBits::storageBuffer;
 		auto buffer = vpp::Buffer(alloc, bufInfo, ~0u);
 		EXPECT(alloc.memories().size(), 1u);
-		EXPECT(alloc.memories()[0].totalFree(), 1024u * 4);
+		EXPECT(alloc.memories()[0]->totalFree(), 1024u * 4);
 
 		vpp::Buffer::InitData data;
 		vpp::Buffer buffer1(data, alloc, bufInfo, ~0u);
-		EXPECT(alloc.memories()[0].totalFree(), 1024u * 4);
+		EXPECT(alloc.memories()[0]->totalFree(), 1024u * 4);
 
 		buffer1.init(data);
-		EXPECT(alloc.memories()[0].totalFree(), 1024u * 3);
+		EXPECT(alloc.memories()[0]->totalFree(), 1024u * 3);
 	}
 }
 

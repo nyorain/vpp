@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -53,7 +53,7 @@ Buffer::Buffer(InitData& data, DeviceMemoryAllocator& alloc, vk::Buffer buffer,
 	dlg_assert(reqs.size > 0);
 
 	data.allocator = &alloc;
-	data.allocator->reserve(AllocationType::linear, reqs, &data.reservation);
+	data.reservation = data.allocator->reserve(AllocationType::linear, reqs);
 }
 
 Buffer::Buffer(InitData& data, DeviceMemoryAllocator& alloc,

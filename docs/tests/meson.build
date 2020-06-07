@@ -8,7 +8,8 @@ tests = [
   'submit',
   'sharedBuffer',
   'pipeline',
-  'trackedDescriptor'
+  'trackedDescriptor',
+  'address',
 ]
 
 foreach test : tests

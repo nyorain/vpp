@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -17,6 +17,21 @@ namespace vpp {
 /// best way (except for highly variable areas like depth/stencil)
 /// is usually to use a format that is guaranteed to be supported
 /// in the way you need it by the vulkan standard (section 31.3.3).
+
+/// Returns the size of the given format in bits.
+/// E.g. vk::Format::r8g8b8a8* will return 32, since it has 4 * 8 = 32 bits
+/// For compressed formats this function will return the size of one block.
+unsigned int formatSizeBits(vk::Format);
+
+/// Returns the size in bytes of the given format.
+/// E.g. vk::Format::r8g8b8a8* will return 4, since it has 4 * 8 bits = 4 bytes.
+/// For compressed formats this function will return the size of one block.
+unsigned int formatSize(vk::Format);
+
+/// Returns the size of one compressed block of a compressed vulkan format.
+/// If the given format is not a compressed format, {1, 1} is returned.
+/// For vk::Format::undefined, {0, 0} is returned
+vk::Extent2D blockSize(vk::Format);
 
 /// Returns whether the given FormatFeatureFlags support the given usage.
 bool supportedUsage(vk::FormatFeatureFlags, vk::ImageUsageFlags);
@@ -41,6 +56,11 @@ vk::Format findSupported(const Device&, nytl::Span<const vk::Format>,
 /// Returns the number of mipmap levels needed for a full mipmap
 /// chain for an image with the given extent.
 unsigned mipmapLevels(const vk::Extent2D& extent);
+unsigned mipmapLevels(const vk::Extent3D& extent);
+
+/// Returns the size of an image with given size at the given mip level.
+/// Returns {1, 1, 1} if the mip level does not exist (i.e. too high).
+vk::Extent3D mipSize(vk::Extent3D size, unsigned l);
 
 /// Combines vk::ImageCreateInfo and vk::ImageViewCreatInfo and
 /// offers default initializers.

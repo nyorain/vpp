@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -77,7 +77,7 @@ public:
 
 	const auto& buffer() const { return *buffer_; }
 	auto offset() const { return allocation_.offset; }
-	auto end() const { return allocation_.end(); }
+	auto end() const { return vpp::end(allocation_); }
 	auto size() const { return allocation_.size; }
 	const auto& allocation() const { return allocation_; }
 

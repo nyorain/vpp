@@ -2,35 +2,36 @@
 #include "bugged.hpp"
 
 #include <vpp/trackedDescriptor.hpp>
+#include <array>
 
 TEST(basic) {
 	auto& dev = *globals.device;
 
 	// layout
-	auto bindings1 = {
+	auto bindings1 = std::array {
 		vpp::descriptorBinding(vk::DescriptorType::uniformBuffer),
 		vpp::descriptorBinding(vk::DescriptorType::uniformBuffer),
 		vpp::descriptorBinding(vk::DescriptorType::combinedImageSampler,
-			vk::ShaderStageBits::fragment, 4, 10),
+			vk::ShaderStageBits::fragment, nullptr, 10, 4),
 	};
 
 	auto bindings2 = {
 		vpp::descriptorBinding(vk::DescriptorType::storageBuffer,
-			vk::ShaderStageBits::compute, -1, 3),
+			vk::ShaderStageBits::compute, nullptr, 3),
 	};
 
 	auto layout1 = vpp::TrDsLayout(dev, bindings1);
 	auto layout2 = vpp::TrDsLayout(dev, bindings2);
 
-	EXPECT(layout1.bindings().size(), 2u);
-	EXPECT(layout1.bindings()[0].descriptorCount, 2u);
-	EXPECT(layout1.bindings()[0].type, vk::DescriptorType::uniformBuffer);
-	EXPECT(layout1.bindings()[1].descriptorCount, 10u);
-	EXPECT(layout1.bindings()[1].type, vk::DescriptorType::combinedImageSampler);
+	EXPECT(layout1.poolSizes().size(), 2u);
+	EXPECT(layout1.poolSizes()[0].descriptorCount, 2u);
+	EXPECT(layout1.poolSizes()[0].type, vk::DescriptorType::uniformBuffer);
+	EXPECT(layout1.poolSizes()[1].descriptorCount, 10u);
+	EXPECT(layout1.poolSizes()[1].type, vk::DescriptorType::combinedImageSampler);
 
-	EXPECT(layout2.bindings().size(), 1u);
-	EXPECT(layout2.bindings()[0].descriptorCount, 3u);
-	EXPECT(layout2.bindings()[0].type, vk::DescriptorType::storageBuffer);
+	EXPECT(layout2.poolSizes().size(), 1u);
+	EXPECT(layout2.poolSizes()[0].descriptorCount, 3u);
+	EXPECT(layout2.poolSizes()[0].type, vk::DescriptorType::storageBuffer);
 
 	// pool
 	auto pool = vpp::TrDsPool(dev, 3, {{

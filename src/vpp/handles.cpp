@@ -1,8 +1,9 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #include <vpp/handles.hpp>
+#include <vpp/descriptor.hpp>
 #include <vpp/vk.hpp>
 #include <vpp/util/file.hpp>
 #include <dlg/dlg.hpp>
@@ -27,18 +28,9 @@ Instance::~Instance() {
 	}
 }
 
-Instance::Instance(Instance&& lhs) noexcept : instance_(lhs.instance_) {
-	lhs.instance_ = {};
-}
-
-Instance& Instance::operator=(Instance&& lhs) noexcept {
-	if(instance_) {
-		vk::destroyInstance(instance_);
-	}
-
-	instance_ = lhs.instance_;
-	lhs.instance_ = {};
-	return *this;
+void swap(Instance& a, Instance& b) noexcept {
+	using std::swap;
+	swap(a.instance_, b.instance_);
 }
 
 vk::ObjectType Instance::vkObjectType() {
@@ -49,19 +41,31 @@ vk::ObjectType Instance::vkObjectType() {
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	std::initializer_list<vk::DescriptorSetLayoutBinding> bindings) :
 		ResourceHandle(dev) {
-	std::vector<vk::DescriptorSetLayoutBinding> mutCopy(
-		bindings.begin(), bindings.end());
-	*this = {dev, mutCopy};
+	// check if autoDescriptorBinding is used. If so,
+	// we have to copy bindings to get a writable version.
+	for(auto& b : bindings) {
+		if(b.binding == autoDescriptorBinding) {
+			dlg_debug("Have to copy bindings in DescriptorSetLayout constructor");
+			std::vector<vk::DescriptorSetLayoutBinding> mutCopy(
+				bindings.begin(), bindings.end());
+			*this = {dev, mutCopy};
+			return;
+		}
+	}
+
+	vk::DescriptorSetLayoutCreateInfo descriptorLayout;
+	descriptorLayout.bindingCount = bindings.size();
+	descriptorLayout.pBindings = &*bindings.begin();
+	handle_ = vk::createDescriptorSetLayout(vkDevice(), descriptorLayout);
 }
 
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	nytl::Span<vk::DescriptorSetLayoutBinding> bindings) :
 		ResourceHandle(dev) {
-	static constexpr auto defaultBinding = std::uint32_t(-1);
 	unsigned int highestBinding = 0u;
 	for(auto& binding : bindings) {
 		auto& bid = binding.binding;
-		if(bid == defaultBinding) {
+		if(bid == autoDescriptorBinding) {
 			bid = highestBinding++;
 		} else {
 			highestBinding = std::max(highestBinding, bid + 1);

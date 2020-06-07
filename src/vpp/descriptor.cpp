@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -325,8 +325,14 @@ void DescriptorSetUpdate::copy(const vk::CopyDescriptorSet& copySet) {
 
 // utility
 vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
-		vk::ShaderStageFlags stages, unsigned int binding,
-		unsigned int count, const vk::Sampler* samplers) {
+		vk::ShaderStageFlags stages, std::uint32_t binding,
+		std::uint32_t count, const vk::Sampler* samplers) {
+	return {binding, type, count, stages, samplers};
+}
+
+vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
+		vk::ShaderStageFlags stages, const vk::Sampler* samplers,
+		std::uint32_t count, std::uint32_t binding) {
 	return {binding, type, count, stages, samplers};
 }
 

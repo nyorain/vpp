@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019 nyorain
+// Copyright (c) 2016-2020 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -42,7 +42,7 @@ public:
 	void uniformDynamic(BufferInfos, int binding = -1, unsigned int elem = 0);
 	void storageDynamic(BufferInfos, int binding = -1, unsigned int elem = 0);
 
-	// NOTE: we could also just addd a vk::DescriptorBufferInfo conversion
+	// NOTE: we could also just added a vk::DescriptorBufferInfo conversion
 	// operator to BufferSpan, but this is probably cleaner
 	void uniform(nytl::Span<const BufferSpan>, int binding = -1,
 		unsigned elem = 0);
@@ -103,11 +103,17 @@ void apply(nytl::Span<DescriptorSetUpdate>);
 
 /// Alternative vk::DescriptorSetLayoutBinding constructor.
 /// When passed to the DescriptorSetLayout constructor, will automatically
-/// update binding number without spaces if it is -1.
+/// update binding number without spaces if it is autoDescriptorBinding (-1).
+constexpr auto autoDescriptorBinding = std::uint32_t(0xFFFFFFFF);
 vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
 	vk::ShaderStageFlags stages = fwd::allShaderStages,
-	unsigned int binding = -1,
-	unsigned int count = 1,
-	const vk::Sampler* samplers = nullptr);
+	const vk::Sampler* samplers = nullptr,
+	std::uint32_t count = 1, std::uint32_t binding = autoDescriptorBinding);
+
+/// Less intuitive overload, kept for legacy reason.
+[[deprecated("Use more intuitive sampler-first overload")]]
+vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
+	vk::ShaderStageFlags stages, std::uint32_t binding,
+	std::uint32_t count = 1, const vk::Sampler* samplers = nullptr);
 
 } // namespace vpp

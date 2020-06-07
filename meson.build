@@ -1,8 +1,11 @@
 project('vpp', ['c', 'cpp'],
-  license: 'BSL',
-	version: '0.3.0',
-	meson_version: '>=0.46',
-  default_options: ['cpp_std=c++1z'])
+	license: 'BSL',
+		version: '0.3.0',
+		meson_version: '>=0.46',
+	default_options: [
+		'cpp_std=c++17',
+		'warning_level=3',
+  ])
 
 # options
 example_glfw = get_option('example_glfw')
