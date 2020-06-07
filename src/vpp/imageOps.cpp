@@ -16,7 +16,6 @@ namespace vpp {
 vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout,
 		unsigned int texelSize, unsigned int x, unsigned int y,
 		unsigned int z, unsigned int layer) {
-
 	return layer * layout.arrayPitch + z * layout.depthPitch +
 		y * layout.rowPitch + x * texelSize + layout.offset;
 }
@@ -28,30 +27,33 @@ void fillMap(const Image& img, vk::Format format,
 	// make it work for 2d images that specify a depth of zero
 	auto depth = size.depth ? size.depth : 1u;
 	auto height = size.height ? size.height : 1u;
-	auto texSize = formatSize(format);
+	auto fmtSize = formatSize(format);
 
 	dlg_assert(img.vkHandle());
 	dlg_assert(img.mappable());
-	dlg_assert(texSize > 0);
+	dlg_assert(fmtSize > 0);
 	dlg_assert(size.width != 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
-	dlg_assert(data.size() == size.width * height * depth * texSize);
+	dlg_assert(data.size() == size.width * height * depth * fmtSize);
 
 	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
-	auto mapSize = texelAddress(sresLayout, texSize, size.width,
+
+	auto mapBegin = texelAddress(sresLayout, fmtSize, offset.x,
+		offset.y, offset.z, subres.arrayLayer);
+	auto mapEnd = texelAddress(sresLayout, fmtSize, size.width,
 		height - 1, depth - 1, subres.arrayLayer);
-	// TODO: don't start mapping at 0 but at first texel.
-	auto map = img.memoryMap(0, mapSize);
+	auto map = img.memoryMap(mapBegin, mapEnd - mapBegin);
 
 	auto doffset = 0u; // current data offset
 
 	// copy row (width) after row
 	for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
 		for(unsigned int h = offset.y; h < offset.y + height; ++h) {
-			auto ptr = map.ptr() + texelAddress(sresLayout, texSize,
+			auto texOff = texelAddress(sresLayout, fmtSize,
 				offset.x, h, d, subres.arrayLayer);
-			std::memcpy(ptr, data.data() + doffset, texSize * size.width);
-			doffset += size.width * texSize;
+			auto ptr = map.ptr() + texOff - mapBegin;
+			std::memcpy(ptr, data.data() + doffset, fmtSize * size.width);
+			doffset += fmtSize * size.width;
 		}
 	}
 
@@ -64,14 +66,14 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 		const vk::Extent3D& size, const vk::ImageSubresource& subres,
 		const vk::Offset3D& offset) {
 
-	const auto texSize = formatSize(format);
+	const auto fmtSize = formatSize(format);
 	const auto depth = size.depth ? size.depth : 1u;
 	auto height = size.height ? size.height : 1u;
-	const auto byteSize = texSize * size.width * height * depth;
+	const auto byteSize = fmtSize * size.width * height * depth;
 
 	dlg_assert(img.vkHandle());
 	dlg_assert(img.mappable());
-	dlg_assert(texSize > 0);
+	dlg_assert(fmtSize > 0);
 	dlg_assert(byteSize > 0);
 	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
 	dlg_assert(size.width != 0);
@@ -79,20 +81,28 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 	std::vector<std::byte> data(byteSize);
 
 	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
-	auto mapSize = texelAddress(sresLayout, texSize, size.width,
+
+	auto mapBegin = texelAddress(sresLayout, fmtSize, offset.x,
+		offset.y, offset.z, subres.arrayLayer);
+	auto mapEnd = texelAddress(sresLayout, fmtSize, size.width,
 		height - 1, depth - 1, subres.arrayLayer);
-	auto map = img.memoryMap(0, mapSize);
-	map.invalidate();
+	dlg_assert(mapEnd - mapBegin >= byteSize);
+	auto map = img.memoryMap(mapBegin, mapEnd - mapBegin);
+
+	if(!map.coherent()) {
+		map.invalidate();
+	}
 
 	auto doffset = 0u; // dataOffset
 
 	// copy row (width) after row
 	for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
 		for(unsigned int h = offset.y; h < offset.y + height; ++h) {
-			auto ptr = map.ptr() + texelAddress(sresLayout, texSize,
+			auto texOff = texelAddress(sresLayout, fmtSize,
 				offset.x, h, d, subres.arrayLayer);
-			std::memcpy(data.data() + doffset, ptr, size.width * texSize);
-			doffset += size.width * texSize;
+			auto ptr = map.ptr() + texOff - mapBegin;
+			std::memcpy(data.data() + doffset, ptr, fmtSize * size.width);
+			doffset += fmtSize * size.width;
 		}
 	}
 
@@ -123,8 +133,8 @@ SubBuffer fillStagingRange(vk::CommandBuffer cb, const Image& img, vk::Format fo
 	dlg_assert(!maxLvl || !offset.y);
 	dlg_assert(!maxLvl || !offset.z);
 
-	auto bsize = fmtSize * tightTexelNumber(size, range.layerCount,
-		range.baseMipLevel + range.levelCount, 0u, 0u, 0u, 0u, range.baseMipLevel);
+	auto bsize = fmtSize * tightTexelCount(size, range.layerCount,
+		range.levelCount, range.baseMipLevel);
 	dlg_assert(data.size() == bsize);
 
 	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
@@ -173,42 +183,6 @@ SubBuffer fillStagingLayers(vk::CommandBuffer cb, const Image& img,
 	layers.baseMipLevel = subres.mipLevel;
 	layers.levelCount = 1u;
 	return fillStagingRange(cb, img, format, layout, size, data, layers, offset);
-
-	// TODO: remove old implementation
-	// const auto fmtSize = formatSize(format);
-	// const auto depth = size.depth ? size.depth : 1u;
-	// const auto height = size.height ? size.height : 1u;
-	// const auto bsize = subres.layerCount * fmtSize * size.width * height * depth;
-//
-	// dlg_assert(cmdBuf);
-	// dlg_assert(layout == vk::ImageLayout::transferDstOptimal ||
-	// 	layout == vk::ImageLayout::general);
-	// dlg_assert(img.vkHandle());
-	// dlg_assert(fmtSize > 0);
-	// dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
-	// dlg_assert(data.size() == bsize);
-	// dlg_assert(size.width != 0);
-//
-	// // bufferOfset must be multiple of 4 and image format size
-	// auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
-	// align = std::max<vk::DeviceSize>(align, fmtSize);
-	// align = std::max<vk::DeviceSize>(align, 4u);
-	// auto stage = SubBuffer(img.device().bufferAllocator(), bsize,
-	// 	vk::BufferUsageBits::transferSrc, img.device().hostMemoryTypes(), align);
-//
-	// {
-	// 	auto map = stage.memoryMap();
-	// 	std::memcpy(map.ptr(), data.data(), data.size());
-	// 	map.flush();
-	// }
-//
-	// auto buf = stage.buffer().vkHandle();
-	// auto boffset = stage.offset();
-	// vk::BufferImageCopy region {boffset, 0u, 0u, subres, offset,
-	// 	{size.width, height, depth}};
-//
-	// vk::cmdCopyBufferToImage(cmdBuf, buf, img, layout, {{region}});
-	// return stage;
 }
 
 SubBuffer fillStaging(vk::CommandBuffer cb, const Image& img,
@@ -255,8 +229,8 @@ SubBuffer retrieveStagingRange(vk::CommandBuffer cb, const Image& img, vk::Forma
 	dlg_assert(!maxLvl || !offset.y);
 	dlg_assert(!maxLvl || !offset.z);
 
-	auto bsize = fmtSize * tightTexelNumber(size, range.layerCount,
-		range.baseMipLevel + range.levelCount, 0u, 0u, 0u, 0u, range.baseMipLevel);
+	auto bsize = fmtSize * tightTexelCount(size, range.layerCount,
+		range.levelCount, range.baseMipLevel);
 
 	// bufferOfset must be multiple of 4 and image format size
 	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
@@ -298,37 +272,6 @@ SubBuffer retrieveStagingLayers(vk::CommandBuffer cb, const Image& img,
 	range.baseMipLevel = subres.mipLevel;
 	range.levelCount = 1u;
 	return retrieveStagingRange(cb, img, format, layout, size, range, offset);
-
-	// TODO: remove old implementation
-	/*
-	const auto texSize = formatSize(format);
-	const auto depth = size.depth ? size.depth : 1u;
-	const auto height = size.height ? size.height : 1u;
-	const auto bsize = texSize * size.width * height * depth * subres.layerCount;
-
-	dlg_assert(cmdBuf);
-	dlg_assert(layout == vk::ImageLayout::transferSrcOptimal ||
-		layout == vk::ImageLayout::general);
-	dlg_assert(img.vkHandle());
-	dlg_assert(texSize > 0);
-	dlg_assert(blockSize(format).width == 1 && blockSize(format).height == 1);
-	dlg_assert(size.width != 0);
-
-	// bufferOfset must be multiple of 4 and image format size
-	auto align = img.device().properties().limits.optimalBufferCopyOffsetAlignment;
-	align = std::max<vk::DeviceSize>(align, texSize);
-	align = std::max<vk::DeviceSize>(align, 4u);
-	auto stage = SubBuffer {img.device().bufferAllocator(), bsize,
-		vk::BufferUsageBits::transferDst, img.device().hostMemoryTypes(), align};
-
-	auto buf = stage.buffer().vkHandle();
-	auto boffset = stage.offset();
-	vk::BufferImageCopy region {boffset, 0u, 0u, subres, offset,
-		{size.width, height, depth}};
-
-	vk::cmdCopyImageToBuffer(cmdBuf, img, layout, buf, {{region}});
-	return stage;
-	*/
 }
 
 SubBuffer retrieveStaging(vk::CommandBuffer cb, const Image& img,
@@ -341,14 +284,19 @@ SubBuffer retrieveStaging(vk::CommandBuffer cb, const Image& img,
 	range.layerCount = 1u;
 	range.levelCount = 1u;
 	return retrieveStagingRange(cb, img, format, layout, size, range, offset);
+}
 
-	// TODO: remove old implementation
-	// vk::ImageSubresourceLayers layers;
-	// layers.aspectMask = subres.aspectMask;
-	// layers.layerCount = 1u;
-	// layers.baseArrayLayer = subres.arrayLayer;
-	// layers.mipLevel = subres.mipLevel;
-	// return retrieveStagingLayers(cb, img, format, layout, size, layers, offset);
+vk::DeviceSize tightTexelCount(vk::Extent3D extent,
+		unsigned numLayers, unsigned numMips, unsigned firstMip) {
+	dlg_assert(firstMip + numMips <= mipmapLevels(extent));
+
+	vk::DeviceSize off = 0u;
+	for(auto i = firstMip; i < firstMip + numMips; ++i) {
+		auto ie = mipSize(extent, i);
+		off += ie.width * ie.height * ie.depth * numLayers;
+	}
+
+	return off;
 }
 
 vk::DeviceSize tightTexelNumber(vk::Extent3D extent,

@@ -48,6 +48,11 @@ namespace vpp {
 	unsigned x = 0u, unsigned y = 0u, unsigned z = 0u,
 	unsigned firstMip = 0u);
 
+/// Returns the number of texels in the specified image subresource range
+/// in a tight, linear layout.
+[[nodiscard]] vk::DeviceSize tightTexelCount(vk::Extent3D extent,
+	unsigned numLayers, unsigned numMips, unsigned firstMip = 0u);
+
 /// Equivalent to tightTexelNumber(extent, 1, 0, 0, x, y, z),
 /// i.e. returns the texel number in a single layer for an image
 /// of the given size.
