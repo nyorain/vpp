@@ -1,58 +1,57 @@
-Todo list vor vpp
+todo.mdTodo list vor vpp
 =================
-
-- imageOps: support multiple layers in retrieve/fillMap
-	- also fillStaging
 
 - when vkpp has error handling update: fix try/catch/swallowed error
   in swapchain acquire/present and formats.cpp (get format properties)
+- vpp::PipelineLayout(dev, {}) gives you a pipeline layout with
+  an empty handle, while
+  vpp::PipelineLayout(dev, vk::PipelineLayoutCreateInfo {}) gives you
+  a pipeline layout constructed with default, no/empty layouts.
+  Is that expected behavior for users?
+	- btw, that holds for many handle types.
+	  no idea how to improve it, what could be expected behavior.
+	  Maybe using a 'fromHandle' tag?
 - problem with Init<T>: the InitData may have to stay alive even
   after alloc is called, e.g. when there's a stage buffer
   maybe split alloc function into alloc and finish, only finish
   will return the object? The finish function should then destroy
   (move default initialize) the init data i guess to free everything
   not needed anymore
-- improve allocation algorithms
-	- implement smarter strategies (per-allocate std::vector like?)
-	  we could implement multiple strategies and allow user to choose
+	- nah, this does not seem useful. Adding a 'finish' function does 
+	  not make it more intuitive.
 - allow compressed formats in image ops.
-  we can also allow compression on the fly, vkCmdCopyImage supports it
+  we can also allow compression on the fly, vkCmdCopyImage supports it.
   might be too complex to do/not a nice abstract, make sure it stays
-  inside vpp scope
+  inside vpp scope.
   Shouldn't be too complicated except that we might have to adjust
   the address calculation in fill/retrieve Map and make sure to
   align correctly (in staging). See vulkan spec, has nice
   address/requirements definitions
-  	- can we provide blitting utility?
+	- can we provide blitting utility?
 	  maybe just move the initializon from stage here and fix it up
 	  for spec correctness
-- honor optimalBufferCopyRowPitchAlignment somehow
-	- retrieve: probably not possible if we want to guarantee tightly packed data
-	- we could maybe use it when uploading data, just pass as alignment
-	  to the stage buffer
+- abolish NonCopyable/NonMovable. Just explicitly delete what you
+  need deleted. Better style, removes noise.
+
+later:
+
 - when using c++20, switch to std::span (nytl::Span should be fully compatble
   at the moment) and completely abolish using the nytl namespace.
-  import NonCopyable/NonMovable into vpp namespace, maybe even completely 
-  remove all nytl traces from it. 
-- implement Allocator shrink function that destroyed all currently
-  empty (and not reserved) pool objects
-	- basic defragmentation for all allocators?
 
 low prio / general / ideas
 --------------------------
 
+- honor optimalBufferCopyRowPitchAlignment somehow
+	- retrieve: probably not possible if we want to guarantee tightly packed data
+	- we could maybe use it when uploading data, just pass as alignment
+	  to the stage buffer
+- implement Allocator shrink function that destroyed all currently
+  empty (and not reserved) pool objects
+	- basic defragmentation for all allocators?
+- improve allocation algorithms
+	- implement smarter strategies (per-allocate std::vector like?)
+	  we could implement multiple strategies and allow user to choose
 - we could also add a sdl example
-- vpp::PipelineLayout(dev, {}) gives you a pipeline layout with
-  an empty handle, while
-  vpp::PipelineLayout(dev, vk::PipelineLayoutCreateInfo {}) gives you
-  a pipeline layout constructed with default, no/empty layouts.
-  Is that expected behavior for users?
-- allow to merge allocators
-	- started implementing it, see node 621. Problem is though that
-	  this requires to move non movable pool resources (TrDsPool,
-	  DeviceMemory, SharedBuffer). We could fix it by always storing
-	  those wrapped in unique ptrs (instead of using a deque)
-	  but i'm not sure that's worth it. Probably no other way though
 - optimiziation: currently some smarter resoures deriving handles
   (like TrDs or Buffer, Image) store the Device word in addition
   to a Resource they reference (like DeviceMemory or TrDsPool).

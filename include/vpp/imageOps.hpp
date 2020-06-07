@@ -17,7 +17,7 @@ namespace vpp {
 /// - texelSize: The size (in bytes) of one texel.
 ///   Can e.g. be obtained from formatSize (with the images format).
 /// - x,y,z,layer: The coordinates of the texel which address should be returned.
-vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout,
+[[nodiscard]] vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout,
 	unsigned texelSize, unsigned x, unsigned y, unsigned z = 0,
 	unsigned layer = 0);
 
@@ -43,7 +43,7 @@ vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout,
 /// - firstMip: which mip begins at texel number 0.
 ///   `firstMip <= mip` must hold. Note that 'mip' is not relative
 ///   to baseMip but absolute.
-vk::DeviceSize tightTexelNumber(vk::Extent3D extent,
+[[nodiscard]] vk::DeviceSize tightTexelNumber(vk::Extent3D extent,
 	unsigned numLayers, unsigned mip, unsigned layer,
 	unsigned x = 0u, unsigned y = 0u, unsigned z = 0u,
 	unsigned firstMip = 0u);
@@ -51,7 +51,7 @@ vk::DeviceSize tightTexelNumber(vk::Extent3D extent,
 /// Equivalent to tightTexelNumber(extent, 1, 0, 0, x, y, z),
 /// i.e. returns the texel number in a single layer for an image
 /// of the given size.
-inline vk::DeviceSize tightLayerTexelNumber(vk::Extent3D extent,
+[[nodiscard]] inline vk::DeviceSize tightLayerTexelNumber(vk::Extent3D extent,
 		unsigned x, unsigned y, unsigned z = 0) {
 	return z * (extent.height * extent.width) + y * extent.width + x;
 }
@@ -80,7 +80,7 @@ void fillMap(const Image&, vk::Format, const vk::Extent3D& size,
 /// linear tiling.
 /// The image must not be in use (you probably have to use a barrier).
 /// The returned data will be tightly packed.
-std::vector<std::byte> retrieveMap(const Image&, vk::Format,
+[[nodiscard]] std::vector<std::byte> retrieveMap(const Image&, vk::Format,
 	const vk::Extent3D& size, const vk::ImageSubresource&,
 	const vk::Offset3D& offset = {});
 

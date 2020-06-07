@@ -21,46 +21,46 @@ namespace vpp {
 /// Returns the size of the given format in bits.
 /// E.g. vk::Format::r8g8b8a8* will return 32, since it has 4 * 8 = 32 bits
 /// For compressed formats this function will return the size of one block.
-unsigned int formatSizeBits(vk::Format);
+[[nodiscard]] unsigned int formatSizeBits(vk::Format);
 
 /// Returns the size in bytes of the given format.
 /// E.g. vk::Format::r8g8b8a8* will return 4, since it has 4 * 8 bits = 4 bytes.
 /// For compressed formats this function will return the size of one block.
-unsigned int formatSize(vk::Format);
+[[nodiscard]] unsigned int formatSize(vk::Format);
 
 /// Returns the size of one compressed block of a compressed vulkan format.
 /// If the given format is not a compressed format, {1, 1} is returned.
 /// For vk::Format::undefined, {0, 0} is returned
-vk::Extent2D blockSize(vk::Format);
+[[nodiscard]] vk::Extent2D blockSize(vk::Format);
 
 /// Returns whether the given FormatFeatureFlags support the given usage.
-bool supportedUsage(vk::FormatFeatureFlags, vk::ImageUsageFlags);
-bool supportedUsage(vk::FormatFeatureFlags, vk::BufferUsageFlags);
+[[nodiscard]] bool supportedUsage(vk::FormatFeatureFlags, vk::ImageUsageFlags);
+[[nodiscard]] bool supportedUsage(vk::FormatFeatureFlags, vk::BufferUsageFlags);
 
 /// Returns whether the format of the given ImageCreateInfo supports the
 /// other parameters.
-bool supported(const Device&, const vk::ImageCreateInfo&,
+[[nodiscard]] bool supported(const Device&, const vk::ImageCreateInfo&,
 	vk::FormatFeatureFlags additional = {});
 
 /// Returns whether the given format is valid for the given use case.
-bool supported(const Device&, vk::Format, vk::BufferUsageFlags,
+[[nodiscard]] bool supported(const Device&, vk::Format, vk::BufferUsageFlags,
 	vk::FormatFeatureFlags additional = {});
 
 /// Selects the first format from the list that supports the given
 /// use case. Returns vk::Format::undefined if none is supported.
-vk::Format findSupported(const Device&, nytl::Span<const vk::Format>,
+[[nodiscard]] vk::Format findSupported(const Device&, nytl::Span<const vk::Format>,
 	const vk::ImageCreateInfo&, vk::FormatFeatureFlags additional = {});
-vk::Format findSupported(const Device&, nytl::Span<const vk::Format>,
+[[nodiscard]] vk::Format findSupported(const Device&, nytl::Span<const vk::Format>,
 	vk::BufferUsageFlags, vk::FormatFeatureFlags additional = {});
 
 /// Returns the number of mipmap levels needed for a full mipmap
 /// chain for an image with the given extent.
-unsigned mipmapLevels(const vk::Extent2D& extent);
-unsigned mipmapLevels(const vk::Extent3D& extent);
+[[nodiscard]] unsigned mipmapLevels(const vk::Extent2D& extent);
+[[nodiscard]] unsigned mipmapLevels(const vk::Extent3D& extent);
 
 /// Returns the size of an image with given size at the given mip level.
 /// Returns {1, 1, 1} if the mip level does not exist (i.e. too high).
-vk::Extent3D mipSize(vk::Extent3D size, unsigned l);
+[[nodiscard]] vk::Extent3D mipSize(vk::Extent3D size, unsigned l);
 
 /// Combines vk::ImageCreateInfo and vk::ImageViewCreatInfo and
 /// offers default initializers.
