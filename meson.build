@@ -16,10 +16,7 @@ one_device = get_option('one_device')
 # default arrguments
 # warnings and stuff
 add_project_arguments(
-	'-Wall',
-	'-Wextra',
 	'-Wno-unused-parameter',
-	'-Wpedantic',
 	'-Wno-missing-braces',
 	language: 'cpp')
 
