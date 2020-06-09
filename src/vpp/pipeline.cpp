@@ -20,16 +20,22 @@ GraphicsPipelineInfo::GraphicsPipelineInfo(vk::RenderPass renderPass,
 		vk::DynamicState::scissor};
 
 	static const vk::PipelineColorBlendAttachmentState blendAttachment = {
-		true,
+		true, // enable blending
 
-		vk::BlendFactor::srcAlpha,
-		vk::BlendFactor::oneMinusSrcAlpha,
+		// color
+		vk::BlendFactor::srcAlpha, // src
+		vk::BlendFactor::oneMinusSrcAlpha, //dst
 		vk::BlendOp::add,
 
-		vk::BlendFactor::srcAlpha,
-		vk::BlendFactor::oneMinusSrcAlpha,
+		// alpha
+		// Rationale behind using the dst alpha is that there
+		// is no use in storing the src alpha somewhere, as
+		// we've already processed it via the color blending above.
+		vk::BlendFactor::zero, // src
+		vk::BlendFactor::one, // dst
 		vk::BlendOp::add,
 
+		// color write mask
 		vk::ColorComponentBits::r |
 			vk::ColorComponentBits::g |
 			vk::ColorComponentBits::b |

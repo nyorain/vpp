@@ -38,24 +38,43 @@ void fillMap(const Image& img, vk::Format format,
 
 	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
 
+	// subres.arrayLayer is already included in sresLayout.offset
 	auto mapBegin = texelAddress(sresLayout, fmtSize, offset.x,
-		offset.y, offset.z, subres.arrayLayer);
-	auto mapEnd = texelAddress(sresLayout, fmtSize, size.width,
-		height - 1, depth - 1, subres.arrayLayer);
-	auto map = img.memoryMap(mapBegin, mapEnd - mapBegin);
+		offset.y, offset.z, 0u);
+	// auto mapEnd = texelAddress(sresLayout, fmtSize, offset.x + size.width,
+	// 	offset.y + height - 1, offset.z + depth - 1, 0u);
+	// auto map = img.memoryMap(mapBegin, mapEnd - mapBegin);
+	auto map = img.memoryMap(mapBegin, sresLayout.size);
 
-	auto doffset = 0u; // current data offset
-
-	// copy row (width) after row
-	for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
-		for(unsigned int h = offset.y; h < offset.y + height; ++h) {
-			auto texOff = texelAddress(sresLayout, fmtSize,
-				offset.x, h, d, subres.arrayLayer);
-			auto ptr = map.ptr() + texOff - mapBegin;
-			std::memcpy(ptr, data.data() + doffset, fmtSize * size.width);
-			doffset += fmtSize * size.width;
+	// Check if the subresource has tight layout (per slice or per row).
+	// In that case we can just use one (or at least less) big memcpies
+	// instead of many small ones.
+	// If this is true, slices are tightly packed, so we can copy all slices
+	// at once. Otherwise, at least step though the image slice by slice,
+	// and additionally check rows.
+	if(sresLayout.depthPitch == size.width * height * fmtSize) {
+		std::memcpy(map.ptr(), data.data(), data.size());
+	} else {
+		auto doffset = 0u; // current data offset
+		for(unsigned int z = offset.z; z < offset.z + depth; ++z) {
+			// If this is true, there is no row padding, i.e. we can copy
+			// all rows at once.
+			if(sresLayout.rowPitch == size.width * fmtSize) {
+				auto texOff = texelAddress(sresLayout, fmtSize, offset.x, offset.y, z, 0u);
+				auto ptr = map.ptr() + texOff - mapBegin;
+				std::memcpy(ptr, data.data() + doffset, fmtSize * size.width * height);
+				doffset += fmtSize * size.width * height;
+			} else {
+				for(unsigned int y = offset.y; y < offset.y + height; ++y) {
+					auto texOff = texelAddress(sresLayout, fmtSize, offset.x, y, z, 0u);
+					auto ptr = map.ptr() + texOff - mapBegin;
+					std::memcpy(ptr, data.data() + doffset, fmtSize * size.width);
+					doffset += fmtSize * size.width;
+				}
+			}
 		}
 	}
+
 
 	if(!map.coherent()) {
 		map.flush();
@@ -82,29 +101,43 @@ std::vector<std::byte> retrieveMap(const Image& img, vk::Format format,
 
 	auto sresLayout = vk::getImageSubresourceLayout(img.device(), img, subres);
 
+	// subres.arrayLayer is already included in sresLayout.offset
 	auto mapBegin = texelAddress(sresLayout, fmtSize, offset.x,
-		offset.y, offset.z, subres.arrayLayer);
-	auto mapEnd = texelAddress(sresLayout, fmtSize, size.width,
-		height - 1, depth - 1, subres.arrayLayer);
-	dlg_assert(mapEnd - mapBegin >= byteSize);
-	auto map = img.memoryMap(mapBegin, mapEnd - mapBegin);
+		offset.y, offset.z, 0u);
+	// auto mapEnd = texelAddress(sresLayout, fmtSize, offset.x + size.width,
+	// 	offset.y + height - 1, offset.z + depth - 1, subres.arrayLayer);
+	// dlg_assert(mapEnd - mapBegin >= byteSize);
+	// auto map = img.memoryMap(mapBegin, mapEnd - mapBegin);
+	auto map = img.memoryMap(mapBegin, sresLayout.size);
 
 	if(!map.coherent()) {
 		map.invalidate();
 	}
 
-	auto doffset = 0u; // dataOffset
-
-	// copy row (width) after row
-	for(unsigned int d = offset.z; d < offset.z + depth; ++d) {
-		for(unsigned int h = offset.y; h < offset.y + height; ++h) {
-			auto texOff = texelAddress(sresLayout, fmtSize,
-				offset.x, h, d, subres.arrayLayer);
-			auto ptr = map.ptr() + texOff - mapBegin;
-			std::memcpy(data.data() + doffset, ptr, fmtSize * size.width);
-			doffset += fmtSize * size.width;
+	// See documentation in fillMap
+	if(sresLayout.depthPitch == size.width * height * fmtSize) {
+		std::memcpy(data.data(), map.ptr(), byteSize);
+	} else {
+		auto doffset = 0u; // dataOffset
+		// copy row (width) after row
+		for(unsigned int z = offset.z; z < offset.z + depth; ++z) {
+			if(sresLayout.rowPitch == size.width * fmtSize) {
+				auto texOff = texelAddress(sresLayout, fmtSize, offset.x, offset.y, z, 0u);
+				auto ptr = map.ptr() + texOff - mapBegin;
+				std::memcpy(data.data() + doffset, ptr, fmtSize * size.width * height);
+				doffset += fmtSize * size.width * height;
+			} else {
+				for(unsigned int y = offset.y; y < offset.y + height; ++y) {
+					auto texOff = texelAddress(sresLayout, fmtSize,
+						offset.x, y, z, 0u);
+					auto ptr = map.ptr() + texOff - mapBegin;
+					std::memcpy(data.data() + doffset, ptr, fmtSize * size.width);
+					doffset += fmtSize * size.width;
+				}
+			}
 		}
 	}
+
 
 	return data;
 }

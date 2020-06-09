@@ -32,21 +32,24 @@ TrDsLayout::TrDsLayout(const Device& dev,
 
 void TrDsLayout::init(const Device& dev,
 		const vk::DescriptorSetLayoutCreateInfo& info) {
-	dlg_assert(!vkHandle());
+	// TODO: there are valid usecases for this case but it will lead
+	// to problems/UB when it's called before all referencing
+	// TrDs's are destroyed. Not sure how to handle it.
+	// dlg_assert(!vkHandle());
 	DescriptorSetLayout::operator=({dev, info});
 	init({info.pBindings, info.bindingCount});
 }
 
 void TrDsLayout::init(const Device& dev,
 		nytl::Span<vk::DescriptorSetLayoutBinding> bindings) {
-	dlg_assert(!vkHandle());
+	// dlg_assert(!vkHandle());
 	DescriptorSetLayout::operator=({dev, bindings});
 	init(bindings);
 }
 
 void TrDsLayout::init(const Device& dev,
 		std::initializer_list<vk::DescriptorSetLayoutBinding> bindings) {
-	dlg_assert(!vkHandle());
+	// dlg_assert(!vkHandle());
 	DescriptorSetLayout::operator=({dev, bindings});
 	init(bindings);
 }
