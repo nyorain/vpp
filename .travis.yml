@@ -10,8 +10,11 @@ matrix:
 
 install:
   - pip3 install meson ninja
-  - sudo apt-get -y install libvulkan-dev libvulkan1 vulkan-utils
+  - sudo apt-get -y install valgrind libvulkan-dev libvulkan1 vulkan-utils
 
 script:
   - meson build -Dtests=true
+  # the latest vulkan version in bionic repos is 1.1.70
+  - meson subprojects checkout 1.1.70 vkpp
   - ninja -C build
+  - meson test -C build --print-errorlogs
