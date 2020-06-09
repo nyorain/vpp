@@ -1,33 +1,17 @@
-sudo: required
+os: linux
+dist: bionic
+language: python
 
-language: cpp
+# TODO: test one_device and codegen again 
+matrix:
+  include:
+    - env: CC=gcc
+    - env: CC=clang
 
-notifications:
-  email: false
-
-env:
-  - ONE_DEVICE=true CODEGEN="1.0.20" BUILDTYPE="debug"
-  - ONE_DEVICE=false CODEGEN="1.0.20" BUILDTYPE="debug"
-  - ONE_DEVICE=false CODEGEN="1.0.20" BUILDTYPE="release"
-
-compiler:
-  - gcc
-  # - clang
-
-arch:
-  packages:
-    - meson
-    - ninja
-    - mesa
-    - vulkan-headers
-    - vulkan-extra-layers
-    - vulkan-icd-loader
-  script:
-    - "meson build --buildtype $BUILDTYPE -Dtests=true -Dvkpp:version=$CODEGEN -Done_device=$ONE_DEVICE"
-    - "ninja -C build"
-    # testing currently disabled sine this does not work on travis (no drivers probably)
-    # - "meson test -C build"
-    # - "cat build/meson-logs/testlog.txt"
+install:
+  - pip3 install meson ninja
+  - sudo apt-get -y install vulkan
 
 script:
-  - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
+  - meson build -Dtests=true
+  - ninja -C build
