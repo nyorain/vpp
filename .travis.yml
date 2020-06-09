@@ -17,4 +17,7 @@ script:
   # the latest vulkan version in bionic repos is 1.1.70
   - meson subprojects checkout 1.1.70 vkpp
   - ninja -C build
-  - meson test -C build --print-errorlogs
+  # yeah, we obviously can't test it, sadly.
+  # Would need provided GPUs for that (or a CPU implementation but
+  # I won't spend months trying to get this running on travis...)
+  # - meson test -C build --print-errorlogs
