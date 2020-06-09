@@ -10,7 +10,7 @@ matrix:
 
 install:
   - pip3 install meson ninja
-  - sudo apt-get -y install vulkan
+  - sudo apt-get -y install libvulkan-dev libvulkan1 vulkan-utils
 
 script:
   - meson build -Dtests=true
