@@ -6,6 +6,7 @@
 #include <vpp/queue.hpp>
 #include <vpp/vk.hpp>
 #include <dlg/dlg.hpp>
+#include <cstring>
 
 namespace vpp {
 

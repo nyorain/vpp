@@ -215,7 +215,7 @@ vk::Result Renderer::renderStall(const RenderInfo& info) {
 }
 
 void Renderer::recordMode(RecordMode nm) {
-	dlg_assert(swapchain_);
+	dlg_assert(nm != RecordMode::all || swapchain_);
 
 	mode_ = nm;
 	if(mode_ == RecordMode::all) {

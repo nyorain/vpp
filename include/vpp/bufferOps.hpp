@@ -8,7 +8,7 @@
 #include <vpp/buffer.hpp>
 #include <vpp/sharedBuffer.hpp>
 #include <vpp/util/span.hpp>
-#include <cstring>
+#include <type_traits>
 
 namespace vpp {
 
@@ -27,16 +27,18 @@ namespace vpp {
 void fillDirect(vk::CommandBuffer cb, const BufferSpan& dst,
 	nytl::Span<const std::byte> data);
 
-template<typename T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
-[[nodiscard]] vpp::SubBuffer fillStaging(vk::CommandBuffer cb,
+template<typename T, typename = std::enable_if_t<
+	std::is_trivially_copyable_v<T> && std::is_standard_layout_v<T>>>
+[[nodiscard]] vpp::SubBuffer fillStagingObj(vk::CommandBuffer cb,
 		const BufferSpan& span, const T& obj) {
 	auto ptr = reinterpret_cast<const std::byte*>(&obj);
 	auto size = sizeof(obj);
 	return fillStaging(cb, span, {ptr, ptr + size});
 }
 
-template<typename T, typename = std::enable_if_t<std::is_trivially_copyable_v<T>>>
-void fillDirect(vk::CommandBuffer cb, const BufferSpan& span, const T& obj) {
+template<typename T, typename = std::enable_if_t<
+	std::is_trivially_copyable_v<T> && std::is_standard_layout_v<T>>>
+void fillDirectObj(vk::CommandBuffer cb, const BufferSpan& span, const T& obj) {
 	auto ptr = reinterpret_cast<const std::byte*>(&obj);
 	auto size = sizeof(obj);
 	fillDirect(cb, span, {ptr, ptr + size});
