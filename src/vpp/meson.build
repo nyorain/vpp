@@ -29,6 +29,6 @@ vpp_sources = [
 vpp_lib = library('vpp',
 	sources: vpp_sources,
 	dependencies: deps,
-	cpp_args: ['-DDLG_DEFAULT_TAGS="vpp",'],
+	cpp_args: ['-DDLG_DEFAULT_TAGS="vpp"'],
 	include_directories: [vpp_inc, vpp_inc_private],
 	install: true)

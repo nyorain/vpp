@@ -11,10 +11,7 @@
 namespace vpp {
 
 // GraphicsPipelineInfo
-GraphicsPipelineInfo::GraphicsPipelineInfo(vk::RenderPass renderPass,
-		vk::PipelineLayout layout, ShaderProgram&& program, unsigned subpass,
-		vk::SampleCountBits samples) : program(std::move(program)) {
-
+GraphicsPipelineInfo::GraphicsPipelineInfo() {
 	static const auto dynStates = {
 		vk::DynamicState::viewport,
 		vk::DynamicState::scissor};
@@ -42,12 +39,6 @@ GraphicsPipelineInfo::GraphicsPipelineInfo(vk::RenderPass renderPass,
 			vk::ColorComponentBits::a,
 	};
 
-	info_.stageCount = program.vkStageInfos().size();
-	info_.pStages = program.vkStageInfos().data();
-	info_.layout = layout;
-	info_.renderPass = renderPass;
-	info_.subpass = subpass;
-
 	assembly.topology = vk::PrimitiveTopology::triangleFan;
 
 	rasterization.polygonMode = vk::PolygonMode::fill;
@@ -58,7 +49,8 @@ GraphicsPipelineInfo::GraphicsPipelineInfo(vk::RenderPass renderPass,
 	rasterization.depthBiasEnable = false;
 	rasterization.lineWidth = 1.f;
 
-	multisample.rasterizationSamples = samples;
+	multisample.rasterizationSamples = vk::SampleCountBits::e1;
+	info_.subpass = 0u;
 
 	blend.attachmentCount = 1;
 	blend.pAttachments = &blendAttachment;
@@ -68,6 +60,16 @@ GraphicsPipelineInfo::GraphicsPipelineInfo(vk::RenderPass renderPass,
 
 	dynamic.dynamicStateCount = dynStates.size();
 	dynamic.pDynamicStates = dynStates.begin();
+}
+
+GraphicsPipelineInfo::GraphicsPipelineInfo(vk::RenderPass renderPass,
+		vk::PipelineLayout layout, ShaderProgram&& program, unsigned subpass,
+		vk::SampleCountBits samples) : GraphicsPipelineInfo() {
+	this->program = std::move(program);
+	info_.layout = layout;
+	info_.renderPass = renderPass;
+	info_.subpass = subpass;
+	multisample.rasterizationSamples = samples;
 }
 
 const vk::GraphicsPipelineCreateInfo& GraphicsPipelineInfo::info() {

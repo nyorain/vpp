@@ -34,6 +34,7 @@ public:
 	vpp::ShaderProgram program;
 
 public:
+	GraphicsPipelineInfo();
 	GraphicsPipelineInfo(vk::RenderPass, vk::PipelineLayout,
 		vpp::ShaderProgram&& program,
 		unsigned subpass = 0,

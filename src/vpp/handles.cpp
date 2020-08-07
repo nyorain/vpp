@@ -80,7 +80,7 @@ DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,
 	const vk::DescriptorSetLayoutCreateInfo& info) :
-		ResourceHandle(dev, vk::createDescriptorSetLayout(vkDevice(), info)) {
+		ResourceHandle(dev, vk::createDescriptorSetLayout(dev, info)) {
 }
 
 DescriptorSetLayout::DescriptorSetLayout(const Device& dev,

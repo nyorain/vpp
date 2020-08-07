@@ -280,7 +280,7 @@ public:
 	~Pipeline();
 
 	Pipeline(Pipeline&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(Pipeline&& rhs) noexcept {
+	auto& operator=(Pipeline rhs) noexcept {
 		swap(*this, rhs);
 		return *this;
 	}
@@ -333,7 +333,7 @@ public:
 	~CommandPool();
 
 	CommandPool(CommandPool&& rhs) noexcept { swap(*this, rhs); }
-	auto& operator=(CommandPool&& rhs) noexcept {
+	auto& operator=(CommandPool rhs) noexcept {
 		swap(*this, rhs);
 		return *this;
 	}
