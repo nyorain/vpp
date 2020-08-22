@@ -25,7 +25,7 @@ namespace vpp {
 /// DeviceLost, then the physical device is not longer valid.
 /// Device is one of the few classes that are not movable since it
 /// is referenced by all resources.
-class Device {
+class VPP_API Device {
 public:
 #ifdef VPP_ONE_DEVICE_OPTIMIZATION
 	/// If VPP_ONE_DEVICE_OPTIMIZATION is defined, vpp must only be used
@@ -211,8 +211,8 @@ protected:
 /// Guarantees that there exists at least one queue for the given device with
 /// the returned queue family.
 /// Returns -1 if there is no such family, although there usually should be.
-/// If queue if not nullptr, will store a pointer to a queue of the returned
+/// If queue is not nullptr, will store a pointer to a queue of the returned
 /// family into it.
-int transferQueueFamily(const Device& dev, const Queue** queue);
+VPP_API int transferQueueFamily(const Device& dev, const Queue** queue);
 
 } // namespace vpp

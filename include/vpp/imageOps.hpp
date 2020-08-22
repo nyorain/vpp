@@ -17,7 +17,7 @@ namespace vpp {
 /// - texelSize: The size (in bytes) of one texel.
 ///   Can e.g. be obtained from formatSize (with the images format).
 /// - x,y,z,layer: The coordinates of the texel which address should be returned.
-[[nodiscard]] vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout,
+[[nodiscard]] VPP_API vk::DeviceSize texelAddress(const vk::SubresourceLayout& layout,
 	unsigned texelSize, unsigned x, unsigned y, unsigned z = 0,
 	unsigned layer = 0);
 
@@ -43,14 +43,14 @@ namespace vpp {
 /// - firstMip: which mip begins at texel number 0.
 ///   `firstMip <= mip` must hold. Note that 'mip' is not relative
 ///   to baseMip but absolute.
-[[nodiscard]] vk::DeviceSize tightTexelNumber(vk::Extent3D extent,
+[[nodiscard]] VPP_API vk::DeviceSize tightTexelNumber(vk::Extent3D extent,
 	unsigned numLayers, unsigned mip, unsigned layer,
 	unsigned x = 0u, unsigned y = 0u, unsigned z = 0u,
 	unsigned firstMip = 0u);
 
 /// Returns the number of texels in the specified image subresource range
 /// in a tight, linear layout.
-[[nodiscard]] vk::DeviceSize tightTexelCount(vk::Extent3D extent,
+[[nodiscard]] VPP_API vk::DeviceSize tightTexelCount(vk::Extent3D extent,
 	unsigned numLayers, unsigned numMips, unsigned firstMip = 0u);
 
 /// Equivalent to tightTexelNumber(extent, 1, 0, 0, x, y, z),
@@ -75,7 +75,7 @@ namespace vpp {
 ///   Must be in row-major order and large enough for the given extent.
 ///   The size of data will be expected to equal exactly:
 ///   extent.w * extent.h * extent.d * formatSize(format)
-void fillMap(const Image&, vk::Format, const vk::Extent3D& size,
+void VPP_API fillMap(const Image&, vk::Format, const vk::Extent3D& size,
 	nytl::Span<const std::byte> data, const vk::ImageSubresource&,
 	const vk::Offset3D& offset = {});
 
@@ -85,7 +85,7 @@ void fillMap(const Image&, vk::Format, const vk::Extent3D& size,
 /// linear tiling.
 /// The image must not be in use (you probably have to use a barrier).
 /// The returned data will be tightly packed.
-[[nodiscard]] std::vector<std::byte> retrieveMap(const Image&, vk::Format,
+[[nodiscard]] VPP_API std::vector<std::byte> retrieveMap(const Image&, vk::Format,
 	const vk::Extent3D& size, const vk::ImageSubresource&,
 	const vk::Offset3D& offset = {});
 
@@ -113,15 +113,15 @@ void fillMap(const Image&, vk::Format, const vk::Extent3D& size,
 /// - offset: offset into the image in absolute mip level 0.
 ///   When the fills any mip other than mip level 0, offset must be 0.
 [[nodiscard]]
-SubBuffer fillStagingRange(vk::CommandBuffer, const Image&, vk::Format,
+SubBuffer VPP_API fillStagingRange(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, vk::Extent3D size, nytl::Span<const std::byte> data,
 	const vk::ImageSubresourceRange& range, const vk::Offset3D& offset = {});
 [[nodiscard]]
-SubBuffer fillStagingLayers(vk::CommandBuffer, const Image&, vk::Format,
+SubBuffer VPP_API fillStagingLayers(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, const vk::Extent3D& size, nytl::Span<const std::byte> data,
 	const vk::ImageSubresourceLayers&, const vk::Offset3D& offset = {});
 [[nodiscard]]
-SubBuffer fillStaging(vk::CommandBuffer, const Image&, vk::Format,
+SubBuffer VPP_API fillStaging(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, const vk::Extent3D& size, nytl::Span<const std::byte> data,
 	const vk::ImageSubresource&, const vk::Offset3D& offset = {});
 
@@ -137,15 +137,15 @@ SubBuffer fillStaging(vk::CommandBuffer, const Image&, vk::Format,
 /// When multiple mip levels are downloaded, calculating invidual
 /// image addresses isn't trivial, see the tightTexelNumber function..
 [[nodiscard]]
-SubBuffer retrieveStagingRange(vk::CommandBuffer, const Image&, vk::Format,
+SubBuffer VPP_API retrieveStagingRange(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, vk::Extent3D size,
 	const vk::ImageSubresourceRange&, const vk::Offset3D& offset = {});
 [[nodiscard]]
-SubBuffer retrieveStagingLayers(vk::CommandBuffer, const Image&, vk::Format,
+SubBuffer VPP_API retrieveStagingLayers(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, const vk::Extent3D& size,
 	const vk::ImageSubresourceLayers&, const vk::Offset3D& offset = {});
 [[nodiscard]]
-SubBuffer retrieveStaging(vk::CommandBuffer, const Image&, vk::Format,
+SubBuffer VPP_API retrieveStaging(vk::CommandBuffer, const Image&, vk::Format,
 	vk::ImageLayout, const vk::Extent3D& size,
 	const vk::ImageSubresource&, const vk::Offset3D& offset = {});
 

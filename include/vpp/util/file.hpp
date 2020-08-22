@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <vpp/config.hpp> // VPP_API
 #include <vpp/util/span.hpp> // nytl::Span
 #include <vector> // std::vector
 #include <cstdlib> // std::byte
@@ -12,14 +13,14 @@
 namespace vpp {
 
 /// Reads the file at the given filepath and returns a raw buffer with its contents.
-/// \param binary Specifies whether the file should be read in binary mode.
-/// \throws directly from std::istream on error.
-std::vector<std::byte> readFile(std::string_view path, bool binary = true);
+/// binary: Specifies whether the file should be read in binary mode.
+/// Throws directly from std::istream on error.
+VPP_API std::vector<std::byte> readFile(std::string_view path, bool binary = true);
 
 /// Writes the given buffer into the file at the given path.
-/// \param binary Specifies whether the file should be written in binary mode.
-/// \throws directly from std::ostream on error.
-void writeFile(std::string_view path, nytl::Span<const std::byte> buffer,
+/// binary: Specifies whether the file should be written in binary mode.
+/// Throws directly from std::ostream on error.
+VPP_API void writeFile(std::string_view path, nytl::Span<const std::byte> buffer,
 	bool binary = true);
 
 } // namespace vpp

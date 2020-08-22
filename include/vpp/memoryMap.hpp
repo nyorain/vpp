@@ -18,7 +18,7 @@ namespace vpp {
 // Instances of this class cannot be created manually but must be indirectly
 // retrieved by a DeviceMemory object.
 // This class is not threadsafe.
-class MemoryMap {
+class VPP_API MemoryMap {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
 
@@ -89,7 +89,7 @@ protected:
 // Makes it possible to write/read from multiple allocations on a mapped memory.
 // Objects are always retrieved by a DeviceMemory object.
 // This class is not threadsafe.
-class MemoryMapView {
+class VPP_API MemoryMapView {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
 

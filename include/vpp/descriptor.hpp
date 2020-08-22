@@ -8,20 +8,19 @@
 #include <vpp/resource.hpp>
 #include <vpp/handles.hpp>
 #include <vpp/util/span.hpp>
-#include <vpp/util/nonCopyable.hpp>
 
 #include <vector>
 #include <deque>
 
 namespace vpp {
 namespace fwd {
-	extern const vk::ShaderStageFlags allShaderStages;
+	extern VPP_API const vk::ShaderStageFlags allShaderStages;
 } // namespace fwd
 
 /// Allows convenient descriptorSet updates.
 /// Does not perform any checking and has the overhead of internally
 /// allocating memory.
-class DescriptorSetUpdate : public nytl::NonCopyable {
+class VPP_API DescriptorSetUpdate {
 public:
 	using BufferInfos = std::vector<vk::DescriptorBufferInfo>;
 	using BufferViewInfos = std::vector<vk::BufferView>;
@@ -31,6 +30,9 @@ public:
 	DescriptorSetUpdate() = default;
 	DescriptorSetUpdate(const DescriptorSet& set);
 	~DescriptorSetUpdate();
+
+	DescriptorSetUpdate(DescriptorSetUpdate&) = delete;
+	DescriptorSetUpdate& operator=(DescriptorSetUpdate&) = default;
 
 	DescriptorSetUpdate(DescriptorSetUpdate&&) noexcept = default;
 	DescriptorSetUpdate& operator=(DescriptorSetUpdate&&) noexcept = default;
@@ -98,21 +100,21 @@ protected:
 
 /// Applies multiple descriptor set updates.
 /// May be a bit more efficient than updating them individually.
-void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>>);
-void apply(nytl::Span<DescriptorSetUpdate>);
+VPP_API void apply(nytl::Span<const std::reference_wrapper<DescriptorSetUpdate>>);
+VPP_API void apply(nytl::Span<DescriptorSetUpdate>);
 
 /// Alternative vk::DescriptorSetLayoutBinding constructor.
 /// When passed to the DescriptorSetLayout constructor, will automatically
 /// update binding number without spaces if it is autoDescriptorBinding (-1).
 constexpr auto autoDescriptorBinding = std::uint32_t(0xFFFFFFFF);
-vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
+VPP_API vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
 	vk::ShaderStageFlags stages = fwd::allShaderStages,
 	const vk::Sampler* samplers = nullptr,
 	std::uint32_t count = 1, std::uint32_t binding = autoDescriptorBinding);
 
 /// Less intuitive overload, kept for legacy reason.
 [[deprecated("Use more intuitive sampler-first overload")]]
-vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
+VPP_API vk::DescriptorSetLayoutBinding descriptorBinding(vk::DescriptorType type,
 	vk::ShaderStageFlags stages, std::uint32_t binding,
 	std::uint32_t count = 1, const vk::Sampler* samplers = nullptr);
 

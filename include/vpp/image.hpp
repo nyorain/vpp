@@ -10,7 +10,7 @@
 
 namespace vpp {
 
-class Image : public ImageHandle, public MemoryResource {
+class VPP_API Image : public ImageHandle, public MemoryResource {
 public:
 	Image() = default;
 
@@ -70,7 +70,7 @@ public:
 /// Combines a vulkan image and an imageView for it.
 /// Can be e.g. used for textures or framebuffer attachments.
 /// See also ViewableImageCreateInfo for default initializers.
-class ViewableImage {
+class VPP_API ViewableImage {
 public:
 	/// NOTE: we could require the ImageViewCreateInfo in the deferred
 	/// constructor as well and store it in InitData.

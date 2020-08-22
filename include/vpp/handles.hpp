@@ -18,7 +18,7 @@ namespace vpp {
 
 /// RAII vulkan Instance wrapper.
 /// Will always automatically initialize vk::dispatch on construction.
-class Instance {
+class VPP_API Instance {
 public:
 	Instance() = default;
 	Instance(const vk::InstanceCreateInfo& info);
@@ -46,7 +46,7 @@ protected:
 };
 
 /// RAII vk::SurfaceKHR wrapper.
-class Surface {
+class VPP_API Surface {
 public:
 	Surface() = default;
 	Surface(vk::Instance instance, vk::SurfaceKHR surface);
@@ -74,7 +74,7 @@ protected:
 };
 
 /// RAII vk::QueryPool wrapper.
-class QueryPool : public ResourceHandle<vk::QueryPool> {
+class VPP_API QueryPool : public ResourceHandle<vk::QueryPool> {
 public:
 	QueryPool() = default;
 	QueryPool(const Device&, vk::QueryPool);
@@ -91,7 +91,7 @@ public:
 };
 
 /// RAII Fence wrapper
-class Fence : public ResourceHandle<vk::Fence> {
+class VPP_API Fence : public ResourceHandle<vk::Fence> {
 public:
 	Fence() = default;
 	Fence(const Device&);
@@ -109,7 +109,7 @@ public:
 };
 
 /// RAII semaphore wrapper
-class Semaphore : public ResourceHandle<vk::Semaphore> {
+class VPP_API Semaphore : public ResourceHandle<vk::Semaphore> {
 public:
 	Semaphore() = default;
 	Semaphore(const Device&);
@@ -127,7 +127,7 @@ public:
 };
 
 /// RAII event wrapper
-class Event : public ResourceHandle<vk::Event> {
+class VPP_API Event : public ResourceHandle<vk::Event> {
 public:
 	Event() = default;
 	Event(const Device&);
@@ -146,7 +146,7 @@ public:
 
 /// RAII Vulkan Renderpass wrapper.
 /// Stores no additional information.
-class RenderPass : public ResourceHandle<vk::RenderPass> {
+class VPP_API RenderPass : public ResourceHandle<vk::RenderPass> {
 public:
 	RenderPass() = default;
 	RenderPass(const Device& dev, vk::RenderPass pass);
@@ -164,7 +164,7 @@ public:
 
 /// RAII Vulkan Framebuffer wrapper.
 /// Stores no additional information.
-class Framebuffer : public ResourceHandle<vk::Framebuffer> {
+class VPP_API Framebuffer : public ResourceHandle<vk::Framebuffer> {
 public:
 	Framebuffer() = default;
 	Framebuffer(const Device&, vk::Framebuffer);
@@ -181,7 +181,7 @@ public:
 };
 
 /// RAII Vulkan DescriptorSetLayout wrapper.
-class DescriptorSetLayout : public ResourceHandle<vk::DescriptorSetLayout> {
+class VPP_API DescriptorSetLayout : public ResourceHandle<vk::DescriptorSetLayout> {
 public:
 	DescriptorSetLayout() = default;
 	DescriptorSetLayout(const Device&, vk::DescriptorSetLayout);
@@ -212,7 +212,7 @@ public:
 /// Note that this class cannot automatically destroy the DescriptorSet handle
 /// on destruction since the vulkan spec does not allow this per default.
 /// See also the vpp/trackedDescriptor api for more functionality.
-class DescriptorSet : public ResourceHandle<vk::DescriptorSet> {
+class VPP_API DescriptorSet : public ResourceHandle<vk::DescriptorSet> {
 public:
 	DescriptorSet() = default;
 	DescriptorSet(const Device&, vk::DescriptorSet);
@@ -232,7 +232,7 @@ public:
 };
 
 /// RAII vulkan descriptor pool wrapper.
-class DescriptorPool : public ResourceHandle<vk::DescriptorPool> {
+class VPP_API DescriptorPool : public ResourceHandle<vk::DescriptorPool> {
 public:
 	DescriptorPool() = default;
 	DescriptorPool(const Device&, vk::DescriptorPool);
@@ -249,7 +249,7 @@ public:
 };
 
 /// RAII vulkan pipeline layout wrapper.
-class PipelineLayout : public ResourceHandle<vk::PipelineLayout> {
+class VPP_API PipelineLayout : public ResourceHandle<vk::PipelineLayout> {
 public:
 	PipelineLayout() = default;
 	PipelineLayout(const Device& dev, vk::PipelineLayout);
@@ -269,7 +269,7 @@ public:
 };
 
 /// RAII Vulkan pipeline wrapper.
-class Pipeline : public ResourceHandle<vk::Pipeline> {
+class VPP_API Pipeline : public ResourceHandle<vk::Pipeline> {
 public:
 	Pipeline() = default;
 	Pipeline(const Device& dev, vk::Pipeline pipe) : ResourceHandle(dev, pipe) {}
@@ -290,7 +290,7 @@ public:
 
 /// RAII vulkan pipeline cache wrapper.
 /// A pipeline cache can be used to decrease pipeline compilation time.
-class PipelineCache : public ResourceHandle<vk::PipelineCache> {
+class VPP_API PipelineCache : public ResourceHandle<vk::PipelineCache> {
 public:
 	PipelineCache() = default;
 	PipelineCache(const Device& dev, vk::PipelineCache);
@@ -316,14 +316,14 @@ public:
 	static vk::ObjectType vkObjectType();
 };
 
-namespace fwd { extern const vk::CommandBufferLevel primaryCmdBufLevel; }
+namespace fwd { extern VPP_API const vk::CommandBufferLevel primaryCmdBufLevel; }
 
 /// RAII vulkan CommandPool wrapper.
 /// CommanPools belong to the thread in which they were created. They as well as
 /// any CommandBuffer they allocated must only be used in this thread.
 /// The CommandPool object must be destroyed in the thread that created it.
 /// See the vulkan spec about command pool synchronization for more information.
-class CommandPool : public ResourceHandle<vk::CommandPool> {
+class VPP_API CommandPool : public ResourceHandle<vk::CommandPool> {
 public:
 	CommandPool() = default;
 	CommandPool(const Device& dev, vk::CommandPool);
@@ -347,7 +347,7 @@ public:
 
 /// RAII vulkan CommandBuffer wrapper.
 /// Keeps a reference to the CommandPool it was allocated from (for freeing).
-class CommandBuffer : public ResourceHandle<vk::CommandBuffer> {
+class VPP_API CommandBuffer : public ResourceHandle<vk::CommandBuffer> {
 public:
 	CommandBuffer() = default;
 	CommandBuffer(const CommandPool&); // primary level
@@ -372,7 +372,7 @@ protected:
 
 /// RAII vk::Image wrapper.
 /// Does not handle any additional functionality, see vpp::Image
-class ImageHandle : public ResourceHandle<vk::Image> {
+class VPP_API ImageHandle : public ResourceHandle<vk::Image> {
 public:
 	ImageHandle() = default;
 	ImageHandle(const Device&, vk::Image);
@@ -389,7 +389,7 @@ public:
 };
 
 /// RAII wrapper around a vulkan image view.
-class ImageView : public ResourceHandle<vk::ImageView> {
+class VPP_API ImageView : public ResourceHandle<vk::ImageView> {
 public:
 	ImageView() = default;
 	ImageView(const Device&, vk::ImageView);
@@ -407,7 +407,7 @@ public:
 
 /// RAII vk::Buffer wrapper.
 /// Does not handle any additional functionality, see vpp::Buffer
-class BufferHandle : public ResourceHandle<vk::Buffer> {
+class VPP_API BufferHandle : public ResourceHandle<vk::Buffer> {
 public:
 	BufferHandle() = default;
 	BufferHandle(const Device&, vk::Buffer);
@@ -424,7 +424,7 @@ public:
 };
 
 /// RAII wrapper around a vulkan buffer view.
-class BufferView : public ResourceHandle<vk::BufferView> {
+class VPP_API BufferView : public ResourceHandle<vk::BufferView> {
 public:
 	BufferView() = default;
 	BufferView(const Device&, vk::BufferView);
@@ -442,7 +442,7 @@ public:
 
 /// RAII wrapper around vk::DeviceMemory.
 /// Does not carry/manage any additional stuff, see vpp::DeviceMemory.
-class DeviceMemoryHandle : public ResourceHandle<vk::DeviceMemory> {
+class VPP_API DeviceMemoryHandle : public ResourceHandle<vk::DeviceMemory> {
 public:
 	DeviceMemoryHandle() = default;
 	DeviceMemoryHandle(const Device&, vk::DeviceMemory);
@@ -459,7 +459,7 @@ public:
 };
 
 /// RAII wrapper for a vulkan sampler.
-class Sampler : public ResourceHandle<vk::Sampler> {
+class VPP_API Sampler : public ResourceHandle<vk::Sampler> {
 public:
 	Sampler() = default;
 	Sampler(const Device&, vk::Sampler);

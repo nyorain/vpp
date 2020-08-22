@@ -16,3 +16,19 @@
 // If this macro is enabled vpp will only allow one Device instance but nearly all objects
 // will consume one word less memory. For more information see resource.hpp
 #mesondefine VPP_ONE_DEVICE_OPTIMIZATION
+
+// Built as shared library?
+#mesondefine VPP_SHARED
+
+// win32 compatibility
+#if !defined(VPP_API) && defined(VPP_SHARED)
+ #if defined(_WIN32) || defined(__CYGWIN__)
+  #define VPP_API __declspec(dllimport)
+ #elif __GNUC__ >= 4
+  #define VPP_API __attribute__((visibility ("default")))
+ #endif
+#endif
+
+#ifndef VPP_API
+ #define VPP_API
+#endif

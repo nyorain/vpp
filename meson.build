@@ -13,11 +13,20 @@ example_ny = get_option('example_ny')
 tests = get_option('tests')
 one_device = get_option('one_device')
 
+shared = (get_option('default_library') == 'shared')
+
+cc = meson.get_compiler('cpp')
+
 # default arrguments
 # warnings and stuff
-add_project_arguments(
+arguments = [
 	'-Wno-unused-parameter',
 	'-Wno-missing-braces',
+	'-fvisibility=hidden'
+]
+
+add_project_arguments(
+	cc.get_supported_arguments(arguments),
 	language: 'cpp')
 
 # dependencies

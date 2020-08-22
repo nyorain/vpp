@@ -1,4 +1,4 @@
-install_subdir('.', 
+install_subdir('.',
 	install_dir: 'include/vpp',
 	exclude_files: ['meson.build', 'config.hpp.in'])
 
@@ -10,8 +10,9 @@ conf_data.set('vmajor', version[0])
 conf_data.set('vminor', version[1])
 conf_data.set('vpatch', version[2])
 conf_data.set('VPP_ONE_DEVICE_OPTIMIZATION', one_device)
+conf_data.set('VPP_SHARED', shared, description: 'Compiled as shared library')
 
-configure_file(input: 'config.hpp.in', 
+configure_file(input: 'config.hpp.in',
 	output: 'config.hpp',
-	install_dir: 'include/vpp', 
+	install_dir: 'include/vpp',
 	configuration: conf_data)

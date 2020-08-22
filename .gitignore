@@ -2,3 +2,5 @@ build/
 subprojects/*/
 .build-tools.cson
 *.swp
+.clangd/
+compile_commands.json

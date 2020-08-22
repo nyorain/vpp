@@ -16,7 +16,7 @@ namespace vpp {
 
 /// Preferences for creating a swapchain.
 /// Can be used to query a valid SwapchainCreateInfo.
-struct SwapchainPreferences {
+struct VPP_API SwapchainPreferences {
 	enum class ErrorAction {
 		none, /// Simply chooses another setting.
 		output, /// Choses another setting and prints a warning
@@ -40,7 +40,7 @@ struct SwapchainPreferences {
 /// Parses the given SwapchainPreferences for the given device and surface
 /// into a valid SwapchainCreateInfo. This has to be done only once,
 /// the returned info can be reused when a swapchain is resized.
-vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device&,
+VPP_API vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device&,
 	vk::SurfaceKHR, const vk::Extent2D& size,
 	const SwapchainPreferences& prefs = {});
 
@@ -49,13 +49,13 @@ vk::SwapchainCreateInfoKHR swapchainCreateInfo(const vpp::Device&,
 /// of the create info. Tries to use the requested width and height as well
 /// as possible. Must only be called with a swapchain create info
 /// that already has the surface member set.
-void updateImageExtent(vk::PhysicalDevice, vk::SwapchainCreateInfoKHR& sci,
+VPP_API void updateImageExtent(vk::PhysicalDevice, vk::SwapchainCreateInfoKHR& sci,
 	vk::Extent2D desired);
 
 /// Swapchain wrapper that (together with SwapchainSettings and its
 /// implementations) manages surface property querying and swapchain setup.
 /// Does not remember/store any additional information about itself.
-class Swapchain : public ResourceHandle<vk::SwapchainKHR> {
+class VPP_API Swapchain : public ResourceHandle<vk::SwapchainKHR> {
 public:
 	Swapchain() = default;
 	Swapchain(const Device& device, const vk::SwapchainCreateInfoKHR&);

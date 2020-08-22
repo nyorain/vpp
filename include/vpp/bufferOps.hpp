@@ -17,14 +17,14 @@ namespace vpp {
 /// command buffer for copying the data to the given buffer span.
 /// Returns the host visible staging SubBuffer, must not be destroyed
 /// until the command buffer has finished execution.
-[[nodiscard]] vpp::SubBuffer fillStaging(vk::CommandBuffer cb,
+[[nodiscard]] VPP_API vpp::SubBuffer fillStaging(vk::CommandBuffer cb,
 	const BufferSpan& dst, nytl::Span<const std::byte> data);
 
 /// Simply uses a call to vkCmdUpdateBuffer, therefore uses no staging buffer.
 /// The vulkan spec states that this is less efficient than a staging buffer
 /// and only allowed for a data size up to 65536. Should be avoided for
 /// large amounts of data, see fillStaging for that.
-void fillDirect(vk::CommandBuffer cb, const BufferSpan& dst,
+VPP_API void fillDirect(vk::CommandBuffer cb, const BufferSpan& dst,
 	nytl::Span<const std::byte> data);
 
 template<typename T, typename = std::enable_if_t<
@@ -48,7 +48,7 @@ void fillDirectObj(vk::CommandBuffer cb, const BufferSpan& span, const T& obj) {
 /// from the given BufferSpan into the staging buffer and returns the
 /// staging buffer. It must not be destroyed until the given command buffer
 /// has finished execution. Then it can be memory mapped to read the data.
-[[nodiscard]] vpp::SubBuffer readStaging(vk::CommandBuffer cb,
+[[nodiscard]] VPP_API vpp::SubBuffer readStaging(vk::CommandBuffer cb,
 	const BufferSpan& src);
 
 } // namespace vpp

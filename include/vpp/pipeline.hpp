@@ -19,7 +19,7 @@ namespace vpp {
 /// - [assembly info] default is triangle fan
 /// - [blend attachment] one attachment by default, enabled with add ops
 /// - optional: depthStencil, tesselation, multisample, other dynamic states
-class GraphicsPipelineInfo {
+class VPP_API GraphicsPipelineInfo {
 public:
 	vk::PipelineVertexInputStateCreateInfo vertex;
 	vk::PipelineInputAssemblyStateCreateInfo assembly;
@@ -56,7 +56,7 @@ private:
 
 /// Saves a pipeline cache to the given filename.
 /// Returns whether saving was succesful. Will not throw on failure.
-bool save(vk::Device dev, vk::PipelineCache cache, std::string_view filename);
+VPP_API bool save(vk::Device dev, vk::PipelineCache cache, std::string_view filename);
 inline bool save(const PipelineCache& cache, std::string_view file) {
 	return save(cache.device(), cache, file);
 }

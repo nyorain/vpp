@@ -18,7 +18,7 @@ namespace vpp {
 /// Can be used to track the submit state using an id.
 /// Is bound to a fixed queue and not synchronized in any way but
 /// will respect queue locks.
-class QueueSubmitter {
+class VPP_API QueueSubmitter {
 public:
 	QueueSubmitter() = default;
 	QueueSubmitter(const Queue& queue);

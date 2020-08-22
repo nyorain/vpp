@@ -12,8 +12,9 @@
 #include <vpp/trackedDescriptor.hpp>
 #include <dlg/dlg.hpp>
 
-#include <map> // std::map
-#include <vector> // std::map
+#include <map>
+#include <vector>
+#include <optional>
 #include <utility> // std::pair
 
 namespace vpp {

@@ -13,7 +13,7 @@ namespace vpp {
 
 /// Represents a resource that might be bound to memory span and keeps track
 /// of this memory. Does not support any kind of sparse bindings.
-class MemoryResource {
+class VPP_API MemoryResource {
 public:
 	struct InitData {
 		InitData() = default;

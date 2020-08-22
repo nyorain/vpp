@@ -7,16 +7,15 @@
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
 #include <vpp/handles.hpp>
-#include <vpp/util/nonCopyable.hpp>
 #include <vector>
 
 namespace vpp {
-namespace fwd { extern const vk::CommandBufferLevel primaryCmdBufLevel; }
+namespace fwd { extern VPP_API const vk::CommandBufferLevel primaryCmdBufLevel; }
 
 // Owns a pool of commandPools that allow to allocate commandBuffers of all
 // kind. Not synchronized in any way, must always be used from only
 // one thread.
-class CommandAllocator : public Resource {
+class VPP_API CommandAllocator : public Resource {
 public:
 	// Command Pool that stores its own flags and queue family.
 	class TrCmdPool : public CommandPool {

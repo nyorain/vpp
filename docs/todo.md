@@ -30,9 +30,6 @@ todo.mdTodo list vor vpp
 	- can we provide blitting utility?
 	  maybe just move the initializon from stage here and fix it up
 	  for spec correctness
-- abolish NonCopyable/NonMovable. Just explicitly delete what you
-  need deleted. Better style, removes noise.
-
 later:
 
 - when using c++20, switch to std::span (nytl::Span should be fully compatble

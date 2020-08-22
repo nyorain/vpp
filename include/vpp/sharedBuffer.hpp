@@ -19,7 +19,7 @@ namespace vpp {
 /// according to the devices nonCoherentAtomAlign property.
 /// Keep in mind the vulkan limitations and mechanisms of using buffers
 /// with multiple queue families when sharing one.
-class SharedBuffer : public Buffer {
+class VPP_API SharedBuffer : public Buffer {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
 
@@ -67,7 +67,7 @@ protected:
 /// transfer buffers or small buffers like ubos.
 /// Keep in mind that all allocated SubBuffers can only be used
 /// on the same queue family.
-class BufferAllocator {
+class VPP_API BufferAllocator {
 public:
 	using ReservationID = vk::DeviceSize;
 
@@ -176,7 +176,7 @@ protected:
 /// Before destructing a SubBuffer, i.e. before returning that allocated
 /// range to the SharedBuffer, it must be ensured that all writes and
 /// reads to/from it have finished, usually a pipeline barrier is required.
-class SubBuffer {
+class VPP_API SubBuffer {
 public:
 	using Allocation = SharedBuffer::Allocation;
 	struct InitData {

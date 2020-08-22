@@ -15,7 +15,7 @@ namespace vpp {
 /// Tracked DescriptorSetLayout, knows all its bindings.
 /// Mainly useful when one wants to simply create a descriptor set from
 /// a layout, see TrDs and TrDsPool/TrDsAllocator.
-class TrDsLayout : public DescriptorSetLayout {
+class VPP_API TrDsLayout : public DescriptorSetLayout {
 public:
 	TrDsLayout(); // = default
 	TrDsLayout(const Device&, const vk::DescriptorSetLayoutCreateInfo&);
@@ -49,7 +49,7 @@ protected:
 /// Always created with the freeDescriptorSet flag since otherwise it makes
 /// no sense tracking the resources.
 /// Not movable since it is referenced by TrDs objects.
-class TrDsPool : public DescriptorPool {
+class VPP_API TrDsPool : public DescriptorPool {
 public:
 	TrDsPool(); // = default;
 	TrDsPool(const Device&, vk::DescriptorPoolCreateInfo);
@@ -72,7 +72,7 @@ protected:
 /// Tracked DescriptorSet, knows its associated pool and layout.
 /// Will allocate/free the needed descriptors from the tracked pool it is
 /// created with.
-class TrDs : public DescriptorSet {
+class VPP_API TrDs : public DescriptorSet {
 public:
 	struct InitData {
 		InitData() = default;
@@ -124,7 +124,7 @@ protected:
 /// Dynamically allocates tracked descriptors.
 /// Will create descriptor pools on the fly but try to create as few
 /// as possible. Can't be moved since TrDs objects might reference it.
-class DescriptorAllocator : public vpp::Resource {
+class VPP_API DescriptorAllocator : public vpp::Resource {
 public:
 	DescriptorAllocator(); // = default;
 	DescriptorAllocator(const vpp::Device&);

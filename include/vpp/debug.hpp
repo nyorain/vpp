@@ -6,12 +6,12 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
-#include <vpp/util/nonCopyable.hpp>
 #include <vpp/util/span.hpp>
 
 #include <vector> // std::vector
 #include <cstdint> // std::uint64_t
 #include <string> // std::string
+#include <cstring> // std::memcpy
 
 namespace vpp {
 
@@ -23,7 +23,7 @@ namespace vpp {
 /// Making DebugCallback virtual is reasonable regarding performance
 /// since no DebugCallback should be created when using a release build.
 /// NonMovable since it registers a pointer to itself as callback user data.
-class DebugMessenger : public nytl::NonMovable {
+class VPP_API DebugMessenger {
 public:
 	// god, these names are long.
 	using Data = vk::DebugUtilsMessengerCallbackDataEXT;
@@ -56,6 +56,9 @@ public:
 		MsgTypeFlags type = defaultTypes());
 	virtual ~DebugMessenger();
 
+	DebugMessenger(DebugMessenger&&) = delete;
+	DebugMessenger& operator=(DebugMessenger&&) = delete;
+
 	vk::Instance vkInstance() const { return instance_; }
 	vk::DebugUtilsMessengerEXT vkMessenger() const { return messenger_; }
 
@@ -80,9 +83,15 @@ protected:
 /// and 32- as well as 64-bit should be supported without warning.
 template<typename T> constexpr std::uint64_t handleToUint(T handle) {
 	if constexpr(sizeof(T) == sizeof(std::uint64_t)) {
-		return reinterpret_cast<std::uint64_t>(handle);
+		// return reinterpret_cast<std::uint64_t>(handle);
+		std::uint64_t ret;
+		std::memcpy(&ret, &handle, sizeof(handle));
+		return ret;
 	} else if constexpr(sizeof(T) == sizeof(std::uintptr_t)) {
-		return reinterpret_cast<std::uintptr_t>(handle);
+		// return reinterpret_cast<std::uintptr_t>(handle);
+		std::uintptr_t ret;
+		std::memcpy(&ret, &handle, sizeof(handle));
+		return ret;
 	} else if constexpr(sizeof(T) != 64) {
 		// This else if will catch all cases not covered by the
 		// first cases, we just include the if constexpr to
@@ -109,28 +118,28 @@ namespace debug {
 /// Also see the templated version below.
 /// When `hasDebugUtils` of the given device is false,
 /// returns vk::Result::errorExtensionNotPresent.
-vk::Result nameHandle(const vpp::Device&, std::uint64_t handle,
+VPP_API vk::Result nameHandle(const vpp::Device&, std::uint64_t handle,
 	vk::ObjectType, const char* name);
 
 /// Sets the tag of the given handle.
 /// Also see the templated version below.
 /// When `hasDebugUtils` of the given device is false,
 /// returns vk::Result::errorExtensionNotPresent.
-vk::Result tagHandle(const vpp::Device&, std::uint64_t handle,
+VPP_API vk::Result tagHandle(const vpp::Device&, std::uint64_t handle,
 	vk::ObjectType, std::uint64_t name,
 	nytl::Span<const std::byte> data);
 
 /// Has no effect `hasDebugUtils` of the given device is false.
-void beginDebugLabel(const vpp::Device& dev, vk::CommandBuffer cb,
+VPP_API void beginDebugLabel(const vpp::Device& dev, vk::CommandBuffer cb,
 	const char* name, std::array<float, 4> col = {});
-void endDebugLabel(const vpp::Device& dev, vk::CommandBuffer);
-void insertDebugLabel(const vpp::Device& dev, vk::CommandBuffer,
+VPP_API void endDebugLabel(const vpp::Device& dev, vk::CommandBuffer);
+VPP_API void insertDebugLabel(const vpp::Device& dev, vk::CommandBuffer,
 	const char* name, std::array<float, 4> col = {});
 
-void beginDebugLabel(const vpp::CommandBuffer&, const char* name,
+VPP_API void beginDebugLabel(const vpp::CommandBuffer&, const char* name,
 	std::array<float, 4> col = {});
-void endDebugLabel(const vpp::CommandBuffer&);
-void insertDebugLabel(const vpp::CommandBuffer&,
+VPP_API void endDebugLabel(const vpp::CommandBuffer&);
+VPP_API void insertDebugLabel(const vpp::CommandBuffer&,
 	const char* name, std::array<float, 4> col = {});
 
 template<typename T>
@@ -149,7 +158,7 @@ vk::Result tagHandle(const T& handle, std::uint64_t name,
 /// Names image and view of the given ViewaableImage,
 /// respectively as name + {".image", ".view"}.
 /// See debug.hpp for more information about vulkan handle naming.
-vk::Result nameHandle(const ViewableImage&, std::string name);
+VPP_API vk::Result nameHandle(const ViewableImage&, std::string name);
 
 template<> inline
 vk::Result nameHandle(const ViewableImage& vi, const char* name) {
@@ -158,7 +167,7 @@ vk::Result nameHandle(const ViewableImage& vi, const char* name) {
 
 /// RAII wrapper around a command buffer debug label.
 /// Has no effect `hasDebugUtils` of the given device is false.
-class DebugLabel {
+class VPP_API DebugLabel {
 public:
 	DebugLabel(const vpp::CommandBuffer&, const char* name,
 		std::array<float, 4> color = {});

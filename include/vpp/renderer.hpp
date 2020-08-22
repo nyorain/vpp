@@ -11,6 +11,7 @@
 #include <vpp/swapchain.hpp>
 #include <functional>
 #include <variant>
+#include <optional>
 
 namespace vpp {
 
@@ -34,7 +35,7 @@ struct RenderInfo {
 /// Internally uses a swapchain.
 /// Remember that the Renderer destructor will destroy all commandbuffers
 /// and fences so it must be assured that no submission is left unfinished.
-class Renderer {
+class VPP_API Renderer {
 public:
 	/// Defines when to record command buffers.
 	enum class RecordMode {
@@ -187,7 +188,7 @@ protected:
 /// size every time init is called - usually by overriding it and calling
 /// the Base default implementation).
 /// The record method is still abstract.
-class DefaultRenderer : public Renderer {
+class VPP_API DefaultRenderer : public Renderer {
 protected:
 	using Renderer::Renderer;
 

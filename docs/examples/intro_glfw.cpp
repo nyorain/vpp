@@ -28,7 +28,7 @@ int main(int, char**) {
 
 	// enables all default layers
 	constexpr const char* layers[] = {
-		"VK_LAYER_LUNARG_standard_validation",
+		"VK_LAYER_KHRONOS_validation",
 		// "VK_LAYER_RENDERDOC_Capture",
 	};
 
@@ -94,35 +94,39 @@ int main(int, char**) {
 	vpp::nameHandle(renderPass, "main:renderPass");
 
 	// our renderer
-	MyRenderer renderer(renderPass, scInfo, *present);
+	{
+		MyRenderer renderer(renderPass, scInfo, *present);
 
-	// setup events
-	::glfwSetWindowUserPointer(window, &renderer);
-	auto sizeCallback = [](auto* window, int width, int height) {
-		auto ptr = ::glfwGetWindowUserPointer(window);
-		auto& renderer = *static_cast<MyRenderer*>(ptr);
-		renderer.resize({unsigned(width), unsigned(height)});
-	};
+		// setup events
+		::glfwSetWindowUserPointer(window, &renderer);
+		auto sizeCallback = [](auto* window, int width, int height) {
+			auto ptr = ::glfwGetWindowUserPointer(window);
+			auto& renderer = *static_cast<MyRenderer*>(ptr);
+			renderer.resize({unsigned(width), unsigned(height)});
+		};
 
-	::glfwSetFramebufferSizeCallback(window, sizeCallback);
+		::glfwSetFramebufferSizeCallback(window, sizeCallback);
 
-	// ... and start the main loop.
-	// We have a classicaly dumb game loop here that just renders as fast
-	// as it can. See the ny example for only rendering when it's needed,
-	// glfw doesn't support any draw events.
-	dlg_info("Entering main loop");
-	while(!::glfwWindowShouldClose(window)) {
-		::glfwWaitEvents();
-		// render and wait, will block cpu
-		// you probably rather want to use renderer.render, then do
-		// work on the cpu and then wait for the rendering to
-		// complete in a real application
-		renderer.renderStall();
+		// ... and start the main loop.
+		// We have a classicaly dumb game loop here that just renders as fast
+		// as it can. See the ny example for only rendering when it's needed,
+		// glfw doesn't support any draw events.
+		dlg_info("Entering main loop");
+		while(!::glfwWindowShouldClose(window)) {
+			// render and wait, will block cpu
+			// you probably rather want to use renderer.render, then do
+			// work on the cpu and then wait for the rendering to
+			// complete in a real application
+			renderer.renderStall();
+			::glfwWaitEvents();
+		}
+
+		// wait for rendering to finish
+		vk::deviceWaitIdle(device);
 	}
 
-	vk::deviceWaitIdle(device);
-	dlg_info("Returning from main with grace");
-
 	// needed, but must be done *after* destroying the swapchain
-	// vk::DestroySurfaceKHR(instance, surface);
+	vk::destroySurfaceKHR(instance, surface);
+
+	dlg_info("Returning from main with grace");
 }

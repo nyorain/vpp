@@ -6,7 +6,6 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/debug.hpp>
-#include <vpp/util/nonCopyable.hpp>
 #include <vpp/util/span.hpp>
 
 #include <vector> // std::vector
@@ -24,7 +23,7 @@ namespace vpp {
 /// Making DebugCallback virtual is reasonable regarding performance
 /// since no DebugCallback should be created when using a release build.
 /// NonMovable since it registers a pointer to itself as callback user data.
-class DebugCallback : public nytl::NonMovable {
+class VPP_API DebugCallback {
 public:
 	struct CallbackInfo {
 		vk::DebugReportFlagsEXT flags;
@@ -54,6 +53,9 @@ public:
 		vk::DebugReportFlagsEXT flags = defaultFlags(), bool verbose = false,
 		vk::DebugReportFlagsEXT errorFlags = defaultErrorFlags());
 	virtual ~DebugCallback();
+
+	DebugCallback(DebugCallback&&) = delete;
+	DebugCallback& operator=(DebugCallback&&) = delete;
 
 	vk::Instance vkInstance() const { return instance_; }
 	vk::DebugReportCallbackEXT vkCallback() const { return debugCallback_; }

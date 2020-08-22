@@ -23,7 +23,7 @@ enum class AllocationType {
 /// DeviceMemory class that keeps track of its allocated and freed areas.
 /// Makes it easy to reuse memory as well as bind multiple memoryRequestors to
 /// one allocation.
-class DeviceMemory : public DeviceMemoryHandle {
+class VPP_API DeviceMemory : public DeviceMemoryHandle {
 public:
 	using Allocation = BasicAllocation<vk::DeviceSize>;
 	struct AllocationEntry {

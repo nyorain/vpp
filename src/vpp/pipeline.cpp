@@ -117,4 +117,19 @@ void GraphicsPipelineInfo::base(int i) {
 	}
 }
 
+// util
+bool save(vk::Device dev, vk::PipelineCache cache, std::string_view file) {
+	auto data = vk::getPipelineCacheData(dev, cache);
+	auto ptr = reinterpret_cast<const std::byte*>(data.data());
+
+	try {
+		writeFile(file, {ptr, ptr + data.size()});
+	} catch(const std::exception& err) {
+		dlg_warn("vpp::save(PipelineCache): {}", err.what());
+		return false;
+	}
+
+	return true;
+}
+
 } // namespace vpp

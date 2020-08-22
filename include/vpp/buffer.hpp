@@ -12,7 +12,7 @@ namespace vpp {
 
 /// Combines Buffer and MemoryResource, i.e. a buffer that knows
 /// its bound memory. Does not support sparse memory bindings.
-class Buffer : public BufferHandle, public MemoryResource {
+class VPP_API Buffer : public BufferHandle, public MemoryResource {
 public:
 	Buffer() = default;
 
@@ -67,7 +67,7 @@ public:
 };
 
 /// Continous non-owned device buffer span.
-class BufferSpan {
+class VPP_API BufferSpan {
 public:
 	BufferSpan() = default;
 	BufferSpan(const SubBuffer&);

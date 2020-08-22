@@ -23,7 +23,7 @@ namespace vpp {
 /// vpp::Buffer and vpp::Image.
 /// Can't be moved since memory resources might reference it during
 /// deferred initialization.
-class DeviceMemoryAllocator : public Resource {
+class VPP_API DeviceMemoryAllocator : public Resource {
 public:
 	using ReservationID = vk::DeviceSize;
 

@@ -10,7 +10,7 @@
 namespace vpp {
 namespace {
 
-static VKAPI_PTR VkBool32 messengerCallback(
+static VkBool32 VKAPI_PTR messengerCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT severity,
 		VkDebugUtilsMessageTypeFlagsEXT type,
 		const VkDebugUtilsMessengerCallbackDataEXT* debugData,

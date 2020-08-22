@@ -6,13 +6,14 @@
 #include <fstream>
 #include <stdexcept>
 #include <string>
+#include <ios>
 
 namespace vpp {
 
 std::vector<std::byte> readFile(std::string_view filename, bool binary) {
 	auto openmode = std::ios::ate;
 	if(binary) {
-		openmode |= std::ios::binary;
+		openmode = std::ios::ate | std::ios::binary;
 	}
 
 	std::ifstream ifs(std::string{filename}, openmode);

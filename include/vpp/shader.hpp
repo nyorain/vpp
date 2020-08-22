@@ -15,7 +15,7 @@ namespace vpp {
 // RAII wrapper around a vulkan ShaderModule.
 // Can be created from a file holding the spirv binary or directly from the
 // spirv code.
-class ShaderModule : public ResourceHandle<vk::ShaderModule> {
+class VPP_API ShaderModule : public ResourceHandle<vk::ShaderModule> {
 public:
 	ShaderModule() = default;
 	ShaderModule(const Device& dev, vk::ShaderModule);
@@ -41,7 +41,7 @@ public:
 // at least until the ShaderProgram is destructed.
 // Note that this class is not a Resource class since it only logically groups
 // shader stages togehter and not manages them in any way.
-class ShaderProgram {
+class VPP_API ShaderProgram {
 public:
 	// Describes a single shader stage of a program.
 	// Lighter version of vk::PipelineShaderStageCreateInfo with sane defaults.
@@ -89,11 +89,13 @@ protected:
 // Throws std::runtime_error if the file cannot be read or has an invalid size.
 // Note that the returned object is a plain handle and must be manually destroyed.
 // If possible, prefer to use the wrapper class ShaderModule.
-vk::ShaderModule loadShaderModule(vk::Device dev, std::string_view filename);
+[[nodiscard]] VPP_API vk::ShaderModule loadShaderModule(vk::Device dev,
+	std::string_view filename);
 
 // Can be used to create a shader module form the raw spirv code.
 // Note that the returned object is a plain handle and must be manually destroyed.
 // If possible, prefer to use the wrapper class ShaderModule.
-vk::ShaderModule loadShaderModule(vk::Device dev, nytl::Span<const uint32_t> code);
+[[nodiscard]] VPP_API vk::ShaderModule loadShaderModule(vk::Device dev,
+	nytl::Span<const uint32_t> code);
 
 } // namespace vpp

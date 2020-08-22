@@ -9,7 +9,7 @@
 
 namespace vpp {
 
-class Resource {
+class VPP_API Resource {
 public:
 	Resource(const Resource& other) noexcept = default;
 	~Resource() = default;

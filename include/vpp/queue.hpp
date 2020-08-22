@@ -6,7 +6,6 @@
 
 #include <vpp/fwd.hpp>
 #include <vpp/resource.hpp>
-#include <vpp/util/nonCopyable.hpp> // nytl::NonMovable
 
 #include <mutex> // std::mutex
 #include <shared_mutex> // std::shared_mutex
@@ -16,7 +15,7 @@ namespace vpp {
 /// Represents a vulkan device queue.
 /// Cannot be created or destroyed, must be received by the device class.
 /// Provides synchronization mechanisms.
-class Queue : public Resource, public nytl::NonMovable {
+class VPP_API Queue : public Resource {
 public:
 	/// Return the queueFamily of this queue
 	unsigned int family() const noexcept { return family_; }
@@ -47,6 +46,9 @@ protected:
 	Queue() = default;
 	~Queue() = default;
 
+	Queue(Queue&&) = delete;
+	Queue& operator=(Queue&&) = delete;
+
 	void init(const Device&, vk::Queue, unsigned int fam, unsigned int id);
 
 private:
@@ -63,10 +65,13 @@ private:
 /// which is e.g. needed when submitting command buffes.
 /// Otherwise just ownership over the given queue is claimed.
 /// RAII lock class, i.e. the lock is bound the objects lifetime.
-struct QueueLock : public nytl::NonMovable {
+struct VPP_API QueueLock {
 	QueueLock(const Device& dev);
 	QueueLock(const Device& dev, const vpp::Queue& queue);
 	~QueueLock();
+
+	QueueLock(QueueLock&&) = delete;
+	QueueLock& operator=(QueueLock&&) = delete;
 
 private:
 	std::mutex* queueMutex_ {};
