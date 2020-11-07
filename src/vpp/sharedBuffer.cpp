@@ -325,6 +325,9 @@ BufferAllocator::Allocation BufferAllocator::alloc(vk::DeviceSize size,
 		}
 	}
 
+	createInfo.size *= 2;
+	createInfo.size = std::max(createInfo.size, vk::DeviceSize(2048));
+
 	auto buf = BufferHandle(device(), createInfo);
 	auto memReqs = vk::getBufferMemoryRequirements(device(), buf);
 	imemBits &= memReqs.memoryTypeBits;
@@ -364,6 +367,9 @@ void BufferAllocator::cancel(ReservationID reservation) {
 	dlg_assert(reservation);
 	auto cmp = [&](const auto& val) { return val.id == reservation; };
 	auto res = std::find_if(reservations_.begin(), reservations_.end(), cmp);
+
+	// If it's in reservations_ it was already already realized in an allocation.
+	// Free that logical allocation
 	if(res != reservations_.end()) {
 		dlg_assert(res->buffer && res->allocation.size);
 		res->buffer->free(res->allocation);
@@ -371,6 +377,7 @@ void BufferAllocator::cancel(ReservationID reservation) {
 		return;
 	}
 
+	// otherwise simply erase the stored reservation requirement
 	auto req = std::find_if(requirements_.begin(), requirements_.end(), cmp);
 	dlg_assert(req != requirements_.end());
 	requirements_.erase(req);

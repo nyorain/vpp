@@ -87,11 +87,12 @@ TrDsPool::TrDsPool(const Device& dev, vk::DescriptorPoolCreateInfo info)
 }
 
 TrDsPool::TrDsPool(const Device& dev, unsigned maxSets,
-		nytl::Span<const vk::DescriptorPoolSize> sizes) :
+	nytl::Span<const vk::DescriptorPoolSize> sizes,
+	vk::DescriptorPoolCreateFlags flags) :
 		remaining_(sizes.begin(), sizes.end()), remainingSets_(maxSets) {
 
 	vk::DescriptorPoolCreateInfo info;
-	info.flags = vk::DescriptorPoolCreateBits::freeDescriptorSet;
+	info.flags = flags | vk::DescriptorPoolCreateBits::freeDescriptorSet;
 	info.maxSets = maxSets;
 	info.pPoolSizes = sizes.data();
 	info.poolSizeCount = sizes.size();
@@ -215,11 +216,14 @@ TrDs::InitData::~InitData() {
 DescriptorAllocator::DescriptorAllocator() = default;
 DescriptorAllocator::~DescriptorAllocator() = default;
 
-DescriptorAllocator::DescriptorAllocator(const Device& dev) :
-	Resource(dev) {
+DescriptorAllocator::DescriptorAllocator(const Device& dev,
+	vk::DescriptorPoolCreateFlags flags) :
+		Resource(dev), flags_(flags) {
 }
 
-void DescriptorAllocator::init(const vpp::Device& dev) {
+void DescriptorAllocator::init(const vpp::Device& dev,
+		vk::DescriptorPoolCreateFlags flags) {
+	flags_ = flags;
 	Resource::init(dev);
 }
 
@@ -297,10 +301,12 @@ TrDs DescriptorAllocator::alloc(const TrDsLayout& layout) {
 	reserve(layout.poolSizes(), 1);
 	reserve({{
 		{vk::DescriptorType::uniformBuffer, 30},
+		{vk::DescriptorType::storageBuffer, 20},
+		{vk::DescriptorType::storageImage, 20},
 		{vk::DescriptorType::combinedImageSampler, 20}
 	}}, 20);
 
-	pools_.emplace_back(device(), pending_.count, pending_.types);
+	pools_.emplace_back(device(), pending_.count, pending_.types, flags_);
 	pending_ = {};
 	return {pools_.back(), layout};
 }

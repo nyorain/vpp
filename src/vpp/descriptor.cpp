@@ -101,6 +101,10 @@ void DescriptorSetUpdate::uniform(BufferInfos buffers, int binding,
 		nullptr);
 }
 
+void DescriptorSetUpdate::uniform(BufferSpan span, int binding, unsigned elem) {
+	this->uniform(nytl::Span<BufferSpan>(&span, 1), binding, elem);
+}
+
 void DescriptorSetUpdate::storage(BufferInfos buffers, int binding,
 		unsigned int elem) {
 
@@ -120,6 +124,10 @@ void DescriptorSetUpdate::storage(BufferInfos buffers, int binding,
 	writes_.emplace_back(*set_, binding, elem, buffers_.back().size(),
 		vk::DescriptorType::storageBuffer, nullptr, buffers_.back().data(),
 		nullptr);
+}
+
+void DescriptorSetUpdate::storage(BufferSpan span, int binding, unsigned elem) {
+	this->storage(nytl::Span<BufferSpan>(&span, 1), binding, elem);
 }
 
 void DescriptorSetUpdate::uniformDynamic(BufferInfos buffers, int binding,
@@ -248,6 +256,11 @@ void DescriptorSetUpdate::image(ImageInfos images, int binding,
 		vk::DescriptorType::sampledImage, images_.back().data(), nullptr,
 		nullptr);
 }
+void DescriptorSetUpdate::image(vk::ImageView view,
+		vk::ImageLayout layout, int binding, unsigned elem) {
+	this->image(ImageInfos{{{{}, view, layout}}}, binding, elem);
+}
+
 void DescriptorSetUpdate::storage(ImageInfos images, int binding,
 		unsigned int elem) {
 
@@ -262,6 +275,16 @@ void DescriptorSetUpdate::storage(ImageInfos images, int binding,
 		vk::DescriptorType::storageImage, images_.back().data(), nullptr,
 		nullptr);
 }
+
+void DescriptorSetUpdate::storage(vk::ImageView view, vk::ImageLayout layout,
+		int binding, unsigned elem) {
+	this->storage(ImageInfos{{{{}, view, layout}}}, binding, elem);
+}
+
+void DescriptorSetUpdate::storage(vk::ImageView view, int binding, unsigned elem) {
+	storage(view, vk::ImageLayout::general, binding, elem);
+}
+
 void DescriptorSetUpdate::imageSampler(ImageInfos images, int binding,
 		unsigned int elem) {
 
@@ -276,6 +299,16 @@ void DescriptorSetUpdate::imageSampler(ImageInfos images, int binding,
 		vk::DescriptorType::combinedImageSampler, images_.back().data(),
 		nullptr, nullptr);
 }
+void DescriptorSetUpdate::imageSampler(vk::ImageView view,
+		vk::ImageLayout layout, vk::Sampler sampler, int binding, unsigned elem) {
+	this->imageSampler(ImageInfos{{{sampler, view, layout}}}, binding, elem);
+}
+
+void DescriptorSetUpdate::imageSampler(vk::ImageView view,
+		vk::Sampler sampler, int binding, unsigned elem) {
+	this->imageSampler(view, vk::ImageLayout::shaderReadOnlyOptimal, sampler, binding, elem);
+}
+
 void DescriptorSetUpdate::inputAttachment(ImageInfos images, int binding,
 		unsigned int elem) {
 

@@ -40,25 +40,27 @@ public:
 	/// When the range member of any buffer info is 0 (default constructed), it will
 	/// be automatically set to vk::wholeSize.
 	void uniform(BufferInfos, int binding = -1, unsigned int elem = 0);
+	void uniform(nytl::Span<const BufferSpan>, int binding = -1, unsigned elem = 0);
+	void uniform(BufferSpan span, int binding = -1, unsigned elem = 0);
+
 	void storage(BufferInfos, int binding = -1, unsigned int elem = 0);
+	void storage(nytl::Span<const BufferSpan>, int binding = -1, unsigned elem = 0);
+	void storage(BufferSpan, int binding = -1, unsigned elem = 0);
+
+	void uniformDynamic(nytl::Span<const BufferSpan>, int binding = -1, unsigned elem = 0);
 	void uniformDynamic(BufferInfos, int binding = -1, unsigned int elem = 0);
 	void storageDynamic(BufferInfos, int binding = -1, unsigned int elem = 0);
-
-	// NOTE: we could also just added a vk::DescriptorBufferInfo conversion
-	// operator to BufferSpan, but this is probably cleaner
-	void uniform(nytl::Span<const BufferSpan>, int binding = -1,
-		unsigned elem = 0);
-	void storage(nytl::Span<const BufferSpan>, int binding = -1,
-		unsigned elem = 0);
-	void uniformDynamic(nytl::Span<const BufferSpan>, int binding = -1,
-		unsigned elem = 0);
-	void storageDynamic(nytl::Span<const BufferSpan>, int binding = -1,
-		unsigned elem = 0);
+	void storageDynamic(nytl::Span<const BufferSpan>, int binding = -1, unsigned elem = 0);
 
 	void sampler(ImageInfos, int binding = -1, unsigned int elem = 0);
 	void image(ImageInfos, int binding = -1, unsigned int elem = 0);
+	void image(vk::ImageView, vk::ImageLayout, int binding = -1, unsigned elem = 0);
 	void storage(ImageInfos, int binding = -1, unsigned int elem = 0);
+	void storage(vk::ImageView, vk::ImageLayout, int binding = -1, unsigned elem = 0);
+	void storage(vk::ImageView, int binding = -1, unsigned elem = 0);
 	void imageSampler(ImageInfos, int binding = -1, unsigned int elem = 0);
+	void imageSampler(vk::ImageView, vk::Sampler = {}, int binding = -1, unsigned elem = 0);
+	void imageSampler(vk::ImageView, vk::ImageLayout, vk::Sampler = {}, int binding = -1, unsigned elem = 0);
 	void inputAttachment(ImageInfos, int binding = -1, unsigned int elem = 0);
 
 	void uniformView(BufferViewInfos, int binding = -1, unsigned int elem = 0);
@@ -80,6 +82,7 @@ public:
 	auto vkDevice() const { return device().vkDevice(); }
 	auto vkInstance() const { return device().vkInstance(); }
 	auto vkPhysicalDevice() const { return device().vkPhysicalDevice(); }
+	auto currentBinding() const { return currentBinding_; }
 
 	const auto& writes() const { return writes_; }
 	const auto& copies() const { return copies_; }

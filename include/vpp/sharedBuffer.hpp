@@ -93,7 +93,7 @@ public:
 	/// Reserves the given requirements.
 	/// Useful to allow grouping many SubBuffers on one Buffer.
 	/// Optionally returns the id associated with the reservation which can
-	/// later be use to allocate or cancel it.
+	/// later be used to allocate or cancel it.
 	[[nodiscard]] ReservationID reserve(vk::DeviceSize size, vk::BufferUsageFlags,
 		unsigned int memBits = ~0u, vk::DeviceSize align = 0u);
 
@@ -216,6 +216,7 @@ public:
 	void init(InitData&);
 
 	const SharedBuffer& buffer() const { return *buffer_; }
+	const SharedBuffer* const& bufferPtr() const { return buffer_; }
 	const Allocation& allocation() const { return allocation_; }
 	vk::DeviceSize offset() const { return allocation().offset; }
 	vk::DeviceSize size() const { return allocation().size; }

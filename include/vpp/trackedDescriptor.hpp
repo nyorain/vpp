@@ -54,7 +54,8 @@ public:
 	TrDsPool(); // = default;
 	TrDsPool(const Device&, vk::DescriptorPoolCreateInfo);
 	TrDsPool(const Device&, unsigned maxSets,
-		nytl::Span<const vk::DescriptorPoolSize> sizes);
+		nytl::Span<const vk::DescriptorPoolSize> sizes,
+		vk::DescriptorPoolCreateFlags = {});
 	~TrDsPool(); // = default;
 
 	TrDsPool(TrDsPool&&) = delete;
@@ -127,13 +128,13 @@ protected:
 class VPP_API DescriptorAllocator : public vpp::Resource {
 public:
 	DescriptorAllocator(); // = default;
-	DescriptorAllocator(const vpp::Device&);
+	DescriptorAllocator(const vpp::Device&, vk::DescriptorPoolCreateFlags = {});
 	~DescriptorAllocator(); // = default
 
 	DescriptorAllocator(DescriptorAllocator&&) = delete;
 	DescriptorAllocator& operator=(DescriptorAllocator&&) = delete;
 
-	void init(const vpp::Device&);
+	void init(const vpp::Device&, vk::DescriptorPoolCreateFlags = {});
 	void reserve(nytl::Span<const vk::DescriptorPoolSize>, unsigned count = 1);
 	void reserve(const TrDsLayout&, unsigned count = 1);
 	void unreserve(const TrDsLayout&);
@@ -155,6 +156,7 @@ private:
 
 	// all owned descriptor pools
 	std::deque<TrDsPool> pools_;
+	vk::DescriptorPoolCreateFlags flags_ {};
 };
 
 } // namespace vpp

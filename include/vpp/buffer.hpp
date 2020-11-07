@@ -92,4 +92,10 @@ protected:
 	BasicAllocation<vk::DeviceSize> allocation_ {};
 };
 
+inline bool operator==(const BufferSpan& a, const BufferSpan& b) {
+	return (!a.valid() && !b.valid()) || (a.valid() && b.valid() &&
+		a.buffer().vkHandle() == b.buffer().vkHandle() &&
+		a.allocation() == b.allocation());
+}
+
 } // namespace vpp
