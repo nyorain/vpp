@@ -10,7 +10,9 @@
 #include <vector>
 
 namespace vpp {
-namespace fwd { extern VPP_API const vk::CommandBufferLevel primaryCmdBufLevel; }
+namespace fwd {
+	extern VPP_API const vk::CommandBufferLevel primaryCmdBufLevel;
+}
 
 // Owns a pool of commandPools that allow to allocate commandBuffers of all
 // kind. Not synchronized in any way, must always be used from only

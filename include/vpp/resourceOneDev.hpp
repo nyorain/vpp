@@ -29,7 +29,7 @@ protected:
 	Resource(const Device& dev) { init(dev); }
 
 	void init(const Device& dev);
-	friend void swap(Resource&, Resource&) noexcept {}
+	friend VPP_API void swap(Resource&, Resource&) noexcept {}
 };
 
 } // namespace vpp

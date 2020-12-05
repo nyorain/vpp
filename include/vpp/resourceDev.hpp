@@ -29,7 +29,7 @@ protected:
 	Resource(const Device& device) noexcept : device_(&device) {}
 
 	void init(const Device& dev) noexcept { device_ = &dev; }
-	friend void swap(Resource& a, Resource& b) noexcept {
+	friend VPP_API inline void swap(Resource& a, Resource& b) noexcept {
 		std::swap(a.device_, b.device_);
 	}
 

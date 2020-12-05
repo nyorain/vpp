@@ -89,6 +89,11 @@ void VPP_API fillMap(const Image&, vk::Format, const vk::Extent3D& size,
 	const vk::Extent3D& size, const vk::ImageSubresource&,
 	const vk::Offset3D& offset = {});
 
+// TODO, NOTE: the commands below don't insert buffer/image barriers
+// automatically, you usually will need them (a barrier before this call
+// on the reading resource and a barrier after the call on the written
+// resource)
+
 /// Records the command for fillStaging into the given
 /// command buffer. The returned BufferRange must stay valid until
 /// the command buffer has completed execution.

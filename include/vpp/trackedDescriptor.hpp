@@ -115,7 +115,7 @@ public:
 
 	TrDsPool& pool() const { return *pool_; }
 	const TrDsLayout& layout() const { return *layout_; }
-	friend void swap(TrDs& a, TrDs& b) noexcept;
+	friend VPP_API void swap(TrDs& a, TrDs& b) noexcept;
 
 protected:
 	TrDsPool* pool_ {};

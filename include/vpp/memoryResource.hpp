@@ -52,7 +52,7 @@ public:
 	DeviceMemory& memory() const { return *memory_; }
 	vk::DeviceSize memoryOffset() const { return offset_; }
 
-	friend void swap(MemoryResource& a, MemoryResource& b);
+	friend VPP_API void swap(MemoryResource& a, MemoryResource& b);
 
 protected:
 	DeviceMemory* memory_ {};

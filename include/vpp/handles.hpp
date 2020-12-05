@@ -36,7 +36,7 @@ public:
 	operator vk::Instance() const { return instance_; }
 
 	static vk::ObjectType vkObjectType();
-	friend void swap(Instance& a, Instance& b) noexcept;
+	friend VPP_API void swap(Instance& a, Instance& b) noexcept;
 
 protected:
 	void release() { instance_ = {}; }
@@ -63,7 +63,7 @@ public:
 
 	static vk::ObjectType vkObjectType();
 	operator vk::SurfaceKHR() const { return surface_; }
-	friend void swap(Surface& a, Surface& b) noexcept;
+	friend VPP_API void swap(Surface& a, Surface& b) noexcept;
 
 protected:
 	void release() { instance_ = {}; surface_ = {}; }
@@ -363,7 +363,7 @@ public:
 	}
 
 	const vk::CommandPool& commandPool() const { return commandPool_; }
-	friend void swap(CommandBuffer& a, CommandBuffer& b) noexcept;
+	friend VPP_API void swap(CommandBuffer& a, CommandBuffer& b) noexcept;
 	static vk::ObjectType vkObjectType();
 
 protected:

@@ -84,12 +84,12 @@ protected:
 template<typename T> constexpr std::uint64_t handleToUint(T handle) {
 	if constexpr(sizeof(T) == sizeof(std::uint64_t)) {
 		// return reinterpret_cast<std::uint64_t>(handle);
-		std::uint64_t ret;
+		std::uint64_t ret {};
 		std::memcpy(&ret, &handle, sizeof(handle));
 		return ret;
 	} else if constexpr(sizeof(T) == sizeof(std::uintptr_t)) {
 		// return reinterpret_cast<std::uintptr_t>(handle);
-		std::uintptr_t ret;
+		std::uintptr_t ret {};
 		std::memcpy(&ret, &handle, sizeof(handle));
 		return ret;
 	} else if constexpr(sizeof(T) != 64) {
@@ -187,7 +187,8 @@ inline
 #endif
 namespace nodebug {
 
-extern const vk::Result resultExtensionNotPresent;
+extern VPP_API const vk::Result resultExtensionNotPresent;
+
 inline vk::Result nameHandle(const vpp::Device&, std::uint64_t,
 		vk::ObjectType, const char*) {
 	return resultExtensionNotPresent;

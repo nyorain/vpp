@@ -14,6 +14,8 @@ namespace vpp {
 Instance::Instance(const vk::InstanceCreateInfo& info) {
 	instance_ = vk::createInstance(info);
 
+	vk::dispatch.initLoader(::vkGetInstanceProcAddr);
+
 	// init vkpp dynamic dispatch
 	// required for all used extensions inside vkpp
 	vk::dispatch.init(instance_);

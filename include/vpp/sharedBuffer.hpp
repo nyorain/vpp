@@ -227,7 +227,7 @@ public:
 		vk::DeviceSize size = vk::wholeSize) const;
 
 	const Device& device() const { return buffer().device(); }
-	friend void swap(SubBuffer&, SubBuffer&) noexcept;
+	friend VPP_API void swap(SubBuffer&, SubBuffer&) noexcept;
 
 	// NOTE: there is no vkHandle() member or conversion operator
 	// to vk::Buffer here since when passing a SubBuffer to vulkan
